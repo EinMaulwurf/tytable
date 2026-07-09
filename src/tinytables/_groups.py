@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+from ._directives import RowGroup
+
+
+def _resolve_cols(col_spec, colnames):
+    indices = []
+    for c in col_spec:
+        if isinstance(c, str):
+            try:
+                indices.append(colnames.index(c))
+            except ValueError:
+                raise ValueError(f"column {c!r} not found") from None
+        elif isinstance(c, int):
+            indices.append(c)
+        else:
+            raise TypeError(f"column spec must be str or int, got {type(c).__name__}")
+    return indices
+
+
+def _build_col_group_row(j_dict, colnames):
+    ncol = len(colnames)
+    row: list[str | None] = [None] * ncol
+    for label, cols in j_dict.items():
+        indices = _resolve_cols(cols, colnames)
+        if not indices:
+            continue
+        start = indices[0]
+        row[start] = label
+        for ci in indices[1:]:
+            if 0 <= ci < ncol:
+                row[ci] = ""
+    return row
+
+
+def _build_col_group_rows_delim(delim, colnames):
+    parts = [c.split(delim) for c in colnames]
+    nlevels = len(parts[0])
+    if any(len(p) != nlevels for p in parts):
+        raise ValueError(
+            f"delimiter {delim!r} does not split all column names into "
+            "the same number of parts"
+        )
+    rows: list[list[str | None]] = []
+    for level in range(nlevels):
+        ncol = len(colnames)
+        row: list[str | None] = [None] * ncol
+        i = 0
+        while i < ncol:
+            label = parts[i][level].strip()
+            start = i
+            i += 1
+            while i < ncol and parts[i][level].strip() == label:
+                i += 1
+            display = label if label else " "
+            row[start] = display
+            for ci in range(start + 1, i):
+                row[ci] = ""
+        rows.append(row)
+    return rows
+
+
+def register_row_groups(table, i):
+    if isinstance(i, dict):
+        pairs = sorted(i.items(), key=lambda x: x[1])
+        for label, pos in pairs:
+            table._row_groups.append(RowGroup(label=str(label), position=int(pos)))
+    elif isinstance(i, list):
+        prev = None
+        pos = 0
+        for idx, val in enumerate(i):
+            if idx > 0 and val != prev:
+                table._row_groups.append(RowGroup(label=str(prev), position=pos))
+                pos = idx
+            prev = val
+        if pos < len(i) and prev is not None:
+            table._row_groups.append(RowGroup(label=str(prev), position=pos))
+    else:
+        raise TypeError("group(i=...) must be a dict or list")
+    return table
+
+
+def register_col_groups(table, j, colnames):
+    if isinstance(j, dict):
+        row = _build_col_group_row(j, colnames)
+        table._col_group_rows.insert(0, row)
+    elif isinstance(j, str):
+        rows = _build_col_group_rows_delim(j, colnames)
+        for row in reversed(rows):
+            table._col_group_rows.insert(0, row)
+    else:
+        raise TypeError("group(j=...) must be a dict or str")
+    return table
+
+
+def compute_row_group_positions(row_groups):
+    p = sorted(rg.position for rg in row_groups)
+    positions_1 = {p[k] + k + 1 for k in range(len(p))}
+    return positions_1
+
+
+def merge_row_groups(data_body, row_groups, ncols):
+    if not row_groups:
+        return data_body, {}
+    nrows = len(data_body)
+    ngroups = len(row_groups)
+    n_merged = nrows + ngroups
+    p = sorted(rg.position for rg in row_groups)
+    group_positions_1 = [p[k] + k + 1 for k in range(ngroups)]
+    group_positions_set = set(group_positions_1)
+    sorted_rg = sorted(row_groups, key=lambda rg: rg.position)
+    pos_to_label = dict(zip(group_positions_1, (rg.label for rg in sorted_rg), strict=True))
+    merged = []
+    data_row_idx = 0
+    for r in range(1, n_merged + 1):
+        if r in group_positions_set:
+            merged.append([pos_to_label[r]] + [""] * (ncols - 1))
+        else:
+            merged.append(data_body[data_row_idx])
+            data_row_idx += 1
+    return merged, pos_to_label

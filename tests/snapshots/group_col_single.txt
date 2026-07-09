@@ -1,0 +1,58 @@
+#show figure: set block(breakable: false)
+#figure(
+  kind: "tinytable",
+  supplement: "Table",
+
+block[
+  #let style-dict = (
+  )
+
+  #let style-array = (
+  )
+
+  #let get-style(x, y) = {
+    let key = str(y) + "_" + str(x)
+    if key in style-dict { style-array.at(style-dict.at(key)) } else { none }
+  }
+
+  #show table.cell: it => {
+    if style-array.len() == 0 { return it }
+    let style = get-style(it.x, it.y)
+    if style == none { return it }
+    let tmp = it
+    if ("fontsize" in style) { tmp = text(size: style.fontsize, tmp) }
+    if ("color" in style) { tmp = text(fill: style.color, tmp) }
+    if ("indent" in style) { tmp = pad(left: style.indent, tmp) }
+    if ("underline" in style) { tmp = underline(tmp) }
+    if ("italic" in style) { tmp = emph(tmp) }
+    if ("bold" in style) { tmp = strong(tmp) }
+    if ("mono" in style) { tmp = math.mono(tmp) }
+    if ("strikeout" in style) { tmp = strike(tmp) }
+    if ("smallcaps" in style) { tmp = smallcaps(tmp) }
+    tmp
+  }
+
+  #table(
+    columns: (auto, auto, auto, auto),
+    column-gutter: 5pt,
+    stroke: none,
+    rows: auto,
+    align: (x, y) => {
+      let style = get-style(x, y)
+      if style != none and "align" in style { style.align } else { left }
+    },
+    fill: (x, y) => {
+      let style = get-style(x, y)
+      if style != none and "background" in style { style.background }
+    },
+    table.header(
+      repeat: true,
+      table.cell(colspan: 2, align: center)[Group], [ ], [ ],
+      [a],[b],[c],[d],
+    ),
+    [1],[4],[7],[10],
+    [2],[5],[8],[11],
+    [3],[6],[9],[12],
+  )
+]
+)

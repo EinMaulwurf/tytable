@@ -5,6 +5,7 @@ import pathlib
 import polars as pl
 
 from ._directives import StyleDirective
+from ._groups import register_col_groups, register_row_groups
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._resolve import build
 from ._styling import _validate_style
@@ -73,7 +74,7 @@ class TinyTable:
         self._format_directives: list = []
         self._plot_directives: list = []
         self._row_groups: list = []
-        self._col_groups: list = []
+        self._col_group_rows: list = []
         self._notes: list = list(notes) if notes else []
         self._prepare_hooks: list = []
 
@@ -118,6 +119,13 @@ class TinyTable:
                 line_trim=line_trim, output=output,
             )
         )
+        return self
+
+    def group(self, i=None, j=None):
+        if i is not None:
+            register_row_groups(self, i)
+        if j is not None:
+            register_col_groups(self, j, self._colnames)
         return self
 
     def render(self, output: str = "typst") -> str:

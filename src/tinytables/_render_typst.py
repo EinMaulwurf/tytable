@@ -116,16 +116,40 @@ class TypstRenderer:
 
         self._emit_lines(L, built)
 
-        if built.show_colnames:
+        if built.show_colnames or built.col_groups:
             L.append("    table.header(")
             L.append("      repeat: true,")
-            col_line = "      " + ",".join(f"[{c}]" for c in built.colnames_display) + ","
-            L.append(col_line)
+            for row in built.col_groups:
+                parts = self._build_col_group_row(row)
+                L.append(f"      {', '.join(parts)},")
+            if built.show_colnames:
+                col_line = "      " + ",".join(f"[{c}]" for c in built.colnames_display) + ","
+                L.append(col_line)
             L.append("    ),")
 
-        for row in built.data_body:
-            body_line = "    " + ",".join(f"[{cell}]" for cell in row) + ","
-            L.append(body_line)
+        covered = self._compute_covered_cells(built.style_grid)
+        ncol = len(built.colnames_display)
+        for r, row in enumerate(built.data_body):
+            i_internal = r + 1
+            parts = []
+            for c, val in enumerate(row):
+                j_internal = c + 1
+                if (i_internal, j_internal) in covered:
+                    continue
+                span_props = built.style_grid.get((i_internal, j_internal), {})
+                colspan = span_props.get("colspan", 1)
+                rowspan = span_props.get("rowspan", 1)
+                args = []
+                if colspan > 1:
+                    args.append(f"colspan: {colspan}")
+                if rowspan > 1:
+                    args.append(f"rowspan: {rowspan}")
+                if args:
+                    parts.append(f"table.cell({', '.join(args)})[{val}]")
+                else:
+                    parts.append(f"[{val}]")
+            if parts:
+                L.append("    " + ",".join(parts) + ",")
 
         L.append("  )")
 
@@ -210,3 +234,46 @@ class TypstRenderer:
         L.append("")
 
         L.append(STATIC_GET_STYLE_AND_SHOW_RULE)
+
+    def _build_col_group_row(self, row):
+        parts = []
+        i = 0
+        while i < len(row):
+            v = row[i]
+            if v is None:
+                parts.append("[ ]")
+                i += 1
+                continue
+            label = (v or "").strip()
+            if label == "":
+                parts.append("[ ]")
+                i += 1
+                continue
+            start = i
+            i += 1
+            while i < len(row) and row[i] is not None and (row[i] or "").strip() == "":
+                i += 1
+            span = i - start
+            escaped = escape_typst(label)
+            if span > 1:
+                parts.append(f"table.cell(colspan: {span}, align: center)[{escaped}]")
+            else:
+                parts.append(f"[{escaped}]")
+        return parts
+
+    def _compute_covered_cells(self, style_grid):
+        covered = set()
+        for (r, c), props in style_grid.items():
+            scol = props.get("colspan")
+            srow = props.get("rowspan")
+            if not isinstance(scol, int):
+                scol = 1
+            if not isinstance(srow, int):
+                srow = 1
+            if scol > 1 or srow > 1:
+                for rr in range(r, r + srow):
+                    for cc in range(c, c + scol):
+                        if rr == r and cc == c:
+                            continue
+                        covered.add((rr, cc))
+        return covered
