@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
-from ._indices import convert_row_to_typst
+from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._styling import align_to_typst
 
 
@@ -53,6 +53,21 @@ class TypstRenderOptions:
     row_height_em: float | None = None
 
 
+def _split_chunks(values):
+    values = sorted(set(values))
+    if not values:
+        return []
+    chunks = []
+    start = prev = values[0]
+    for v in values[1:]:
+        if v != prev + 1:
+            chunks.append((start, prev + 1))
+            start = v
+        prev = v
+    chunks.append((start, prev + 1))
+    return chunks
+
+
 class TypstRenderer:
     def render(self, built, opts: TypstRenderOptions) -> str:
         L: list[str] = []
@@ -79,6 +94,9 @@ class TypstRenderer:
         cells = ["auto"] * ncol
         L.append(f"    columns: ({', '.join(cells)}),")
 
+        if built.col_groups and not built.has_background:
+            L.append("    column-gutter: 5pt,")
+
         L.append("    stroke: none,")
 
         if opts.row_height_em is not None:
@@ -95,6 +113,8 @@ class TypstRenderer:
         L.append("      let style = get-style(x, y)")
         L.append('      if style != none and "background" in style { style.background }')
         L.append("    },")
+
+        self._emit_lines(L, built)
 
         if built.show_colnames:
             L.append("    table.header(")
@@ -114,6 +134,48 @@ class TypstRenderer:
         L.append(")")
 
         return "\n".join(L)
+
+    def _emit_lines(self, L, built):
+        hlines: dict[tuple[int, str], set[int]] = {}
+        vlines: dict[tuple[int, str], set[int]] = {}
+
+        for entry in built.style_lines:
+            ti = convert_row_to_typst(entry["i"], built.nhead)
+            tj = convert_col_to_typst(entry["j"])
+            width = entry.get("line_width", 0.1)
+            line_color = entry.get("line_color", "black")
+            color_expr = color_to_typst(line_color)
+            stroke = f"{width}em + {color_expr}"
+            line = entry["line"]
+
+            if "t" in line:
+                hlines.setdefault((ti, stroke), set()).add(tj)
+            if "b" in line:
+                hlines.setdefault((ti + 1, stroke), set()).add(tj)
+            if "l" in line:
+                vlines.setdefault((tj, stroke), set()).add(ti)
+            if "r" in line:
+                vlines.setdefault((tj + 1, stroke), set()).add(ti)
+
+        hline_entries = []
+        for (y, stroke), cols in sorted(hlines.items()):
+            for start, end in _split_chunks(cols):
+                hline_entries.append((y, start, end, stroke))
+
+        vline_entries = []
+        for (x, stroke), rows in sorted(vlines.items()):
+            for start, end in _split_chunks(rows):
+                vline_entries.append((x, start, end, stroke))
+
+        for y, start, end, stroke in sorted(hline_entries):
+            L.append(
+                f"    table.hline(y: {y}, start: {start}, end: {end}, stroke: {stroke}),"
+            )
+
+        for x, start, end, stroke in sorted(vline_entries):
+            L.append(
+                f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),"
+            )
 
     def _emit_style_block(self, L, built):
         styled = []

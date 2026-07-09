@@ -190,3 +190,59 @@ class TestStyleValidation:
     def test_negative_line_width(self):
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="t", line_width=-1)
+
+
+@pytest.mark.typst
+class TestBordersLines:
+    def test_line_top(self):
+        out = tt(DF).style(i=0, line="t").render("typst")
+        assert_snapshot("line_top", out)
+
+    def test_line_bottom(self):
+        out = tt(DF).style(i=1, line="b").render("typst")
+        assert_snapshot("line_bottom", out)
+
+    def test_line_left(self):
+        out = tt(DF).style(j=0, line="l").render("typst")
+        assert_snapshot("line_left", out)
+
+    def test_line_right(self):
+        out = tt(DF).style(j=1, line="r").render("typst")
+        assert_snapshot("line_right", out)
+
+    def test_line_tblr(self):
+        out = tt(DF).style(i=0, j=0, line="tblr").render("typst")
+        assert_snapshot("line_tblr", out)
+
+    def test_line_color(self):
+        out = tt(DF).style(i=0, line="t", line_color="#ff0000").render("typst")
+        assert 'rgb("#ff0000")' in out
+        assert_snapshot("line_color", out)
+
+    def test_line_width(self):
+        out = tt(DF).style(i=0, line="t", line_width=0.5).render("typst")
+        assert "0.5em" in out
+        assert_snapshot("line_width", out)
+
+    def test_chunking_non_consecutive_columns(self):
+        out = tt(DF).style(i=0, j=[0, 2], line="t").render("typst")
+        assert_snapshot("line_chunking", out)
+
+    def test_dedupe_duplicate_line_directives(self):
+        out = tt(DF).style(i=0, j=0, line="t").style(i=0, j=0, line="t").render("typst")
+        assert_snapshot("line_dedupe", out)
+
+    def test_dedupe_top_bottom_merge(self):
+        out = (
+            tt(DF).style(i=0, line="b").style(i=1, j=0, line="t").render("typst")
+        )
+        assert_snapshot("line_dedupe_tb_merge", out)
+
+    def test_default_stroke(self):
+        out = tt(DF).style(i=0, line="t").render("typst")
+        assert "0.1em + black" in out
+
+    def test_no_lines_default(self):
+        out = tt(DF).render("typst")
+        assert "table.hline" not in out
+        assert "table.vline" not in out
