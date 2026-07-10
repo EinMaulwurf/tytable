@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from ._escape import escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
+from ._images import execute_plots
 from ._styling import build_style_grid
 from ._utils import format_markup_num
 
@@ -148,6 +149,12 @@ def build(table, output: str) -> BuiltTable:
             for c in range(len(data_body[r])):
                 if (r, c) not in escaped_cells:
                     data_body[r][c] = escape_typst(data_body[r][c])
+
+    execute_plots(
+        table, data_body, typed_body, output,
+        nhead=nhead, has_header=show_colnames,
+        n_merged_body=n_merged_body, group_positions=group_position_set,
+    )
 
     _insert_footnote_markers(
         data_body, colnames_display, table._notes,

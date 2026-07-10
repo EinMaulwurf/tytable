@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 import polars as pl
 
-from ._directives import FormatDirective, Note, StyleDirective
+from ._directives import FormatDirective, Note, PlotDirective, StyleDirective
 from ._groups import register_col_groups, register_row_groups
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._resolve import build
@@ -113,6 +113,8 @@ class TinyTable:
         self._col_group_rows: list = []
         self._notes: list = _normalize_notes(notes)
         self._prepare_hooks: list = []
+        self._assets_dir: str | None = None
+        self._assets_relpath: str | None = None
 
         self._typst_opts = TypstRenderOptions(multipage=False)
         if height is not None:
@@ -196,6 +198,58 @@ class TinyTable:
         )
         return self
 
+    def plot(
+        self,
+        i=None,
+        j=None,
+        *,
+        fun=None,
+        data=None,
+        height=1.0,
+        height_px=400,
+        width_px=1200,
+        color="black",
+        xlim=None,
+        output=None,
+    ):
+        if j is None:
+            raise ValueError(".plot() requires j (column selector)")
+        if fun is None:
+            raise ValueError(".plot() requires fun (plotting function)")
+        if isinstance(height, str):
+            height = float(height.replace("em", "").strip())
+        self._plot_directives.append(
+            PlotDirective(
+                i=i, j=j, fun=fun, data=data, color=color, xlim=xlim,
+                height=height, height_px=height_px, width_px=width_px,
+                output=output,
+            )
+        )
+        return self
+
+    def images(
+        self,
+        i=None,
+        j=None,
+        *,
+        paths=None,
+        height=1.0,
+        output=None,
+    ):
+        if j is None:
+            raise ValueError(".images() requires j (column selector)")
+        if paths is None:
+            raise ValueError(".images() requires paths")
+        if isinstance(height, str):
+            height = float(height.replace("em", "").strip())
+        self._plot_directives.append(
+            PlotDirective(
+                i=i, j=j, images=list(paths), height=height,
+                output=output,
+            )
+        )
+        return self
+
     def group(self, i=None, j=None):
         if i is not None:
             register_row_groups(self, i)
@@ -212,8 +266,17 @@ class TinyTable:
         built = build(self, output)
         return TypstRenderer().render(built, self._typst_opts)
 
-    def save(self, path: str) -> None:
+    def save(self, path: str, assets: str | None = None) -> None:
         p = pathlib.Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+
+        if assets is None:
+            self._assets_dir = str(p.parent / "tinytable_assets")
+            self._assets_relpath = "tinytable_assets"
+        else:
+            self._assets_dir = str(p.parent / assets)
+            self._assets_relpath = assets.replace("\\", "/")
+
         suffix = p.suffix.lower()
         out = "html" if suffix in (".html", ".htm") else "typst"
         p.write_text(self.render(out), encoding="utf-8")
