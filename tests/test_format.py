@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import tt
+from tytable import tt
 
 
 @pytest.mark.typst

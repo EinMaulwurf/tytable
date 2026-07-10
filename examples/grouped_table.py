@@ -5,7 +5,7 @@ Run:  uv run python examples/grouped_table.py
 
 import polars as pl
 
-from tinytables import tt
+from tytable import tt
 
 df = pl.DataFrame(
     {

@@ -2,8 +2,8 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import tt
-from tinytables._escape import escape_html
+from tytable import tt
+from tytable._escape import escape_html
 
 
 @pytest.mark.html

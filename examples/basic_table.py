@@ -1,11 +1,11 @@
-"""Minimal tinytables example — a plain table saved to Typst.
+"""Minimal tytable example — a plain table saved to Typst.
 
 Run:  uv run python examples/basic_table.py
 """
 
 import polars as pl
 
-from tinytables import tt
+from tytable import tt
 
 df = pl.DataFrame(
     {

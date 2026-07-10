@@ -20,4 +20,4 @@ test-images:
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
-	find . -type d -name tinytable_assets -exec rm -rf {} +
+	find . -type d -name tytable_assets -exec rm -rf {} +

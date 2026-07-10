@@ -1,4 +1,4 @@
-"""Example sparkline for tinytables .plot() — copy/adapt for your own use.
+"""Example sparkline for tytable .plot() — copy/adapt for your own use.
 
 Drop this function into your script and pass it to .plot(fun=sparkline).
 """

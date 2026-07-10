@@ -1,6 +1,6 @@
 #show figure: set block(breakable: false)
 #figure(
-  kind: "tinytable",
+  kind: "tytable",
   supplement: "Table",
 
 block[
@@ -48,8 +48,8 @@ block[
       repeat: true,
       [Trend],
     ),
-    [#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)],
-    [#image("tinytable_assets/plot_0000_testid0002.png", height: 1em)],
+    [#image("tytable_assets/plot_0000_testid0001.png", height: 1em)],
+    [#image("tytable_assets/plot_0000_testid0002.png", height: 1em)],
   )
 ]
 )

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from ._render_typst import TypstRenderOptions
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 
 def default_line_color(table: TinyTable) -> str:

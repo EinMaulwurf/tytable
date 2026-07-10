@@ -1,6 +1,6 @@
 import pytest
 
-from tinytables._indices import resolve_i, resolve_j
+from tytable._indices import resolve_i, resolve_j
 
 
 class TestResolveI:

@@ -1,14 +1,14 @@
 """Full report example — formatting, styling, grouping, theme, and sparklines.
 
 Combines every feature into a single realistic table. Requires the `images`
-extra (`pip install tinytables[images]`).
+extra (`pip install tytable[images]`).
 
 Run:  uv run python examples/full_report.py
 """
 
 import polars as pl
 
-from tinytables import tt
+from tytable import tt
 
 
 def sparkline(values, *, color="black", xlim=None, **kw):

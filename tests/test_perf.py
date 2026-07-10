@@ -1,6 +1,6 @@
 """Performance gate — asserts a heavily-styled 120x30 table renders under budget.
 
-See tinytables_python_guide/15_performance.md §4. The package's design avoids
+See tytable_python_guide/15_performance.md §4. The package's design avoids
 tinytable R's three hotspots (per-style-entry full-grid scans, marker insertion
 re-splitting the output string, rbind-in-loop O(n^2) growth). This test guards
 against regressions.
@@ -14,7 +14,7 @@ import time
 import polars as pl
 import pytest
 
-from tinytables import tt
+from tytable import tt
 
 N_ROWS = 120
 N_COLS = 30

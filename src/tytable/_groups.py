@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 from ._directives import RowGroup
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 
 def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:

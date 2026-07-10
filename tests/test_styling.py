@@ -2,8 +2,8 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import tt
-from tinytables._resolve import build
+from tytable import tt
+from tytable._resolve import build
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 

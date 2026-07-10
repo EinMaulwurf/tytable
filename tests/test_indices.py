@@ -1,6 +1,6 @@
 import pytest
 
-from tinytables._indices import convert_col_to_typst, convert_row_to_typst
+from tytable._indices import convert_col_to_typst, convert_row_to_typst
 
 
 class TestConvertRowToTypst:

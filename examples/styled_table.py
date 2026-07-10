@@ -5,7 +5,7 @@ Run:  uv run python examples/styled_table.py
 
 import polars as pl
 
-from tinytables import tt
+from tytable import tt
 
 df = pl.DataFrame(
     {

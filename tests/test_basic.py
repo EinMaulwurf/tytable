@@ -2,13 +2,13 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import tt
-from tinytables._escape import escape_typst
+from tytable import tt
+from tytable._escape import escape_typst
 
 EXPECTED_BASIC_TYP = (
     "#show figure: set block(breakable: false)\n"
     "#figure(\n"
-    '  kind: "tinytable",\n'
+    '  kind: "tytable",\n'
     '  supplement: "Table",\n'
     "\n"
     "block[\n"

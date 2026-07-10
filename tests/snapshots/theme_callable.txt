@@ -1,6 +1,6 @@
 #show figure: set block(breakable: false)
 #figure(
-  kind: "tinytable",
+  kind: "tytable",
   supplement: "Table",
 
 block[

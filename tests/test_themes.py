@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import THEMES, TinyTable, tt
+from tytable import THEMES, TinyTable, tt
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
@@ -166,7 +166,7 @@ class TestFootnotes:
         assert "table.footer" not in out
 
     def test_note_object_directly(self):
-        from tinytables._directives import Note
+        from tytable._directives import Note
 
         t = tt(DF, notes=[Note(text="Direct", marker="x")])
         out = t.render("typst")

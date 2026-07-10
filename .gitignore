@@ -10,7 +10,7 @@ dist/
 .ruff_cache/
 .coverage
 htmlcov/
-tinytable_assets/
+tytable_assets/
 .DS_Store
 TODO.md
 

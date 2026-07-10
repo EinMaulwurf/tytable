@@ -14,7 +14,7 @@ from ._indices import resolve_i, resolve_j
 from ._utils import _new_image_id, format_markup_num
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 try:
     import matplotlib
@@ -30,7 +30,7 @@ def _require_images() -> None:
         import numpy  # noqa: F401
     except ImportError as e:
         raise ImportError(
-            ".plot()/.images() require the 'images' extra:\n    pip install tinytables[images]"
+            ".plot()/.images() require the 'images' extra:\n    pip install tytable[images]"
         ) from e
 
 
@@ -200,13 +200,13 @@ def execute_plots(
                         entry = typed_body[body_row][col_idx]
 
                     if portable:
-                        td = tempfile.mkdtemp(prefix="tinytables_portable_")
+                        td = tempfile.mkdtemp(prefix="tytable_portable_")
                         temp_dirs.append(td)
                         assets_dir = pathlib.Path(td)
                     else:
                         assets_dir = table._assets_dir
                         if assets_dir is None:
-                            assets_dir = pathlib.Path.cwd() / "tinytable_assets"
+                            assets_dir = pathlib.Path.cwd() / "tytable_assets"
                         assets_dir = pathlib.Path(assets_dir)
 
                     assets_dir.mkdir(parents=True, exist_ok=True)
@@ -233,7 +233,7 @@ def execute_plots(
                         if assets_relpath:
                             relpath = f"{assets_relpath}/{filename}"
                         else:
-                            relpath = f"tinytable_assets/{filename}"
+                            relpath = f"tytable_assets/{filename}"
 
                     cell_str = _build_image_cell_string(
                         relpath,

@@ -2,8 +2,8 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tinytables import tt
-from tinytables._resolve import build
+from tytable import tt
+from tytable._resolve import build
 
 
 def _sparkline(values, *, color="black", xlim=None, **kw):
@@ -21,8 +21,8 @@ class TestPlotSparkline:
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
         tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
-        assert (tmp_path / "tinytable_assets" / "plot_0000_testid0001.png").exists()
+        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert (tmp_path / "tytable_assets" / "plot_0000_testid0001.png").exists()
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
@@ -30,7 +30,7 @@ class TestPlotSparkline:
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
@@ -58,7 +58,7 @@ class TestPlotSparkline:
     def test_sparkline_render_default_assets(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
-        assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
 
 
 @pytest.mark.images
@@ -92,8 +92,8 @@ class TestPlotnine:
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
-        assert (tmp_path / "tinytable_assets" / "plot_0000_testid0001.png").exists()
+        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert (tmp_path / "tytable_assets" / "plot_0000_testid0001.png").exists()
 
 
 @pytest.mark.images
@@ -101,10 +101,10 @@ class TestPortable:
     def test_portable_mode_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
-        assert '#image("tinytable_assets/plot_0000_testid0001.png"' in result
+        assert '#image("tytable_assets/plot_0000_testid0001.png"' in result
 
     def test_portable_theme_typst_inline_svg(self):
-        from tinytables._themes import theme_typst
+        from tytable._themes import theme_typst
 
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = (
@@ -137,10 +137,10 @@ class TestValidation:
     def test_missing_extra_hint(self, monkeypatch):
         def _fake_require():
             raise ImportError(
-                ".plot()/.images() require the 'images' extra:\n    pip install tinytables[images]"
+                ".plot()/.images() require the 'images' extra:\n    pip install tytable[images]"
             )
 
-        monkeypatch.setattr("tinytables._images._require_images", _fake_require)
+        monkeypatch.setattr("tytable._images._require_images", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match="images.*extra"):
             build(tt(df, theme=None).plot(j="Trend", fun=_sparkline), "typst")

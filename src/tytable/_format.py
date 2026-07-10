@@ -7,7 +7,7 @@ from ._escape import escape_typst
 from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 
 def _is_numeric_typed(val: object) -> bool:

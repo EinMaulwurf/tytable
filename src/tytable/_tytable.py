@@ -340,8 +340,8 @@ class TinyTable:
         p.parent.mkdir(parents=True, exist_ok=True)
 
         if assets is None:
-            self._assets_dir = str(p.parent / "tinytable_assets")
-            self._assets_relpath = "tinytable_assets"
+            self._assets_dir = str(p.parent / "tytable_assets")
+            self._assets_relpath = "tytable_assets"
         else:
             self._assets_dir = str(p.parent / assets)
             self._assets_relpath = assets.replace("\\", "/")

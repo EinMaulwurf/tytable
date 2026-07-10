@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 OVERWRITE_PROPS = (
     "bold",

@@ -1,5 +1,5 @@
 #figure(
-  kind: "tinytable",
+  kind: "tytable",
   supplement: "Table",
 
 block[

@@ -12,7 +12,7 @@ from ._styling import build_style_grid
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
-    from ._tinytable import TinyTable
+    from ._tytable import TinyTable
 
 
 @dataclass

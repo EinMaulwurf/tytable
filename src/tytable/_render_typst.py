@@ -108,7 +108,7 @@ class TypstRenderer:
             if built.caption is not None:
                 escaped = escape_typst(built.caption)
                 L.append(f"  caption: text([{escaped}]),")
-            L.append('  kind: "tinytable",')
+            L.append('  kind: "tytable",')
             L.append('  supplement: "Table",')
             L.append("")
             L.append("block[")
