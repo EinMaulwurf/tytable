@@ -1,4 +1,9 @@
-"""Column-width example — a fixed first column with the rest auto-sized."""
+"""Column-width example — full-width table with a fixed first column.
+
+The first column is pinned to an absolute width; the remaining columns use Typst
+fractional units (``1fr``) so they share whatever width is left, making the
+table span the full content width.
+"""
 
 import polars as pl
 
@@ -14,7 +19,7 @@ df = pl.DataFrame(
 )
 
 (
-    tt(df, caption="Fixed first column, rest auto", width=["3.5cm", None, None, None])
+    tt(df, caption="Full width, fixed first column", width=["3.5cm", "1fr", "1fr", "1fr"])
     .fmt(j="Accuracy", digits=3)
     .fmt(j="Latency (ms)", digits=1)
     .style(i="header", bold=True)

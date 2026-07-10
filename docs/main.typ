@@ -222,8 +222,9 @@ content width (e.g. `width=0.5` covers half).
 #v(0.4em)
 #include "build/06_widths.typ"
 
-Pin a column to a fixed Typst length while leaving the others to auto-size to
-their content — handy for a narrow label column next to wider value columns:
+Pin the first column to a fixed Typst length and let the rest share the
+remaining space with `1fr`, so the table spans the full content width while the
+label column stays fixed:
 
 #tag("SOURCE")
 #source("examples/09_widths_fixed.py")
