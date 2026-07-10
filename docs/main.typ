@@ -147,6 +147,22 @@ polars can't:
 #v(0.4em)
 #include "build/02_format.typ"
 
+== Custom functions (`fn`)
+
+For anything polars and the built-in `digits`/`replace` can't express, pass a
+callable to `fn`. It runs #emph[column-wise]: tytable hands it the current string
+values of the selected column (as a `list`) and expects a `list` of the same
+length back. This makes it easy to implement transforms that depend on magnitude
+— for example, abbreviating large numbers into a human-readable scale where
+`201818` becomes "201.8 thousand" and `2729179` becomes "2.7 million":
+
+#tag("SOURCE")
+#source("examples/10_format_fn.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/10_format_fn.typ"
+
 = Styling
 
 Apply per-cell styling through selectors `i` (rows) and `j` (columns).
@@ -166,14 +182,25 @@ in any combination, with `line_color` / `line_width`).
 
 == Column groups
 
-Spanning header rows. Pass a delimiter string to derive them from column names
-(`.group(j="_")` splits each name on `_`), or a dict for explicit control:
+Column groups add #emph[spanning header rows] above the regular column names, so
+you can label clusters of related columns. The simplest way is to pass a
+delimiter string: `.group(j="_")` splits every column name on that character and
+turns the shared prefix into a group. In the example below the dataframe has
+four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the
+underscore split yields two groups — `Q1` spanning the first two columns and
+`Q2` spanning the last two. For full control you can instead pass a dict mapping
+each label to its column positions, e.g.
 `.group(j={"Group A": [0, 1], "Group B": [2, 3]})`.
 
 == Row groups
 
-Separator label rows inserted before a 0-based data row:
-`.group(i={"Operational": 3})`.
+Row groups insert a #emph[labelled separator row] before a given data row,
+visually breaking the table into sections. Pass `i` as a `{label: row}` dict
+where `row` is the 0-based data row the divider should precede. The example
+calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of
+the second data row. That separator row is then addressable through the special
+selector `i="groupi"` — used here to render its label bold on a light grey
+background.
 
 #tag("SOURCE")
 #source("examples/04_group.py")
