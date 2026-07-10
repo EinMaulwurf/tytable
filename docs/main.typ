@@ -222,6 +222,16 @@ content width (e.g. `width=0.5` covers half).
 #v(0.4em)
 #include "build/06_widths.typ"
 
+Pin a column to a fixed Typst length while leaving the others to auto-size to
+their content — handy for a narrow label column next to wider value columns:
+
+#tag("SOURCE")
+#source("examples/09_widths_fixed.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/09_widths_fixed.typ"
+
 = Images & sparklines
 
 Supply your own plotting function `fun(values) -> matplotlib Figure`; tytable
