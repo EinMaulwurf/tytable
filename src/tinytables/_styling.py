@@ -8,8 +8,12 @@ last-writer-wins), append line props. Never scan the grid per directive.
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING, Any
 
 from ._indices import resolve_i, resolve_j
+
+if TYPE_CHECKING:
+    from ._tinytable import TinyTable
 
 OVERWRITE_PROPS = (
     "bold", "italic", "underline", "strikeout", "monospace", "smallcaps",
@@ -30,7 +34,7 @@ _ALIGN_V = {
 _LINE_RE = re.compile(r"^[tblr]+$")
 
 
-def align_to_typst(h, v) -> str | None:
+def align_to_typst(h: str | None, v: str | None) -> str | None:
     hs = _ALIGN_H.get(h) if h else None
     vs = _ALIGN_V.get(v) if v else None
     if hs and vs:
@@ -39,8 +43,8 @@ def align_to_typst(h, v) -> str | None:
 
 
 def _validate_style(
-    *, align, alignv, line, color, background, line_color,
-    colspan, rowspan, line_width, fontsize, indent,
+    *, align: str | None, alignv: str | None, line: str | None, color: str | None, background: str | None, line_color: str | None,
+    colspan: int | None, rowspan: int | None, line_width: int | float | None, fontsize: int | float | None, indent: int | float | None,
 ) -> None:
     """Fail-fast validation at .style() call time. guide 06 §7."""
     for name, val in (("align", align), ("alignv", alignv)):
@@ -63,7 +67,7 @@ def _validate_style(
             raise TypeError(f"{name} must be a number, got {type(val).__name__}")
 
 
-def build_style_grid(table, *, nhead, has_header, n_merged_body, group_positions, output):
+def build_style_grid(table: TinyTable, *, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int], output: str) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
     """Resolve all style directives into one grid + a line list. guide 06 §3, 15 §2."""
     grid: dict[tuple[int, int], dict] = {}
     lines: list[dict] = []
@@ -101,7 +105,7 @@ def build_style_grid(table, *, nhead, has_header, n_merged_body, group_positions
     return grid, lines
 
 
-def compute_covered_cells(style_grid):
+def compute_covered_cells(style_grid: dict[tuple[int, int], dict[str, Any]]) -> set[tuple[int, int]]:
     """Return the set of (row, col) cells hidden by a spanning cell."""
     covered = set()
     for (r, c), props in style_grid.items():

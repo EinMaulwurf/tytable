@@ -1,26 +1,30 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 from ._escape import escape_typst
 from ._indices import resolve_i, resolve_j
 
+if TYPE_CHECKING:
+    from ._tinytable import TinyTable
 
-def _is_numeric_typed(val) -> bool:
+
+def _is_numeric_typed(val: object) -> bool:
     if isinstance(val, bool):
         return False
     return isinstance(val, (int, float))
 
 
-def _fmt_numeric_decimal(val, digits: int) -> str:
+def _fmt_numeric_decimal(val: object, digits: int) -> str:
     return f"{float(val):.{digits}f}"
 
 
-def _fmt_numeric_significant(val, digits: int) -> str:
+def _fmt_numeric_significant(val: object, digits: int) -> str:
     return f"{float(val):.{digits}g}"
 
 
-def _matches(o, typed, s):
+def _matches(o: object, typed: object, s: str) -> bool:
     if o is None:
         return typed is None
     if isinstance(o, float) and math.isnan(o):
@@ -30,7 +34,7 @@ def _matches(o, typed, s):
     return typed == o or s == str(o)
 
 
-def _apply_replace(typed_val, current_str, replace):
+def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
     if replace is True:
         if typed_val is None or (isinstance(typed_val, float) and math.isnan(typed_val)):
             return " "
@@ -53,7 +57,7 @@ def _apply_replace(typed_val, current_str, replace):
     return current_str
 
 
-def _apply_escape(current_str: str, escape_spec, output: str) -> str:
+def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
     if escape_spec is True or escape_spec == "typst":
         if output in ("html", "ascii"):
             from ._escape import escape_html
@@ -63,9 +67,9 @@ def _apply_escape(current_str: str, escape_spec, output: str) -> str:
 
 
 def apply_formats(
-    data_body, typed_body, table,
-    *, nhead, has_header, n_merged_body, group_positions, output, colnames,
-):
+    data_body: list[list[str]],     typed_body: list[list[object]], table: TinyTable,
+    *, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int], output: str, colnames: list[str],
+) -> set[tuple[int, int]]:
     escaped_cells: set[tuple[int, int]] = set()
 
     for d in table._format_directives:

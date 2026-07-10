@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from ._directives import RowGroup
 
+if TYPE_CHECKING:
+    from ._tinytable import TinyTable
 
-def _resolve_cols(col_spec, colnames):
+
+def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
     indices = []
     for c in col_spec:
         if isinstance(c, str):
@@ -18,7 +23,7 @@ def _resolve_cols(col_spec, colnames):
     return indices
 
 
-def _build_col_group_row(j_dict, colnames):
+def _build_col_group_row(j_dict: dict[str, list[str | int]], colnames: list[str]) -> list[str | None]:
     ncol = len(colnames)
     row: list[str | None] = [None] * ncol
     for label, cols in j_dict.items():
@@ -33,7 +38,7 @@ def _build_col_group_row(j_dict, colnames):
     return row
 
 
-def _build_col_group_rows_delim(delim, colnames):
+def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[str | None]]:
     parts = [c.split(delim) for c in colnames]
     nlevels = len(parts[0])
     if any(len(p) != nlevels for p in parts):
@@ -60,7 +65,7 @@ def _build_col_group_rows_delim(delim, colnames):
     return rows
 
 
-def register_row_groups(table, i):
+def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> TinyTable:
     if isinstance(i, dict):
         pairs = sorted(i.items(), key=lambda x: x[1])
         for label, pos in pairs:
@@ -80,7 +85,7 @@ def register_row_groups(table, i):
     return table
 
 
-def register_col_groups(table, j, colnames):
+def register_col_groups(table: TinyTable, j: dict[str, list[str | int]] | str, colnames: list[str]) -> TinyTable:
     if isinstance(j, dict):
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
@@ -93,7 +98,7 @@ def register_col_groups(table, j, colnames):
     return table
 
 
-def merge_row_groups(data_body, row_groups, ncols):
+def merge_row_groups(data_body: list[list[str]], row_groups: list[RowGroup], ncols: int) -> tuple[list[list[str]], dict[int, str]]:
     if not row_groups:
         return data_body, {}
     nrows = len(data_body)

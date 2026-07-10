@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from ._resolve import BuiltTable
+
 
 def _plain_text(val: str) -> str:
     return val.replace("\n", " ").replace("\r", "")
@@ -8,7 +10,7 @@ def _plain_text(val: str) -> str:
 class AsciiRenderer:
     MAX_LINE_LENGTH = 60
 
-    def render(self, built, _opts=None) -> str:
+    def render(self, built: BuiltTable, _opts: object = None) -> str:
         max_widths = [len(str(c)) for c in built.colnames_display]
 
         for row in built.data_body:
@@ -16,10 +18,10 @@ class AsciiRenderer:
                 tv = _plain_text(str(val))
                 max_widths[c] = max(max_widths[c], min(len(tv), self.MAX_LINE_LENGTH))
 
-        def sep():
+        def sep() -> str:
             return "+" + "+".join("-" * (w + 2) for w in max_widths) + "+"
 
-        def format_cell(val, width):
+        def format_cell(val: str, width: int) -> str:
             tv = _plain_text(str(val))
             if len(tv) > width:
                 tv = tv[: width - 1] + "…"

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 TYPST_ESCAPE = {
@@ -26,7 +28,7 @@ HTML_ESCAPE = {
 HTML_SPECIAL_RE = re.compile(r"[&<>]")
 
 
-def escape_typst(text):
+def escape_typst(text: str) -> str:
     if not isinstance(text, str) or not text:
         return text
     if not TYPST_SPECIAL_RE.search(text):
@@ -34,7 +36,7 @@ def escape_typst(text):
     return TYPST_SPECIAL_RE.sub(lambda m: TYPST_ESCAPE[m.group(0)], text)
 
 
-def escape_html(text):
+def escape_html(text: str) -> str:
     if not isinstance(text, str) or not text:
         return text
     if not HTML_SPECIAL_RE.search(text):

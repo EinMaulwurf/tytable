@@ -7,9 +7,14 @@ import inspect
 import pathlib
 import shutil
 import tempfile
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from ._indices import resolve_i, resolve_j
 from ._utils import _new_image_id, format_markup_num
+
+if TYPE_CHECKING:
+    from ._tinytable import TinyTable
 
 try:
     import matplotlib
@@ -19,7 +24,7 @@ except ImportError:
     pass
 
 
-def _require_images():
+def _require_images() -> None:
     try:
         import matplotlib  # noqa: F401
         import numpy  # noqa: F401
@@ -30,13 +35,13 @@ def _require_images():
         ) from e
 
 
-def _height_to_float(h) -> float:
+def _height_to_float(h: str | float) -> float:
     if isinstance(h, str):
         return float(h.replace("em", "").strip())
     return float(h)
 
 
-def _accepts_kwargs(fun):
+def _accepts_kwargs(fun: Callable) -> bool:
     try:
         sig = inspect.signature(fun)
         return "color" in sig.parameters or any(
@@ -46,7 +51,7 @@ def _accepts_kwargs(fun):
         return False
 
 
-def _save_plot_image(fun, entry, path, *, width_px, height_px, color, xlim):
+def _save_plot_image(fun: Callable, entry: object, path: str | pathlib.Path, *, width_px: int, height_px: int, color: str, xlim: object) -> None:
     import matplotlib.pyplot as plt
 
     obj = fun(entry, color=color, xlim=xlim) if _accepts_kwargs(fun) else fun(entry)
@@ -69,7 +74,7 @@ def _save_plot_image(fun, entry, path, *, width_px, height_px, color, xlim):
         )
 
 
-def _make_svg_wrapper(png_bytes, width_px, height_px):
+def _make_svg_wrapper(png_bytes: bytes, width_px: int, height_px: int) -> str:
     b64 = base64.b64encode(png_bytes).decode("ascii")
     return (
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{width_px}' height='{height_px}' "
@@ -80,15 +85,15 @@ def _make_svg_wrapper(png_bytes, width_px, height_px):
     )
 
 
-def _escape_typst_bytes(s):
+def _escape_typst_bytes(s: str) -> str:
     s = s.replace("\\", "\\\\")
     s = s.replace('"', '\\"')
     return s
 
 
 def _build_image_cell_string(
-    relpath, height, output, portable, png_path, width_px, height_px
-):
+    relpath: str, height: float, output: str, portable: bool, png_path: str | None, width_px: int, height_px: int
+) -> str:
     h = format_markup_num(height)
     if output == "typst":
         if portable and png_path is not None:
@@ -108,16 +113,16 @@ def _build_image_cell_string(
 
 
 def execute_plots(
-    table,
-    data_body,
-    typed_body,
-    output,
+    table: TinyTable,
+    data_body: list[list[str]],
+    typed_body: list[list[object]],
+    output: str,
     *,
-    nhead,
-    has_header,
-    n_merged_body,
-    group_positions,
-):
+    nhead: int,
+    has_header: bool,
+    n_merged_body: int,
+    group_positions: set[int],
+) -> None:
     if not table._plot_directives:
         return
 

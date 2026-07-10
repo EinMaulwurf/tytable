@@ -16,18 +16,18 @@ from ._themes import THEMES
 
 
 def tt(
-    data,
+    data: object,
     *,
-    caption=None,
-    notes=None,
-    width=None,
-    height=None,
-    gutter=2,
-    colnames=True,
-    colnames_override=None,
-    rownames=False,
-    digits=None,
-    escape=True,
+    caption: str | None = None,
+    notes: list | None = None,
+    width: float | list[float | str | None] | str | None = None,
+    height: float | None = None,
+    gutter: float | str | None = 2,
+    colnames: bool = True,
+    colnames_override: dict[str, str] | None = None,
+    rownames: bool = False,
+    digits: int | None = None,
+    escape: bool = True,
     theme: str | Callable | None = "default",
     finalize: Callable[[str, str], str] | None = None,
 ) -> TinyTable:
@@ -50,7 +50,7 @@ def tt(
     return t
 
 
-def _normalize_notes(raw) -> list:
+def _normalize_notes(raw: object) -> list[Note]:
     if not raw:
         return []
     result = []
@@ -72,7 +72,7 @@ def _normalize_notes(raw) -> list:
     return result
 
 
-def _assign_markers(notes):
+def _assign_markers(notes: list[Note]) -> None:
     auto = 0
     for note in notes:
         if note.marker is not None:
@@ -100,7 +100,7 @@ class TinyTable:
         digits: int | None = None,
         escape: bool = True,
         theme: str | Callable | None = "default",
-    ):
+    ) -> None:
         self._data = data.clone()
         if colnames_override:
             self._colnames = [colnames_override.get(c, c) for c in data.columns]
@@ -120,9 +120,11 @@ class TinyTable:
         self._plot_directives: list = []
         self._row_groups: list = []
         self._col_group_rows: list = []
-        self._notes: list = _normalize_notes(notes)
-        self._prepare_hooks: list = []
+        self._notes: list[Note] = _normalize_notes(notes)
+        self._prepare_hooks: list[Callable[[TinyTable], None]] = []
         self._finalize_hooks: list[Callable[[str, str], str]] = []
+        self._nhead: int = 0
+        self._n_merged_body_rows: int = 0
         self._assets_dir: str | None = None
         self._assets_relpath: str | None = None
 
@@ -133,7 +135,7 @@ class TinyTable:
 
         self._apply_theme(theme)
 
-    def _apply_theme(self, theme: str | Callable | None):
+    def _apply_theme(self, theme: str | Callable | None) -> None:
         if theme is None:
             return
         if callable(theme):
@@ -148,29 +150,29 @@ class TinyTable:
 
     def style(
         self,
-        i=None,
-        j=None,
+        i: int | str | list[int] | None = None,
+        j: int | str | list[int] | None = None,
         *,
-        bold=None,
-        italic=None,
-        underline=None,
-        strikeout=None,
-        monospace=None,
-        smallcaps=None,
-        color=None,
-        background=None,
-        fontsize=None,
-        align=None,
-        alignv=None,
-        indent=None,
-        colspan=None,
-        rowspan=None,
-        line=None,
-        line_color=None,
-        line_width=0.1,
-        line_trim=None,
-        output=None,
-    ):
+        bold: bool | None = None,
+        italic: bool | None = None,
+        underline: bool | None = None,
+        strikeout: bool | None = None,
+        monospace: bool | None = None,
+        smallcaps: bool | None = None,
+        color: str | None = None,
+        background: str | None = None,
+        fontsize: float | None = None,
+        align: str | None = None,
+        alignv: str | None = None,
+        indent: float | None = None,
+        colspan: int | None = None,
+        rowspan: int | None = None,
+        line: str | None = None,
+        line_color: str | None = None,
+        line_width: float | None = 0.1,
+        line_trim: str | None = None,
+        output: tuple[str, ...] | None = None,
+    ) -> TinyTable:
         _validate_style(
             align=align, alignv=alignv, line=line, color=color,
             background=background, line_color=line_color,
@@ -191,16 +193,16 @@ class TinyTable:
 
     def fmt(
         self,
-        i=None,
-        j=None,
+        i: int | str | list[int] | None = None,
+        j: int | str | list[int] | None = None,
         *,
-        digits=None,
-        num_fmt="decimal",
-        replace=None,
-        escape=False,
-        fn=None,
-        output=None,
-    ):
+        digits: int | None = None,
+        num_fmt: str = "decimal",
+        replace: dict | None = None,
+        escape: bool = False,
+        fn: Callable | None = None,
+        output: tuple[str, ...] | None = None,
+    ) -> TinyTable:
         self._format_directives.append(
             FormatDirective(
                 i=i, j=j, digits=digits, num_fmt=num_fmt,
@@ -211,18 +213,18 @@ class TinyTable:
 
     def plot(
         self,
-        i=None,
-        j=None,
+        i: int | str | list[int] | None = None,
+        j: int | str | list[int] | None = None,
         *,
-        fun=None,
-        data=None,
-        height=1.0,
-        height_px=400,
-        width_px=1200,
-        color="black",
-        xlim=None,
-        output=None,
-    ):
+        fun: Callable | None = None,
+        data: list | None = None,
+        height: float | str = 1.0,
+        height_px: int = 400,
+        width_px: int = 1200,
+        color: str = "black",
+        xlim: list[float] | None = None,
+        output: tuple[str, ...] | None = None,
+    ) -> TinyTable:
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
         if fun is None:
@@ -240,13 +242,13 @@ class TinyTable:
 
     def images(
         self,
-        i=None,
-        j=None,
+        i: int | str | list[int] | None = None,
+        j: int | str | list[int] | None = None,
         *,
-        paths=None,
-        height=1.0,
-        output=None,
-    ):
+        paths: list[str] | None = None,
+        height: float | str = 1.0,
+        output: tuple[str, ...] | None = None,
+    ) -> TinyTable:
         if j is None:
             raise ValueError(".images() requires j (column selector)")
         if paths is None:
@@ -261,19 +263,19 @@ class TinyTable:
         )
         return self
 
-    def group(self, i=None, j=None):
+    def group(self, i: dict[str, int] | list[object] | None = None, j: dict[str, list[str | int]] | str | None = None) -> TinyTable:
         if i is not None:
             register_row_groups(self, i)
         if j is not None:
             register_col_groups(self, j, self._colnames)
         return self
 
-    def theme(self, name: str | Callable | None = None):
+    def theme(self, name: str | Callable | None = None) -> TinyTable:
         self._apply_theme(name)
         self._theme_name = name
         return self
 
-    def finalize(self, fn: Callable[[str, str], str]):
+    def finalize(self, fn: Callable[[str, str], str]) -> TinyTable:
         self._finalize_hooks.append(fn)
         return self
 

@@ -15,7 +15,10 @@ Internal (1-based for Typst compatibility with nhead):
 Typst rows are 0-based for Typst's table model.
 """
 
+from __future__ import annotations
+
 import re
+from collections.abc import Sequence
 
 
 def convert_row_to_typst(i: int, nhead: int) -> int:
@@ -42,7 +45,14 @@ def convert_col_to_typst(j: int) -> int:
     return j - 1
 
 
-def resolve_i(i, *, nhead, group_positions, n_merged_body, has_header):
+def resolve_i(
+    i: int | str | list[int] | None,
+    *,
+    nhead: int,
+    group_positions: set[int],
+    n_merged_body: int,
+    has_header: bool,
+) -> list[int] | None:
     """Resolve user row selector to internal row indices. guide 06 §1.
 
     Returns list[int], or None when i is None (caller decides the default).
@@ -82,7 +92,7 @@ def resolve_i(i, *, nhead, group_positions, n_merged_body, has_header):
     return out
 
 
-def resolve_j(j, colnames):
+def resolve_j(j: int | str | Sequence[int | str] | None, colnames: list[str]) -> list[int]:
     """Resolve user column selector to 1-based internal column indices. guide 06 §1."""
     if j is None:
         return list(range(1, len(colnames) + 1))

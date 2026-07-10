@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
+from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
 from ._images import execute_plots
 from ._styling import build_style_grid
 from ._utils import format_markup_num
+
+if TYPE_CHECKING:
+    from ._tinytable import TinyTable
 
 
 @dataclass
@@ -17,11 +22,11 @@ class BuiltTable:
     colnames_display: list[str] = field(default_factory=list)
     show_colnames: bool = True
     nhead: int = 0
-    col_groups: list = field(default_factory=list)
-    row_group_positions: dict = field(default_factory=dict)
-    style_grid: dict = field(default_factory=dict)
-    style_lines: list = field(default_factory=list)
-    notes: list = field(default_factory=list)
+    col_groups: list[list[str | None]] = field(default_factory=list)
+    row_group_positions: dict[int, str] = field(default_factory=dict)
+    style_grid: dict[tuple[int, int], dict[str, Any]] = field(default_factory=dict)
+    style_lines: list[dict[str, Any]] = field(default_factory=list)
+    notes: list[Note] = field(default_factory=list)
     caption: str | None = None
     width: float | list[float | str | None] | str | None = None
     height: float | None = None
@@ -29,19 +34,19 @@ class BuiltTable:
     assets_relpath: str | None = None
 
 
-def _resolve_i_internal(i_selector, nhead, has_header, n_merged_body, group_positions):
+def _resolve_i_internal(i_selector: int | str | list[int] | None, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int]) -> list[int] | None:
     from ._indices import resolve_i
     return resolve_i(i_selector, nhead=nhead, group_positions=group_positions,
                      n_merged_body=n_merged_body, has_header=has_header)
 
 
-def _resolve_j_internal(j_selector, colnames):
+def _resolve_j_internal(j_selector: int | str | list[int] | None, colnames: list[str]) -> list[int]:
     from ._indices import resolve_j
     return resolve_j(j_selector, colnames)
 
 
-def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged_body,
-                              group_positions, has_header, colnames, output):
+def _insert_footnote_markers(data_body: list[list[str]], colnames_display: list[str], notes: list[Note], nhead: int, n_merged_body: int,
+                              group_positions: set[int], has_header: bool, colnames: list[str], output: str) -> None:
     if not notes:
         return
 
@@ -77,7 +82,7 @@ def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged
                         data_body[ri][ci] += marker_text
 
 
-def build(table, output: str) -> BuiltTable:
+def build(table: TinyTable, output: str) -> BuiltTable:
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
 

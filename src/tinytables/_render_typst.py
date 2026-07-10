@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
 from ._indices import convert_col_to_typst, convert_row_to_typst
+from ._resolve import BuiltTable
 from ._styling import align_to_typst, compute_covered_cells
 
 
-def _props_to_signature(props):
+def _props_to_signature(props: dict[str, Any]) -> str:
     parts = []
     if props.get("bold"):
         parts.append("bold: true")
@@ -58,13 +60,13 @@ class TypstRenderOptions:
         )
 
 
-def _split_chunks(values):
-    values = sorted(set(values))
-    if not values:
+def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
+    sorted_values = sorted(values)
+    if not sorted_values:
         return []
     chunks = []
-    start = prev = values[0]
-    for v in values[1:]:
+    start = prev = sorted_values[0]
+    for v in sorted_values[1:]:
         if v != prev + 1:
             chunks.append((start, prev + 1))
             start = v
@@ -75,7 +77,7 @@ def _split_chunks(values):
 
 class TypstRenderer:
     @staticmethod
-    def _columns_spec(width, ncol):
+    def _columns_spec(width: float | str | list[float | str | None] | None, ncol: int) -> list[str]:
         if width is None:
             return ["auto"] * ncol
         if isinstance(width, str):
@@ -92,7 +94,7 @@ class TypstRenderer:
                 result.append(f"{w * 100:.2f}%")
         return result
 
-    def render(self, built, opts: TypstRenderOptions) -> str:
+    def render(self, built: BuiltTable, opts: TypstRenderOptions) -> str:
         L: list[str] = []
         need_figure = opts.figure
 
@@ -212,7 +214,7 @@ class TypstRenderer:
 
         return "\n".join(L)
 
-    def _emit_footer(self, L, built, ncol):
+    def _emit_footer(self, L: list[str], built: BuiltTable, ncol: int) -> None:
         notes = built.notes
         if not notes:
             return
@@ -232,7 +234,7 @@ class TypstRenderer:
                 )
         L.append("    ),")
 
-    def _emit_lines(self, L, built):
+    def _emit_lines(self, L: list[str], built: BuiltTable) -> None:
         hlines: dict[tuple[int, str], set[int]] = {}
         vlines: dict[tuple[int, str], set[int]] = {}
 
@@ -274,7 +276,7 @@ class TypstRenderer:
                 f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),"
             )
 
-    def _emit_style_block(self, L, built):
+    def _emit_style_block(self, L: list[str], built: BuiltTable) -> None:
         styled = []
         for (i, j), props in built.style_grid.items():
             if not props:
@@ -308,7 +310,7 @@ class TypstRenderer:
 
         L.append(STATIC_GET_STYLE_AND_SHOW_RULE)
 
-    def _build_col_group_row(self, row):
+    def _build_col_group_row(self, row: list[str | None]) -> list[str]:
         parts = []
         i = 0
         while i < len(row):

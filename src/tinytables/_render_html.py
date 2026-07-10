@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from ._escape import escape_html
+from ._resolve import BuiltTable
 from ._styling import compute_covered_cells
 
 
-def _align_to_css(h, v) -> str | None:
+def _align_to_css(h: str | None, v: str | None) -> str | None:
     if v == "m":
         v = "middle"
     if v == "horizon":
@@ -17,7 +20,7 @@ def _align_to_css(h, v) -> str | None:
     return " ".join(parts) if parts else None
 
 
-def _build_cell_style(cell_props, border_css):
+def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
     css_parts: list[str] = []
 
     if border_css:
@@ -54,7 +57,7 @@ def _build_cell_style(cell_props, border_css):
     return "; ".join(css_parts) if css_parts else ""
 
 
-def _build_border_map(style_lines, nhead):
+def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tuple[int, int], str]:
     from ._indices import convert_col_to_typst, convert_row_to_typst
 
     border_map: dict[tuple[int, int], str] = {}
@@ -80,7 +83,7 @@ def _build_border_map(style_lines, nhead):
 
 
 class HtmlRenderer:
-    def render(self, built, _opts=None) -> str:
+    def render(self, built: BuiltTable, _opts: object = None) -> str:
         ncol = len(built.colnames_display)
         border_map = _build_border_map(built.style_lines, built.nhead)
 

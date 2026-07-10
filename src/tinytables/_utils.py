@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 
 
@@ -5,7 +7,7 @@ def _new_image_id() -> str:
     return uuid.uuid4().hex[:8]
 
 
-def format_markup_num(v) -> str:
+def format_markup_num(v: object) -> str:
     if v is None:
         return ""
     if isinstance(v, bool):
