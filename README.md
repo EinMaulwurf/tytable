@@ -1,6 +1,23 @@
 # tinytables
 
-A Python library for turning Polars DataFrames into Typst tables.
+A small, easy-to-use Python library that turns **Polars DataFrames** into
+**Typst tables**, inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable)
+package. Most of tinytable's styling power, plus image/sparkline support and a
+Jupyter HTML preview.
+
+## Install
+
+```
+pip install tinytables
+pip install tinytables[images]   # for .plot() / .images() (matplotlib + numpy)
+```
+
+For development (clone and):
+
+```
+uv sync --all-extras
+make test
+```
 
 ## Quickstart
 
@@ -8,16 +25,44 @@ A Python library for turning Polars DataFrames into Typst tables.
 import polars as pl
 from tinytables import tt
 
-df = pl.DataFrame({"x": [1.0, 2.0, 3.0], "y": ["a", "b", "c"]})
+df = pl.DataFrame({
+    "Product": ["A", "B", "C"],
+    "Score": [85.43, 72.10, 91.87],
+})
 
-tt(df).style(bold=True).save("table.typ")
+tab = (
+    tt(df, caption="Product scores")
+    .fmt(j="Score", digits=2)
+    .style(j="Score", align="c")
+    .style(i=0, bold=True, background="#2c3e50", color="white")
+    .save("report_assets/products.typ")
+)
+
+# In Jupyter, let `tab` be the last line of a cell to see an HTML preview.
+tab
 ```
+
+The `.typ` file can be `#import`ed into a Typst report and compiled as part of
+the whole document.
+
+## Conventions
+
+- **0-based row indexing**: `i=0` is the first data row (the row *after* the
+  column-name header). Use `i="header"` for the column-name row, negative ints
+  for column-group header rows (`-1` is the topmost level).
+- **Column selection by name**: `j="Score"` (preferred); `j=0` selects the first
+  column by position.
+- **Method chaining**: `.style()`, `.fmt()`, `.group()`, `.theme()` all return
+  `self`. `.render()` / `.save()` are terminal.
+- **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
+  as *intent* and replayed in a fixed order at render time. Row indices always
+  refer to the final, visible table.
 
 ## Formatting
 
-**Format in polars first; `.fmt()` for the rest.** Most formatting (rounding, string
-ops, fill_null, percentages) is best done in polars before passing the dataframe
-to `tt()`:
+**Format in polars first; `.fmt()` for the rest.** Most formatting (rounding,
+string ops, `fill_null`, percentages) is best done in polars before passing the
+dataframe to `tt()`:
 
 ```python
 df = df.with_columns(
@@ -26,11 +71,12 @@ df = df.with_columns(
 )
 ```
 
-`.fmt()` covers the high-value cases polars can't handle:
+`.fmt()` covers the high-value cases polars can't:
 
-- `digits` — fixed decimal places or significant figures for float columns
+- `digits` — fixed decimal places (`num_fmt="decimal"`) or significant figures
+  (`num_fmt="significant"`) for float columns
 - `replace` — replace missing/null/NaN values with a string or dict mapping
-- `escape` — per-cell Typst escaping (honoured by default via `tt(escape=True)`)
+- `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
 - `fn` — custom column-wise transformation
 
 ```python
@@ -41,28 +87,117 @@ tt(df)
     .save("out.typ")
 ```
 
+## Styling
+
+```python
+tt(df)
+    .style(i="header", bold=True, line="b")
+    .style(j="Score", align="c")
+    .style(i=0, j="Score", color="#c0392b", background="#fdf2e9")
+    .style(i=2, italic=True, strikeout=True)
+```
+
+Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
+`smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`c`/`r`),
+`alignv` (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders
+(`line="tblr"`, any combination, with `line_color` / `line_width`).
+
+## Grouping
+
+```python
+# Column groups (spanning headers)
+tt(df).group(j={"Group A": [0, 1], "Group B": [2, 3]})
+
+# Row groups (separator label rows inserted before a 0-based data row)
+tt(df).group(i={"Financial": 0, "Operational": 3})
+```
+
+## Themes
+
+Built-in: `default` (booktab rules), `striped`, `grid`, `empty`, `rotate`. Pass
+a callable for a custom theme.
+
+```python
+tt(df, theme="striped")
+tt(df, theme=None).theme("grid")
+```
+
+## Images & sparklines
+
+Supply your own plotting function (`fun(values) -> matplotlib Figure`); the
+package handles PNG saving and path handling. A `sparkline` example ships in
+`examples/sparkline.py`.
+
+```python
+from examples.sparkline import sparkline
+
+tt(df).plot(j="Trend", fun=sparkline, height=1.5).save("out.typ")
+```
+
+## Asset-path caveat (`#import` workflow)
+
+Because you `#import` the generated `.typ` into a parent report and compile
+elsewhere, image paths must resolve relative to your **Typst project root**
+(where `typst compile` runs). Make the assets location explicit:
+
+```python
+.save("build/tables/products.typ", assets="../assets/products")
+```
+
+Images then land in `build/assets/products/` and the `.typ` references
+`../assets/products/...`, which resolves correctly from `build/tables/` when
+compiled as part of the parent. Without an explicit `assets=`, images land in a
+`tinytable_assets/` folder next to the output file.
+
+## Coming from R tinytable
+
+| R (`tinytable`) | Python (`tinytables`) |
+|---|---|
+| `tt(data)` | `tt(df)` (Polars DataFrame) |
+| `style_tt(x, ...)` | `.style(...)` |
+| `format_tt(x, ...)` | `.fmt(...)` |
+| `group_tt(x, ...)` | `.group(...)` |
+| `theme_tt(x, ...)` | `.theme(...)` / `tt(theme=...)` |
+| `print(x, "typst")` | `.render("typst")` |
+| `save_tt(x, "out.typ")` | `.save("out.typ")` |
+| `tt(x) |> format(...) %>% ...` (pipe) | `.fmt(...).style(...)` (method chain) |
+| 1-based row indexing, 0=colnames | **0-based** data rows; `i="header"` |
+| column by integer position | column by **name** (preferred) |
+
 ## API
 
-### `tt(data, *, caption=None, width=None, colnames=True, escape=True, ...)`
+### `tt(data, *, caption=None, width=None, colnames=True, escape=True, theme="default", ...)`
 
 Create a `TinyTable` from a Polars DataFrame.
 
-### `.style(i=None, j=None, *, bold=None, italic=None, ...)`
+### `.style(i=None, j=None, *, bold=None, italic=None, ..., line=None)`
 
-Apply cell formatting via selectors. Returns `self` for chaining.
-
-### `.group(i=None, j=None)`
-
-Add row groups (dict or list) and column groups (dict or delimiter string).
+Apply cell styling via selectors. Returns `self` for chaining.
 
 ### `.fmt(i=None, j=None, *, digits=None, num_fmt="decimal", replace=None, escape=False, fn=None)`
 
 Apply value formatting. Returns `self` for chaining.
 
-### `.render(output="typst")`
+### `.group(i=None, j=None)`
 
-Render the table as a Typst string.
+Add row groups (`i` dict or list) and column groups (`j` dict or delimiter).
 
-### `.save(path)`
+### `.theme(name_or_callable=None)`
+
+Apply a theme (`default`, `striped`, `grid`, `empty`, `rotate`, or a callable).
+
+### `.plot(j, *, fun, data=None, height=1.0, ...)` / `.images(j, *, paths, ...)`
+
+Embed generated plots or existing images. Requires the `images` extra.
+
+### `.render(output="typst")` → `str`
+
+Render the table as a Typst (or `html`/`ascii`) string.
+
+### `.save(path, assets=None)`
 
 Save the table to a file (`.typ` or `.html`).
+
+## License
+
+MIT

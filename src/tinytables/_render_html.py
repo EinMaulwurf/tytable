@@ -124,7 +124,7 @@ class HtmlRenderer:
                 head_parts.append(f"<tr>{' '.join(tr_parts)}</tr>")
 
         if built.show_colnames:
-            tr_parts: list[str] = []
+            tr_parts = []
             for j, c in enumerate(built.colnames_display):
                 style_str = ""
                 i_internal = 0
@@ -151,7 +151,7 @@ class HtmlRenderer:
 
         for r, row in enumerate(built.data_body):
             i_internal = r + 1
-            tr_parts: list[str] = []
+            tr_parts = []
             for c, val in enumerate(row):
                 j_internal = c + 1
                 if (i_internal, j_internal) in covered:

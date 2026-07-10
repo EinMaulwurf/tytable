@@ -172,34 +172,21 @@ class TypstRenderer:
 
         if need_figure:
             L.append("]")
-            if opts.align_figure:
-                aligned = opts.align_to_typst()
-                L = [
-                    f"#align({aligned}, [",
-                    *L,
-                    "])",
-                ]
-            if opts.rotate_angle is not None:
-                L = [
-                    f"#rotate({opts.rotate_angle}, reflow: true, [",
-                    *L,
-                    "])",
-                ]
             L.append(")")
-        else:
-            if opts.align_figure:
-                aligned = opts.align_to_typst()
-                L = [
-                    f"#align({aligned}, [",
-                    *L,
-                    "])",
-                ]
-            if opts.rotate_angle is not None:
-                L = [
-                    f"#rotate({opts.rotate_angle}, reflow: true, [",
-                    *L,
-                    "])",
-                ]
+
+        if opts.align_figure:
+            aligned = opts.align_to_typst()
+            L = [
+                f"#align({aligned}, [",
+                *L,
+                "])",
+            ]
+        if opts.rotate_angle is not None:
+            L = [
+                f"#rotate({opts.rotate_angle}deg, reflow: true, [",
+                *L,
+                "])",
+            ]
 
         return "\n".join(L)
 

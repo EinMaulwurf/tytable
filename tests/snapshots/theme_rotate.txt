@@ -1,4 +1,4 @@
-#rotate(90, reflow: true, [
+#rotate(90deg, reflow: true, [
 #show figure: set block(breakable: false)
 #figure(
   kind: "tinytable",
@@ -53,5 +53,5 @@ block[
     [3],[4],
   )
 ]
-])
 )
+])
