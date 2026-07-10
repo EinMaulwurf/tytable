@@ -31,6 +31,16 @@ def _matches(o: object, typed: object, s: str) -> bool:
         return isinstance(typed, float) and math.isnan(typed)
     if isinstance(o, float) and math.isinf(o):
         return isinstance(typed, float) and math.isinf(typed) and (typed > 0) == (o > 0)
+    if isinstance(o, str):
+        lo = o.lower()
+        if lo == "null":
+            return typed is None
+        if lo == "nan":
+            return isinstance(typed, float) and math.isnan(typed)
+        if lo == "inf":
+            return isinstance(typed, float) and math.isinf(typed) and typed > 0
+        if lo == "-inf":
+            return isinstance(typed, float) and math.isinf(typed) and typed < 0
     return typed == o or s == str(o)
 
 
