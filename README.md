@@ -47,7 +47,7 @@ the whole document.
 
 ## Conventions
 
-- **0-based row indexing**: `i=0` is the first data row (the row *after* the
+- **0-based row indexing**: `i=0` is the first data row (the row _after_ the
   column-name header). Use `i="header"` for the column-name row, negative ints
   for column-group header rows (`-1` is the topmost level).
 - **Column selection by name**: `j="Score"` (preferred); `j=0` selects the first
@@ -55,7 +55,7 @@ the whole document.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, `.theme()` all return
   `self`. `.render()` / `.save()` are terminal.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
-  as *intent* and replayed in a fixed order at render time. Row indices always
+  as _intent_ and replayed in a fixed order at render time. Row indices always
   refer to the final, visible table.
 
 ## Formatting
@@ -151,18 +151,18 @@ compiled as part of the parent. Without an explicit `assets=`, images land in a
 
 ## Coming from R tinytable
 
-| R (`tinytable`) | Python (`tinytables`) |
-|---|---|
-| `tt(data)` | `tt(df)` (Polars DataFrame) |
-| `style_tt(x, ...)` | `.style(...)` |
-| `format_tt(x, ...)` | `.fmt(...)` |
-| `group_tt(x, ...)` | `.group(...)` |
-| `theme_tt(x, ...)` | `.theme(...)` / `tt(theme=...)` |
-| `print(x, "typst")` | `.render("typst")` |
-| `save_tt(x, "out.typ")` | `.save("out.typ")` |
-| `tt(x) |> format(...) %>% ...` (pipe) | `.fmt(...).style(...)` (method chain) |
+| R (`tinytable`)                  | Python (`tinytables`)               |
+| -------------------------------- | ----------------------------------- | ------------------------------------- |
+| `tt(data)`                       | `tt(df)` (Polars DataFrame)         |
+| `style_tt(x, ...)`               | `.style(...)`                       |
+| `format_tt(x, ...)`              | `.fmt(...)`                         |
+| `group_tt(x, ...)`               | `.group(...)`                       |
+| `theme_tt(x, ...)`               | `.theme(...)` / `tt(theme=...)`     |
+| `print(x, "typst")`              | `.render("typst")`                  |
+| `save_tt(x, "out.typ")`          | `.save("out.typ")`                  |
+| `tt(x)                           | > format(...) %>% ...` (pipe)       | `.fmt(...).style(...)` (method chain) |
 | 1-based row indexing, 0=colnames | **0-based** data rows; `i="header"` |
-| column by integer position | column by **name** (preferred) |
+| column by integer position       | column by **name** (preferred)      |
 
 ## API
 
@@ -222,7 +222,3 @@ tt(df, width=[0.3, None, "2cm"])  # mix fractions, auto, and units
 ### `.save(path, assets=None)`
 
 Save the table to a file (`.typ` or `.html`).
-
-## License
-
-MIT
