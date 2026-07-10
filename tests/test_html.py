@@ -224,6 +224,17 @@ class TestHtmlWidth:
         assert 'width:30.00%' in out
         assert 'width:70.00%' in out
 
+    def test_string_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width="5cm").render("html")
+        assert "width:5cm" in out
+
+    def test_list_with_none_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=["5cm", None]).render("html")
+        assert 'width:5cm' in out
+        assert "<col>" in out
+
 
 @pytest.mark.typst
 class TestTypstWidth:
@@ -242,3 +253,57 @@ class TestTypstWidth:
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, theme=None).render("typst")
         assert "columns: (auto, auto)" in out
+
+    def test_string_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width="5cm").render("typst")
+        assert "columns: (5cm, 5cm)" in out
+
+    def test_mixed_list_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=["5cm", None]).render("typst")
+        assert "columns: (5cm, auto)" in out
+
+    def test_list_with_none_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
+        out = tt(df, theme=None, width=[0.3, None, "2cm"]).render("typst")
+        assert "columns: (30.00%, auto, 2cm)" in out
+
+    def test_finalize_callback(self):
+        df = pl.DataFrame({"A": [1]})
+        out = tt(df, theme=None).finalize(lambda s, o: s.upper()).render("typst")
+        assert out == tt(df, theme=None).render("typst").upper()
+
+    def test_finalize_receives_output(self):
+        df = pl.DataFrame({"A": [1]})
+        calls = []
+        tt(df, theme=None).finalize(lambda s, o: calls.append(o) or s).render("typst")
+        assert calls == ["typst"]
+
+
+@pytest.mark.typst
+class TestTypstGutter:
+    def test_default_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df).group(j={"G": [0, 1]}).render("typst")
+        assert "column-gutter: 2pt," in out
+
+    def test_custom_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, gutter=5).group(j={"G": [0, 1]}).render("typst")
+        assert "column-gutter: 5pt," in out
+
+    def test_string_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, gutter="0.1em").group(j={"G": [0, 1]}).render("typst")
+        assert "column-gutter: 0.1em," in out
+
+    def test_zero_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, gutter=0).group(j={"G": [0, 1]}).render("typst")
+        assert "column-gutter: 0pt," in out
+
+    def test_none_gutter_omitted(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, gutter=None).group(j={"G": [0, 1]}).render("typst")
+        assert "column-gutter" not in out

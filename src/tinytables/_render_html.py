@@ -88,12 +88,19 @@ class HtmlRenderer:
         table_style = "border-collapse:collapse;font-family:sans-serif;font-size:1em"
         if built.width is not None and isinstance(built.width, (int, float)):
             table_style += f";width:{built.width * 100:.2f}%"
+        elif isinstance(built.width, str):
+            table_style += f";width:{built.width}"
         parts.append(f'<table style="{table_style}">')
 
         if built.width is not None and isinstance(built.width, (list, tuple)):
             colgroup = ["<colgroup>"]
             for w in built.width:
-                colgroup.append(f'<col style="width:{w * 100:.2f}%">')
+                if w is None:
+                    colgroup.append("<col>")
+                elif isinstance(w, str):
+                    colgroup.append(f'<col style="width:{w}">')
+                else:
+                    colgroup.append(f'<col style="width:{w * 100:.2f}%">')
             colgroup.append("</colgroup>")
             parts.append("\n".join(colgroup))
 

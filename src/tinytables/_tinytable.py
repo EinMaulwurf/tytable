@@ -22,19 +22,22 @@ def tt(
     notes=None,
     width=None,
     height=None,
+    gutter=2,
     colnames=True,
     colnames_override=None,
     rownames=False,
     digits=None,
     escape=True,
     theme: str | Callable | None = "default",
+    finalize: Callable[[str, str], str] | None = None,
 ) -> TinyTable:
-    return TinyTable(
+    t = TinyTable(
         data,
         caption=caption,
         notes=notes,
         width=width,
         height=height,
+        gutter=gutter,
         colnames=colnames,
         colnames_override=colnames_override,
         rownames=rownames,
@@ -42,6 +45,9 @@ def tt(
         escape=escape,
         theme=theme,
     )
+    if finalize is not None:
+        t.finalize(finalize)
+    return t
 
 
 def _normalize_notes(raw) -> list:
@@ -85,8 +91,9 @@ class TinyTable:
         *,
         caption: str | None = None,
         notes: list | None = None,
-        width: float | list[float] | None = None,
+        width: float | list[float | str | None] | str | None = None,
         height: float | None = None,
+        gutter: float | str | None = 2,
         colnames: bool = True,
         colnames_override: dict[str, str] | None = None,
         rownames: bool = False,
@@ -115,12 +122,14 @@ class TinyTable:
         self._col_group_rows: list = []
         self._notes: list = _normalize_notes(notes)
         self._prepare_hooks: list = []
+        self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._assets_dir: str | None = None
         self._assets_relpath: str | None = None
 
         self._typst_opts = TypstRenderOptions(multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
+        self._typst_opts.column_gutter = gutter
 
         self._apply_theme(theme)
 
@@ -264,13 +273,21 @@ class TinyTable:
         self._theme_name = name
         return self
 
+    def finalize(self, fn: Callable[[str, str], str]):
+        self._finalize_hooks.append(fn)
+        return self
+
     def render(self, output: str = "typst") -> str:
         built = build(self, output)
         if output == "html":
-            return HtmlRenderer().render(built)
-        if output == "ascii":
-            return AsciiRenderer().render(built)
-        return TypstRenderer().render(built, self._typst_opts)
+            result = HtmlRenderer().render(built)
+        elif output == "ascii":
+            result = AsciiRenderer().render(built)
+        else:
+            result = TypstRenderer().render(built, self._typst_opts)
+        for fn in self._finalize_hooks:
+            result = fn(result, output)
+        return result
 
     def save(self, path: str, assets: str | None = None) -> None:
         p = pathlib.Path(path)

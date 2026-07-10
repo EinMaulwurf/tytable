@@ -166,9 +166,11 @@ compiled as part of the parent. Without an explicit `assets=`, images land in a
 
 ## API
 
-### `tt(data, *, caption=None, width=None, colnames=True, escape=True, theme="default", ...)`
+### `tt(data, *, caption=None, width=None, gutter=2, colnames=True, escape=True, theme="default", ...)`
 
-Create a `TinyTable` from a Polars DataFrame.
+Create a `TinyTable` from a Polars DataFrame. `gutter` controls the Typst
+column-gutter (in pt when numeric, or a Typst length string like `"0.1em"`);
+set to `None` to suppress it entirely.
 
 ### `.style(i=None, j=None, *, bold=None, italic=None, ..., line=None)`
 
@@ -193,6 +195,29 @@ Embed generated plots or existing images. Requires the `images` extra.
 ### `.render(output="typst")` → `str`
 
 Render the table as a Typst (or `html`/`ascii`) string.
+
+### `.finalize(fn)` → `self`
+
+Register a post-render callback. `fn(rendered_string, output)` receives the
+fully rendered string and the output format, and must return the (possibly
+modified) string. Chainable; multiple callbacks run in registration order.
+
+```python
+tt(df).finalize(lambda s, o: s.replace("5pt", "2pt") if o == "typst" else s)
+```
+
+### Column widths
+
+The `width` parameter of `tt()` accepts several forms:
+
+```python
+tt(df, width=None)              # all columns auto (default)
+tt(df, width=0.8)               # equal percentage across all columns
+tt(df, width=[0.3, 0.7])        # per-column fractions → percentages
+tt(df, width="5cm")             # Typst/HTML unit for all columns
+tt(df, width=["5cm", None])     # first col 5cm, rest auto
+tt(df, width=[0.3, None, "2cm"])  # mix fractions, auto, and units
+```
 
 ### `.save(path, assets=None)`
 

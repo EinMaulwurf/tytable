@@ -23,7 +23,7 @@ class BuiltTable:
     style_lines: list = field(default_factory=list)
     notes: list = field(default_factory=list)
     caption: str | None = None
-    width: float | list[float] | None = None
+    width: float | list[float | str | None] | str | None = None
     height: float | None = None
     has_background: bool = False
     assets_relpath: str | None = None

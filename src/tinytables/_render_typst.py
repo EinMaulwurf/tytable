@@ -50,6 +50,7 @@ class TypstRenderOptions:
     rotate_angle: float | None = None
     portable: bool = False
     row_height_em: float | None = None
+    column_gutter: float | str | None = 2
 
     def align_to_typst(self) -> str:
         return {"l": "left", "c": "center", "r": "right"}.get(
@@ -77,9 +78,19 @@ class TypstRenderer:
     def _columns_spec(width, ncol):
         if width is None:
             return ["auto"] * ncol
+        if isinstance(width, str):
+            return [width] * ncol
         if isinstance(width, (int, float)):
             return [f"{width / ncol * 100:.2f}%"] * ncol
-        return [f"{w * 100:.2f}%" for w in width]
+        result = []
+        for w in width:
+            if w is None:
+                result.append("auto")
+            elif isinstance(w, str):
+                result.append(w)
+            else:
+                result.append(f"{w * 100:.2f}%")
+        return result
 
     def render(self, built, opts: TypstRenderOptions) -> str:
         L: list[str] = []
@@ -117,7 +128,10 @@ class TypstRenderer:
         L.append(f"    columns: ({', '.join(cells)}),")
 
         if built.col_groups and not built.has_background:
-            L.append("    column-gutter: 5pt,")
+            gutter = opts.column_gutter
+            if gutter is not None:
+                unit = "pt" if isinstance(gutter, (int, float)) else ""
+                L.append(f"    column-gutter: {gutter}{unit},")
 
         stroke_val = opts.grid_stroke if opts.grid_stroke else "none"
         L.append(f"    stroke: {stroke_val},")

@@ -34,7 +34,7 @@ block[
 
   #table(
     columns: (auto, auto),
-    column-gutter: 5pt,
+    column-gutter: 2pt,
     stroke: none,
     rows: auto,
     align: (x, y) => {
