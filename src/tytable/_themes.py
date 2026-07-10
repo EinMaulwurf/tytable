@@ -62,7 +62,7 @@ def theme_rotate(
     table: TinyTable,
     angle: int = 90,
     i: int | str | list[int] | None = None,
-    j: int | str | list[int] | None = None,
+    j: int | str | list[int | str] | None = None,
 ) -> TinyTable:
     if i is None and j is None:
         table._typst_opts.rotate_angle = angle

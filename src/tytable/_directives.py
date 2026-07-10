@@ -7,7 +7,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class StyleDirective:
     i: int | str | list[int] | None
-    j: int | str | list[int] | None
+    j: int | str | list[int | str] | None
     bold: bool | None = None
     italic: bool | None = None
     underline: bool | None = None
@@ -32,7 +32,7 @@ class StyleDirective:
 @dataclass(frozen=True)
 class FormatDirective:
     i: int | str | list[int] | None
-    j: int | str | list[int] | None
+    j: int | str | list[int | str] | None
     digits: int | None = None
     num_fmt: str | None = "decimal"
     replace: dict | None = None
@@ -44,7 +44,7 @@ class FormatDirective:
 @dataclass(frozen=True)
 class PlotDirective:
     i: int | str | list[int] | None
-    j: int | str | list[int] | None
+    j: int | str | list[int | str] | None
     fun: Callable | None = None
     data: list | None = None
     images: list[str] | None = None

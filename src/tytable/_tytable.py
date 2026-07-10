@@ -153,7 +153,7 @@ class TinyTable:
     def style(
         self,
         i: int | str | list[int] | None = None,
-        j: int | str | list[int] | None = None,
+        j: int | str | list[int | str] | None = None,
         *,
         bold: bool | None = None,
         italic: bool | None = None,
@@ -218,7 +218,7 @@ class TinyTable:
     def fmt(
         self,
         i: int | str | list[int] | None = None,
-        j: int | str | list[int] | None = None,
+        j: int | str | list[int | str] | None = None,
         *,
         digits: int | None = None,
         num_fmt: str = "decimal",
@@ -244,7 +244,7 @@ class TinyTable:
     def plot(
         self,
         i: int | str | list[int] | None = None,
-        j: int | str | list[int] | None = None,
+        j: int | str | list[int | str] | None = None,
         *,
         fun: Callable | None = None,
         data: list | None = None,
@@ -280,7 +280,7 @@ class TinyTable:
     def images(
         self,
         i: int | str | list[int] | None = None,
-        j: int | str | list[int] | None = None,
+        j: int | str | list[int | str] | None = None,
         *,
         paths: list[str] | None = None,
         height: float | str = 1.0,

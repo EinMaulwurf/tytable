@@ -29,6 +29,12 @@
 // A small "Source / Result" label.
 #let tag(label) = text(size: 8.5pt, fill: luma(110), weight: "bold", tracking: 0.6pt)[#label]
 
+// An API-reference entry: a bold, monospaced signature line.
+#let api(sig) = block(spacing: 0.9em)[
+  #set par(justify: false)
+  #text(weight: "bold", raw(sig))
+]
+
 // Center every tytable figure and keep it from breaking awkwardly.
 #show figure.where(kind: "tytable"): set align(center)
 
@@ -107,6 +113,8 @@ with `i="groupi"`, column-group rows with `i="groupj"`.
 == Select columns by name
 
 `j="Score"` is the preferred form; `j=0` selects the first column by position.
+Both `i` and `j` also accept a #emph[list] to target several rows or columns in
+one call: `j=["Q1 Rev", "Q1 Cost"]` or `j=[1, 2, 3, 4]`.
 
 == Everything returns `self`
 
@@ -203,7 +211,9 @@ built-in:
 
 The `width` parameter of `tt()` accepts several forms: a single fraction spread
 evenly, a per-column list of fractions, a Typst/HTML unit string, or `None` for
-auto. You may mix all three in one list.
+auto. You may mix all three in one list. Pass `width=1` for a #emph[full-width]
+table — the fraction is split across columns so the table fills the available
+content width (e.g. `width=0.5` covers half).
 
 #tag("SOURCE")
 #source("examples/06_widths.py")
@@ -228,8 +238,9 @@ and requires the `images` extra.
 = Putting it together
 
 A feature-rich table built without any image dependencies — combining explicit
-column groups, a row-group separator, numeric formatting, per-column widths, and
-targeted styling in one chain.
+column groups, a row-group separator, numeric formatting, a full-width layout,
+and targeted styling. Note the list selectors: every numeric column is aligned
+and formatted in a single call.
 
 #tag("SOURCE")
 #source("examples/08_full_report.py")
@@ -240,36 +251,63 @@ targeted styling in one chain.
 
 = API reference
 
-== `tt(data, *, caption=None, width=None, gutter=2, colnames=True, escape=True, theme="default", ...)`
-Create a `TinyTable` from a Polars DataFrame. `gutter` controls the Typst
-column gutter (in pt when numeric, or a length string like `"0.1em"`); set to
-`None` to suppress it.
+Every chaining method returns the `TinyTable`, so they compose in a single
+chain; `.render()` and `.save()` are terminal.
 
-== `.style(i=None, j=None, *, bold=None, italic=None, ..., line=None)`
-Apply cell styling via selectors. Returns `self`.
+The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
+`.plot()`, and `.images()`:
 
-== `.fmt(i=None, j=None, *, digits=None, num_fmt="decimal", replace=None, escape=False, fn=None)`
-Apply value formatting. Returns `self`.
+- *rows* (`i`): `0` = first data row, `"header"` = column-name row, negative
+  ints = column-group header rows (`-1` topmost), `"groupi"`/`"groupj"` = the
+  row/column group separators, or a `list[int]`.
+- *columns* (`j`): a name (`"Score"`), an integer position (`0`), a regex, or a
+  `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`.
 
-== `.group(i=None, j=None)`
-Add row groups (`i` dict or list) and column groups (`j` dict or delimiter).
+#api("tt(data, *, caption=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
+Create a `TinyTable` from a Polars DataFrame. `width=1` produces a full-width
+table; it also takes a per-column list of fractions/units, a length string, or
+`None` (auto). `gutter` is the Typst column gutter (pt when numeric, or a
+string like `"0.1em"`); `None` suppresses it.
 
-== `.theme(name_or_callable=None)`
-Apply a theme: `default`, `striped`, `grid`, `empty`, `rotate`, or a callable.
+#api(".style(i=None, j=None, *, bold, italic, underline, strikeout, monospace, smallcaps, color, background, fontsize, align, alignv, indent, colspan, rowspan, line, line_color, line_width=0.1, line_trim, output=None)")
+Apply cell styling via selectors. `line` is any combo of `t`/`b`/`l`/`r`;
+`align` takes `l`/`c`/`r` and `alignv` takes `t`/`m`/`b`. Returns `self`.
 
-== `.plot(j, *, fun, data=None, height=1.0, ...)` / `.images(j, *, paths, ...)`
-Embed generated plots or existing images. Requires the `images` extra.
+#api(".fmt(i=None, j=None, *, digits=None, num_fmt=\"decimal\", replace=None, escape=False, fn=None, output=None)")
+Apply value formatting: `digits` (with `num_fmt` of `"decimal"` or
+`"significant"`), `replace` (a value or `{old: new}` mapping for nulls/NaNs),
+or a custom column-wise transform `fn`. Returns `self`.
 
-== `.render(output="typst")` → `str`
-Render the table as a Typst (or `html` / `ascii`) string.
+#api(".group(i=None, j=None)")
+Add row groups (`i` as a `{label: row}` dict or a list) and column groups (`j`
+as a `{label: [cols]}` dict or a delimiter string split out of the column
+names). Returns `self`.
 
-== `.finalize(fn)` → `self`
+#api(".theme(name_or_callable=None)")
+Apply a built-in theme (`default`, `striped`, `grid`, `empty`, `rotate`) or a
+custom callable. Returns `self`.
+
+#api(".plot(j, *, fun, data=None, height=1.0, color=\"black\", xlim=None, output=None)")
+Embed a generated plot per cell. `fun(values, ...) -> matplotlib Figure` is
+called once per row; tytable handles PNG saving and paths. Requires the
+`images` extra. Returns `self`.
+
+#api(".images(j, *, paths, height=1.0, output=None)")
+Embed existing image files into the selected column. Requires the `images`
+extra. Returns `self`.
+
+#api(".render(output=\"typst\") -> str")
+Render the table as a `"typst"` (default), `"html"`, or `"ascii"` string.
+Terminal — does not return the table.
+
+#api(".finalize(fn) -> self")
 Register a post-render callback. `fn(rendered_string, output)` receives the
 fully rendered string and the output format, and must return the (possibly
 modified) string. Chainable; multiple callbacks run in registration order.
 
-== `.save(path, assets=None)`
-Save the table to a file (`.typ` or `.html`).
+#api(".save(path, assets=None)")
+Render and write to `path` (`.typ` or `.html`). `assets` overrides where image
+files are written, relative to the output file. Terminal.
 
 = Workflow: importing into a Typst report
 

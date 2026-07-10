@@ -9,10 +9,12 @@ import polars as pl
 from tytable import tt
 
 
-def sparkline(values, *, color="black", **kw):
-    fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
-    ax.plot(range(len(values)), values, color=color, lw=2)
+def sparkline(values, *, color="#2c3e50", **kw):
+    fig, ax = plt.subplots(figsize=(2.4, 0.8), dpi=150)
+    ax.plot(range(len(values)), values, color=color, lw=3, solid_joinstyle="round")
     ax.set_axis_off()
+    ax.margins(y=0.15)
+    fig.tight_layout(pad=0)
     return fig
 
 
@@ -27,7 +29,7 @@ df = pl.DataFrame(
 (
     tt(df, caption="Product scores with trend sparklines", theme="striped")
     .fmt(j="Score", digits=2)
-    .plot(j="Trend", fun=sparkline, height=1.5, color="#4CAF50")
+    .plot(j="Trend", fun=sparkline, height=1.5, color="#2c3e50")
     .style(j="Score", align="c")
     .style(i="header", bold=True, line="b", line_width=0.08)
     .style(i=0, bold=True, background="#2c3e50", color="white")
