@@ -1,7 +1,4 @@
-"""Styled table example — typography, colours, alignment, borders.
-
-Run:  uv run python examples/styled_table.py
-"""
+"""Styling example — typography, colour, alignment, and per-side borders."""
 
 import polars as pl
 
@@ -15,7 +12,7 @@ df = pl.DataFrame(
     }
 )
 
-out = (
+(
     tt(df, caption="Quarterly sales by region")
     .fmt(j="Sales", digits=2)
     .fmt(j="Growth", digits=2)
@@ -26,6 +23,5 @@ out = (
     .style(i=1, color="#c0392b")
     .style(i=0, line="b", line_color="#bdc3c7")
     .style(line="lr", line_width=0.05)
-    .render("typst")
+    .save("build/03_style.typ")
 )
-print(out)

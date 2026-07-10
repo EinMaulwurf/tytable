@@ -1,19 +1,15 @@
-"""Full report example — formatting, styling, grouping, theme, and sparklines.
+"""Images & sparklines example — embedding generated plots in cells.
 
-Combines every feature into a single realistic table. Requires the `images`
-extra (`pip install tytable[images]`).
-
-Run:  uv run python examples/full_report.py
+Requires the `images` extra:  pip install tytable[images]
 """
 
+import matplotlib.pyplot as plt
 import polars as pl
 
 from tytable import tt
 
 
-def sparkline(values, *, color="black", xlim=None, **kw):
-    import matplotlib.pyplot as plt
-
+def sparkline(values, *, color="black", **kw):
     fig, ax = plt.subplots(figsize=(6, 2), dpi=100)
     ax.plot(range(len(values)), values, color=color, lw=2)
     ax.set_axis_off()
@@ -28,7 +24,7 @@ df = pl.DataFrame(
     }
 )
 
-tab = (
+(
     tt(df, caption="Product scores with trend sparklines", theme="striped")
     .fmt(j="Score", digits=2)
     .plot(j="Trend", fun=sparkline, height=1.5, color="#4CAF50")
@@ -37,13 +33,5 @@ tab = (
     .style(i=0, bold=True, background="#2c3e50", color="white")
     .group(i={"Highlight": 2})
     .style(i="groupi", bold=True, background="#ecf0f1")
+    .save("build/07_images.typ", assets="assets")
 )
-
-print("--- Typst output ---")
-print(tab.render("typst"))
-
-print("\n--- HTML preview ---")
-print(tab.render("html"))
-
-tab.save("report_assets/products.typ")
-print("\nSaved to report_assets/products.typ")

@@ -11,6 +11,8 @@ dist/
 .coverage
 htmlcov/
 tytable_assets/
+report_assets/
+docs/tytable-docs.pdf
 .DS_Store
 TODO.md
 

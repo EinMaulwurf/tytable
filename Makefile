@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test test-images clean
+.PHONY: install lint format typecheck test test-images docs docs-watch clean
 
 install:
 	uv sync --all-extras
@@ -18,6 +18,15 @@ test:
 test-images:
 	pytest -m "images"
 
+docs:
+	uv run python docs/build_examples.py
+	typst compile docs/main.typ docs/tytable-docs.pdf
+
+docs-watch:
+	uv run python docs/build_examples.py
+	typst watch docs/main.typ docs/tytable-docs.pdf
+
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage
+	rm -rf docs/build docs/tytable-docs.pdf
 	find . -type d -name tytable_assets -exec rm -rf {} +

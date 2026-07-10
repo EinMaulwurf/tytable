@@ -5,6 +5,10 @@ A small, easy-to-use Python library that turns **Polars DataFrames** into
 package. Most of tinytable's styling power, plus image/sparkline support and a
 Jupyter HTML preview.
 
+> **Full documentation with rendered examples:** build the PDF with `make docs`
+> (requires the `typst` CLI). The source lives in `docs/` — `main.typ` weaves
+> narrative with live tables generated from `docs/examples/`.
+
 ## Install
 
 ```
@@ -131,12 +135,12 @@ tt(df, theme=None).theme("grid")
 
 ## Images & sparklines
 
-Supply your own plotting function (`fun(values) -> matplotlib Figure`); the
-package handles PNG saving and path handling. A `sparkline` example ships in
-`examples/sparkline.py`.
+Supply your own plotting function (`fun(values) -> matplotlib Figure`); the package
+handles PNG saving and path handling. A `sparkline` example ships in
+`docs/examples/sparkline.py`.
 
 ```python
-from examples.sparkline import sparkline
+from sparkline import sparkline
 
 tt(df).plot(j="Trend", fun=sparkline, height=1.5).save("out.typ")
 ```

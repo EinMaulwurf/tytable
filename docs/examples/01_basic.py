@@ -1,7 +1,4 @@
-"""Minimal tytable example — a plain table saved to Typst.
-
-Run:  uv run python examples/basic_table.py
-"""
+"""Minimal tytable example — a plain table from a Polars DataFrame."""
 
 import polars as pl
 
@@ -15,5 +12,4 @@ df = pl.DataFrame(
     }
 )
 
-out = tt(df, caption="Catalog").render("typst")
-print(out)
+tt(df, caption="Catalog").save("build/01_basic.typ")
