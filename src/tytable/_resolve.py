@@ -94,6 +94,8 @@ def _insert_footnote_markers(
         )
         j_vals = _resolve_j_internal(j_selector, colnames)
 
+        if i_vals is None:
+            continue
         for i in i_vals:
             if i == 0:
                 for j in j_vals:
@@ -116,15 +118,15 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     ncols = table._data.width
 
     data_body: list[list[str]] = []
-    typed_body: list[list] = []
+    typed_body: list[list[Any]] = []
     raw_data = table._data.to_dict(as_series=False)
     col_names = list(raw_data.keys())
 
     for r in range(nrows):
         row: list[str] = []
         typed_row: list = []
-        for c in range(ncols):
-            raw_val = raw_data[col_names[c]][r]
+        for col_idx in range(ncols):
+            raw_val = raw_data[col_names[col_idx]][r]
             typed_row.append(raw_val)
             val = format_markup_num(raw_val)
             row.append(val)
@@ -186,14 +188,14 @@ def build(table: TinyTable, output: str) -> BuiltTable:
 
     if table._escape:
         for r in range(len(data_body)):
-            for c in range(len(data_body[r])):
-                if (r, c) not in escaped_cells:
-                    val = data_body[r][c]
+            for col_idx in range(len(data_body[r])):
+                if (r, col_idx) not in escaped_cells:
+                    val = data_body[r][col_idx]
                     if output in ("html", "ascii"):
                         if not val.startswith("<img"):
-                            data_body[r][c] = escape_html(val)
+                            data_body[r][col_idx] = escape_html(val)
                     else:
-                        data_body[r][c] = escape_typst(val)
+                        data_body[r][col_idx] = escape_typst(val)
 
     execute_plots(
         table,

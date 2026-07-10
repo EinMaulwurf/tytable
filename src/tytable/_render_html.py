@@ -113,11 +113,11 @@ class HtmlRenderer:
 
         head_parts: list[str] = []
         if built.col_groups:
-            for row in built.col_groups:
+            for cg_row in built.col_groups:
                 tr_parts: list[str] = []
                 i_col = 0
-                while i_col < len(row):
-                    v = row[i_col]
+                while i_col < len(cg_row):
+                    v = cg_row[i_col]
                     if v is None:
                         tr_parts.append("<th></th>")
                         i_col += 1
@@ -130,9 +130,9 @@ class HtmlRenderer:
                     start = i_col
                     i_col += 1
                     while (
-                        i_col < len(row)
-                        and row[i_col] is not None
-                        and (row[i_col] or "").strip() == ""
+                        i_col < len(cg_row)
+                        and cg_row[i_col] is not None
+                        and (cg_row[i_col] or "").strip() == ""
                     ):
                         i_col += 1
                     span = i_col - start
@@ -147,7 +147,7 @@ class HtmlRenderer:
 
         if built.show_colnames:
             tr_parts = []
-            for j, c in enumerate(built.colnames_display):
+            for j, colname in enumerate(built.colnames_display):
                 style_str = ""
                 i_internal = 0
                 j_internal = j + 1
@@ -157,11 +157,11 @@ class HtmlRenderer:
                 ti = convert_row_to_typst(i_internal, built.nhead)
                 border_css = border_map.get((ti, j_internal - 1), "")
                 style_str = _build_cell_style(cell_props, border_css)
-                escaped_c = escape_html(c)
+                escaped_col = escape_html(colname)
                 if style_str:
-                    tr_parts.append(f'<th style="{style_str}">{escaped_c}</th>')
+                    tr_parts.append(f'<th style="{style_str}">{escaped_col}</th>')
                 else:
-                    tr_parts.append(f"<th>{escaped_c}</th>")
+                    tr_parts.append(f"<th>{escaped_col}</th>")
             head_parts.append(f"<tr>{' '.join(tr_parts)}</tr>")
 
         if head_parts:

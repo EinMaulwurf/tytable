@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
 from ._indices import resolve_i, resolve_j
@@ -16,11 +16,11 @@ def _is_numeric_typed(val: object) -> bool:
     return isinstance(val, (int, float))
 
 
-def _fmt_numeric_decimal(val: object, digits: int) -> str:
+def _fmt_numeric_decimal(val: Any, digits: int) -> str:
     return f"{float(val):.{digits}f}"
 
 
-def _fmt_numeric_significant(val: object, digits: int) -> str:
+def _fmt_numeric_significant(val: Any, digits: int) -> str:
     return f"{float(val):.{digits}g}"
 
 
@@ -79,7 +79,7 @@ def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
 
 def apply_formats(
     data_body: list[list[str]],
-    typed_body: list[list[object]],
+    typed_body: list[list[Any]],
     table: TinyTable,
     *,
     nhead: int,

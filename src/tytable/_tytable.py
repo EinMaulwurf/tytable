@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from collections.abc import Callable
+from typing import Any
 
 import polars as pl
 
@@ -16,7 +17,7 @@ from ._themes import THEMES
 
 
 def tt(
-    data: object,
+    data: pl.DataFrame,
     *,
     caption: str | None = None,
     notes: list | None = None,
@@ -50,7 +51,7 @@ def tt(
     return t
 
 
-def _normalize_notes(raw: object) -> list[Note]:
+def _normalize_notes(raw: list[Any]) -> list[Note]:
     if not raw:
         return []
     result = []
@@ -81,9 +82,9 @@ def _assign_markers(notes: list[Note]) -> None:
             continue
         if note.i is not None or note.j is not None:
             auto += 1
-            note = object.__setattr__(note, "marker", str(auto))
+            object.__setattr__(note, "marker", str(auto))
         else:
-            note = object.__setattr__(note, "marker", None)
+            object.__setattr__(note, "marker", None)
 
 
 class TinyTable:
@@ -122,7 +123,7 @@ class TinyTable:
         self._plot_directives: list = []
         self._row_groups: list = []
         self._col_group_rows: list = []
-        self._notes: list[Note] = _normalize_notes(notes)
+        self._notes: list[Note] = _normalize_notes(notes or [])
         self._prepare_hooks: list[Callable[[TinyTable], None]] = []
         self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._nhead: int = 0

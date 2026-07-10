@@ -84,16 +84,16 @@ def _validate_style(
     for name, val in (("color", color), ("background", background), ("line_color", line_color)):
         if val is not None and not isinstance(val, str):
             raise TypeError(f"{name} must be a string, got {type(val).__name__}")
-    for name, val in (("colspan", colspan), ("rowspan", rowspan)):
-        if val is not None and (not isinstance(val, int) or isinstance(val, bool) or val < 1):
-            raise ValueError(f"{name} must be a positive int, got {val!r}")
+    for name, ival in (("colspan", colspan), ("rowspan", rowspan)):
+        if ival is not None and (not isinstance(ival, int) or isinstance(ival, bool) or ival < 1):
+            raise ValueError(f"{name} must be a positive int, got {ival!r}")
     if line_width is not None and (
         not isinstance(line_width, int | float) or isinstance(line_width, bool) or line_width < 0
     ):
         raise ValueError(f"line_width must be a non-negative number, got {line_width!r}")
-    for name, val in (("fontsize", fontsize), ("indent", indent)):
-        if val is not None and (not isinstance(val, int | float) or isinstance(val, bool)):
-            raise TypeError(f"{name} must be a number, got {type(val).__name__}")
+    for name, nval in (("fontsize", fontsize), ("indent", indent)):
+        if nval is not None and (not isinstance(nval, int | float) or isinstance(nval, bool)):
+            raise TypeError(f"{name} must be a number, got {type(nval).__name__}")
 
 
 def build_style_grid(
@@ -129,6 +129,8 @@ def build_style_grid(
             )
         j_vals = resolve_j(d.j, table._colnames)
         has_line = d.line is not None
+        if i_vals is None:
+            continue
 
         for i in i_vals:
             for j in j_vals:

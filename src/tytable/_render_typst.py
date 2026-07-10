@@ -156,8 +156,8 @@ class TypstRenderer:
         if built.show_colnames or built.col_groups:
             L.append("    table.header(")
             L.append("      repeat: true,")
-            for row in built.col_groups:
-                parts = self._build_col_group_row(row)
+            for cg_row in built.col_groups:
+                parts = self._build_col_group_row(cg_row)
                 L.append(f"      {', '.join(parts)},")
             if built.show_colnames:
                 col_line = "      " + ",".join(f"[{c}]" for c in built.colnames_display) + ","

@@ -8,7 +8,7 @@ import pathlib
 import shutil
 import tempfile
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ._indices import resolve_i, resolve_j
 from ._utils import _new_image_id, format_markup_num
@@ -129,7 +129,7 @@ def _build_image_cell_string(
 def execute_plots(
     table: TinyTable,
     data_body: list[list[str]],
-    typed_body: list[list[object]],
+    typed_body: list[list[Any]],
     output: str,
     *,
     nhead: int,
@@ -204,10 +204,10 @@ def execute_plots(
                         temp_dirs.append(td)
                         assets_dir = pathlib.Path(td)
                     else:
-                        assets_dir = table._assets_dir
-                        if assets_dir is None:
-                            assets_dir = pathlib.Path.cwd() / "tytable_assets"
-                        assets_dir = pathlib.Path(assets_dir)
+                        raw = table._assets_dir
+                        assets_dir = (
+                            pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
+                        )
 
                     assets_dir.mkdir(parents=True, exist_ok=True)
 
