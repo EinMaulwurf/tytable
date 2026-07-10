@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._escape import escape_html
+from ._styling import compute_covered_cells
 
 
 def _align_to_css(h, v) -> str | None:
@@ -86,8 +87,15 @@ class HtmlRenderer:
         parts: list[str] = []
         table_style = "border-collapse:collapse;font-family:sans-serif;font-size:1em"
         if built.width is not None and isinstance(built.width, (int, float)):
-                table_style += f";width:{built.width}%"
+            table_style += f";width:{built.width * 100:.2f}%"
         parts.append(f'<table style="{table_style}">')
+
+        if built.width is not None and isinstance(built.width, (list, tuple)):
+            colgroup = ["<colgroup>"]
+            for w in built.width:
+                colgroup.append(f'<col style="width:{w * 100:.2f}%">')
+            colgroup.append("</colgroup>")
+            parts.append("\n".join(colgroup))
 
         if built.caption is not None:
             escaped = escape_html(built.caption)
@@ -130,7 +138,10 @@ class HtmlRenderer:
                 i_internal = 0
                 j_internal = j + 1
                 cell_props = built.style_grid.get((i_internal, j_internal), {})
-                border_css = border_map.get((i_internal - built.nhead if built.nhead else 0, j_internal - 1), "")
+                from ._indices import convert_row_to_typst
+
+                ti = convert_row_to_typst(i_internal, built.nhead)
+                border_css = border_map.get((ti, j_internal - 1), "")
                 style_str = _build_cell_style(cell_props, border_css)
                 escaped_c = escape_html(c)
                 if style_str:
@@ -146,7 +157,7 @@ class HtmlRenderer:
 
         parts.append("<tbody>")
 
-        covered = self._compute_covered_cells(built.style_grid)
+        covered = compute_covered_cells(built.style_grid)
         row_group_positions = built.row_group_positions
 
         for r, row in enumerate(built.data_body):
@@ -161,7 +172,9 @@ class HtmlRenderer:
                 rowspan = span_props.get("rowspan", 1)
 
                 cell_props = built.style_grid.get((i_internal, j_internal), {})
-                ti = i_internal - 1
+                from ._indices import convert_row_to_typst
+
+                ti = convert_row_to_typst(i_internal, built.nhead)
                 tj = j_internal - 1
                 border_css = border_map.get((ti, tj), "")
                 style_str = _build_cell_style(cell_props, border_css)
@@ -215,20 +228,3 @@ class HtmlRenderer:
 
         parts.append("</table>")
         return "\n".join(parts)
-
-    def _compute_covered_cells(self, style_grid):
-        covered = set()
-        for (r, c), props in style_grid.items():
-            scol = props.get("colspan")
-            srow = props.get("rowspan")
-            if not isinstance(scol, int):
-                scol = 1
-            if not isinstance(srow, int):
-                srow = 1
-            if scol > 1 or srow > 1:
-                for rr in range(r, r + srow):
-                    for cc in range(c, c + scol):
-                        if rr == r and cc == c:
-                            continue
-                        covered.add((rr, cc))
-        return covered

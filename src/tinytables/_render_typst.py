@@ -6,7 +6,7 @@ from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
 from ._indices import convert_col_to_typst, convert_row_to_typst
-from ._styling import align_to_typst
+from ._styling import align_to_typst, compute_covered_cells
 
 
 def _props_to_signature(props):
@@ -73,6 +73,14 @@ def _split_chunks(values):
 
 
 class TypstRenderer:
+    @staticmethod
+    def _columns_spec(width, ncol):
+        if width is None:
+            return ["auto"] * ncol
+        if isinstance(width, (int, float)):
+            return [f"{width / ncol * 100:.2f}%"] * ncol
+        return [f"{w * 100:.2f}%" for w in width]
+
     def render(self, built, opts: TypstRenderOptions) -> str:
         L: list[str] = []
         need_figure = opts.figure
@@ -105,7 +113,7 @@ class TypstRenderer:
         if need_figure:
             L.append("  #table(")
 
-        cells = ["auto"] * ncol
+        cells = self._columns_spec(built.width, ncol)
         L.append(f"    columns: ({', '.join(cells)}),")
 
         if built.col_groups and not built.has_background:
@@ -142,7 +150,7 @@ class TypstRenderer:
                 L.append(col_line)
             L.append("    ),")
 
-        covered = self._compute_covered_cells(built.style_grid)
+        covered = compute_covered_cells(built.style_grid)
         ncol = len(built.colnames_display)
         for r, row in enumerate(built.data_body):
             i_internal = r + 1
@@ -311,20 +319,3 @@ class TypstRenderer:
             else:
                 parts.append(f"[{escaped}]")
         return parts
-
-    def _compute_covered_cells(self, style_grid):
-        covered = set()
-        for (r, c), props in style_grid.items():
-            scol = props.get("colspan")
-            srow = props.get("rowspan")
-            if not isinstance(scol, int):
-                scol = 1
-            if not isinstance(srow, int):
-                srow = 1
-            if scol > 1 or srow > 1:
-                for rr in range(r, r + srow):
-                    for cc in range(c, c + scol):
-                        if rr == r and cc == c:
-                            continue
-                        covered.add((rr, cc))
-        return covered

@@ -180,3 +180,65 @@ class TestAscii:
         df = pl.DataFrame({"A": ["x" * 70]})
         out = tt(df, theme=None).render("ascii")
         assert "…" in out
+
+
+@pytest.mark.html
+class TestHtmlBorders:
+    def test_default_theme_borders_on_correct_rows(self):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        out = tt(df, theme="default").render("html")
+        lines = out.splitlines()
+        # Header row should have top (0.08em) and bottom (0.05em) borders
+        header_line = [ln for ln in lines if "<th" in ln and "border" in ln][0]
+        assert "border-top:0.08em" in header_line
+        assert "border-bottom:0.05em" in header_line
+        # Last data row should have bottom (0.08em) border
+        body_lines = [ln for ln in lines if "<td" in ln and "border" in ln]
+        assert any("border-bottom:0.08em" in ln for ln in body_lines)
+
+    def test_explicit_line_on_header(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, theme=None).style(i="header", line="b").render("html")
+        header_line = [ln for ln in out.splitlines() if "<th" in ln and "border" in ln]
+        assert len(header_line) == 1
+        assert "border-bottom:0.1em" in header_line[0]
+
+    def test_explicit_line_on_body_row(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, theme=None).style(i=1, line="b").render("html")
+        body_lines = [ln for ln in out.splitlines() if "<td" in ln and "border" in ln]
+        assert any("border-bottom:0.1em" in ln for ln in body_lines)
+
+
+@pytest.mark.html
+class TestHtmlWidth:
+    def test_scalar_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=0.8).render("html")
+        assert "width:80.00%" in out
+
+    def test_list_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=[0.3, 0.7]).render("html")
+        assert "<colgroup>" in out
+        assert 'width:30.00%' in out
+        assert 'width:70.00%' in out
+
+
+@pytest.mark.typst
+class TestTypstWidth:
+    def test_scalar_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=0.8).render("typst")
+        assert "40.00%" in out
+
+    def test_list_width(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=[0.3, 0.7]).render("typst")
+        assert "30.00%" in out
+        assert "70.00%" in out
+
+    def test_no_width_uses_auto(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None).render("typst")
+        assert "columns: (auto, auto)" in out

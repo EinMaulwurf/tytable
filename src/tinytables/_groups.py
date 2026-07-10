@@ -93,12 +93,6 @@ def register_col_groups(table, j, colnames):
     return table
 
 
-def compute_row_group_positions(row_groups):
-    p = sorted(rg.position for rg in row_groups)
-    positions_1 = {p[k] + k + 1 for k in range(len(p))}
-    return positions_1
-
-
 def merge_row_groups(data_body, row_groups, ncols):
     if not row_groups:
         return data_body, {}

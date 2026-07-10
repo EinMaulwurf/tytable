@@ -99,3 +99,22 @@ def build_style_grid(table, *, nhead, has_header, n_merged_body, group_positions
                         "line_trim": d.line_trim,
                     })
     return grid, lines
+
+
+def compute_covered_cells(style_grid):
+    """Return the set of (row, col) cells hidden by a spanning cell."""
+    covered = set()
+    for (r, c), props in style_grid.items():
+        scol = props.get("colspan")
+        srow = props.get("rowspan")
+        if not isinstance(scol, int):
+            scol = 1
+        if not isinstance(srow, int):
+            srow = 1
+        if scol > 1 or srow > 1:
+            for rr in range(r, r + srow):
+                for cc in range(c, c + scol):
+                    if rr == r and cc == c:
+                        continue
+                    covered.add((rr, cc))
+    return covered
