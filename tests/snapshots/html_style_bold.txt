@@ -1,0 +1,9 @@
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
+<thead>
+<tr><th>A</th></tr>
+</thead>
+<tbody>
+<tr><td style="border-top:0.08em solid black;border-bottom:0.05em solid black;; font-weight:bold">1</td></tr>
+<tr><td>2</td></tr>
+</tbody>
+</table>

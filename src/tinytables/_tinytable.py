@@ -7,6 +7,8 @@ import polars as pl
 
 from ._directives import FormatDirective, Note, PlotDirective, StyleDirective
 from ._groups import register_col_groups, register_row_groups
+from ._render_ascii import AsciiRenderer
+from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._resolve import build
 from ._styling import _validate_style
@@ -264,6 +266,10 @@ class TinyTable:
 
     def render(self, output: str = "typst") -> str:
         built = build(self, output)
+        if output == "html":
+            return HtmlRenderer().render(built)
+        if output == "ascii":
+            return AsciiRenderer().render(built)
         return TypstRenderer().render(built, self._typst_opts)
 
     def save(self, path: str, assets: str | None = None) -> None:
@@ -280,3 +286,9 @@ class TinyTable:
         suffix = p.suffix.lower()
         out = "html" if suffix in (".html", ".htm") else "typst"
         p.write_text(self.render(out), encoding="utf-8")
+
+    def _repr_html_(self) -> str:
+        return self.render("html")
+
+    def __repr__(self) -> str:
+        return self.render("ascii")

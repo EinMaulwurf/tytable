@@ -53,8 +53,11 @@ def _apply_replace(typed_val, current_str, replace):
     return current_str
 
 
-def _apply_escape(current_str: str, escape_spec) -> str:
+def _apply_escape(current_str: str, escape_spec, output: str) -> str:
     if escape_spec is True or escape_spec == "typst":
+        if output in ("html", "ascii"):
+            from ._escape import escape_html
+            return escape_html(current_str)
         return escape_typst(current_str)
     return current_str
 
@@ -130,7 +133,7 @@ def apply_formats(
         if d.escape:
             for row_idx, col_idx in target_cells:
                 current = data_body[row_idx][col_idx]
-                data_body[row_idx][col_idx] = _apply_escape(current, d.escape)
+                data_body[row_idx][col_idx] = _apply_escape(current, d.escape, output)
                 escaped_cells.add((row_idx, col_idx))
 
     return escaped_cells

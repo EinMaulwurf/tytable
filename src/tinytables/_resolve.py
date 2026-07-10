@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from ._escape import escape_typst
+from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
 from ._images import execute_plots
@@ -41,7 +41,7 @@ def _resolve_j_internal(j_selector, colnames):
 
 
 def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged_body,
-                              group_positions, has_header, colnames):
+                              group_positions, has_header, colnames, output):
     if not notes:
         return
 
@@ -52,7 +52,10 @@ def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged
         if marker is None:
             continue
 
-        marker_text = f"#super[{escape_typst(marker)}]"
+        if output in ("html", "ascii"):
+            marker_text = f"<sup>{escape_html(str(marker))}</sup>"
+        else:
+            marker_text = f"#super[{escape_typst(marker)}]"
 
         j_selector = note.j
         i_vals = _resolve_i_internal(
@@ -75,8 +78,8 @@ def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged
 
 
 def build(table, output: str) -> BuiltTable:
-    if output not in ("typst",):
-        raise NotImplementedError(f"output={output!r} not implemented in Phase 1")
+    if output not in ("typst", "html", "ascii"):
+        raise NotImplementedError(f"output={output!r} not implemented")
 
     nrows = table._data.height
     ncols = table._data.width
@@ -101,7 +104,7 @@ def build(table, output: str) -> BuiltTable:
     for c in table._colnames:
         name = str(c)
         if table._escape:
-            name = escape_typst(name)
+            name = escape_html(name) if output in ("html", "ascii") else escape_typst(name)
         colnames_display.append(name)
 
     show_colnames = table._show_colnames
@@ -148,7 +151,12 @@ def build(table, output: str) -> BuiltTable:
         for r in range(len(data_body)):
             for c in range(len(data_body[r])):
                 if (r, c) not in escaped_cells:
-                    data_body[r][c] = escape_typst(data_body[r][c])
+                    val = data_body[r][c]
+                    if output in ("html", "ascii"):
+                        if not val.startswith("<img"):
+                            data_body[r][c] = escape_html(val)
+                    else:
+                        data_body[r][c] = escape_typst(val)
 
     execute_plots(
         table, data_body, typed_body, output,
@@ -159,7 +167,7 @@ def build(table, output: str) -> BuiltTable:
     _insert_footnote_markers(
         data_body, colnames_display, table._notes,
         nhead, n_merged_body, group_position_set,
-        show_colnames, table._colnames,
+        show_colnames, table._colnames, output,
     )
 
     style_grid, style_lines = build_style_grid(

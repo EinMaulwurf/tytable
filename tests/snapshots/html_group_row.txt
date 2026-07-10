@@ -1,0 +1,12 @@
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
+<thead>
+<tr><th>A</th></tr>
+</thead>
+<tbody>
+<tr><td style="font-weight:bold;background-color:#f0f0f0">First</td></tr>
+<tr><td>1</td></tr>
+<tr><td>2</td></tr>
+<tr><td style="font-weight:bold;background-color:#f0f0f0">Second</td></tr>
+<tr><td>3</td></tr>
+</tbody>
+</table>

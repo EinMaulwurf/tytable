@@ -1,0 +1,9 @@
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
+<thead>
+<tr><th colspan="2" style="text-align:center">Group</th></tr>
+<tr><th>Region</th> <th>Sales</th></tr>
+</thead>
+<tbody>
+<tr><td>East</td> <td>100</td></tr>
+</tbody>
+</table>

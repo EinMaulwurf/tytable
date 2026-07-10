@@ -1,0 +1,12 @@
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
+<thead>
+<tr><th>A</th> <th>B</th></tr>
+</thead>
+<tbody>
+<tr><td>1<sup>1</sup></td> <td>3</td></tr>
+<tr><td>2</td> <td>4</td></tr>
+</tbody>
+<tfoot>
+<tr><td colspan="2" style="text-align:left"><sup>1</sup> Note</td></tr>
+</tfoot>
+</table>
