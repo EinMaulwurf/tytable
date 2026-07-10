@@ -129,7 +129,11 @@ class HtmlRenderer:
                         continue
                     start = i_col
                     i_col += 1
-                    while i_col < len(row) and row[i_col] is not None and (row[i_col] or "").strip() == "":
+                    while (
+                        i_col < len(row)
+                        and row[i_col] is not None
+                        and (row[i_col] or "").strip() == ""
+                    ):
                         i_col += 1
                     span = i_col - start
                     escaped_label = escape_html(label)
@@ -206,12 +210,14 @@ class HtmlRenderer:
                 attr_str = " ".join(attrs)
                 if style_str:
                     if attr_str:
-                        tr_parts.append(f'<{tag} style="{style_str}" {attr_str}>{cell_content}</{tag}>')
+                        tr_parts.append(
+                            f'<{tag} style="{style_str}" {attr_str}>{cell_content}</{tag}>'
+                        )
                     else:
                         tr_parts.append(f'<{tag} style="{style_str}">{cell_content}</{tag}>')
                 else:
                     if attr_str:
-                        tr_parts.append(f'<{tag} {attr_str}>{cell_content}</{tag}>')
+                        tr_parts.append(f"<{tag} {attr_str}>{cell_content}</{tag}>")
                     else:
                         tr_parts.append(f"<{tag}>{cell_content}</{tag}>")
             if tr_parts:

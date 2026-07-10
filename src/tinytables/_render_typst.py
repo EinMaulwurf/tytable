@@ -55,9 +55,7 @@ class TypstRenderOptions:
     column_gutter: float | str | None = 2
 
     def align_to_typst(self) -> str:
-        return {"l": "left", "c": "center", "r": "right"}.get(
-            self.align_figure or "l", "left"
-        )
+        return {"l": "left", "c": "center", "r": "right"}.get(self.align_figure or "l", "left")
 
 
 def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
@@ -229,9 +227,7 @@ class TypstRenderer:
                     f" [#super[{escape_typst(note.marker)}] {escaped}]),"
                 )
             else:
-                L.append(
-                    f"      table.cell(align: left, colspan: {ncol}, [{escaped}]),"
-                )
+                L.append(f"      table.cell(align: left, colspan: {ncol}, [{escaped}]),")
         L.append("    ),")
 
     def _emit_lines(self, L: list[str], built: BuiltTable) -> None:
@@ -267,14 +263,10 @@ class TypstRenderer:
                 vline_entries.append((x, start, end, stroke))
 
         for y, start, end, stroke in sorted(hline_entries):
-            L.append(
-                f"    table.hline(y: {y}, start: {start}, end: {end}, stroke: {stroke}),"
-            )
+            L.append(f"    table.hline(y: {y}, start: {start}, end: {end}, stroke: {stroke}),")
 
         for x, start, end, stroke in sorted(vline_entries):
-            L.append(
-                f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),"
-            )
+            L.append(f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),")
 
     def _emit_style_block(self, L: list[str], built: BuiltTable) -> None:
         styled = []

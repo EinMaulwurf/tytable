@@ -16,20 +16,37 @@ if TYPE_CHECKING:
     from ._tinytable import TinyTable
 
 OVERWRITE_PROPS = (
-    "bold", "italic", "underline", "strikeout", "monospace", "smallcaps",
-    "align", "alignv", "color", "background", "fontsize", "indent",
-    "colspan", "rowspan",
+    "bold",
+    "italic",
+    "underline",
+    "strikeout",
+    "monospace",
+    "smallcaps",
+    "align",
+    "alignv",
+    "color",
+    "background",
+    "fontsize",
+    "indent",
+    "colspan",
+    "rowspan",
 )
 
 _ALIGN_H = {
-    "l": "left", "left": "left",
-    "c": "center", "center": "center",
-    "r": "right", "right": "right",
+    "l": "left",
+    "left": "left",
+    "c": "center",
+    "center": "center",
+    "r": "right",
+    "right": "right",
 }
 _ALIGN_V = {
-    "t": "top", "top": "top",
-    "m": "horizon", "middle": "horizon",
-    "b": "bottom", "bottom": "bottom",
+    "t": "top",
+    "top": "top",
+    "m": "horizon",
+    "middle": "horizon",
+    "b": "bottom",
+    "bottom": "bottom",
 }
 _LINE_RE = re.compile(r"^[tblr]+$")
 
@@ -43,8 +60,18 @@ def align_to_typst(h: str | None, v: str | None) -> str | None:
 
 
 def _validate_style(
-    *, align: str | None, alignv: str | None, line: str | None, color: str | None, background: str | None, line_color: str | None,
-    colspan: int | None, rowspan: int | None, line_width: int | float | None, fontsize: int | float | None, indent: int | float | None,
+    *,
+    align: str | None,
+    alignv: str | None,
+    line: str | None,
+    color: str | None,
+    background: str | None,
+    line_color: str | None,
+    colspan: int | None,
+    rowspan: int | None,
+    line_width: int | float | None,
+    fontsize: int | float | None,
+    indent: int | float | None,
 ) -> None:
     """Fail-fast validation at .style() call time. guide 06 §7."""
     for name, val in (("align", align), ("alignv", alignv)):
@@ -60,14 +87,24 @@ def _validate_style(
     for name, val in (("colspan", colspan), ("rowspan", rowspan)):
         if val is not None and (not isinstance(val, int) or isinstance(val, bool) or val < 1):
             raise ValueError(f"{name} must be a positive int, got {val!r}")
-    if line_width is not None and (not isinstance(line_width, int | float) or isinstance(line_width, bool) or line_width < 0):
+    if line_width is not None and (
+        not isinstance(line_width, int | float) or isinstance(line_width, bool) or line_width < 0
+    ):
         raise ValueError(f"line_width must be a non-negative number, got {line_width!r}")
     for name, val in (("fontsize", fontsize), ("indent", indent)):
         if val is not None and (not isinstance(val, int | float) or isinstance(val, bool)):
             raise TypeError(f"{name} must be a number, got {type(val).__name__}")
 
 
-def build_style_grid(table: TinyTable, *, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int], output: str) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
+def build_style_grid(
+    table: TinyTable,
+    *,
+    nhead: int,
+    has_header: bool,
+    n_merged_body: int,
+    group_positions: set[int],
+    output: str,
+) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
     """Resolve all style directives into one grid + a line list. guide 06 §3, 15 §2."""
     grid: dict[tuple[int, int], dict] = {}
     lines: list[dict] = []
@@ -76,13 +113,19 @@ def build_style_grid(table: TinyTable, *, nhead: int, has_header: bool, n_merged
         if d.output is not None and output not in d.output:
             continue
         i_vals = resolve_i(
-            d.i, nhead=nhead, group_positions=group_positions,
-            n_merged_body=n_merged_body, has_header=has_header,
+            d.i,
+            nhead=nhead,
+            group_positions=group_positions,
+            n_merged_body=n_merged_body,
+            has_header=has_header,
         )
         if i_vals is None:
             i_vals = resolve_i(
-                "all", nhead=nhead, group_positions=group_positions,
-                n_merged_body=n_merged_body, has_header=has_header,
+                "all",
+                nhead=nhead,
+                group_positions=group_positions,
+                n_merged_body=n_merged_body,
+                has_header=has_header,
             )
         j_vals = resolve_j(d.j, table._colnames)
         has_line = d.line is not None
@@ -95,17 +138,22 @@ def build_style_grid(table: TinyTable, *, nhead: int, has_header: bool, n_merged
                     if v is not None:
                         cell[prop] = v
                 if has_line:
-                    lines.append({
-                        "i": i, "j": j,
-                        "line": d.line,
-                        "line_color": d.line_color or "black",
-                        "line_width": d.line_width if d.line_width is not None else 0.1,
-                        "line_trim": d.line_trim,
-                    })
+                    lines.append(
+                        {
+                            "i": i,
+                            "j": j,
+                            "line": d.line,
+                            "line_color": d.line_color or "black",
+                            "line_width": d.line_width if d.line_width is not None else 0.1,
+                            "line_trim": d.line_trim,
+                        }
+                    )
     return grid, lines
 
 
-def compute_covered_cells(style_grid: dict[tuple[int, int], dict[str, Any]]) -> set[tuple[int, int]]:
+def compute_covered_cells(
+    style_grid: dict[tuple[int, int], dict[str, Any]],
+) -> set[tuple[int, int]]:
     """Return the set of (row, col) cells hidden by a spanning cell."""
     covered = set()
     for (r, c), props in style_grid.items():

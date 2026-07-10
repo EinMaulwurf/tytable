@@ -73,9 +73,7 @@ def resolve_i(
         if i == "body":
             return list(range(1, n_merged_body + 1))
         if i == "all":
-            hdr = ([0] if has_header else []) + (
-                list(range(-(nhead - 1), 0)) if nhead > 1 else []
-            )
+            hdr = ([0] if has_header else []) + (list(range(-(nhead - 1), 0)) if nhead > 1 else [])
             return hdr + list(range(1, n_merged_body + 1))
         raise ValueError(f"unknown row selector: {i!r}")
     nums = i if isinstance(i, list) else [i]

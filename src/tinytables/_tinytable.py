@@ -58,12 +58,14 @@ def _normalize_notes(raw: object) -> list[Note]:
         if isinstance(item, Note):
             result.append(item)
         elif isinstance(item, dict):
-            result.append(Note(
-                text=item.get("text", ""),
-                marker=item.get("marker"),
-                i=item.get("i"),
-                j=item.get("j"),
-            ))
+            result.append(
+                Note(
+                    text=item.get("text", ""),
+                    marker=item.get("marker"),
+                    i=item.get("i"),
+                    j=item.get("j"),
+                )
+            )
         elif isinstance(item, str):
             result.append(Note(text=item))
         else:
@@ -174,19 +176,41 @@ class TinyTable:
         output: tuple[str, ...] | None = None,
     ) -> TinyTable:
         _validate_style(
-            align=align, alignv=alignv, line=line, color=color,
-            background=background, line_color=line_color,
-            colspan=colspan, rowspan=rowspan, line_width=line_width,
-            fontsize=fontsize, indent=indent,
+            align=align,
+            alignv=alignv,
+            line=line,
+            color=color,
+            background=background,
+            line_color=line_color,
+            colspan=colspan,
+            rowspan=rowspan,
+            line_width=line_width,
+            fontsize=fontsize,
+            indent=indent,
         )
         self._style_directives.append(
             StyleDirective(
-                i=i, j=j, bold=bold, italic=italic, underline=underline,
-                strikeout=strikeout, monospace=monospace, smallcaps=smallcaps,
-                color=color, background=background, fontsize=fontsize, align=align,
-                alignv=alignv, indent=indent, colspan=colspan, rowspan=rowspan,
-                line=line, line_color=line_color, line_width=line_width,
-                line_trim=line_trim, output=output,
+                i=i,
+                j=j,
+                bold=bold,
+                italic=italic,
+                underline=underline,
+                strikeout=strikeout,
+                monospace=monospace,
+                smallcaps=smallcaps,
+                color=color,
+                background=background,
+                fontsize=fontsize,
+                align=align,
+                alignv=alignv,
+                indent=indent,
+                colspan=colspan,
+                rowspan=rowspan,
+                line=line,
+                line_color=line_color,
+                line_width=line_width,
+                line_trim=line_trim,
+                output=output,
             )
         )
         return self
@@ -205,8 +229,14 @@ class TinyTable:
     ) -> TinyTable:
         self._format_directives.append(
             FormatDirective(
-                i=i, j=j, digits=digits, num_fmt=num_fmt,
-                replace=replace, escape=escape, fn=fn, output=output,
+                i=i,
+                j=j,
+                digits=digits,
+                num_fmt=num_fmt,
+                replace=replace,
+                escape=escape,
+                fn=fn,
+                output=output,
             )
         )
         return self
@@ -233,8 +263,15 @@ class TinyTable:
             height = float(height.replace("em", "").strip())
         self._plot_directives.append(
             PlotDirective(
-                i=i, j=j, fun=fun, data=data, color=color, xlim=xlim,
-                height=height, height_px=height_px, width_px=width_px,
+                i=i,
+                j=j,
+                fun=fun,
+                data=data,
+                color=color,
+                xlim=xlim,
+                height=height,
+                height_px=height_px,
+                width_px=width_px,
                 output=output,
             )
         )
@@ -257,13 +294,20 @@ class TinyTable:
             height = float(height.replace("em", "").strip())
         self._plot_directives.append(
             PlotDirective(
-                i=i, j=j, images=list(paths), height=height,
+                i=i,
+                j=j,
+                images=list(paths),
+                height=height,
                 output=output,
             )
         )
         return self
 
-    def group(self, i: dict[str, int] | list[object] | None = None, j: dict[str, list[str | int]] | str | None = None) -> TinyTable:
+    def group(
+        self,
+        i: dict[str, int] | list[object] | None = None,
+        j: dict[str, list[str | int]] | str | None = None,
+    ) -> TinyTable:
         if i is not None:
             register_row_groups(self, i)
         if j is not None:

@@ -102,21 +102,13 @@ class TestFn:
 class TestPipeline:
     def test_pipeline_order_numeric_then_fn(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
-        out = (
-            tt(df)
-            .fmt(j="v", digits=2, fn=lambda vec: [f"{v}x" for v in vec])
-            .render("typst")
-        )
+        out = tt(df).fmt(j="v", digits=2, fn=lambda vec: [f"{v}x" for v in vec]).render("typst")
         assert "3.14x" in out
         assert "2.72x" in out
 
     def test_pipeline_order_replace_before_escape(self):
         df = pl.DataFrame({"A": ["hello", None]})
-        out = (
-            tt(df, escape=False)
-            .fmt(replace={None: "say #hi"}, escape=True)
-            .render("typst")
-        )
+        out = tt(df, escape=False).fmt(replace={None: "say #hi"}, escape=True).render("typst")
         assert "\\#hi" in out
 
     def test_stacked_fmt_calls(self):
@@ -133,17 +125,14 @@ class TestPipeline:
 @pytest.mark.typst
 class TestSnapshots:
     def test_fmt_full(self):
-        df = pl.DataFrame({
-            "name": ["alice", "bob"],
-            "score": [3.14159, 2.71828],
-            "status": [None, "ok"],
-        })
-        out = (
-            tt(df)
-            .fmt(j="score", digits=2)
-            .fmt(j="status", replace="—")
-            .render("typst")
+        df = pl.DataFrame(
+            {
+                "name": ["alice", "bob"],
+                "score": [3.14159, 2.71828],
+                "status": [None, "ok"],
+            }
         )
+        out = tt(df).fmt(j="score", digits=2).fmt(j="status", replace="—").render("typst")
         assert_snapshot("fmt_full", out)
 
     def test_preformatted_polars(self):

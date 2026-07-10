@@ -24,11 +24,7 @@ class TestThemeDefault:
 
     def test_with_col_groups(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4], "c": [5, 6], "d": [7, 8]})
-        out = (
-            tt(df, theme="default")
-            .group(j={"Group": [0, 1]})
-            .render("typst")
-        )
+        out = tt(df, theme="default").group(j={"Group": [0, 1]}).render("typst")
         assert out.count("table.hline") == 3
         assert_snapshot("theme_default_with_groups", out)
 
@@ -101,11 +97,7 @@ class TestThemeMethod:
         assert_snapshot("theme_callable", out)
 
     def test_theme_then_user_override(self):
-        out = (
-            tt(DF, theme="striped")
-            .style(i=0, j=0, background="#ff0000")
-            .render("typst")
-        )
+        out = tt(DF, theme="striped").style(i=0, j=0, background="#ff0000").render("typst")
         assert 'rgb("#ff0000")' in out
         assert_snapshot("theme_override", out)
 
@@ -145,7 +137,9 @@ class TestFootnotes:
 
     def test_targeted_note_marker_in_cell(self):
         df = pl.DataFrame({"A": [10, 20], "B": [30, 40]})
-        out = tt(df, notes=[{"text": "Significant", "marker": "*", "i": [0], "j": [0]}]).render("typst")
+        out = tt(df, notes=[{"text": "Significant", "marker": "*", "i": [0], "j": [0]}]).render(
+            "typst"
+        )
         assert "#super[\\*]" in out
         assert "Significant" in out
         assert_snapshot("footnote_targeted", out)

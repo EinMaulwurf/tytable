@@ -19,34 +19,30 @@ def _sparkline(values, *, color="black", xlim=None, **kw):
 class TestPlotSparkline:
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(
-            str(tmp_path / "out.typ")
-        )
+        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
         assert (tmp_path / "tinytable_assets" / "plot_0000_testid0001.png").exists()
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
-        tt(df, theme=None).plot(
-            j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]
-        ).save(str(tmp_path / "out.typ"))
+        tt(df, theme=None).plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
+            str(tmp_path / "out.typ")
+        )
         result = (tmp_path / "out.typ").read_text()
         assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(
-            str(tmp_path / "out.typ")
-        )
+        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert_snapshot("images_sparkline", result)
 
     def test_sparkline_height_str(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(
-            j="Trend", fun=_sparkline, height="1.5em"
-        ).save(str(tmp_path / "out.typ"))
+        tt(df, theme=None).plot(j="Trend", fun=_sparkline, height="1.5em").save(
+            str(tmp_path / "out.typ")
+        )
         result = (tmp_path / "out.typ").read_text()
         assert "height: 1.5em" in result
 
@@ -92,9 +88,9 @@ class TestPlotnine:
             data = pd.DataFrame({"x": range(len(values)), "y": values})
             return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line(color=color)
 
-        tt(df, theme=None).plot(
-            j="Trend", fun=p9_sparkline, height_px=400, width_px=1200
-        ).save(str(tmp_path / "out.typ"))
+        tt(df, theme=None).plot(j="Trend", fun=p9_sparkline, height_px=400, width_px=1200).save(
+            str(tmp_path / "out.typ")
+        )
         result = (tmp_path / "out.typ").read_text()
         assert '#image("tinytable_assets/plot_0000_testid0001.png", height: 1em)' in result
         assert (tmp_path / "tinytable_assets" / "plot_0000_testid0001.png").exists()
@@ -104,9 +100,7 @@ class TestPlotnine:
 class TestPortable:
     def test_portable_mode_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = (
-            tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
-        )
+        result = tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
         assert '#image("tinytable_assets/plot_0000_testid0001.png"' in result
 
     def test_portable_theme_typst_inline_svg(self):
@@ -143,8 +137,7 @@ class TestValidation:
     def test_missing_extra_hint(self, monkeypatch):
         def _fake_require():
             raise ImportError(
-                ".plot()/.images() require the 'images' extra:\n"
-                "    pip install tinytables[images]"
+                ".plot()/.images() require the 'images' extra:\n    pip install tinytables[images]"
             )
 
         monkeypatch.setattr("tinytables._images._require_images", _fake_require)

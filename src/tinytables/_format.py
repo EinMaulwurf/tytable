@@ -61,14 +61,23 @@ def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
     if escape_spec is True or escape_spec == "typst":
         if output in ("html", "ascii"):
             from ._escape import escape_html
+
             return escape_html(current_str)
         return escape_typst(current_str)
     return current_str
 
 
 def apply_formats(
-    data_body: list[list[str]],     typed_body: list[list[object]], table: TinyTable,
-    *, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int], output: str, colnames: list[str],
+    data_body: list[list[str]],
+    typed_body: list[list[object]],
+    table: TinyTable,
+    *,
+    nhead: int,
+    has_header: bool,
+    n_merged_body: int,
+    group_positions: set[int],
+    output: str,
+    colnames: list[str],
 ) -> set[tuple[int, int]]:
     escaped_cells: set[tuple[int, int]] = set()
 
@@ -77,11 +86,17 @@ def apply_formats(
             continue
 
         i_vals = resolve_i(
-            d.i, nhead=nhead, group_positions=group_positions,
-            n_merged_body=n_merged_body, has_header=has_header,
+            d.i,
+            nhead=nhead,
+            group_positions=group_positions,
+            n_merged_body=n_merged_body,
+            has_header=has_header,
         ) or resolve_i(
-            "body", nhead=nhead, group_positions=group_positions,
-            n_merged_body=n_merged_body, has_header=has_header,
+            "body",
+            nhead=nhead,
+            group_positions=group_positions,
+            n_merged_body=n_merged_body,
+            has_header=has_header,
         )
         assert i_vals is not None
         j_vals = resolve_j(d.j, colnames)
@@ -119,9 +134,7 @@ def apply_formats(
                 vec = [data_body[r][col_idx] for r in sorted_rows]
                 result = d.fn(vec)
                 if len(result) != len(vec):
-                    raise ValueError(
-                        f"fn() returned {len(result)} items, expected {len(vec)}"
-                    )
+                    raise ValueError(f"fn() returned {len(result)} items, expected {len(vec)}")
                 for r, val in zip(sorted_rows, result, strict=True):
                     data_body[r][col_idx] = str(val)
 

@@ -30,8 +30,7 @@ def _require_images() -> None:
         import numpy  # noqa: F401
     except ImportError as e:
         raise ImportError(
-            ".plot()/.images() require the 'images' extra:\n"
-            "    pip install tinytables[images]"
+            ".plot()/.images() require the 'images' extra:\n    pip install tinytables[images]"
         ) from e
 
 
@@ -51,7 +50,16 @@ def _accepts_kwargs(fun: Callable) -> bool:
         return False
 
 
-def _save_plot_image(fun: Callable, entry: object, path: str | pathlib.Path, *, width_px: int, height_px: int, color: str, xlim: object) -> None:
+def _save_plot_image(
+    fun: Callable,
+    entry: object,
+    path: str | pathlib.Path,
+    *,
+    width_px: int,
+    height_px: int,
+    color: str,
+    xlim: object,
+) -> None:
     import matplotlib.pyplot as plt
 
     obj = fun(entry, color=color, xlim=xlim) if _accepts_kwargs(fun) else fun(entry)
@@ -92,7 +100,13 @@ def _escape_typst_bytes(s: str) -> str:
 
 
 def _build_image_cell_string(
-    relpath: str, height: float, output: str, portable: bool, png_path: str | None, width_px: int, height_px: int
+    relpath: str,
+    height: float,
+    output: str,
+    portable: bool,
+    png_path: str | None,
+    width_px: int,
+    height_px: int,
 ) -> str:
     h = format_markup_num(height)
     if output == "typst":

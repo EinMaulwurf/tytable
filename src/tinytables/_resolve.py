@@ -34,19 +34,41 @@ class BuiltTable:
     assets_relpath: str | None = None
 
 
-def _resolve_i_internal(i_selector: int | str | list[int] | None, nhead: int, has_header: bool, n_merged_body: int, group_positions: set[int]) -> list[int] | None:
+def _resolve_i_internal(
+    i_selector: int | str | list[int] | None,
+    nhead: int,
+    has_header: bool,
+    n_merged_body: int,
+    group_positions: set[int],
+) -> list[int] | None:
     from ._indices import resolve_i
-    return resolve_i(i_selector, nhead=nhead, group_positions=group_positions,
-                     n_merged_body=n_merged_body, has_header=has_header)
+
+    return resolve_i(
+        i_selector,
+        nhead=nhead,
+        group_positions=group_positions,
+        n_merged_body=n_merged_body,
+        has_header=has_header,
+    )
 
 
 def _resolve_j_internal(j_selector: int | str | list[int] | None, colnames: list[str]) -> list[int]:
     from ._indices import resolve_j
+
     return resolve_j(j_selector, colnames)
 
 
-def _insert_footnote_markers(data_body: list[list[str]], colnames_display: list[str], notes: list[Note], nhead: int, n_merged_body: int,
-                              group_positions: set[int], has_header: bool, colnames: list[str], output: str) -> None:
+def _insert_footnote_markers(
+    data_body: list[list[str]],
+    colnames_display: list[str],
+    notes: list[Note],
+    nhead: int,
+    n_merged_body: int,
+    group_positions: set[int],
+    has_header: bool,
+    colnames: list[str],
+    output: str,
+) -> None:
     if not notes:
         return
 
@@ -64,7 +86,11 @@ def _insert_footnote_markers(data_body: list[list[str]], colnames_display: list[
 
         j_selector = note.j
         i_vals = _resolve_i_internal(
-            note.i, nhead, has_header, n_merged_body, group_positions,
+            note.i,
+            nhead,
+            has_header,
+            n_merged_body,
+            group_positions,
         )
         j_vals = _resolve_j_internal(j_selector, colnames)
 
@@ -115,10 +141,14 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     show_colnames = table._show_colnames
 
     data_body, row_group_positions = merge_row_groups(
-        data_body, table._row_groups, ncols,
+        data_body,
+        table._row_groups,
+        ncols,
     )
     typed_body, _ = merge_row_groups(
-        typed_body, table._row_groups, ncols,
+        typed_body,
+        table._row_groups,
+        ncols,
     )
 
     n_merged_body = len(data_body)
@@ -143,7 +173,9 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         table._format_directives = added + table._format_directives[:n_fmt_before]
 
     escaped_cells = apply_formats(
-        data_body, typed_body, table,
+        data_body,
+        typed_body,
+        table,
         nhead=nhead,
         has_header=show_colnames,
         n_merged_body=n_merged_body,
@@ -164,15 +196,26 @@ def build(table: TinyTable, output: str) -> BuiltTable:
                         data_body[r][c] = escape_typst(val)
 
     execute_plots(
-        table, data_body, typed_body, output,
-        nhead=nhead, has_header=show_colnames,
-        n_merged_body=n_merged_body, group_positions=group_position_set,
+        table,
+        data_body,
+        typed_body,
+        output,
+        nhead=nhead,
+        has_header=show_colnames,
+        n_merged_body=n_merged_body,
+        group_positions=group_position_set,
     )
 
     _insert_footnote_markers(
-        data_body, colnames_display, table._notes,
-        nhead, n_merged_body, group_position_set,
-        show_colnames, table._colnames, output,
+        data_body,
+        colnames_display,
+        table._notes,
+        nhead,
+        n_merged_body,
+        group_position_set,
+        show_colnames,
+        table._colnames,
+        output,
     )
 
     style_grid, style_lines = build_style_grid(

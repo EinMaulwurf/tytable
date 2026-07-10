@@ -221,8 +221,8 @@ class TestHtmlWidth:
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, theme=None, width=[0.3, 0.7]).render("html")
         assert "<colgroup>" in out
-        assert 'width:30.00%' in out
-        assert 'width:70.00%' in out
+        assert "width:30.00%" in out
+        assert "width:70.00%" in out
 
     def test_string_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
@@ -232,7 +232,7 @@ class TestHtmlWidth:
     def test_list_with_none_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, theme=None, width=["5cm", None]).render("html")
-        assert 'width:5cm' in out
+        assert "width:5cm" in out
         assert "<col>" in out
 
 

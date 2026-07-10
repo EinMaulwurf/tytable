@@ -23,7 +23,9 @@ def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
     return indices
 
 
-def _build_col_group_row(j_dict: dict[str, list[str | int]], colnames: list[str]) -> list[str | None]:
+def _build_col_group_row(
+    j_dict: dict[str, list[str | int]], colnames: list[str]
+) -> list[str | None]:
     ncol = len(colnames)
     row: list[str | None] = [None] * ncol
     for label, cols in j_dict.items():
@@ -43,8 +45,7 @@ def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[st
     nlevels = len(parts[0])
     if any(len(p) != nlevels for p in parts):
         raise ValueError(
-            f"delimiter {delim!r} does not split all column names into "
-            "the same number of parts"
+            f"delimiter {delim!r} does not split all column names into the same number of parts"
         )
     rows: list[list[str | None]] = []
     for level in range(nlevels):
@@ -85,7 +86,9 @@ def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> Tiny
     return table
 
 
-def register_col_groups(table: TinyTable, j: dict[str, list[str | int]] | str, colnames: list[str]) -> TinyTable:
+def register_col_groups(
+    table: TinyTable, j: dict[str, list[str | int]] | str, colnames: list[str]
+) -> TinyTable:
     if isinstance(j, dict):
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
@@ -98,7 +101,9 @@ def register_col_groups(table: TinyTable, j: dict[str, list[str | int]] | str, c
     return table
 
 
-def merge_row_groups(data_body: list[list[str]], row_groups: list[RowGroup], ncols: int) -> tuple[list[list[str]], dict[int, str]]:
+def merge_row_groups(
+    data_body: list[list[str]], row_groups: list[RowGroup], ncols: int
+) -> tuple[list[list[str]], dict[int, str]]:
     if not row_groups:
         return data_body, {}
     nrows = len(data_body)

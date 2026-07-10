@@ -31,16 +31,22 @@ class AsciiRenderer:
         lines.append(sep())
 
         if built.show_colnames:
-            header = "| " + " | ".join(
-                format_cell(c, max_widths[i]) for i, c in enumerate(built.colnames_display)
-            ) + " |"
+            header = (
+                "| "
+                + " | ".join(
+                    format_cell(c, max_widths[i]) for i, c in enumerate(built.colnames_display)
+                )
+                + " |"
+            )
             lines.append(header)
             lines.append(sep())
 
         for row in built.data_body:
-            line = "| " + " | ".join(
-                format_cell(val, max_widths[i]) for i, val in enumerate(row)
-            ) + " |"
+            line = (
+                "| "
+                + " | ".join(format_cell(val, max_widths[i]) for i, val in enumerate(row))
+                + " |"
+            )
             lines.append(line)
 
         lines.append(sep())

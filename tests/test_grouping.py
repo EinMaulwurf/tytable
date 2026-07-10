@@ -14,20 +14,20 @@ DF4 = pl.DataFrame({"Q1_a": [1, 2], "Q1_b": [3, 4], "Q2_c": [5, 6], "Q2_d": [7, 
 class TestRowGroups:
     def test_single_row_group(self):
         out = tt(DF).group(i={"My Group": 0}).render("typst")
-        assert 'table.cell(colspan: 2)[My Group]' in out
+        assert "table.cell(colspan: 2)[My Group]" in out
         assert_snapshot("group_row_single", out)
 
     def test_multiple_row_groups(self):
         df = pl.DataFrame({"a": [1, 2, 3, 4, 5], "b": [6, 7, 8, 9, 10]})
         out = tt(df).group(i={"First": 0, "Second": 2}).render("typst")
-        assert 'table.cell(colspan: 2)[First]' in out
-        assert 'table.cell(colspan: 2)[Second]' in out
+        assert "table.cell(colspan: 2)[First]" in out
+        assert "table.cell(colspan: 2)[Second]" in out
         assert_snapshot("group_row_multiple", out)
 
     def test_row_group_at_end(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
         out = tt(df).group(i={"End": 1}).render("typst")
-        assert 'table.cell(colspan: 2)[End]' in out
+        assert "table.cell(colspan: 2)[End]" in out
         assert_snapshot("group_row_end", out)
 
     def test_row_group_at_position_zero(self):
@@ -51,15 +51,15 @@ class TestRowGroupPositionFormula:
 class TestColumnGroups:
     def test_single_column_group(self):
         out = tt(DF3).group(j={"Group": [0, 1]}).render("typst")
-        assert 'table.cell(colspan: 2, align: center)[Group]' in out
+        assert "table.cell(colspan: 2, align: center)[Group]" in out
         assert "[c]," in out
         assert "[d]," in out
         assert_snapshot("group_col_single", out)
 
     def test_multiple_column_groups_same_row(self):
         out = tt(DF3).group(j={"G1": [0, 1], "G2": [2, 3]}).render("typst")
-        assert 'table.cell(colspan: 2, align: center)[G1]' in out
-        assert 'table.cell(colspan: 2, align: center)[G2]' in out
+        assert "table.cell(colspan: 2, align: center)[G1]" in out
+        assert "table.cell(colspan: 2, align: center)[G2]" in out
         assert_snapshot("group_col_multiple_same_row", out)
 
     def test_stacked_column_groups(self):
@@ -70,7 +70,7 @@ class TestColumnGroups:
 
     def test_column_group_by_name(self):
         out = tt(DF3).group(j={"G": ["a", "b"]}).render("typst")
-        assert 'table.cell(colspan: 2, align: center)[G]' in out
+        assert "table.cell(colspan: 2, align: center)[G]" in out
         assert "[c]," in out
         assert_snapshot("group_col_by_name", out)
 
@@ -81,7 +81,7 @@ class TestColumnGroups:
 
     def test_single_column_group_no_colspan(self):
         out = tt(DF).group(j={"Only": [0]}).render("typst")
-        assert 'align: center' not in out
+        assert "align: center" not in out
         assert "[Only]" in out
 
 
@@ -121,8 +121,8 @@ class TestCombinedGroups:
     def test_row_and_col_groups(self):
         df = pl.DataFrame({"a": [1, 2, 3, 4], "b": [5, 6, 7, 8]})
         out = tt(df).group(j={"H": [0, 1]}).group(i={"G": 2}).render("typst")
-        assert 'table.cell(colspan: 2, align: center)[H]' in out
-        assert 'table.cell(colspan: 2)[G]' in out
+        assert "table.cell(colspan: 2, align: center)[H]" in out
+        assert "table.cell(colspan: 2)[G]" in out
         assert_snapshot("group_combined", out)
 
     def test_row_group_after_col_group_stacks(self):

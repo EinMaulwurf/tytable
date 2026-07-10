@@ -58,7 +58,12 @@ def theme_empty(table: TinyTable) -> TinyTable:
     return table
 
 
-def theme_rotate(table: TinyTable, angle: int = 90, i: int | str | list[int] | None = None, j: int | str | list[int] | None = None) -> TinyTable:
+def theme_rotate(
+    table: TinyTable,
+    angle: int = 90,
+    i: int | str | list[int] | None = None,
+    j: int | str | list[int] | None = None,
+) -> TinyTable:
     if i is None and j is None:
         table._typst_opts.rotate_angle = angle
     else:

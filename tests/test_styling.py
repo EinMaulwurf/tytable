@@ -99,21 +99,13 @@ class TestStyleProps:
 @pytest.mark.typst
 class TestOverwriteSemantics:
     def test_different_props_both_present(self):
-        out = (
-            tt(DF)
-            .style(i=0, j=0, bold=True)
-            .style(i=0, j=0, italic=True)
-            .render("typst")
-        )
+        out = tt(DF).style(i=0, j=0, bold=True).style(i=0, j=0, italic=True).render("typst")
         assert "(bold: true, italic: true,)" in out
         assert '"1_0": 0' in out
 
     def test_same_prop_last_wins(self):
         out = (
-            tt(DF)
-            .style(i=0, j=0, color="#ff0000")
-            .style(i=0, j=0, color="#00ff00")
-            .render("typst")
+            tt(DF).style(i=0, j=0, color="#ff0000").style(i=0, j=0, color="#00ff00").render("typst")
         )
         assert 'rgb("#00ff00")' in out
         assert 'rgb("#ff0000")' not in out
@@ -233,9 +225,7 @@ class TestBordersLines:
         assert_snapshot("line_dedupe", out)
 
     def test_dedupe_top_bottom_merge(self):
-        out = (
-            tt(DF).style(i=0, line="b").style(i=1, j=0, line="t").render("typst")
-        )
+        out = tt(DF).style(i=0, line="b").style(i=1, j=0, line="t").render("typst")
         assert_snapshot("line_dedupe_tb_merge", out)
 
     def test_default_stroke(self):
