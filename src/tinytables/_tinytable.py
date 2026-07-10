@@ -4,7 +4,7 @@ import pathlib
 
 import polars as pl
 
-from ._directives import StyleDirective
+from ._directives import FormatDirective, StyleDirective
 from ._groups import register_col_groups, register_row_groups
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._resolve import build
@@ -117,6 +117,26 @@ class TinyTable:
                 alignv=alignv, indent=indent, colspan=colspan, rowspan=rowspan,
                 line=line, line_color=line_color, line_width=line_width,
                 line_trim=line_trim, output=output,
+            )
+        )
+        return self
+
+    def fmt(
+        self,
+        i=None,
+        j=None,
+        *,
+        digits=None,
+        num_fmt="decimal",
+        replace=None,
+        escape=False,
+        fn=None,
+        output=None,
+    ):
+        self._format_directives.append(
+            FormatDirective(
+                i=i, j=j, digits=digits, num_fmt=num_fmt,
+                replace=replace, escape=escape, fn=fn, output=output,
             )
         )
         return self
