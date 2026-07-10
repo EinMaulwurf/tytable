@@ -68,12 +68,12 @@ EXPECTED_BASIC_TYP = (
 class TestByteExact:
     def test_byte_exact_acceptance(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        result = tt(df).render("typst")
+        result = tt(df, theme=None).render("typst")
         assert result == EXPECTED_BASIC_TYP
 
     def test_invariant(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        t = tt(df)
+        t = tt(df, theme=None)
         assert t.render("typst") == t.render("typst")
 
     def test_pristine_data(self):
@@ -88,11 +88,11 @@ class TestByteExact:
 class TestSnapshots:
     def test_basic_2x2(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        assert_snapshot("basic_typ", tt(df).render("typst"))
+        assert_snapshot("basic_typ", tt(df, theme=None).render("typst"))
 
     def test_basic_3x3(self):
         df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})
-        assert_snapshot("basic_3x3", tt(df).render("typst"))
+        assert_snapshot("basic_3x3", tt(df, theme=None).render("typst"))
 
 
 @pytest.mark.typst
@@ -106,7 +106,7 @@ class TestCaption:
 
     def test_caption_absent(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        out = tt(df).render("typst")
+        out = tt(df, theme=None).render("typst")
         assert "caption:" not in out
         assert_snapshot("basic_typ", out)
 

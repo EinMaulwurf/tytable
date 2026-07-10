@@ -147,12 +147,12 @@ class TestTargeting:
 @pytest.mark.typst
 class TestAppendVsOverwrite:
     def test_non_line_props_overwrite(self):
-        t = tt(DF).style(i=0, j=0, bold=True).style(i=0, j=0, bold=False)
+        t = tt(DF, theme=None).style(i=0, j=0, bold=True).style(i=0, j=0, bold=False)
         built = build(t, "typst")
         assert built.style_grid[(1, 1)] == {"bold": False}
 
     def test_line_props_append(self):
-        t = tt(DF).style(i=0, j=0, line="t").style(i=0, j=0, line="l")
+        t = tt(DF, theme=None).style(i=0, j=0, line="t").style(i=0, j=0, line="l")
         built = build(t, "typst")
         assert len(built.style_lines) == 2
 
@@ -160,9 +160,9 @@ class TestAppendVsOverwrite:
 @pytest.mark.typst
 class TestOutputGating:
     def test_html_only_directive_skipped_for_typst(self):
-        out = tt(DF).style(i=0, j=0, bold=True, output=("html",)).render("typst")
+        out = tt(DF, theme=None).style(i=0, j=0, bold=True, output=("html",)).render("typst")
         assert "(bold: true,)" not in out
-        assert out == tt(DF).render("typst")
+        assert out == tt(DF, theme=None).render("typst")
 
 
 @pytest.mark.typst
@@ -243,6 +243,6 @@ class TestBordersLines:
         assert "0.1em + black" in out
 
     def test_no_lines_default(self):
-        out = tt(DF).render("typst")
+        out = tt(DF, theme=None).render("typst")
         assert "table.hline" not in out
         assert "table.vline" not in out

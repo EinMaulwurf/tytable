@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import pathlib
+from collections.abc import Callable
 
 import polars as pl
 
-from ._directives import FormatDirective, StyleDirective
+from ._directives import FormatDirective, Note, StyleDirective
 from ._groups import register_col_groups, register_row_groups
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._resolve import build
 from ._styling import _validate_style
+from ._themes import THEMES
 
 
 def tt(
@@ -23,7 +25,7 @@ def tt(
     rownames=False,
     digits=None,
     escape=True,
-    theme="default",
+    theme: str | Callable | None = "default",
 ) -> TinyTable:
     return TinyTable(
         data,
@@ -40,6 +42,40 @@ def tt(
     )
 
 
+def _normalize_notes(raw) -> list:
+    if not raw:
+        return []
+    result = []
+    for item in raw:
+        if isinstance(item, Note):
+            result.append(item)
+        elif isinstance(item, dict):
+            result.append(Note(
+                text=item.get("text", ""),
+                marker=item.get("marker"),
+                i=item.get("i"),
+                j=item.get("j"),
+            ))
+        elif isinstance(item, str):
+            result.append(Note(text=item))
+        else:
+            result.append(Note(text=str(item)))
+    _assign_markers(result)
+    return result
+
+
+def _assign_markers(notes):
+    auto = 0
+    for note in notes:
+        if note.marker is not None:
+            continue
+        if note.i is not None or note.j is not None:
+            auto += 1
+            note = object.__setattr__(note, "marker", str(auto))
+        else:
+            note = object.__setattr__(note, "marker", None)
+
+
 class TinyTable:
     def __init__(
         self,
@@ -54,7 +90,7 @@ class TinyTable:
         rownames: bool = False,
         digits: int | None = None,
         escape: bool = True,
-        theme: str | None = "default",
+        theme: str | Callable | None = "default",
     ):
         self._data = data.clone()
         if colnames_override:
@@ -68,15 +104,34 @@ class TinyTable:
         self._escape = escape
         self._rownames = rownames
         self._digits = digits
-        self._theme = theme
+        self._theme_name = theme
 
         self._style_directives: list = []
         self._format_directives: list = []
         self._plot_directives: list = []
         self._row_groups: list = []
         self._col_group_rows: list = []
-        self._notes: list = list(notes) if notes else []
+        self._notes: list = _normalize_notes(notes)
         self._prepare_hooks: list = []
+
+        self._typst_opts = TypstRenderOptions(multipage=False)
+        if height is not None:
+            self._typst_opts.row_height_em = float(height)
+
+        self._apply_theme(theme)
+
+    def _apply_theme(self, theme: str | Callable | None):
+        if theme is None:
+            return
+        if callable(theme):
+            theme(self)
+            return
+        if isinstance(theme, str):
+            fn = THEMES.get(theme)
+            if fn is None:
+                raise ValueError(f"Unknown theme: {theme!r}. Available: {list(THEMES)}")
+            fn(self)
+            return
 
     def style(
         self,
@@ -148,13 +203,17 @@ class TinyTable:
             register_col_groups(self, j, self._colnames)
         return self
 
+    def theme(self, name: str | Callable | None = None):
+        self._apply_theme(name)
+        self._theme_name = name
+        return self
+
     def render(self, output: str = "typst") -> str:
         built = build(self, output)
-        opts = TypstRenderOptions(figure=True, multipage=False)
-        return TypstRenderer().render(built, opts)
+        return TypstRenderer().render(built, self._typst_opts)
 
     def save(self, path: str) -> None:
         p = pathlib.Path(path)
         suffix = p.suffix.lower()
-        output = "html" if suffix in (".html", ".htm") else "typst"
-        p.write_text(self.render(output), encoding="utf-8")
+        out = "html" if suffix in (".html", ".htm") else "typst"
+        p.write_text(self.render(out), encoding="utf-8")

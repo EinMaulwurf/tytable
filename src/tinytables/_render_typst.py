@@ -10,7 +10,6 @@ from ._styling import align_to_typst
 
 
 def _props_to_signature(props):
-    """Build the Typst style-array signature for one cell's props. guide 05 §3.1."""
     parts = []
     if props.get("bold"):
         parts.append("bold: true")
@@ -52,6 +51,11 @@ class TypstRenderOptions:
     portable: bool = False
     row_height_em: float | None = None
 
+    def align_to_typst(self) -> str:
+        return {"l": "left", "c": "center", "r": "right"}.get(
+            self.align_figure or "l", "left"
+        )
+
 
 def _split_chunks(values):
     values = sorted(set(values))
@@ -71,33 +75,44 @@ def _split_chunks(values):
 class TypstRenderer:
     def render(self, built, opts: TypstRenderOptions) -> str:
         L: list[str] = []
+        need_figure = opts.figure
 
-        if opts.multipage is not None:
+        if need_figure and opts.multipage is not None:
             breakable = "true" if opts.multipage else "false"
             L.append(f"#show figure: set block(breakable: {breakable})")
-        L.append("#figure(")
-        if built.caption is not None:
-            escaped = escape_typst(built.caption)
-            L.append(f"  caption: text([{escaped}]),")
-        L.append('  kind: "tinytable",')
-        L.append('  supplement: "Table",')
-        L.append("")
+        elif not need_figure and opts.multipage is not None:
+            breakable = "true" if opts.multipage else "false"
+            L.append(f"#set page(breakable: {breakable})")
 
-        L.append("block[")
+        if need_figure:
+            L.append("#figure(")
+            if built.caption is not None:
+                escaped = escape_typst(built.caption)
+                L.append(f"  caption: text([{escaped}]),")
+            L.append('  kind: "tinytable",')
+            L.append('  supplement: "Table",')
+            L.append("")
+            L.append("block[")
+        else:
+            L.append("#table(")
 
-        self._emit_style_block(L, built)
-        L.append("")
-
-        L.append("  #table(")
+        if need_figure:
+            self._emit_style_block(L, built)
+            L.append("")
 
         ncol = len(built.colnames_display)
+
+        if need_figure:
+            L.append("  #table(")
+
         cells = ["auto"] * ncol
         L.append(f"    columns: ({', '.join(cells)}),")
 
         if built.col_groups and not built.has_background:
             L.append("    column-gutter: 5pt,")
 
-        L.append("    stroke: none,")
+        stroke_val = opts.grid_stroke if opts.grid_stroke else "none"
+        L.append(f"    stroke: {stroke_val},")
 
         if opts.row_height_em is not None:
             L.append(f"    rows: {opts.row_height_em}em,")
@@ -151,13 +166,62 @@ class TypstRenderer:
             if parts:
                 L.append("    " + ",".join(parts) + ",")
 
+        self._emit_footer(L, built, ncol)
+
         L.append("  )")
 
-        L.append("]")
-
-        L.append(")")
+        if need_figure:
+            L.append("]")
+            if opts.align_figure:
+                aligned = opts.align_to_typst()
+                L = [
+                    f"#align({aligned}, [",
+                    *L,
+                    "])",
+                ]
+            if opts.rotate_angle is not None:
+                L = [
+                    f"#rotate({opts.rotate_angle}, reflow: true, [",
+                    *L,
+                    "])",
+                ]
+            L.append(")")
+        else:
+            if opts.align_figure:
+                aligned = opts.align_to_typst()
+                L = [
+                    f"#align({aligned}, [",
+                    *L,
+                    "])",
+                ]
+            if opts.rotate_angle is not None:
+                L = [
+                    f"#rotate({opts.rotate_angle}, reflow: true, [",
+                    *L,
+                    "])",
+                ]
 
         return "\n".join(L)
+
+    def _emit_footer(self, L, built, ncol):
+        notes = built.notes
+        if not notes:
+            return
+
+        L.append("    table.footer(")
+        L.append("      repeat: false,")
+        for note in notes:
+            escaped = escape_typst(note.text)
+            if note.marker:
+                L.append(
+                    f"      table.cell(align: left, colspan: {ncol},"
+                    f" [#super[{escape_typst(note.marker)}] {escaped}]),"
+                )
+            else:
+                L.append(
+                    f"      table.cell(align: left, colspan: {ncol}, [{escaped}]),"
+                )
+        L.append("    ),")
 
     def _emit_lines(self, L, built):
         hlines: dict[tuple[int, str], set[int]] = {}

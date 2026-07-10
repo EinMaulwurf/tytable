@@ -5,11 +5,9 @@
 
 block[
   #let style-dict = (
-    "1_0": 0,
   )
 
   #let style-array = (
-    (fontsize: 1.2em,),
   )
 
   #let get-style(x, y) = {
@@ -55,6 +53,11 @@ block[
     ),
     [1],[2],
     [3],[4],
+    table.footer(
+      repeat: false,
+      table.cell(align: left, colspan: 2, [Note one]),
+      table.cell(align: left, colspan: 2, [Note two]),
+    ),
   )
 ]
 )

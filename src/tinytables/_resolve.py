@@ -28,6 +28,51 @@ class BuiltTable:
     assets_relpath: str | None = None
 
 
+def _resolve_i_internal(i_selector, nhead, has_header, n_merged_body, group_positions):
+    from ._indices import resolve_i
+    return resolve_i(i_selector, nhead=nhead, group_positions=group_positions,
+                     n_merged_body=n_merged_body, has_header=has_header)
+
+
+def _resolve_j_internal(j_selector, colnames):
+    from ._indices import resolve_j
+    return resolve_j(j_selector, colnames)
+
+
+def _insert_footnote_markers(data_body, colnames_display, notes, nhead, n_merged_body,
+                              group_positions, has_header, colnames):
+    if not notes:
+        return
+
+    for note in notes:
+        if note.i is None and note.j is None:
+            continue
+        marker = note.marker
+        if marker is None:
+            continue
+
+        marker_text = f"#super[{escape_typst(marker)}]"
+
+        j_selector = note.j
+        i_vals = _resolve_i_internal(
+            note.i, nhead, has_header, n_merged_body, group_positions,
+        )
+        j_vals = _resolve_j_internal(j_selector, colnames)
+
+        for i in i_vals:
+            if i == 0:
+                for j in j_vals:
+                    ci = j - 1
+                    if 0 <= ci < len(colnames_display):
+                        colnames_display[ci] += marker_text
+            elif i >= 1:
+                ri = i - 1
+                for j in j_vals:
+                    ci = j - 1
+                    if ri < len(data_body) and ci < len(data_body[ri]):
+                        data_body[ri][ci] += marker_text
+
+
 def build(table, output: str) -> BuiltTable:
     if output not in ("typst",):
         raise NotImplementedError(f"output={output!r} not implemented in Phase 1")
@@ -70,8 +115,23 @@ def build(table, output: str) -> BuiltTable:
     n_merged_body = len(data_body)
     col_groups = list(table._col_group_rows)
     nhead = (1 if show_colnames else 0) + len(col_groups)
-
     group_position_set = set(row_group_positions.keys())
+
+    table._nhead = nhead
+    table._n_merged_body_rows = n_merged_body
+
+    n_style_before = len(table._style_directives)
+    n_fmt_before = len(table._format_directives)
+
+    for hook in table._prepare_hooks:
+        hook(table)
+
+    if len(table._style_directives) > n_style_before:
+        added = table._style_directives[n_style_before:]
+        table._style_directives = added + table._style_directives[:n_style_before]
+    if len(table._format_directives) > n_fmt_before:
+        added = table._format_directives[n_fmt_before:]
+        table._format_directives = added + table._format_directives[:n_fmt_before]
 
     escaped_cells = apply_formats(
         data_body, typed_body, table,
@@ -88,6 +148,12 @@ def build(table, output: str) -> BuiltTable:
             for c in range(len(data_body[r])):
                 if (r, c) not in escaped_cells:
                     data_body[r][c] = escape_typst(data_body[r][c])
+
+    _insert_footnote_markers(
+        data_body, colnames_display, table._notes,
+        nhead, n_merged_body, group_position_set,
+        show_colnames, table._colnames,
+    )
 
     style_grid, style_lines = build_style_grid(
         table,
@@ -118,4 +184,5 @@ def build(table, output: str) -> BuiltTable:
         caption=table._caption,
         width=table._width,
         height=table._height,
+        notes=table._notes,
     )

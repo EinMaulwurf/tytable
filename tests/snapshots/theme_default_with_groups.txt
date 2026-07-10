@@ -5,11 +5,9 @@
 
 block[
   #let style-dict = (
-    "1_0": 0,
   )
 
   #let style-array = (
-    (fontsize: 1.2em,),
   )
 
   #let get-style(x, y) = {
@@ -35,7 +33,8 @@ block[
   }
 
   #table(
-    columns: (auto, auto),
+    columns: (auto, auto, auto, auto),
+    column-gutter: 5pt,
     stroke: none,
     rows: auto,
     align: (x, y) => {
@@ -46,15 +45,16 @@ block[
       let style = get-style(x, y)
       if style != none and "background" in style { style.background }
     },
-    table.hline(y: 0, start: 0, end: 2, stroke: 0.08em + black),
-    table.hline(y: 1, start: 0, end: 2, stroke: 0.05em + black),
-    table.hline(y: 3, start: 0, end: 2, stroke: 0.08em + black),
+    table.hline(y: 0, start: 0, end: 4, stroke: 0.08em + black),
+    table.hline(y: 2, start: 0, end: 4, stroke: 0.05em + black),
+    table.hline(y: 4, start: 0, end: 4, stroke: 0.08em + black),
     table.header(
       repeat: true,
-      [A],[B],
+      table.cell(colspan: 2, align: center)[Group], [ ], [ ],
+      [a],[b],[c],[d],
     ),
-    [1],[2],
-    [3],[4],
+    [1],[3],[5],[7],
+    [2],[4],[6],[8],
   )
 ]
 )

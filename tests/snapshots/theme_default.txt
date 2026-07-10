@@ -5,11 +5,9 @@
 
 block[
   #let style-dict = (
-    "1_0": 0,
   )
 
   #let style-array = (
-    (fontsize: 1.2em,),
   )
 
   #let get-style(x, y) = {
