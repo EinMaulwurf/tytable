@@ -1,4 +1,4 @@
-# tinytables
+# tytable
 
 A small, easy-to-use Python library that turns **Polars DataFrames** into
 **Typst tables**, inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable)
@@ -8,8 +8,15 @@ Jupyter HTML preview.
 ## Install
 
 ```
-pip install tinytables
-pip install tinytables[images]   # for .plot() / .images() (matplotlib + numpy)
+pip install tytable
+pip install tytable[images]   # for .plot() / .images() (matplotlib + numpy)
+```
+
+From GitHub with uv:
+
+```
+uv pip install git+https://github.com/EinMaulwurf/tytable.git
+uv add git+https://github.com/EinMaulwurf/tytable.git   # as a dependency in pyproject.toml
 ```
 
 For development (clone and):
@@ -23,7 +30,7 @@ make test
 
 ```python
 import polars as pl
-from tinytables import tt
+from tytable import tt
 
 df = pl.DataFrame({
     "Product": ["A", "B", "C"],
@@ -147,11 +154,11 @@ elsewhere, image paths must resolve relative to your **Typst project root**
 Images then land in `build/assets/products/` and the `.typ` references
 `../assets/products/...`, which resolves correctly from `build/tables/` when
 compiled as part of the parent. Without an explicit `assets=`, images land in a
-`tinytable_assets/` folder next to the output file.
+`tytable_assets/` folder next to the output file.
 
 ## Coming from R tinytable
 
-| R (`tinytable`)                  | Python (`tinytables`)               |
+| R (`tinytable`)                  | Python (`tytable`)                 |
 | -------------------------------- | ----------------------------------- | ------------------------------------- |
 | `tt(data)`                       | `tt(df)` (Polars DataFrame)         |
 | `style_tt(x, ...)`               | `.style(...)`                       |
