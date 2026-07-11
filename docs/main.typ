@@ -129,16 +129,38 @@ visible table.
 
 = Formatting
 
-#emph[Format in polars first; use `.fmt()` for the rest.] Most formatting
-(rounding, string ops, `fill_null`, percentages) is best done in polars before
-passing the dataframe to `tt()`. `.fmt()` then covers the high-value cases
-polars can't:
+Cell values can be formatted in three complementary ways. Pick whichever suits
+the column, or mix them across columns in the same table.
+
+== In polars
+
+The most capable option: do everything #emph[before] passing the dataframe to
+`tt()`. Polars expressions can round, cast numbers to strings, swap the decimal
+delimiter, prepend a currency symbol, add thousands separators, and fill nulls —
+anything polars can express, the table will render. Here revenue is rounded to
+two decimals, formatted as USD with thousands separators, and nulls filled with
+an em dash, all before `tt()` ever sees the data:
+
+#tag("SOURCE")
+#source("examples/11_format_polars.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/11_format_polars.typ"
+
+(Tytable's per-cell Typst escaping — `escape=True` by default — still applies to
+whatever strings polars produces, so characters like `$` are escaped for you.)
+
+== With `.fmt()`
+
+For quick, in-table transforms that stay inside the `tt()` chain, without
+reaching back into polars:
 
 - `digits` — fixed decimal places (`num_fmt="decimal"`) or significant figures
   (`num_fmt="significant"`)
-- `replace` — replace missing/null/NaN values with a string or a dict mapping
+- `replace` — replace missing/null/NaN values with a string or a `{old: new}`
+  mapping
 - `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
-- `fn` — custom column-wise transform
 
 #tag("SOURCE")
 #source("examples/02_format.py")
@@ -147,14 +169,14 @@ polars can't:
 #v(0.4em)
 #include "build/02_format.typ"
 
-== Custom functions (`fn`)
+== With `.fmt(fn=...)`
 
-For anything polars and the built-in `digits`/`replace` can't express, pass a
-callable to `fn`. It runs #emph[column-wise]: tytable hands it the current string
-values of the selected column (as a `list`) and expects a `list` of the same
-length back. This makes it easy to implement transforms that depend on magnitude
-— for example, abbreviating large numbers into a human-readable scale where
-`201818` becomes "201.8 thousand" and `2729179` becomes "2.7 million":
+For anything the built-ins don't cover, pass a callable to `fn`. It runs
+#emph[column-wise]: tytable hands it the current string values of the selected
+column (as a `list`) and expects a `list` of the same length back. This makes it
+easy to implement transforms that depend on magnitude — for example,
+abbreviating large numbers into a human-readable scale where `201818` becomes
+"201.8 thousand" and `2729179` becomes "2.7 million":
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")
