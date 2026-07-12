@@ -1,4 +1,5 @@
-"""Example sparkline for tytable .plot() — copy/adapt for your own use.
+"""
+Example sparkline for tytable .plot() — copy/adapt for your own use.
 
 Drop this function into your script and pass it to .plot(fun=sparkline).
 A tight, low-padding figure keeps the line crisp when the image is scaled
@@ -10,7 +11,8 @@ import matplotlib.pyplot as plt
 
 
 def sparkline(values, *, color="#2c3e50", xlim=None, **kw):
-    """Pure sparkline builder. Returns a matplotlib Figure; no file I/O.
+    """
+    Pure sparkline builder. Returns a matplotlib Figure; no file I/O.
 
     The *values* list is the per-cell data from the polars List column.
     """

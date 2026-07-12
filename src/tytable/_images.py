@@ -25,6 +25,7 @@ except ImportError:
 
 
 def _require_images() -> None:
+    """Raise an informative ``ImportError`` if matplotlib/numpy are not installed."""
     try:
         import matplotlib  # noqa: F401
         import numpy  # noqa: F401
@@ -35,12 +36,14 @@ def _require_images() -> None:
 
 
 def _height_to_float(h: str | float) -> float:
+    """Coerce a height spec (number or ``"1.5em"``) to a plain float."""
     if isinstance(h, str):
         return float(h.replace("em", "").strip())
     return float(h)
 
 
 def _accepts_kwargs(fun: Callable) -> bool:
+    """True if ``fun`` declares a ``color`` parameter or accepts ``**kwargs``."""
     try:
         sig = inspect.signature(fun)
         return "color" in sig.parameters or any(
@@ -60,6 +63,7 @@ def _save_plot_image(
     color: str,
     xlim: object,
 ) -> None:
+    """Call ``fun(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
     import matplotlib.pyplot as plt
 
     obj = fun(entry, color=color, xlim=xlim) if _accepts_kwargs(fun) else fun(entry)
@@ -83,6 +87,7 @@ def _save_plot_image(
 
 
 def _make_svg_wrapper(png_bytes: bytes, width_px: int, height_px: int) -> str:
+    """Wrap PNG bytes in a minimal inline SVG (used for portable Typst images)."""
     b64 = base64.b64encode(png_bytes).decode("ascii")
     return (
         f"<svg xmlns='http://www.w3.org/2000/svg' width='{width_px}' height='{height_px}' "
@@ -94,6 +99,7 @@ def _make_svg_wrapper(png_bytes: bytes, width_px: int, height_px: int) -> str:
 
 
 def _escape_typst_bytes(s: str) -> str:
+    """Escape backslashes and double-quotes for embedding inside a Typst string literal."""
     s = s.replace("\\", "\\\\")
     s = s.replace('"', '\\"')
     return s
@@ -108,6 +114,7 @@ def _build_image_cell_string(
     width_px: int,
     height_px: int,
 ) -> str:
+    """Build the markup string for one image cell, backend- and portability-specific."""
     h = format_markup_num(height)
     if output == "typst":
         if portable and png_path is not None:
@@ -137,6 +144,7 @@ def execute_plots(
     n_merged_body: int,
     group_positions: set[int],
 ) -> None:
+    """Run every ``PlotDirective`` (generated plots and static images), writing image cell markup in place."""
     if not table._plot_directives:
         return
 

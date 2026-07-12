@@ -1,16 +1,22 @@
+"""ASCII renderer — produces a plain-text box-drawing table for ``__repr__``."""
+
 from __future__ import annotations
 
 from ._resolve import BuiltTable
 
 
 def _plain_text(val: str) -> str:
+    """Collapse newlines in a cell value to single-line plain text."""
     return val.replace("\n", " ").replace("\r", "")
 
 
 class AsciiRenderer:
+    """Render a :class:`BuiltTable` to a fixed-width ASCII table string."""
+
     MAX_LINE_LENGTH = 60
 
     def render(self, built: BuiltTable, _opts: object = None) -> str:
+        """Produce the box-drawing ASCII table (header + body, columns auto-sized)."""
         max_widths = [len(str(c)) for c in built.colnames_display]
 
         for row in built.data_body:

@@ -1,3 +1,10 @@
+"""
+Public API: the ``tt()`` factory and the :class:`TinyTable` class.
+
+All styling, formatting, grouping, and plotting is recorded as *intent* and
+replayed in a fixed order when ``.render()`` / ``.save()`` is called.
+"""
+
 from __future__ import annotations
 
 import pathlib
@@ -32,6 +39,85 @@ def tt(
     theme: str | Callable | None = "default",
     finalize: Callable[[str, str], str] | None = None,
 ) -> TinyTable:
+    """
+    Create a :class:`TinyTable` from a Polars DataFrame.
+
+    This is the main entry point of the library. The returned table is
+    configured by chaining methods — ``.style()``, ``.fmt()``, ``.group()``,
+    ``.theme()``, ``.plot()`` — and finally rendered to Typst, HTML, or ASCII
+    with ``.render()`` or ``.save()``. All chaining methods return the table
+    (``self``), so a single fluent expression can describe a complex table.
+
+    Parameters
+    ----------
+    data
+        The Polars DataFrame to render. The frame is cloned, so the original
+        is never mutated.
+    caption
+        Table caption (rendered as a Typst ``figure`` caption or an HTML
+        ``<caption>``). ``None`` omits it.
+    notes
+        List of footnotes. Each entry may be a plain ``str`` (untargeted note),
+        a :class:`dict` with keys ``text``, ``marker``, ``i``, ``j``, or a
+        :class:`~tytable._directives.Note`. Notes attached to cells via ``i`` /
+        ``j`` get auto-numbered superscript markers.
+    width
+        Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
+        half), a per-column list of fractions/strings/``None`` (``None`` =
+        auto), or a Typst/HTML length string such as ``"3.5cm"``. ``None`` lets
+        every column auto-size.
+    height
+        Row height in ``em`` (Typst). ``None`` = auto rows.
+    gutter
+        Typst column gutter. A number is treated as points; a string such as
+        ``"0.1em"`` is passed through. ``None`` suppresses the gutter.
+    colnames
+        Show the column-name header row (default ``True``).
+    colnames_override
+        Mapping ``{original_name: display_name}`` renaming columns for display
+        only (the dataframe itself is untouched).
+    rownames
+        Reserved — not yet implemented; kept for API parity with R tinytable.
+    digits
+        Global default number of decimal places applied to every numeric
+        column. Per-column overrides are set with ``.fmt(digits=...)``.
+    escape
+        Escape cell text for the target backend (default ``True``). Typst and
+        HTML metacharacters are escaped automatically; set ``False`` to pass
+        raw markup through.
+    theme
+        Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
+        ``"empty"``, ``"rotate"``), a callable ``theme(table) -> TinyTable``,
+        or ``None`` for no theme.
+    finalize
+        Optional post-render callback ``fn(rendered_string, output) -> str``
+        run after every renderer; equivalent to calling ``.finalize(fn)``.
+
+    Returns
+    -------
+    TinyTable
+        A new table ready for further chaining.
+
+    Examples
+    --------
+    >>> import polars as pl
+    >>> from tytable import tt
+    >>> df = pl.DataFrame({"x": [1, 2], "y": [3.5, 4.5]})
+    >>> type(tt(df))
+    <class 'tytable._tytable.TinyTable'>
+
+    A minimal table written to disk:
+
+    >>> tt(df, caption="demo").save("build/demo.typ")  # doctest: +SKIP
+
+    Chain formatting and styling before the terminal ``.save()``:
+
+    >>> (tt(df, width=1)                     # doctest: +SKIP
+    ...  .fmt(j="y", digits=2)
+    ...  .style(i="header", bold=True)
+    ...  .save("build/demo.typ"))
+    """
+
     t = TinyTable(
         data,
         caption=caption,
@@ -52,6 +138,7 @@ def tt(
 
 
 def _normalize_notes(raw: list[Any]) -> list[Note]:
+    """Coerce a heterogeneous ``notes`` list into ``Note`` dataclass instances."""
     if not raw:
         return []
     result = []
@@ -76,6 +163,7 @@ def _normalize_notes(raw: list[Any]) -> list[Note]:
 
 
 def _assign_markers(notes: list[Note]) -> None:
+    """Auto-number targeted notes (those with ``i``/``j``) in document order."""
     auto = 0
     for note in notes:
         if note.marker is not None:
@@ -88,6 +176,20 @@ def _assign_markers(notes: list[Note]) -> None:
 
 
 class TinyTable:
+    """
+    A chainable table built from a Polars DataFrame.
+
+    Instances are normally created with the :func:`tt` factory rather than
+    constructed directly. The class records styling, formatting, grouping, and
+    plotting as *intent*; nothing is rendered until ``.render()`` or
+    ``.save()`` is called, so row indices always refer to the final, visible
+    table.
+
+    Every mutator method (``.style()``, ``.fmt()``, ``.group()``, ``.theme()``,
+    ``.plot()``, ``.images()``, ``.finalize()``) returns ``self`` to enable
+    fluent chaining. ``.render()`` and ``.save()`` are terminal.
+    """
+
     def __init__(
         self,
         data: pl.DataFrame,
@@ -104,6 +206,7 @@ class TinyTable:
         escape: bool = True,
         theme: str | Callable | None = "default",
     ) -> None:
+        """Direct constructor — prefer the :func:`tt` factory. See :func:`tt` for parameter docs."""
         self._data = data.clone()
         if colnames_override:
             self._colnames = [colnames_override.get(c, c) for c in data.columns]
@@ -139,6 +242,7 @@ class TinyTable:
         self._apply_theme(theme)
 
     def _apply_theme(self, theme: str | Callable | None) -> None:
+        """Resolve a theme spec (name, callable, or ``None``) and apply it to the table."""
         if theme is None:
             return
         if callable(theme):
@@ -176,6 +280,62 @@ class TinyTable:
         line_trim: str | None = None,
         output: tuple[str, ...] | None = None,
     ) -> TinyTable:
+        """
+        Apply per-cell styling via row/column selectors.
+
+        Parameters
+        ----------
+        i
+            Row selector: ``0`` = first data row, ``"header"`` = column-name
+            row, negative ints = column-group header rows (``-1`` topmost),
+            ``"groupi"`` / ``"groupj"`` = row/column group separators, or a
+            ``list[int]``. ``None`` means *all* rows.
+        j
+            Column selector: a name (``"Score"``), an integer position (``0``),
+            a regex matched against column names, or a ``list`` of any of
+            these. ``None`` means *all* columns.
+        bold, italic, underline, strikeout, monospace, smallcaps
+            Boolean text decorations.
+        color
+            Foreground text color (hex, named, or Typst expression).
+        background
+            Cell background color.
+        fontsize
+            Font size in ``em``.
+        align
+            Horizontal alignment: ``"l"`` / ``"c"`` / ``"r"``.
+        alignv
+            Vertical alignment: ``"t"`` / ``"m"`` / ``"b"``.
+        indent
+            Left indent in ``em``.
+        colspan, rowspan
+            Merge the selected cell across ``N`` columns/rows.
+        line
+            Per-side border, any combination of ``t`` (top), ``b`` (bottom),
+            ``l`` (left), ``r`` (right) — e.g. ``"tblr"`` or ``"b"``.
+        line_color
+            Border color (default ``"black"``).
+        line_width
+            Border width in ``em`` (default ``0.1``).
+        line_trim
+            Optional Typst ``table.hline``/``vline`` trim spec.
+        output
+            Restrict this directive to the given output backends
+            (e.g. ``("typst",)``). ``None`` applies to all.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+
+        Examples
+        --------
+        >>> df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
+        >>> (tt(df)                           # doctest: +SKIP
+        ...  .style(i="header", bold=True, background="#2c3e50", color="white")
+        ...  .style(j="b", align="r")
+        ...  .style(i=0, line="b", line_color="#bdc3c7"))
+        """
         _validate_style(
             align=align,
             alignv=alignv,
@@ -228,6 +388,48 @@ class TinyTable:
         fn: Callable | None = None,
         output: tuple[str, ...] | None = None,
     ) -> TinyTable:
+        """
+        Apply value formatting to selected cells.
+
+        ``digits``, ``replace``, ``escape``, and ``fn`` may be combined in a
+        single call — they run in that order.
+
+        Parameters
+        ----------
+        i, j
+            Row/column selectors — see :meth:`style`. ``i`` defaults to *all
+            body rows*, ``j`` to *all columns*.
+        digits
+            Number of decimal places. Combined with ``num_fmt``.
+        num_fmt
+            Numeric style: ``"decimal"`` (fixed decimals, default) or
+            ``"significant"`` (significant figures).
+        replace
+            Substitute values: ``True`` blanks out nulls/NaNs, a ``str`` fills
+            them, or a ``{old: new}`` dict maps old (typed values or string
+            matches, including ``"null"``, ``"nan"``, ``"inf"``) to new.
+        escape
+            Re-escape cell text for the target backend after other transforms.
+        fn
+            Custom column-wise transform ``fn(values: list[str]) -> list[str]``.
+            Called once per selected column with the current string values; the
+            returned list must have the same length.
+        output
+            Restrict this directive to the given output backends. ``None``
+            applies to all.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+
+        Examples
+        --------
+        >>> df = pl.DataFrame({"rev": [12450.5, None]})
+        >>> (tt(df)                                # doctest: +SKIP
+        ...  .fmt(j="rev", digits=2)
+        ...  .fmt(j="rev", replace={"null": "—"}))
+        """
         self._format_directives.append(
             FormatDirective(
                 i=i,
@@ -256,6 +458,41 @@ class TinyTable:
         xlim: list[float] | None = None,
         output: tuple[str, ...] | None = None,
     ) -> TinyTable:
+        """
+        Embed a generated plot in each selected cell.
+
+        Requires the ``images`` extra (``pip install tytable[images]``).
+
+        Parameters
+        ----------
+        i, j
+            Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
+            defaults to *all body rows*.
+        fun
+            Plotting callable. Called once per selected row with either the
+            typed cell value (or the ``data`` list entry) plus optional
+            ``color`` / ``xlim`` keyword arguments. Must return a matplotlib
+            ``Figure`` or a plotnine ``ggplot``.
+        data
+            Optional per-cell data overriding the cell's own value. Indexed
+            row-major across the selected cells.
+        height
+            Plot height in ``em`` (default ``1.0``).
+        height_px, width_px
+            Pixel dimensions of the generated PNG (default 400×1200).
+        color
+            Color forwarded to ``fun`` (default ``"black"``).
+        xlim
+            Optional x-axis limits forwarded to ``fun``.
+        output
+            Restrict this directive to the given output backends. ``None``
+            applies to all.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+        """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
         if fun is None:
@@ -287,6 +524,30 @@ class TinyTable:
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
     ) -> TinyTable:
+        """
+        Embed existing image files into the selected cells.
+
+        Requires the ``images`` extra (``pip install tytable[images]``).
+
+        Parameters
+        ----------
+        i, j
+            Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
+            defaults to *all body rows*.
+        paths
+            List of image file paths, indexed row-major across the selected
+            cells.
+        height
+            Image height in ``em`` (default ``1.0``).
+        output
+            Restrict this directive to the given output backends. ``None``
+            applies to all.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+        """
         if j is None:
             raise ValueError(".images() requires j (column selector)")
         if paths is None:
@@ -309,6 +570,36 @@ class TinyTable:
         i: dict[str, int] | list[object] | None = None,
         j: dict[str, list[str | int]] | str | None = None,
     ) -> TinyTable:
+        """
+        Add row and/or column groups.
+
+        Parameters
+        ----------
+        i
+            Row groups. A ``{label: row}`` dict inserts a labelled separator
+            row before the given 0-based data row. A ``list`` (one entry per
+            data row) inserts a separator whenever the value changes.
+        j
+            Column groups. A ``{label: [cols]}`` dict adds a spanning header
+            row where each value maps a label to a list of column names or
+            positions. A ``str`` delimiter splits every column name and turns
+            the shared prefixes into group labels (e.g. ``"_"`` on
+            ``"Q1_rev"`` yields a ``"Q1"`` group).
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+
+        Examples
+        --------
+        >>> df = pl.DataFrame({"Q1_rev": [1], "Q1_cost": [2],
+        ...                    "Q2_rev": [3], "Q2_cost": [4]})
+        >>> (tt(df)                                 # doctest: +SKIP
+        ...  .group(j={"Q1": ["Q1_rev", "Q1_cost"],
+        ...            "Q2": ["Q2_rev", "Q2_cost"]})
+        ...  .group(i={"Section B": 1}))
+        """
         if i is not None:
             register_row_groups(self, i)
         if j is not None:
@@ -316,15 +607,65 @@ class TinyTable:
         return self
 
     def theme(self, name: str | Callable | None = None) -> TinyTable:
+        """
+        Apply (or re-apply) a theme to the table.
+
+        Parameters
+        ----------
+        name
+            Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
+            ``"empty"``, ``"rotate"``), a callable
+            ``theme(table) -> TinyTable``, or ``None`` to apply no theme.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+        """
         self._apply_theme(name)
         self._theme_name = name
         return self
 
     def finalize(self, fn: Callable[[str, str], str]) -> TinyTable:
+        """
+        Register a post-render callback.
+
+        ``fn`` is called after every renderer with ``(rendered_string,
+        output)`` and must return the (possibly modified) string. Multiple
+        callbacks run in registration order.
+
+        Parameters
+        ----------
+        fn
+            ``fn(rendered: str, output: str) -> str``.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+        """
         self._finalize_hooks.append(fn)
         return self
 
     def render(self, output: str = "typst") -> str:
+        """
+        Render the table to a string.
+
+        Resolves all recorded directives (style, format, group, plot) and
+        produces output for the requested backend, then runs any registered
+        ``.finalize()`` callbacks.
+
+        Parameters
+        ----------
+        output
+            ``"typst"`` (default), ``"html"``, or ``"ascii"``.
+
+        Returns
+        -------
+        str
+            The rendered table as a string. Terminal — does not return the
+            table.
+        """
         built = build(self, output)
         if output == "html":
             result = HtmlRenderer().render(built)
@@ -337,6 +678,29 @@ class TinyTable:
         return result
 
     def save(self, path: str, assets: str | None = None) -> None:
+        """
+        Render the table and write it to ``path``.
+
+        The output format is inferred from the file suffix: ``.html`` /
+        ``.htm`` produce HTML, everything else (typically ``.typ``) produces
+        Typst. Parent directories are created automatically.
+
+        Parameters
+        ----------
+        path
+            Destination file path.
+        assets
+            Where generated image files are written, relative to the output
+            file. ``None`` (default) uses a ``tytable_assets/`` folder next to
+            the output.
+
+        Examples
+        --------
+        >>> tt(df).save("build/report.typ")               # doctest: +SKIP
+        >>> tt(df).save("build/report.html")              # doctest: +SKIP
+        >>> tt(df).save("build/tables/x.typ",             # doctest: +SKIP
+        ...            assets="../assets/x")
+        """
         p = pathlib.Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -352,7 +716,9 @@ class TinyTable:
         p.write_text(self.render(out), encoding="utf-8")
 
     def _repr_html_(self) -> str:
+        """Jupyter HTML preview — renders the table as HTML inline."""
         return self.render("html")
 
     def __repr__(self) -> str:
+        """Return an ASCII rendering of the table."""
         return self.render("ascii")

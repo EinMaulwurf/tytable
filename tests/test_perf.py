@@ -1,4 +1,5 @@
-"""Performance gate — asserts a heavily-styled 120x30 table renders under budget.
+"""
+Performance gate — asserts a heavily-styled 120x30 table renders under budget.
 
 See tytable_python_guide/15_performance.md §4. The package's design avoids
 tinytable R's three hotspots (per-style-entry full-grid scans, marker insertion

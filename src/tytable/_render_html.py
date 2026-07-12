@@ -1,3 +1,9 @@
+"""
+HTML renderer — produces a self-contained ``<table>`` for Jupyter previews.
+
+Used by :meth:`TinyTable._repr_html_` and by ``.render("html")`` / ``.save("*.html")``.
+"""
+
 from __future__ import annotations
 
 from typing import Any
@@ -8,6 +14,7 @@ from ._styling import compute_covered_cells
 
 
 def _align_to_css(h: str | None, v: str | None) -> str | None:
+    """Translate alignment shorthands into a CSS ``text-align`` keyword string."""
     if v == "m":
         v = "middle"
     if v == "horizon":
@@ -21,6 +28,7 @@ def _align_to_css(h: str | None, v: str | None) -> str | None:
 
 
 def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
+    """Build a single CSS style attribute string from cell props and pre-computed border CSS."""
     css_parts: list[str] = []
 
     if border_css:
@@ -58,6 +66,7 @@ def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
 
 
 def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tuple[int, int], str]:
+    """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
     from ._indices import convert_col_to_typst, convert_row_to_typst
 
     border_map: dict[tuple[int, int], str] = {}
@@ -83,7 +92,10 @@ def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tup
 
 
 class HtmlRenderer:
+    """Render a :class:`BuiltTable` to an HTML ``<table>`` string."""
+
     def render(self, built: BuiltTable, _opts: object = None) -> str:
+        """Produce the full ``<table>…</table>`` HTML (colgroup, thead, tbody, tfoot)."""
         ncol = len(built.colnames_display)
         border_map = _build_border_map(built.style_lines, built.nhead)
 

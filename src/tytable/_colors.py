@@ -157,7 +157,8 @@ _NAMED_COLORS: dict[str, str] = {
 
 
 def color_to_typst(color: str) -> str:
-    """Map a user color spec to a Typst color expression (guide 05 §8).
+    """
+    Map a user color spec to a Typst color expression (guide 05 §8).
 
     - "#RGB"/"#RRGGBB" -> rgb("#rrggbb") (normalize #RGB → #RRGGBB, lowercase)
     - "black"/"white"  -> black / white (Typst built-ins)

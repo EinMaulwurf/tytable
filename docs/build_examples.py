@@ -1,8 +1,9 @@
-"""Run every example script in ``examples/`` to regenerate ``build/*.typ``.
+"""
+Run every example script in ``examples/`` to regenerate ``build/*.typ``.
 
 Each ``NN_*.py`` file is a self-contained, runnable example that saves its
-Typst output under ``build/``.  ``main.typ`` then ``#read``\\ s the source for
-display and ``#include``\\ s the generated table for rendering, so the example
+Typst output under ``build/``.  ``main.typ`` then ``#read``\ s the source for
+display and ``#include``\ s the generated table for rendering, so the example
 file is the single source of truth.
 
 Run:  uv run python docs/build_examples.py

@@ -1,3 +1,11 @@
+"""
+The render pipeline: resolve recorded directives into a :class:`BuiltTable`.
+
+:func:`build` is called by :meth:`TinyTable.render` and turns the lazy intent
+(style / format / group / plot directives) into a backend-agnostic
+:class:`BuiltTable` that the renderers consume.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -17,6 +25,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class BuiltTable:
+    """Backend-agnostic snapshot of a fully-resolved table, consumed by renderers."""
     output: str
     data_body: list[list[str]] = field(default_factory=list)
     colnames_display: list[str] = field(default_factory=list)
@@ -41,6 +50,7 @@ def _resolve_i_internal(
     n_merged_body: int,
     group_positions: set[int],
 ) -> list[int] | None:
+    """Thin wrapper around :func:`resolve_i` re-exported for footnote insertion."""
     from ._indices import resolve_i
 
     return resolve_i(
@@ -53,6 +63,7 @@ def _resolve_i_internal(
 
 
 def _resolve_j_internal(j_selector: int | str | list[int] | None, colnames: list[str]) -> list[int]:
+    """Thin wrapper around :func:`resolve_j` re-exported for footnote insertion."""
     from ._indices import resolve_j
 
     return resolve_j(j_selector, colnames)
@@ -69,6 +80,7 @@ def _insert_footnote_markers(
     colnames: list[str],
     output: str,
 ) -> None:
+    """Append superscript markers to cells targeted by a note (mutates in place)."""
     if not notes:
         return
 
@@ -111,6 +123,12 @@ def _insert_footnote_markers(
 
 
 def build(table: TinyTable, output: str) -> BuiltTable:
+    """
+    Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
+
+    Runs the fixed pipeline: merge row groups → run prepare-hooks → apply
+    formats → execute plots → insert footnote markers → build the style grid.
+    """
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
 

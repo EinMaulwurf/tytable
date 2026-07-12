@@ -1,4 +1,5 @@
-"""Column-width example — full-width table with a fixed first column.
+"""
+Column-width example — full-width table with a fixed first column.
 
 The first column is pinned to an absolute width; the remaining columns use Typst
 fractional units (``1fr``) so they share whatever width is left, making the

@@ -1,4 +1,5 @@
-"""Full report example — combining groups, formatting, styling, and widths.
+"""
+Full report example — combining groups, formatting, styling, and widths.
 
 A feature-rich table built without any image dependencies: explicit column
 groups (dict form), a row-group separator, numeric formatting, a full-width

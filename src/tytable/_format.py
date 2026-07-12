@@ -1,3 +1,9 @@
+"""
+Value formatting: digits, significant figures, replace, escape, and fn transforms.
+
+Applied during the render pipeline by :func:`tytable._resolve.build`.
+"""
+
 from __future__ import annotations
 
 import math
@@ -11,20 +17,24 @@ if TYPE_CHECKING:
 
 
 def _is_numeric_typed(val: object) -> bool:
+    """True for ints/floats but not bools (which are technically int subclasses)."""
     if isinstance(val, bool):
         return False
     return isinstance(val, (int, float))
 
 
 def _fmt_numeric_decimal(val: Any, digits: int) -> str:
+    """Format a number with a fixed number of decimal places."""
     return f"{float(val):.{digits}f}"
 
 
 def _fmt_numeric_significant(val: Any, digits: int) -> str:
+    """Format a number to a given number of significant figures."""
     return f"{float(val):.{digits}g}"
 
 
 def _matches(o: object, typed: object, s: str) -> bool:
+    """Check whether a ``replace`` key matches a typed value or its string form (handles null/nan/inf)."""
     if o is None:
         return typed is None
     if isinstance(o, float) and math.isnan(o):
@@ -45,6 +55,7 @@ def _matches(o: object, typed: object, s: str) -> bool:
 
 
 def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
+    """Apply a ``replace`` spec (``True``, a fill string, or an ``{old: new}`` dict) to one cell."""
     if replace is True:
         if typed_val is None or (isinstance(typed_val, float) and math.isnan(typed_val)):
             return " "
@@ -68,6 +79,7 @@ def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
 
 
 def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
+    """Re-escape a cell string for the target backend when ``fmt(escape=...)`` is set."""
     if escape_spec is True or escape_spec == "typst":
         if output in ("html", "ascii"):
             from ._escape import escape_html
@@ -89,6 +101,7 @@ def apply_formats(
     output: str,
     colnames: list[str],
 ) -> set[tuple[int, int]]:
+    """Apply every ``FormatDirective`` to the data body, returning cells that were explicitly escaped."""
     escaped_cells: set[tuple[int, int]] = set()
 
     for d in table._format_directives:

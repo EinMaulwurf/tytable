@@ -1,3 +1,10 @@
+"""
+Row and column group registration and merging into the table body.
+
+Called by :meth:`TinyTable.group` to record groups, and by
+:func:`tytable._resolve.build` to merge row-group separator rows into the body.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -9,6 +16,7 @@ if TYPE_CHECKING:
 
 
 def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
+    """Translate a list of column names/positions into 0-based integer indices."""
     indices = []
     for c in col_spec:
         if isinstance(c, str):
@@ -26,6 +34,7 @@ def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
 def _build_col_group_row(
     j_dict: dict[str, list[str | int]], colnames: list[str]
 ) -> list[str | None]:
+    """Build one column-group header row (label at span start, ``""`` under the span, ``None`` elsewhere)."""
     ncol = len(colnames)
     row: list[str | None] = [None] * ncol
     for label, cols in j_dict.items():
@@ -41,6 +50,7 @@ def _build_col_group_row(
 
 
 def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[str | None]]:
+    """Split column names on ``delim`` and build one header row per hierarchical level."""
     parts = [c.split(delim) for c in colnames]
     nlevels = len(parts[0])
     if any(len(p) != nlevels for p in parts):
@@ -67,6 +77,7 @@ def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[st
 
 
 def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> TinyTable:
+    """Record row-group separators from a ``{label: row}`` dict or a run-length list."""
     if isinstance(i, dict):
         pairs = sorted(i.items(), key=lambda x: x[1])
         for label, pos in pairs:
@@ -89,6 +100,7 @@ def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> Tiny
 def register_col_groups(
     table: TinyTable, j: dict[str, list[str | int]] | str, colnames: list[str]
 ) -> TinyTable:
+    """Record column-group header rows from a ``{label: [cols]}`` dict or a delimiter string."""
     if isinstance(j, dict):
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
@@ -104,6 +116,7 @@ def register_col_groups(
 def merge_row_groups(
     data_body: list[list[str]], row_groups: list[RowGroup], ncols: int
 ) -> tuple[list[list[str]], dict[int, str]]:
+    """Interleave row-group separator rows into the body; returns the merged body and ``{row: label}``."""
     if not row_groups:
         return data_body, {}
     nrows = len(data_body)

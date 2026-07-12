@@ -1,3 +1,10 @@
+"""
+Frozen dataclasses recording user *intent* (styles, formats, plots, groups).
+
+These are produced by the chaining methods on :class:`~tytable._tytable.TinyTable`
+and replayed at render time by :func:`tytable._resolve.build`.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -6,6 +13,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class StyleDirective:
+    """A single ``.style()`` call: selectors plus the cell properties to apply."""
     i: int | str | list[int] | None
     j: int | str | list[int | str] | None
     bold: bool | None = None
@@ -31,6 +39,7 @@ class StyleDirective:
 
 @dataclass(frozen=True)
 class FormatDirective:
+    """A single ``.fmt()`` call: selectors plus numeric/format/replace/fn transforms."""
     i: int | str | list[int] | None
     j: int | str | list[int | str] | None
     digits: int | None = None
@@ -43,6 +52,7 @@ class FormatDirective:
 
 @dataclass(frozen=True)
 class PlotDirective:
+    """A single ``.plot()`` / ``.images()`` call."""
     i: int | str | list[int] | None
     j: int | str | list[int | str] | None
     fun: Callable | None = None
@@ -58,18 +68,21 @@ class PlotDirective:
 
 @dataclass(frozen=True)
 class RowGroup:
+    """A row-group separator: ``label`` displayed before data row ``position``."""
     label: str
     position: int
 
 
 @dataclass(frozen=True)
 class ColGroup:
+    """A column group: ``label`` spanning ``columns`` (0-based positions)."""
     label: str
     columns: list[int]
 
 
 @dataclass(frozen=True)
 class Note:
+    """A footnote; ``marker`` is auto-assigned when ``i``/``j`` target a cell."""
     text: str
     marker: str | None = None
     i: list[int] | None = None

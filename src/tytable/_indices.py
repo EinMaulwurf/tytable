@@ -1,4 +1,5 @@
-"""Internal row/column index conventions and Typst conversion.
+"""
+Internal row/column index conventions and Typst conversion.
 
 Convention (documented once, referenced everywhere):
 - Data rows: 0-based (first data row is i=0)
@@ -22,7 +23,8 @@ from collections.abc import Sequence
 
 
 def convert_row_to_typst(i: int, nhead: int) -> int:
-    """Convert an internal row index to a 0-based Typst row index.
+    """
+    Convert an internal row index to a 0-based Typst row index.
 
     Internal convention: i=0 is colnames, i>=1 are data rows (1-based),
     i<0 are column-group header rows (i=-1 topmost). See module docstring.
@@ -53,7 +55,8 @@ def resolve_i(
     n_merged_body: int,
     has_header: bool,
 ) -> list[int] | None:
-    """Resolve user row selector to internal row indices. guide 06 §1.
+    """
+    Resolve user row selector to internal row indices. guide 06 §1.
 
     Returns list[int], or None when i is None (caller decides the default).
     Internal convention: 0 = colnames, -k = col-group header (−1 topmost),

@@ -1,4 +1,5 @@
-"""The styling engine: selector resolution → batched style grid + line list.
+"""
+The styling engine: selector resolution → batched style grid + line list.
 
 Design rules (guide 06, 15): one batched pass over directives writing into a
 single (i, j) -> props dict; overwrite non-line props (per-property
@@ -52,6 +53,7 @@ _LINE_RE = re.compile(r"^[tblr]+$")
 
 
 def align_to_typst(h: str | None, v: str | None) -> str | None:
+    """Translate horizontal/vertical alignment shorthands into a Typst ``align`` expression."""
     hs = _ALIGN_H.get(h) if h else None
     vs = _ALIGN_V.get(v) if v else None
     if hs and vs:

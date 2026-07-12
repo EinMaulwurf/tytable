@@ -3,7 +3,8 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _deterministic_ids(monkeypatch):
-    """Inject a deterministic image-id generator so snapshots are reproducible.
+    """
+    Inject a deterministic image-id generator so snapshots are reproducible.
 
     Targets the canonical location `tytable._utils._new_image_id` and any
     per-module overrides added later (`tytable._images._new_image_id`,

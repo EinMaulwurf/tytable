@@ -5,7 +5,8 @@ SNAP = pathlib.Path(__file__).parent / "snapshots"
 
 
 def assert_snapshot(name: str, actual: str) -> None:
-    """Compare `actual` to stored snapshot tests/snapshots/{name}.txt.
+    """
+    Compare `actual` to stored snapshot tests/snapshots/{name}.txt.
 
     If the snapshot does not exist, or env SNAPSHOT_UPDATE is set, write it.
     Otherwise assert byte equality with a helpful diff.

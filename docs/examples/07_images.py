@@ -1,4 +1,5 @@
-"""Images & sparklines example — embedding generated plots in cells.
+"""
+Images & sparklines example — embedding generated plots in cells.
 
 Requires the `images` extra:  pip install tytable[images]
 """

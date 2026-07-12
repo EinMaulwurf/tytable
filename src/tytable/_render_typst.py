@@ -1,3 +1,10 @@
+"""
+Typst renderer — turns a :class:`BuiltTable` into a Typst source fragment.
+
+The output is a ``#figure(…)/#table(…)`` block (or bare ``#table(…)`` when
+``figure`` is disabled) suitable for ``#import``-ing into a larger document.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,6 +19,7 @@ from ._styling import align_to_typst, compute_covered_cells
 
 
 def _props_to_signature(props: dict[str, Any]) -> str:
+    """Translate a cell-style prop dict into a comma-separated Typst signature fragment."""
     parts = []
     if props.get("bold"):
         parts.append("bold: true")
@@ -43,6 +51,7 @@ def _props_to_signature(props: dict[str, Any]) -> str:
 
 @dataclass
 class TypstRenderOptions:
+    """Knobs controlling the Typst output (figure wrapping, gutter, rotation, …)."""
     figure: bool = True
     multipage: bool | None = None
     align_figure: str | None = None
@@ -55,10 +64,12 @@ class TypstRenderOptions:
     column_gutter: float | str | None = 2
 
     def align_to_typst(self) -> str:
+        """Return the Typst alignment keyword for ``align_figure``."""
         return {"l": "left", "c": "center", "r": "right"}.get(self.align_figure or "l", "left")
 
 
 def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
+    """Group a set of ints into contiguous ``[start, end)`` ranges (for coalescing hlines/vlines)."""
     sorted_values = sorted(values)
     if not sorted_values:
         return []
@@ -74,8 +85,11 @@ def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
 
 
 class TypstRenderer:
+    """Render a :class:`BuiltTable` to a Typst source string."""
+
     @staticmethod
     def _columns_spec(width: float | str | list[float | str | None] | None, ncol: int) -> list[str]:
+        """Build the Typst ``columns: (…)`` entry list from a user width spec."""
         if width is None:
             return ["auto"] * ncol
         if isinstance(width, str):
@@ -93,6 +107,7 @@ class TypstRenderer:
         return result
 
     def render(self, built: BuiltTable, opts: TypstRenderOptions) -> str:
+        """Produce the full Typst fragment (figure/table header, body, footer, notes)."""
         L: list[str] = []
         need_figure = opts.figure
 
@@ -213,6 +228,7 @@ class TypstRenderer:
         return "\n".join(L)
 
     def _emit_footer(self, L: list[str], built: BuiltTable, ncol: int) -> None:
+        """Append a ``table.footer(…)`` block of notes when present."""
         notes = built.notes
         if not notes:
             return
@@ -231,6 +247,7 @@ class TypstRenderer:
         L.append("    ),")
 
     def _emit_lines(self, L: list[str], built: BuiltTable) -> None:
+        """Coalesce ``line=`` directives into ``table.hline``/``table.vline`` entries."""
         hlines: dict[tuple[int, str], set[int]] = {}
         vlines: dict[tuple[int, str], set[int]] = {}
 
@@ -269,6 +286,7 @@ class TypstRenderer:
             L.append(f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),")
 
     def _emit_style_block(self, L: list[str], built: BuiltTable) -> None:
+        """Emit the ``style-dict``/``style-array``/``get-style`` machinery for per-cell styling."""
         styled = []
         for (i, j), props in built.style_grid.items():
             if not props:
@@ -303,6 +321,7 @@ class TypstRenderer:
         L.append(STATIC_GET_STYLE_AND_SHOW_RULE)
 
     def _build_col_group_row(self, row: list[str | None]) -> list[str]:
+        """Turn one column-group header row into Typst cell fragments (with ``colspan`` merging)."""
         parts = []
         i = 0
         while i < len(row):

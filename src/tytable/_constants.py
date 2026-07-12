@@ -1,3 +1,5 @@
+"""Static Typst snippets inlined into every styled table render."""
+
 STATIC_GET_STYLE_AND_SHOW_RULE: str = """\
   #let get-style(x, y) = {
     let key = str(y) + "_" + str(x)
