@@ -78,6 +78,85 @@ class TestThemeRotate:
 
 
 @pytest.mark.typst
+class TestThemeResize:
+    def test_default_full_width_both(self):
+        out = tt(DF, theme="resize").render("typst")
+        assert "#layout(size => {" in out
+        assert "let body = [" in out
+        assert "measure(body)" in out
+        assert "let target-width = size.width * 1" in out
+        assert "scale(x: factor, y: factor, reflow: true, body)" in out
+        assert "if true {" in out
+        assert_snapshot("theme_resize_default", out)
+
+    def test_shrink_only_down(self):
+        from tytable._themes import theme_resize
+
+        out = (
+            tt(DF, theme=None)
+            .theme(lambda t: theme_resize(t, width=0.8, direction="down"))
+            .render("typst")
+        )
+        assert "let target-width = size.width * 0.8" in out
+        assert "if body-size.width > target-width {" in out
+        assert_snapshot("theme_resize_down", out)
+
+    def test_height_target(self):
+        from tytable._themes import theme_resize
+
+        out = (
+            tt(DF, theme=None)
+            .theme(lambda t: theme_resize(t, height=0.5, direction="both"))
+            .render("typst")
+        )
+        assert "let target-height = size.height * 0.5" in out
+        assert "body-size.height" in out
+        assert "target-width" not in out
+        assert_snapshot("theme_resize_height", out)
+
+    def test_up_direction(self):
+        from tytable._themes import theme_resize
+
+        out = (
+            tt(DF, theme=None)
+            .theme(lambda t: theme_resize(t, width=0.9, direction="up"))
+            .render("typst")
+        )
+        assert "if body-size.width < target-width {" in out
+
+    def test_no_resize_without_direction(self):
+        out = tt(DF, theme=None).render("typst")
+        assert "#layout(size => {" not in out
+
+    def test_wraps_rotate_and_align(self):
+        t = tt(DF, theme="resize")
+        t._typst_opts.rotate_angle = 45
+        t._typst_opts.align_figure = "c"
+        out = t.render("typst")
+        rotate_idx = out.index("#rotate(")
+        layout_idx = out.index("#layout(size => {")
+        assert layout_idx < rotate_idx
+
+    def test_invalid_direction_raises(self):
+        t = tt(DF, theme=None)
+        t._typst_opts.resize_direction = "sideways"
+        t._typst_opts.resize_width = 0.5
+        with pytest.raises(ValueError, match="resize_direction"):
+            t.render("typst")
+
+    def test_invalid_width_raises(self):
+        t = tt(DF, theme=None)
+        t._typst_opts.resize_direction = "both"
+        t._typst_opts.resize_width = 0
+        with pytest.raises(ValueError, match="resize_width"):
+            t.render("typst")
+
+    def test_registered_in_themes(self):
+        assert "resize" in THEMES
+        assert THEMES["resize"] is not None
+
+
+@pytest.mark.typst
 class TestThemeMethod:
     def test_dot_theme(self):
         t = tt(DF, theme=None)

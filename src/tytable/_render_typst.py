@@ -57,6 +57,7 @@ class TypstRenderOptions:
     multipage: bool | None = None
     align_figure: str | None = None
     resize_width: float | None = None
+    resize_height: float | None = None
     resize_direction: str | None = None
     grid_stroke: str | None = None
     rotate_angle: float | None = None
@@ -226,7 +227,61 @@ class TypstRenderer:
                 "])",
             ]
 
-        return "\n".join(L)
+        result = "\n".join(L)
+        if opts.resize_direction is not None:
+            result = self._apply_resize(result, opts)
+        return result
+
+    @staticmethod
+    def _apply_resize(body: str, opts: TypstRenderOptions) -> str:
+        """Wrap ``body`` in a ``#layout(size => ...)`` block that scales it to a target size.
+
+        Mirrors tinytable's ``typst_resize_table``: the rendered fragment is
+        measured, and conditionally rescaled by a uniform factor so it fits the
+        target width (or height) expressed as a fraction of the available area.
+        """
+        direction = opts.resize_direction
+        if direction is None:
+            return body
+        if direction not in ("down", "up", "both"):
+            raise ValueError(f"resize_direction must be 'down', 'up', or 'both', got {direction!r}")
+        if opts.resize_height is not None:
+            if opts.resize_height <= 0:
+                raise ValueError(f"resize_height must be positive, got {opts.resize_height}")
+            target_name = "target-height"
+            target_def = f"let target-height = size.height * {opts.resize_height}"
+            body_dim = "body-size.height"
+        else:
+            width = opts.resize_width if opts.resize_width is not None else 1
+            if width <= 0:
+                raise ValueError(f"resize_width must be positive, got {width}")
+            target_name = "target-width"
+            target_def = f"let target-width = size.width * {width}"
+            body_dim = "body-size.width"
+
+        if direction == "down":
+            condition = f"{body_dim} > {target_name}"
+        elif direction == "up":
+            condition = f"{body_dim} < {target_name}"
+        else:  # both
+            condition = "true"
+        factor = f"{target_name} / {body_dim} * 100%"
+
+        return (
+            "#layout(size => {\n"
+            "  let body = [\n"
+            f"{body}\n"
+            "  ]\n"
+            "  let body-size = measure(body)\n"
+            f"  {target_def}\n"
+            f"  if {condition} {{\n"
+            f"    let factor = {factor}\n"
+            "    scale(x: factor, y: factor, reflow: true, body)\n"
+            "  } else {\n"
+            "    body\n"
+            "  }\n"
+            "})"
+        )
 
     def _emit_footer(self, L: list[str], built: BuiltTable, ncol: int) -> None:
         """Append a ``table.footer(…)`` block of notes when present."""

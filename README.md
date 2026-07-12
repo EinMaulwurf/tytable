@@ -130,13 +130,32 @@ tt(df).group(i={"Financial": 0, "Operational": 3})
 
 ## Themes
 
-Built-in: `default` (booktab rules), `striped`, `grid`, `empty`, `rotate`. Pass
-a callable for a custom theme.
+Built-in: `default` (booktab rules), `striped`, `grid`, `empty`, `rotate`,
+`resize`. Pass a callable for a custom theme.
 
 ```python
 tt(df, theme="striped")
 tt(df, theme=None).theme("grid")
 ```
+
+The `resize` theme scales a table to fit the page. It wraps the rendered
+fragment in a Typst `#layout(size => …)` block that measures the table and
+rescales it. Use the `theme_resize` callable for parameter control:
+
+```python
+from tytable._themes import theme_resize
+
+# Shrink only if wider than 95% of the page; leave smaller tables alone.
+tt(df).theme(lambda t: theme_resize(t, width=0.95, direction="down"))
+
+# Always scale to full page width (the plain theme name does this).
+tt(df, theme="resize")
+```
+
+`theme_resize(table, width=1, height=None, direction="both")` — `width`/`height`
+are fractions of the page content area (when `height` is set, it drives the
+scaling); `direction` is `"down"` (shrink only), `"up"` (expand only), or
+`"both"` (always scale).
 
 ## Images & sparklines
 
@@ -202,7 +221,8 @@ Add row groups (`i` dict or list) and column groups (`j` dict or delimiter).
 
 ### `.theme(name_or_callable=None)`
 
-Apply a theme (`default`, `striped`, `grid`, `empty`, `rotate`, or a callable).
+Apply a theme (`default`, `striped`, `grid`, `empty`, `rotate`, `resize`, or a
+callable).
 
 ### `.plot(j, *, fun, data=None, height=1.0, ...)` / `.images(j, *, paths, ...)`
 

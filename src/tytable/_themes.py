@@ -94,10 +94,40 @@ def theme_typst(table: TinyTable, **opts: object) -> TinyTable:
     return table
 
 
+def theme_resize(
+    table: TinyTable,
+    width: float | None = 1,
+    height: float | None = None,
+    direction: str = "both",
+) -> TinyTable:
+    """Scale the table to fit a target size (a fraction of the available area).
+
+    Wraps the rendered Typst fragment in a ``#layout(size => …)`` block that
+    measures the table and rescales it by a uniform factor.
+
+    Parameters
+    ----------
+    width
+        Target width as a fraction of the page content width (``1`` = full
+        width). Used unless ``height`` is given. Defaults to ``1``.
+    height
+        Target height as a fraction of the page content height. When set,
+        height drives the scaling and width follows proportionally.
+    direction
+        ``"down"`` only shrink oversized tables, ``"up"`` only expand
+        undersized ones, ``"both"`` (default) always scale to the target.
+    """
+    table._typst_opts.resize_width = width
+    table._typst_opts.resize_height = height
+    table._typst_opts.resize_direction = direction
+    return table
+
+
 THEMES = {
     "default": theme_default,
     "grid": theme_grid,
     "striped": theme_striped,
     "empty": theme_empty,
     "rotate": theme_rotate,
+    "resize": theme_resize,
 }

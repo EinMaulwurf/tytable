@@ -240,7 +240,8 @@ background.
 = Themes
 
 Built-in themes: `default` (booktab rules), `striped`, `grid`, `empty`, and
-`rotate`. Pass a callable for a custom theme. The same data rendered under each
+`rotate`. The `resize` theme (see the dedicated section) scales a table to fit
+the page. Pass a callable for a custom theme. The same data rendered under each
 built-in:
 
 #tag("SOURCE")
@@ -287,6 +288,41 @@ label column stays fixed:
 #tag("RESULT")
 #v(0.4em)
 #include "build/09_widths_fixed.typ"
+
+= Resize
+
+The `resize` theme scales a table to fit a target size, expressed as a fraction
+of the available page area. It wraps the rendered fragment in a Typst
+`#layout(size => …)` block that measures the table and rescales it by a uniform
+factor. This is useful when a wide table would otherwise overflow the text
+column.
+
+Three knobs control the behaviour, exposed by the `theme_resize` callable:
+
+- `width` — target width as a fraction of the page content width (`1` = full
+  width). Used unless `height` is given.
+- `height` — target height as a fraction of the page content height. When set,
+  height drives the scaling and width follows proportionally.
+- `direction` — `"down"` only shrinks oversized tables, `"up"` only expands
+  undersized ones, `"both"` (default) always scales to the target.
+
+```python
+from tytable import tt
+from tytable._themes import theme_resize
+
+# Shrink only if wider than 95% of the page; leave smaller tables alone.
+tt(df).theme(lambda t: theme_resize(t, width=0.95, direction="down"))
+
+# Always scale to the full page width (the plain theme name does this).
+tt(df, theme="resize")
+```
+
+#tag("SOURCE")
+#source("examples/12_resize.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/12_resize.typ"
 
 = Images & sparklines
 
@@ -350,8 +386,9 @@ as a `{label: [cols]}` dict or a delimiter string split out of the column
 names). Returns `self`.
 
 #api(".theme(name_or_callable=None)")
-Apply a built-in theme (`default`, `striped`, `grid`, `empty`, `rotate`) or a
-custom callable. Returns `self`.
+Apply a built-in theme (`default`, `striped`, `grid`, `empty`, `rotate`,
+`resize`) or a custom callable. Returns `self`. For parameterized themes such
+as `resize`, pass a callable: `.theme(lambda t: theme_resize(t, width=0.9, direction="down"))`.
 
 #api(".plot(j, *, fun, data=None, height=1.0, color=\"black\", xlim=None, output=None)")
 Embed a generated plot per cell. `fun(values, ...) -> matplotlib Figure` is
