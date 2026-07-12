@@ -14,9 +14,9 @@ def assert_snapshot(name: str, actual: str) -> None:
     SNAP.mkdir(parents=True, exist_ok=True)
     path = SNAP / f"{name}.txt"
     if not path.exists() or os.environ.get("SNAPSHOT_UPDATE"):
-        path.write_text(actual)
+        path.write_text(actual, encoding="utf-8")
         return
-    expected = path.read_text()
+    expected = path.read_text(encoding="utf-8")
     assert actual == expected, _diff(expected, actual)
 
 
