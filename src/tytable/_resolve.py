@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 @dataclass
 class BuiltTable:
     """Backend-agnostic snapshot of a fully-resolved table, consumed by renderers."""
+
     output: str
     data_body: list[list[str]] = field(default_factory=list)
     colnames_display: list[str] = field(default_factory=list)

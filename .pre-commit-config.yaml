@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^tests/snapshots/
+      - id: end-of-file-fixer
+        exclude: ^tests/snapshots/
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        description: Lint with ruff (autofixes staged issues).
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi, toml]
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format
+        description: Format with ruff.
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        description: Type-check with mypy.
+        entry: uv run mypy
+        language: system
+        types_or: [python, pyi]
+        pass_filenames: false

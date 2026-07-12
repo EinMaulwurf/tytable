@@ -52,6 +52,7 @@ def _props_to_signature(props: dict[str, Any]) -> str:
 @dataclass
 class TypstRenderOptions:
     """Knobs controlling the Typst output (figure wrapping, gutter, rotation, …)."""
+
     figure: bool = True
     multipage: bool | None = None
     align_figure: str | None = None

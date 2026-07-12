@@ -45,6 +45,7 @@ def theme_default(table: TinyTable) -> TinyTable:
 
 def theme_striped(table: TinyTable) -> TinyTable:
     """Apply alternating grey background stripes to even data rows."""
+
     def prepare(t: TinyTable) -> None:
         nrows = t._n_merged_body_rows
         even = list(range(0, nrows, 2))
