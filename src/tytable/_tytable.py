@@ -328,12 +328,19 @@ class TinyTable:
         TinyTable
             ``self``, for chaining.
 
+        Notes
+        -----
+        Any number of properties may be combined in a single call when they
+        share the same ``i``/``j`` selector — one directive, not several. Value
+        formatting such as ``digits`` lives in :meth:`fmt`, a separate pipeline,
+        and so always needs its own call.
+
         Examples
         --------
         >>> df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
         >>> (tt(df)                           # doctest: +SKIP
         ...  .style(i="header", bold=True, background="#2c3e50", color="white")
-        ...  .style(j="b", align="r")
+        ...  .style(j="b", align="r", background="#f0f0f0")
         ...  .style(i=0, line="b", line_color="#bdc3c7"))
         """
         _validate_style(

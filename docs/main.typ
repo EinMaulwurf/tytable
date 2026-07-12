@@ -193,6 +193,12 @@ Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
 (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders (`line="tblr"`
 in any combination, with `line_color` / `line_width`).
 
+Any number of these properties can be combined in a single `.style()` call when
+they share the same `i`/`j` selector — e.g.
+`*style(j="Score", align="r", background="#eee", bold=True)*` is one directive
+rather than three separate calls. (Value formatting such as `digits` belongs to
+`.fmt()`, a separate pipeline, and so always needs its own call.)
+
 #tag("SOURCE")
 #source("examples/03_style.py")
 

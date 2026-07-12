@@ -113,6 +113,11 @@ Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
 `alignv` (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders
 (`line="tblr"`, any combination, with `line_color` / `line_width`).
 
+> **Tip:** Multiple properties that share a selector combine in one call —
+> `.style(j="Score", align="r", background="#eee", bold=True)` is a single
+> directive, not three. Value formatting like `digits` lives in `.fmt()` (a
+> separate pipeline) and needs its own call.
+
 ## Grouping
 
 ```python
