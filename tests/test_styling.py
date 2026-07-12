@@ -319,3 +319,95 @@ class TestCaptionNotesStyle:
         )
         # Grid styling for body cell still present.
         assert '"1_0": 0' in out
+
+
+@pytest.mark.typst
+class TestListSelectors:
+    def test_column_style_by_list_of_names(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4], "C": [5, 6]})
+        out = tt(df).style(j=["A", "C"], bold=True).render("typst")
+        assert "(bold: true,)" in out
+        assert '"1_0": 0' in out
+        assert '"2_0": 0' in out
+        assert '"1_2": 0' in out
+        assert '"2_2": 0' in out
+        assert '"1_1": 0' not in out
+        assert '"2_1": 0' not in out
+
+    def test_column_fmt_by_list_of_names(self):
+        df = pl.DataFrame({"x": [3.141, 2.718], "y": [1.0, 2.0], "z": [3.0, 4.0]})
+        out = tt(df).fmt(j=["x", "z"], digits=1).render("typst")
+        assert "3.1" in out
+        assert "2.7" in out
+        assert "1" in out
+
+    def test_i_list_of_strings(self):
+        df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
+        out = tt(df).style(i=["header", "body"], italic=True).render("typst")
+        assert "(italic: true,)" in out
+        assert '"0_0": 0' in out
+        assert '"1_0": 0' in out
+        assert '"2_0": 0' in out
+
+
+@pytest.mark.typst
+class TestDataDrivenRowSelectors:
+    DF = pl.DataFrame({"Score": [95, 72, 88, 60], "Grade": ["A", "C", "B", "D"]})
+
+    def test_polars_expr_style(self):
+        out = tt(self.DF).style(i=pl.col("Score") > 80, bold=True).render("typst")
+        assert "(bold: true,)" in out
+        assert '"1_0": 0' in out
+        assert '"1_1": 0' in out
+        assert '"3_0": 0' in out
+        assert '"3_1": 0' in out
+        assert '"2_0": 0' not in out
+        assert '"4_0": 0' not in out
+
+    def test_polars_series_style(self):
+        mask = pl.Series("m", [False, True, False, True])
+        out = tt(self.DF).style(i=mask, italic=True).render("typst")
+        assert "(italic: true,)" in out
+        assert '"2_0": 0' in out
+        assert '"4_0": 0' in out
+        assert '"1_0": 0' not in out
+
+    def test_callable_style(self):
+        out = (
+            tt(self.DF)
+            .style(i=lambda row: row["Grade"] in ("A", "B"), color="blue")
+            .render("typst")
+        )
+        assert "color: rgb" in out
+        assert '"1_0"' in out
+        assert '"3_0"' in out
+        assert '"2_0"' not in out
+
+    def test_polars_expr_fmt(self):
+        out = tt(self.DF).fmt(i=pl.col("Score") < 70, digits=0).render("typst")
+        assert "[72]" in out
+        assert "[60]" in out
+
+    def test_data_driven_with_row_groups(self):
+        df = pl.DataFrame({"v": [10, 20, 30]})
+        out = (
+            tt(df)
+            .group(i={"Mid": 1})
+            .style(i=pl.col("v") > 15, bold=True)
+            .render("typst")
+        )
+        assert "20" in out
+        assert "30" in out
+        assert "(bold: true,)" in out
+        style_dict = out[out.index("style-dict") : out.index("style-array")]
+        assert '"3_0"' in style_dict
+        assert '"4_0"' in style_dict
+
+    def test_no_match_renders_fine(self):
+        out = tt(self.DF).style(i=pl.col("Score") > 200, bold=True).render("typst")
+        assert "95" in out
+        assert "72" in out
+
+    def test_match_all_works(self):
+        out = tt(self.DF).style(i=pl.col("Score") > 0, italic=True).render("typst")
+        assert out.count("(italic: true,)") >= 1

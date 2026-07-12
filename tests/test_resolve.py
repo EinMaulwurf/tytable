@@ -1,6 +1,7 @@
+import polars as pl
 import pytest
 
-from tytable._indices import resolve_i, resolve_j
+from tytable._indices import _map_original_to_internal, resolve_i, resolve_j
 
 
 class TestResolveI:
@@ -95,3 +96,157 @@ class TestResolveJ:
     def test_list_name_not_found_raises(self):
         with pytest.raises(ValueError):
             resolve_j(["A", "ZZZ"], self.COLS)
+
+
+class TestResolveIListOfStrings:
+    def test_single_string_in_list(self):
+        assert resolve_i(
+            ["header"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
+        ) == [0]
+
+    def test_mixed_strings(self):
+        result = resolve_i(
+            ["header", "body"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
+        )
+        assert result == [0, 1, 2, 3]
+
+    def test_groupi_and_tilde_groupi(self):
+        result = resolve_i(
+            ["groupi", "~groupi"],
+            nhead=1,
+            group_positions={2},
+            n_merged_body=4,
+            has_header=True,
+        )
+        assert result == [2, 1, 3, 4]
+
+    def test_empty_string_list(self):
+        assert resolve_i([], nhead=1, group_positions=set(), n_merged_body=3, has_header=True) == []
+
+    def test_unknown_string_raises(self):
+        with pytest.raises(ValueError):
+            resolve_i(["bogus"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
+
+    def test_with_ints(self):
+        assert resolve_i(
+            ["header", 0, 1], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
+        ) == [0, 1, 2]
+
+
+class TestResolveIDataDriven:
+    DF = pl.DataFrame({"Score": [95, 72, 88, 60], "Grade": ["A", "C", "B", "D"]})
+
+    def test_polars_expr(self):
+        result = resolve_i(
+            pl.col("Score") > 80,
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [1, 3]
+
+    def test_polars_expr_no_match(self):
+        result = resolve_i(
+            pl.col("Score") > 200,
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == []
+
+    def test_polars_expr_match_all(self):
+        result = resolve_i(
+            pl.col("Score") > 0,
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [1, 2, 3, 4]
+
+    def test_polars_series(self):
+        mask = pl.Series("m", [True, False, True, False])
+        result = resolve_i(
+            mask,
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [1, 3]
+
+    def test_callable(self):
+        result = resolve_i(
+            lambda row: row["Grade"] == "D",
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [4]
+
+    def test_callable_height_mismatch_ok(self):
+        """Callable filters independently; series length need not match merged body."""
+
+        def pred(row):
+            return row["Score"] % 2 == 0
+
+        result = resolve_i(
+            pred,
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [2, 3, 4]
+
+    def test_expression_skipped_when_data_is_none(self):
+        """Without data, pl.Expr/Series/callable fall through to TypeError."""
+        with pytest.raises(TypeError):
+            resolve_i(
+                pl.col("Score") > 80,
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=4,
+                has_header=True,
+            )
+
+    def test_with_row_groups_maps_indices(self):
+        df = pl.DataFrame({"v": [10, 20, 30, 40]})
+        result = resolve_i(
+            pl.col("v") > 15,
+            nhead=1,
+            group_positions={2, 5},
+            n_merged_body=6,
+            has_header=True,
+            data=df,
+        )
+        assert result == [3, 4, 6]
+
+
+class TestMapOriginalToInternal:
+    def test_no_groups(self):
+        assert _map_original_to_internal([0, 1, 2], set()) == [1, 2, 3]
+
+    def test_empty_indices(self):
+        assert _map_original_to_internal([], {2, 5}) == []
+
+    def test_with_groups(self):
+        result = _map_original_to_internal([0, 1, 2, 3], {2, 5})
+        assert result == [1, 3, 4, 6]
+
+    def test_group_before_first_row(self):
+        result = _map_original_to_internal([0, 1], {1})
+        assert result == [2, 3]
+
+    def test_unsorted_indices(self):
+        result = _map_original_to_internal([3, 0, 2], {3})
+        assert result == [1, 4, 5]
