@@ -121,7 +121,7 @@ def build_style_grid(
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
             continue
-        if d.i in META_SELECTORS:
+        if isinstance(d.i, str) and d.i in META_SELECTORS:
             # Caption/notes styling is resolved separately in ``build_meta_styles``;
             # they are not grid cells, so skip them here.
             continue
@@ -131,6 +131,7 @@ def build_style_grid(
             group_positions=group_positions,
             n_merged_body=n_merged_body,
             has_header=has_header,
+            data=table._data,
         )
         if i_vals is None:
             i_vals = resolve_i(
@@ -183,6 +184,8 @@ def build_meta_styles(
     style_notes: dict[str, Any] = {}
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
+            continue
+        if not isinstance(d.i, str):
             continue
         if d.i == "caption":
             target = style_caption

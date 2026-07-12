@@ -114,6 +114,7 @@ def apply_formats(
             group_positions=group_positions,
             n_merged_body=n_merged_body,
             has_header=has_header,
+            data=table._data,
         ) or resolve_i(
             "body",
             nhead=nhead,

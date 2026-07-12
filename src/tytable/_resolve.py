@@ -8,6 +8,7 @@ The render pipeline: resolve recorded directives into a :class:`BuiltTable`.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +21,8 @@ from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
+    import polars as pl
+
     from ._tytable import TinyTable
 
 
@@ -47,11 +50,12 @@ class BuiltTable:
 
 
 def _resolve_i_internal(
-    i_selector: int | str | list[int] | None,
+    i_selector: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None,
     nhead: int,
     has_header: bool,
     n_merged_body: int,
     group_positions: set[int],
+    data: pl.DataFrame | None = None,
 ) -> list[int] | None:
     """Thin wrapper around :func:`resolve_i` re-exported for footnote insertion."""
     from ._indices import resolve_i
@@ -62,10 +66,13 @@ def _resolve_i_internal(
         group_positions=group_positions,
         n_merged_body=n_merged_body,
         has_header=has_header,
+        data=data,
     )
 
 
-def _resolve_j_internal(j_selector: int | str | list[int] | None, colnames: list[str]) -> list[int]:
+def _resolve_j_internal(
+    j_selector: int | str | Sequence[int | str] | None, colnames: list[str]
+) -> list[int]:
     """Thin wrapper around :func:`resolve_j` re-exported for footnote insertion."""
     from ._indices import resolve_j
 
@@ -82,6 +89,7 @@ def _insert_footnote_markers(
     has_header: bool,
     colnames: list[str],
     output: str,
+    data: pl.DataFrame | None = None,
 ) -> None:
     """Append superscript markers to cells targeted by a note (mutates in place)."""
     if not notes:
@@ -106,6 +114,7 @@ def _insert_footnote_markers(
             has_header,
             n_merged_body,
             group_positions,
+            data=data,
         )
         j_vals = _resolve_j_internal(j_selector, colnames)
 
@@ -239,6 +248,7 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         show_colnames,
         table._colnames,
         output,
+        data=table._data,
     )
 
     style_grid, style_lines = build_style_grid(

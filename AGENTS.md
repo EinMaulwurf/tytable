@@ -64,7 +64,9 @@ Styling, formatting, grouping, and plotting are recorded as **intent** and repla
 | `_render_ascii.py` | ASCII `__repr__`                                                                                  |
 | `_images.py`       | Plot/image embedding (requires `images` extra)                                                    |
 
-## Conventions
+## Commit style
+
+Conventional commits: `type(scope): description`. Types: `feat`, `fix`, `docs`, `test`, `ci`, `build`, `refactor`. Scope optional. Keep descriptions imperative and lowercase. Examples from history: `feat: wire up resize theme`, `fix: resolve all 20 mypy type-checking errors`, `docs: add docstrings to all public API`.
 
 - All source modules start with `_` (private). Public API is only what `__init__.py` exports.
 - **0-based row indexing**: `i=0` is first data row; `i="header"` for column-name row; negative ints for column-group header rows.

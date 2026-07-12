@@ -8,6 +8,7 @@ public names (``"default"``, ``"striped"``, …) to these callables.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ._render_typst import TypstRenderOptions
@@ -75,8 +76,8 @@ def theme_empty(table: TinyTable) -> TinyTable:
 def theme_rotate(
     table: TinyTable,
     angle: int = 90,
-    i: int | str | list[int] | None = None,
-    j: int | str | list[int | str] | None = None,
+    i: int | str | Sequence[int | str] | None = None,
+    j: int | str | Sequence[int | str] | None = None,
 ) -> TinyTable:
     """Rotate the whole table (``i``/``j`` both ``None``) or just selected cells."""
     if i is None and j is None:

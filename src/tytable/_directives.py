@@ -7,16 +7,20 @@ and replayed at render time by :func:`tytable._resolve.build`.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import polars as pl
 
 
 @dataclass(frozen=True)
 class StyleDirective:
     """A single ``.style()`` call: selectors plus the cell properties to apply."""
 
-    i: int | str | list[int] | None
-    j: int | str | list[int | str] | None
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    j: int | str | Sequence[int | str] | None
     bold: bool | None = None
     italic: bool | None = None
     underline: bool | None = None
@@ -42,8 +46,8 @@ class StyleDirective:
 class FormatDirective:
     """A single ``.fmt()`` call: selectors plus numeric/format/replace/fn transforms."""
 
-    i: int | str | list[int] | None
-    j: int | str | list[int | str] | None
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    j: int | str | Sequence[int | str] | None
     digits: int | None = None
     num_fmt: str | None = "decimal"
     replace: dict | None = None
@@ -56,8 +60,8 @@ class FormatDirective:
 class PlotDirective:
     """A single ``.plot()`` / ``.images()`` call."""
 
-    i: int | str | list[int] | None
-    j: int | str | list[int | str] | None
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    j: int | str | Sequence[int | str] | None
     fun: Callable | None = None
     data: list | None = None
     images: list[str] | None = None
