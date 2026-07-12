@@ -113,8 +113,10 @@ with `i="groupi"`, column-group rows with `i="groupj"`.
 == Select columns by name
 
 `j="Score"` is the preferred form; `j=0` selects the first column by position.
-Both `i` and `j` also accept a #emph[list] to target several rows or columns in
-one call: `j=["Q1 Rev", "Q1 Cost"]` or `j=[1, 2, 3, 4]`.
+Both `i` and `j` also accept a #emph[list] of strings or integers to target several rows or columns in
+one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "body"]`. `i` additionally
+accepts Polars expressions, boolean series, and callables for data-driven
+selection (see the *Styling* section).
 
 == Everything returns `self`
 
@@ -224,6 +226,43 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 `monospace`, `smallcaps`, `color`, `fontsize` (plus `align`, `background`, and
 `indent` for notes). Use `output=` to restrict styling to one backend, e.g.
 `output=("typst",)`.
+
+== List selectors
+
+``i`` and ``j`` accept a list of strings as well as integers, so you can name
+several rows or columns in one call without repeating yourself. A list-of-strings
+``j`` selector like ``j=["Revenue", "Cost", "Growth %"]`` is self-documenting
+and resilient to column reordering — no need to track integer positions.
+
+The same works for ``i``: ``i=["header", "body"]`` styles the column-name row
+and every data row in a single directive.
+
+#tag("SOURCE")
+#source("examples/13_list_selectors.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/13_list_selectors.typ"
+
+== Data-driven row selectors
+
+Instead of hard-coding row numbers, select rows by value. ``i`` accepts three
+dynamic forms evaluated against the original DataFrame at render time:
+
+- A #emph[polars expression]: ``i=pl.col("Score") > 80``
+- A #emph[boolean ``pl.Series``]: ``i=pl.Series("m", [True, False, True, False])``
+- A #emph[Python callable]: ``i=lambda row: row["Grade"] == "D"``
+
+All three work with ``.style()``, ``.fmt()``, ``.plot()``, and ``.images()``.
+The expression or callable runs against the #emph[original] DataFrame (before
+row-group insertion), so the column names you use are always the original ones.
+
+#tag("SOURCE")
+#source("examples/14_data_driven.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/14_data_driven.typ"
 
 = Grouping
 
@@ -380,7 +419,9 @@ The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
 
 - *rows* (`i`): `0` = first data row, `"header"` = column-name row, negative
   ints = column-group header rows (`-1` topmost), `"groupi"`/`"groupj"` = the
-  row/column group separators, or a `list[int]`.
+  row/column group separators, a `list` of any of the above, a Polars expression
+  (`pl.col("Score") > 80`), a boolean `pl.Series`, or a callable
+  ``lambda row: bool``.
 - *columns* (`j`): a name (`"Score"`), an integer position (`0`), a regex, or a
   `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`.
 
