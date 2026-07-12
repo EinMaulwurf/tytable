@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "tytable"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Typst tables from Polars DataFrames, with a tinytable-inspired API."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -30,6 +30,7 @@ dev = [
   "matplotlib>=3.7",
   "numpy>=1.24",
   "plotnine>=0.13",
+  "hatch-vcs>=0.4",
 ]
 
 [project.urls]
@@ -37,6 +38,12 @@ Homepage = "https://github.com/EinMaulwurf/tytable"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tytable"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/tytable/_version.py"
 
 [tool.ruff]
 line-length = 100
