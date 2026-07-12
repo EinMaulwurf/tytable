@@ -236,3 +236,86 @@ class TestBordersLines:
         out = tt(DF, theme=None).render("typst")
         assert "table.hline" not in out
         assert "table.vline" not in out
+
+
+@pytest.mark.typst
+class TestCaptionNotesStyle:
+    def test_caption_bold_color_fontsize(self):
+        out = (
+            tt(DF, caption="Demo")
+            .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
+            .render("typst")
+        )
+        assert 'caption: text(size: 1.2em, fill: rgb("#c0392b"), weight: "bold", [Demo]),' in out
+        assert_snapshot("caption_bold_color_fontsize", out)
+
+    def test_caption_italic_smallcaps(self):
+        out = tt(DF, caption="Demo").style(i="caption", italic=True, smallcaps=True).render("typst")
+        assert 'style: "italic"' in out
+        assert 'smallcaps(text(style: "italic", [Demo]))' in out
+        assert_snapshot("caption_italic_smallcaps", out)
+
+    def test_notes_italic_color(self):
+        out = (
+            tt(DF, notes=["Source: data"])
+            .style(i="notes", italic=True, color="blue")
+            .render("typst")
+        )
+        assert '#text(fill: rgb("#0000ff"), style: "italic", [Source: data])' in out
+        assert_snapshot("notes_italic_color", out)
+
+    def test_notes_with_marker_styled(self):
+        out = (
+            tt(DF, notes=[{"text": "p < 0.05", "marker": "*"}])
+            .style(i="notes", bold=True, color="#c0392b")
+            .render("typst")
+        )
+        assert "[#super[\\*] #text" in out
+        assert_snapshot("notes_marker_styled", out)
+
+    def test_notes_align_override(self):
+        out = tt(DF, notes=["Note one"]).style(i="notes", align="c", italic=True).render("typst")
+        assert "align: center, colspan: 2" in out
+        assert_snapshot("notes_align_center", out)
+
+    def test_caption_unstyled_unchanged(self):
+        out = tt(DF, caption="Demo").render("typst")
+        assert "caption: text([Demo])," in out
+
+    def test_notes_unstyled_unchanged(self):
+        out = tt(DF, notes=["Source: data"]).render("typst")
+        assert "table.cell(align: left, colspan: 2, [Source: data])," in out
+
+    def test_output_filter_typst_only(self):
+        t = tt(DF, caption="Demo").style(i="caption", bold=True, output=("typst",))
+        assert 'weight: "bold"' in t.render("typst")
+        html = t.render("html")
+        assert "<b>" not in html
+
+    def test_output_filter_html_only(self):
+        t = tt(DF, caption="Demo").style(i="caption", bold=True, output=("html",))
+        typst = t.render("typst")
+        assert 'weight: "bold"' not in typst
+        assert "<b>Demo</b>" in t.render("html")
+
+    def test_multiple_style_calls_combine(self):
+        out = (
+            tt(DF, caption="Demo")
+            .style(i="caption", bold=True)
+            .style(i="caption", italic=True, color="#c0392b")
+            .render("typst")
+        )
+        assert 'weight: "bold"' in out
+        assert 'style: "italic"' in out
+        assert 'rgb("#c0392b")' in out
+
+    def test_meta_style_does_not_affect_grid(self):
+        out = (
+            tt(DF)
+            .style(i="caption", bold=True)
+            .style(i="notes", italic=True)
+            .style(i=0, j=0, bold=True)
+            .render("typst")
+        )
+        # Grid styling for body cell still present.
+        assert '"1_0": 0' in out

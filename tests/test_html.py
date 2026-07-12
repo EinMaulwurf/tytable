@@ -307,3 +307,72 @@ class TestTypstGutter:
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, gutter=None).group(j={"G": [0, 1]}).render("typst")
         assert "column-gutter" not in out
+
+
+@pytest.mark.html
+class TestCaptionNotesStyleHtml:
+    def test_caption_bold_color_smallcaps(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = (
+            tt(df, caption="Demo")
+            .style(i="caption", bold=True, color="#c0392b", smallcaps=True)
+            .render("html")
+        )
+        assert "<caption>" in out
+        assert "<b>" in out
+        assert "color:#c0392b" in out
+        assert "font-variant:small-caps" in out
+        assert_snapshot("html_caption_styled", out)
+
+    def test_notes_italic_color(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = (
+            tt(df, notes=["Source: data"])
+            .style(i="notes", italic=True, color="blue")
+            .render("html")
+        )
+        assert "<i>" in out
+        assert "color:blue" in out
+        assert "Source: data" in out
+        assert_snapshot("html_notes_italic_color", out)
+
+    def test_notes_with_marker_styled(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = (
+            tt(df, notes=[{"text": "p < 0.05", "marker": "*"}])
+            .style(i="notes", bold=True)
+            .render("html")
+        )
+        assert "<sup>*</sup>" in out
+        assert "<b>" in out
+        assert_snapshot("html_notes_marker_styled", out)
+
+    def test_notes_background_and_align(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = (
+            tt(df, notes=["Note one"])
+            .style(i="notes", background="#eee", align="c", bold=True)
+            .render("html")
+        )
+        assert "background-color:#eee" in out
+        assert "text-align:center" in out
+        assert "<b>" in out
+        assert_snapshot("html_notes_bg_align", out)
+
+    def test_notes_indent(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = (
+            tt(df, notes=["Indented note"]).style(i="notes", indent=1.5, italic=True).render("html")
+        )
+        assert "padding-left:1.5em" in out
+        assert "<i>" in out
+
+    def test_caption_unstyled_unchanged(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, caption="Demo").render("html")
+        assert "<caption>Demo</caption>" in out
+
+    def test_notes_unstyled_unchanged(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, notes=["Source"]).render("html")
+        assert '<td colspan="2" style="text-align:left">Source</td>' in out

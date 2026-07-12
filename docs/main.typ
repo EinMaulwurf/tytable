@@ -206,6 +206,25 @@ rather than three separate calls. (Value formatting such as `digits` belongs to
 #v(0.4em)
 #include "build/03_style.typ"
 
+== Caption and notes
+
+The special selectors `i="caption"` and `i="notes"` style the table caption and
+footnotes. These are not grid cells, so the styling is applied as inline text
+markup — Typst `text(...)` / `#strong[...]` / `#smallcaps[...]`, or HTML `<span>`
+plus `<b>` / `<i>` / … — rather than through the cell style grid. This mirrors
+R tinytable's `style_tt(i="caption", …)` / `i="notes", …`.
+
+```python
+tt(df, caption="Product scores", notes=["Source: Q3 report"])
+    .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
+    .style(i="notes", italic=True, color="blue", align="c")
+```
+
+The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
+`monospace`, `smallcaps`, `color`, `fontsize` (plus `align`, `background`, and
+`indent` for notes). Use `output=` to restrict styling to one backend, e.g.
+`output=("typst",)`.
+
 = Grouping
 
 == Column groups
@@ -364,6 +383,9 @@ The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
   row/column group separators, or a `list[int]`.
 - *columns* (`j`): a name (`"Score"`), an integer position (`0`), a regex, or a
   `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`.
+
+`.style()` additionally accepts `i="caption"` and `i="notes"` to style the table
+caption and footnotes as inline text (see the *Caption and notes* section).
 
 #api("tt(data, *, caption=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
 Create a `TinyTable` from a Polars DataFrame. `width=1` produces a full-width

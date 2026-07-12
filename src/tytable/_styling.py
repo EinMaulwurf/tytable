@@ -33,6 +33,13 @@ OVERWRITE_PROPS = (
     "rowspan",
 )
 
+# Props applicable to the non-grid "caption" / "notes" meta selectors
+# (everything in OVERWRITE_PROPS except the grid-only span controls).
+META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p not in ("colspan", "rowspan"))
+
+# Selectors handled outside the row/column style grid (see ``build_meta_styles``).
+META_SELECTORS = ("caption", "notes")
+
 _ALIGN_H = {
     "l": "left",
     "left": "left",
@@ -114,6 +121,10 @@ def build_style_grid(
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
             continue
+        if d.i in META_SELECTORS:
+            # Caption/notes styling is resolved separately in ``build_meta_styles``;
+            # they are not grid cells, so skip them here.
+            continue
         i_vals = resolve_i(
             d.i,
             nhead=nhead,
@@ -153,6 +164,37 @@ def build_style_grid(
                         }
                     )
     return grid, lines
+
+
+def build_meta_styles(
+    table: TinyTable,
+    *,
+    output: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve ``i="caption"`` / ``i="notes"`` style directives into two prop dicts.
+
+    Caption and footnotes are not grid cells, so they bypass the
+    ``(row, col) -> props`` style grid: directives targeting the ``"caption"``
+    or ``"notes"`` selectors are collected here (last-writer-wins per property)
+    and the renderers apply them by wrapping the caption/notes text with the
+    backend's inline styling markup.
+    """
+    style_caption: dict[str, Any] = {}
+    style_notes: dict[str, Any] = {}
+    for d in table._style_directives:
+        if d.output is not None and output not in d.output:
+            continue
+        if d.i == "caption":
+            target = style_caption
+        elif d.i == "notes":
+            target = style_notes
+        else:
+            continue
+        for prop in META_STYLE_PROPS:
+            v = getattr(d, prop)
+            if v is not None:
+                target[prop] = v
+    return style_caption, style_notes
 
 
 def compute_covered_cells(

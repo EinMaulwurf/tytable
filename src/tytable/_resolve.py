@@ -16,7 +16,7 @@ from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
 from ._images import execute_plots
-from ._styling import build_style_grid
+from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
@@ -36,6 +36,8 @@ class BuiltTable:
     row_group_positions: dict[int, str] = field(default_factory=dict)
     style_grid: dict[tuple[int, int], dict[str, Any]] = field(default_factory=dict)
     style_lines: list[dict[str, Any]] = field(default_factory=list)
+    style_caption: dict[str, Any] = field(default_factory=dict)
+    style_notes: dict[str, Any] = field(default_factory=dict)
     notes: list[Note] = field(default_factory=list)
     caption: str | None = None
     width: float | list[float | str | None] | str | None = None
@@ -248,6 +250,8 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         output=output,
     )
 
+    style_caption, style_notes = build_meta_styles(table, output=output)
+
     for pos, _label in row_group_positions.items():
         cell = style_grid.setdefault((pos, 1), {})
         cell["colspan"] = ncols
@@ -264,6 +268,8 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         row_group_positions=row_group_positions,
         style_grid=style_grid,
         style_lines=style_lines,
+        style_caption=style_caption,
+        style_notes=style_notes,
         has_background=has_background,
         caption=table._caption,
         width=table._width,

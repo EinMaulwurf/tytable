@@ -27,6 +27,40 @@ def _align_to_css(h: str | None, v: str | None) -> str | None:
     return " ".join(parts) if parts else None
 
 
+def _style_html_inline(props: dict[str, Any], content: str) -> str:
+    """Wrap escaped HTML ``content`` with inline caption/notes styling.
+
+    Mirrors tinytable's ``style_string_html``: composable CSS properties
+    (color, font-size, small-caps, mono, indent) go into a single ``<span>``,
+    then non-CSS decorations (italic, strikeout, underline, bold) wrap it.
+    """
+    css_parts: list[str] = []
+    if props.get("smallcaps"):
+        css_parts.append("font-variant:small-caps")
+    if "color" in props:
+        css_parts.append(f"color:{props['color']}")
+    if "fontsize" in props:
+        css_parts.append(f"font-size:{props['fontsize']}em")
+    if props.get("monospace"):
+        css_parts.append("font-family:monospace")
+    if props.get("background"):
+        css_parts.append(f"background-color:{props['background']}")
+    if props.get("indent") and props["indent"] > 0:
+        css_parts.append(f"padding-left:{props['indent']}em")
+    out = content
+    if css_parts:
+        out = f'<span style="{";".join(css_parts)}">{out}</span>'
+    if props.get("italic"):
+        out = f"<i>{out}</i>"
+    if props.get("strikeout"):
+        out = f"<s>{out}</s>"
+    if props.get("underline"):
+        out = f"<u>{out}</u>"
+    if props.get("bold"):
+        out = f"<b>{out}</b>"
+    return out
+
+
 def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
     """Build a single CSS style attribute string from cell props and pre-computed border CSS."""
     css_parts: list[str] = []
@@ -121,6 +155,8 @@ class HtmlRenderer:
 
         if built.caption is not None:
             escaped = escape_html(built.caption)
+            if built.style_caption:
+                escaped = _style_html_inline(built.style_caption, escaped)
             parts.append(f"<caption>{escaped}</caption>")
 
         head_parts: list[str] = []
@@ -239,19 +275,27 @@ class HtmlRenderer:
 
         notes = built.notes
         if notes:
+            note_style = built.style_notes
+            align_val = _align_to_css(note_style.get("align"), note_style.get("alignv")) or "left"
+            td_css_parts: list[str] = [f"text-align:{align_val}"]
+            if note_style.get("background"):
+                td_css_parts.append(f"background-color:{note_style['background']}")
+            if note_style.get("indent") and note_style["indent"] > 0:
+                td_css_parts.append(f"padding-left:{note_style['indent']}em")
+            td_style = ";".join(td_css_parts)
             parts.append("<tfoot>")
             for note in notes:
                 escaped = escape_html(note.text)
+                if note_style:
+                    escaped = _style_html_inline(note_style, escaped)
                 if note.marker:
                     escaped_marker = escape_html(note.marker)
                     parts.append(
-                        f'<tr><td colspan="{ncol}" style="text-align:left">'
+                        f'<tr><td colspan="{ncol}" style="{td_style}">'
                         f"<sup>{escaped_marker}</sup> {escaped}</td></tr>"
                     )
                 else:
-                    parts.append(
-                        f'<tr><td colspan="{ncol}" style="text-align:left">{escaped}</td></tr>'
-                    )
+                    parts.append(f'<tr><td colspan="{ncol}" style="{td_style}">{escaped}</td></tr>')
             parts.append("</tfoot>")
 
         parts.append("</table>")

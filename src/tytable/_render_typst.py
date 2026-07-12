@@ -49,6 +49,40 @@ def _props_to_signature(props: dict[str, Any]) -> str:
     return ", ".join(parts) + ","
 
 
+def _style_typst_content(props: dict[str, Any], content: str) -> str:
+    """Wrap escaped Typst markup ``content`` with inline text styling for caption/notes.
+
+    Mirrors tinytable's ``style_string_typst``: text-level args (size, fill,
+    weight, style) collapse into a single ``text(...)`` call; structural
+    decorations (underline, strike, smallcaps) nest around it. ``content`` is
+    assumed already Typst-escaped, so it is safe inside ``[…]``.
+
+    Returns a *code-mode* content expression — usable directly as a parameter
+    value (e.g. ``caption: <expr>``) or prefixed with ``#`` inside a markup
+    block (e.g. notes' ``[…]`` cells).
+    """
+    args: list[str] = []
+    if props.get("fontsize") is not None:
+        args.append(f"size: {props['fontsize']}em")
+    if "color" in props:
+        args.append(f"fill: {color_to_typst(props['color'])}")
+    if props.get("italic"):
+        args.append('style: "italic"')
+    if props.get("bold"):
+        args.append('weight: "bold"')
+    if args:
+        out: str = f"text({', '.join(args)}, [{content}])"
+    else:
+        out = f"[{content}]"
+    if props.get("underline"):
+        out = f"underline({out})"
+    if props.get("strikeout"):
+        out = f"strike({out})"
+    if props.get("smallcaps"):
+        out = f"smallcaps({out})"
+    return out
+
+
 @dataclass
 class TypstRenderOptions:
     """Knobs controlling the Typst output (figure wrapping, gutter, rotation, …)."""
@@ -124,7 +158,11 @@ class TypstRenderer:
             L.append("#figure(")
             if built.caption is not None:
                 escaped = escape_typst(built.caption)
-                L.append(f"  caption: text([{escaped}]),")
+                if built.style_caption:
+                    caption_body = _style_typst_content(built.style_caption, escaped)
+                    L.append(f"  caption: {caption_body},")
+                else:
+                    L.append(f"  caption: text([{escaped}]),")
             L.append('  kind: "tytable",')
             L.append('  supplement: "Table",')
             L.append("")
@@ -289,17 +327,25 @@ class TypstRenderer:
         if not notes:
             return
 
+        note_style = built.style_notes
+        align_val = align_to_typst(note_style.get("align"), note_style.get("alignv"))
+
         L.append("    table.footer(")
         L.append("      repeat: false,")
         for note in notes:
-            escaped = escape_typst(note.text)
-            if note.marker:
-                L.append(
-                    f"      table.cell(align: left, colspan: {ncol},"
-                    f" [#super[{escape_typst(note.marker)}] {escaped}]),"
-                )
+            note_text = escape_typst(note.text)
+            if note_style:
+                # Notes live inside a ``[…]`` markup block, so the styled
+                # expression needs a ``#`` to enter code mode.
+                note_text = "#" + _style_typst_content(note_style, note_text)
+            marker = escape_typst(note.marker) if note.marker else None
+            cell_args = [f"align: {align_val}" if align_val else "align: left"]
+            cell_args.append(f"colspan: {ncol}")
+            args_str = ", ".join(cell_args)
+            if marker:
+                L.append(f"      table.cell({args_str}, [#super[{marker}] {note_text}]),")
             else:
-                L.append(f"      table.cell(align: left, colspan: {ncol}, [{escaped}]),")
+                L.append(f"      table.cell({args_str}, [{note_text}]),")
         L.append("    ),")
 
     def _emit_lines(self, L: list[str], built: BuiltTable) -> None:

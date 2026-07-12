@@ -113,6 +113,25 @@ Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
 `alignv` (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders
 (`line="tblr"`, any combination, with `line_color` / `line_width`).
 
+### Caption and notes
+
+The special selectors `i="caption"` and `i="notes"` style the table caption and
+footnotes. These are not grid cells, so the styling is applied as inline text
+markup (Typst `text(...)`/`#strong[...]`/`#smallcaps[...]`, or HTML `<span>` +
+`<b>`/`<i>`/…) rather than through the cell style grid — matching R tinytable's
+`style_tt(i="caption", …)` / `i="notes", …`.
+
+```python
+tt(df, caption="Product scores", notes=["Source: Q3 report"])
+    .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
+    .style(i="notes", italic=True, color="blue", align="c")
+```
+
+The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
+`monospace`, `smallcaps`, `color`, `fontsize` (plus `align`/`background`/`indent`
+for notes). Use the `output=` argument to restrict styling to one backend
+(e.g. `output=("typst",)`).
+
 > **Tip:** Multiple properties that share a selector combine in one call —
 > `.style(j="Score", align="r", background="#eee", bold=True)` is a single
 > directive, not three. Value formatting like `digits` lives in `.fmt()` (a
