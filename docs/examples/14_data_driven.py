@@ -28,8 +28,8 @@ df = pl.DataFrame(
     tt(df, caption="Data-driven row selectors", width=1)
     .fmt(j=["Score"], digits=0)
     .style(i="header", bold=True, background="#2c3e50", color="white")
-    .style(i=pl.col("Score") > 80, bold=True)          # polars expression
+    .style(i=pl.col("Score") > 80, bold=True)  # polars expression
     .style(i=pl.Series("m", [False, True, False, False]), italic=True)  # boolean series
-    .style(i=lambda row: row["Grade"] == "D", color="#c0392b")          # callable
+    .style(i=lambda row: row["Grade"] == "D", color="#c0392b")  # callable
     .save("build/14_data_driven.typ")
 )

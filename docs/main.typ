@@ -142,7 +142,7 @@ Two calling modes:
 
 - *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`.
   `j` follows the same selector rules as `.style()` / `.fmt()` (name, integer
-  position, regex, or a list). `name` is a single `str` (applied to every
+  position, or a list (or regex with `regex=True`, see `.style()`). `name` is a single `str` (applied to every
   matched column) or a `list[str]` with one entry per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
   header at once — the list length must equal the column count.
@@ -459,8 +459,9 @@ The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
   row/column group separators, a `list` of any of the above, a Polars expression
   (`pl.col("Score") > 80`), a boolean `pl.Series`, or a callable
   ``lambda row: bool``.
-- *columns* (`j`): a name (`"Score"`), an integer position (`0`), a regex, or a
-  `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`.
+- *columns* (`j`): a name (`"Score"`), an integer position (`0`), or a
+  `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`. Set `regex=True`
+  to treat string selectors as regex patterns.
 
 `.style()` additionally accepts `i="caption"` and `i="notes"` to style the table
 caption and footnotes as inline text (see the *Caption and notes* section).

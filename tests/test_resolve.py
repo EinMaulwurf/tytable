@@ -82,10 +82,30 @@ class TestResolveJ:
         assert resolve_j("value", self.COLS) == [4]
 
     def test_str_regex_single(self):
-        assert resolve_j("am", self.COLS) == [3]
+        assert resolve_j("am", self.COLS, regex=True) == [3]
 
     def test_str_regex_multi(self):
-        assert resolve_j("a", self.COLS) == [3, 4]
+        assert resolve_j("a", self.COLS, regex=True) == [3, 4]
+
+    def test_str_exact_miss_raises(self):
+        with pytest.raises(ValueError, match="column not found"):
+            resolve_j("zzz", self.COLS)
+
+    def test_str_regex_no_match_raises(self):
+        with pytest.raises(ValueError, match="regex matched no columns"):
+            resolve_j("zzz", self.COLS, regex=True)
+
+    def test_str_regex_invalid_raises(self):
+        with pytest.raises(ValueError, match="invalid regex pattern"):
+            resolve_j("[", self.COLS, regex=True)
+
+    def test_list_regex_each_element(self):
+        assert resolve_j(["am", "v"], self.COLS, regex=True) == [3, 4]
+        assert resolve_j(["A", "na"], self.COLS, regex=True) == [1, 3]
+
+    def test_list_regex_no_match_raises(self):
+        with pytest.raises(ValueError, match="regex matched no columns"):
+            resolve_j(["zzz", "yyy"], self.COLS, regex=True)
 
     def test_list_of_names(self):
         assert resolve_j(["A", "B"], self.COLS) == [1, 2]

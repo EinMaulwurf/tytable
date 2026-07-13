@@ -11,7 +11,7 @@ Two calling modes:
 
 1. *Per-column*: ``.set_name(j, name=...)`` renames the column(s) selected by
    ``j`` (same selectors as ``.style()`` / ``.fmt()``: name, integer position,
-   regex, or a list). ``name`` is a single ``str`` applied to every match, or a
+   or a list; pass ``regex=True`` for regex patterns). ``name`` is a single ``str`` applied to every match, or a
    ``list[str]`` with one entry per matched column.
 2. *Full-list replace*: ``.set_name(name=[...])`` (omit ``j``) replaces every
    column header at once — the list length must equal the column count.

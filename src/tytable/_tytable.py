@@ -302,6 +302,7 @@ class TinyTable:
         | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
+        regex: bool = False,
         bold: bool | None = None,
         italic: bool | None = None,
         underline: bool | None = None,
@@ -335,8 +336,14 @@ class TinyTable:
             ``list[int]``. ``None`` means *all* rows.
         j
             Column selector: a name (``"Score"``), an integer position (``0``),
-            a regex matched against column names, or a ``list`` of any of
-            these. ``None`` means *all* columns.
+            or a ``list`` of any of these. ``None`` means *all* columns.
+            Set ``regex=True`` to interpret string selectors as regular
+            expression patterns matched against column names via
+            :func:`re.search`.
+        regex
+            When ``True``, string ``j`` selectors (including elements of a
+            list) are treated as :func:`re.search` patterns instead of exact
+            column names.
         bold, italic, underline, strikeout, monospace, smallcaps
             Boolean text decorations.
         color
@@ -412,6 +419,7 @@ class TinyTable:
             StyleDirective(
                 i=i,
                 j=j,
+                regex=regex,
                 bold=bold,
                 italic=italic,
                 underline=underline,
@@ -447,6 +455,7 @@ class TinyTable:
         | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
+        regex: bool = False,
         digits: int | None = None,
         num_fmt: str = "decimal",
         replace: dict | str | bool | None = None,
@@ -500,6 +509,7 @@ class TinyTable:
             FormatDirective(
                 i=i,
                 j=j,
+                regex=regex,
                 digits=digits,
                 num_fmt=num_fmt,
                 replace=replace,
@@ -521,6 +531,7 @@ class TinyTable:
         | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
+        regex: bool = False,
         fun: Callable | None = None,
         data: list | None = None,
         height: float | str = 1.0,
@@ -575,6 +586,7 @@ class TinyTable:
             PlotDirective(
                 i=i,
                 j=j,
+                regex=regex,
                 fun=fun,
                 data=data,
                 color=color,
@@ -598,6 +610,7 @@ class TinyTable:
         | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
+        regex: bool = False,
         paths: list[str] | None = None,
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
@@ -636,6 +649,7 @@ class TinyTable:
             PlotDirective(
                 i=i,
                 j=j,
+                regex=regex,
                 images=list(paths),
                 height=height,
                 output=output,
@@ -688,6 +702,7 @@ class TinyTable:
         self,
         j: int | str | Sequence[int | str] | None = None,
         *,
+        regex: bool = False,
         name: str | Sequence[str],
     ) -> TinyTable:
         """
@@ -702,8 +717,9 @@ class TinyTable:
 
         - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
           selected by ``j``. ``j`` follows the same selector rules as
-          :meth:`style` / :meth:`fmt` (name, integer position, regex, or a
-          list of these). ``name`` is a single ``str`` (applied to every
+          :meth:`style` / :meth:`fmt` (name, integer position, or a
+          list of these). ``regex=True`` enables regex patterns.
+          ``name`` is a single ``str`` (applied to every
           matched column, so duplicates are possible) or a ``list[str]`` with
           one entry per matched column.
         - **Full-list replace**: ``.set_name(name=[...])`` (``j`` omitted)
@@ -750,9 +766,7 @@ class TinyTable:
                     "set_name(name=str) requires a column selector j; "
                     "pass a list to replace all column names."
                 )
-            idxs = resolve_j(j, self._colnames)
-            if not idxs:
-                raise ValueError(f"set_name() column selector {j!r} matched no columns")
+            idxs = resolve_j(j, self._colnames, regex=regex)
             for k in idxs:
                 self._colnames[k - 1] = name
             return self
@@ -767,9 +781,7 @@ class TinyTable:
             self._colnames = names
             return self
 
-        idxs = resolve_j(j, self._colnames)
-        if not idxs:
-            raise ValueError(f"set_name() column selector {j!r} matched no columns")
+        idxs = resolve_j(j, self._colnames, regex=regex)
         if len(names) != len(idxs):
             raise ValueError(
                 f"set_name() got {len(names)} name(s) for {len(idxs)} selected column(s)"

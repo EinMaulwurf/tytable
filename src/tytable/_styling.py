@@ -165,7 +165,7 @@ def build_style_grid(
                 n_merged_body=n_merged_body,
                 has_header=has_header,
             )
-        j_vals = resolve_j(d.j, table._colnames)
+        j_vals = resolve_j(d.j, table._colnames, regex=d.regex)
         has_line = d.line is not None
         if i_vals is None:
             continue

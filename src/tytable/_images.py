@@ -179,7 +179,7 @@ def execute_plots(
             i_vals = []
 
         body_rows = [i for i in i_vals if i > 0]
-        j_vals = resolve_j(d.j, colnames)
+        j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
         height = _height_to_float(d.height)
 

@@ -21,6 +21,7 @@ class StyleDirective:
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
+    regex: bool = False
     bold: bool | None = None
     italic: bool | None = None
     underline: bool | None = None
@@ -49,6 +50,7 @@ class FormatDirective:
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
+    regex: bool = False
     digits: int | None = None
     num_fmt: str | None = "decimal"
     replace: dict | str | bool | None = None
@@ -63,6 +65,7 @@ class PlotDirective:
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
+    regex: bool = False
     fun: Callable | None = None
     data: list | None = None
     images: list[str] | None = None

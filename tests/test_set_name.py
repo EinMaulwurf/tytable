@@ -33,7 +33,7 @@ class TestSetNamePerColumn:
     def test_rename_by_regex(self):
         df = pl.DataFrame({"col_a": [1], "col_b": [2], "other": [3]})
         t = tt(df, theme=None)
-        t.set_name(j="col_", name="matched")
+        t.set_name(j="col_", regex=True, name="matched")
         assert t._colnames == ["matched", "matched", "other"]
 
     def test_single_str_applies_to_all_matched(self):
@@ -104,7 +104,7 @@ class TestSetNameEdgeCases:
 
     def test_selector_matches_nothing_raises(self):
         t = tt(self.DF, theme=None)
-        with pytest.raises(ValueError, match="matched no columns"):
+        with pytest.raises(ValueError, match="column not found"):
             t.set_name(j="zzz", name="X")
 
     def test_duplicate_display_names_allowed(self):
@@ -132,19 +132,16 @@ class TestSetNameSelectorSemantics:
 
     def test_old_name_no_longer_matches(self):
         t = tt(self.DF, theme=None).set_name(j="x", name="X")
-        assert resolve_j("x", t._colnames) == []
+        with pytest.raises(ValueError, match="column not found"):
+            resolve_j("x", t._colnames)
         assert resolve_j("X", t._colnames) == [1]
 
-    def test_old_name_in_style_silently_noops(self):
-        """j='x' after rename is a no-op regex (no error, no style applied)."""
-        out_a = (
-            tt(self.DF, theme=None)
-            .set_name(j="x", name="X")
-            .style(j="x", bold=True)
-            .render("typst")
-        )
-        out_b = tt(self.DF, theme=None).set_name(j="x", name="X").render("typst")
-        assert out_a == out_b
+    def test_old_name_in_style_raises(self):
+        """j='x' after rename raises ValueError at render time (no silent no-op)."""
+        t = tt(self.DF, theme=None).set_name(j="x", name="X")
+        t.style(j="x", bold=True)
+        with pytest.raises(ValueError, match="column not found"):
+            t.render("typst")
 
     def test_rename_then_group_uses_new_name(self):
         df = pl.DataFrame({"Q1_rev": [1], "Q1_cost": [2]})

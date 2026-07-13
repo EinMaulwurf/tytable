@@ -166,12 +166,19 @@ def resolve_i(
     raise TypeError(f"bad row selector type: {type(i).__name__}")
 
 
-def resolve_j(j: int | str | Sequence[int | str] | None, colnames: list[str]) -> list[int]:
+def resolve_j(
+    j: int | str | Sequence[int | str] | None,
+    colnames: list[str],
+    *,
+    regex: bool = False,
+) -> list[int]:
     """Resolve user column selector to 1-based internal column indices. guide 06 §1."""
     if j is None:
         return list(range(1, len(colnames) + 1))
     if isinstance(j, (list, tuple)):
         if all(isinstance(x, str) for x in j):
+            if regex:
+                return _resolve_regex_list(j, colnames)
             try:
                 return [colnames.index(x) + 1 for x in j]
             except ValueError as e:
@@ -180,7 +187,33 @@ def resolve_j(j: int | str | Sequence[int | str] | None, colnames: list[str]) ->
     if isinstance(j, int):
         return [j + 1]
     if isinstance(j, str):
+        if regex:
+            return _resolve_regex(j, colnames)
         if j in colnames:
             return [colnames.index(j) + 1]
-        return [k + 1 for k, c in enumerate(colnames) if re.search(j, c)]
+        raise ValueError(f"column not found: {j!r}")
     raise TypeError(f"bad column selector: {j!r}")
+
+
+def _resolve_regex(pattern: str, colnames: list[str]) -> list[int]:
+    try:
+        compiled = re.compile(pattern)
+    except re.error as e:
+        raise ValueError(f"invalid regex pattern: {pattern!r} ({e})") from e
+    result = [k + 1 for k, c in enumerate(colnames) if compiled.search(c)]
+    if not result:
+        raise ValueError(f"regex matched no columns: {pattern!r}")
+    return result
+
+
+def _resolve_regex_list(patterns: Sequence[str], colnames: list[str]) -> list[int]:
+    seen: set[int] = set()
+    result: list[int] = []
+    for pat in patterns:
+        for idx in _resolve_regex(pat, colnames):
+            if idx not in seen:
+                seen.add(idx)
+                result.append(idx)
+    if not result:
+        raise ValueError(f"regex patterns matched no columns: {patterns!r}")
+    return result

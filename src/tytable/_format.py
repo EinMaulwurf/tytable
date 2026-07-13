@@ -123,7 +123,7 @@ def apply_formats(
             has_header=has_header,
         )
         assert i_vals is not None
-        j_vals = resolve_j(d.j, colnames)
+        j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
         target_cells: list[tuple[int, int]] = []
         for i_idx in i_vals:

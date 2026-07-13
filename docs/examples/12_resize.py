@@ -20,7 +20,7 @@ df = pl.DataFrame(
 # direction="down" only shrinks when the table is wider than `width` of the
 # page; smaller tables are left untouched. Use direction="both" to always scale.
 (
-    tt(df, caption="Resized to fit (width=0.95, direction=\"down\")")
+    tt(df, caption='Resized to fit (width=0.95, direction="down")')
     .theme(lambda t: theme_resize(t, width=0.95, direction="down"))
     .save("build/12_resize.typ")
 )
