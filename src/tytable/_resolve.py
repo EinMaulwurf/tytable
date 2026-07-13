@@ -43,7 +43,7 @@ class BuiltTable:
     style_notes: dict[str, Any] = field(default_factory=dict)
     notes: list[Note] = field(default_factory=list)
     caption: str | None = None
-    width: float | list[float | str | None] | str | None = None
+    width: float | Sequence[float | str | None] | str | None = None
     height: float | None = None
     has_background: bool = False
     assets_relpath: str | None = None

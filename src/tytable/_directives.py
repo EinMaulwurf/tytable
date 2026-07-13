@@ -50,7 +50,7 @@ class FormatDirective:
     j: int | str | Sequence[int | str] | None
     digits: int | None = None
     num_fmt: str | None = "decimal"
-    replace: dict | None = None
+    replace: dict | str | bool | None = None
     escape: bool | str = False
     fn: Callable | None = None
     output: tuple[str, ...] | None = None
