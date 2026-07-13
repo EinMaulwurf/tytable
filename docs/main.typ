@@ -120,14 +120,47 @@ selection (see the *Styling* section).
 
 == Everything returns `self`
 
-`.style()`, `.fmt()`, `.group()`, and `.theme()` all return the table, so you
-chain them. `.render()` and `.save()` are terminal.
+`.style()`, `.fmt()`, `.group()`, `.set_name()`, and `.theme()` all return the
+table, so you chain them. `.render()` and `.save()` are terminal.
 
 == Evaluation is lazy
 
 Styling, formatting, grouping, and plotting are recorded as _intent_ and
 replayed in a fixed order at render time. Row indices always refer to the final,
 visible table.
+
+= Renaming columns
+
+`.set_name()` renames column headers for display without touching the
+underlying Polars DataFrame — the original frame is never modified. This is
+useful when the polars column names are machine-friendly identifiers but you
+want human-readable headers in the rendered table, or when you need a header
+that polars would reject as a column name (such as an empty string ``""`` or a
+duplicate).
+
+Two calling modes:
+
+- *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`.
+  `j` follows the same selector rules as `.style()` / `.fmt()` (name, integer
+  position, regex, or a list). `name` is a single `str` (applied to every
+  matched column) or a `list[str]` with one entry per match.
+- *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
+  header at once — the list length must equal the column count.
+
+After renaming, subsequent `j` selectors use the _new_ display names; the old
+polars column name no longer matches. The example starts from
+`grp`, `val_1`, `val_2` and replaces them with `""`, `Revenue`, `Cost` — then
+formats and aligns the renamed columns by their new names:
+
+#tag("SOURCE")
+#source("examples/15_set_name.py")
+
+#tag("RESULT")
+#v(0.4em)
+#include "build/15_set_name.typ"
+
+For one-off renames at construction time, `tt(df, colnames_override={old: new})`
+does the same thing without a chained call.
 
 = Formatting
 
@@ -448,6 +481,13 @@ Add row groups (`i` as a `{label: row}` dict or a list) and column groups (`j`
 as a `{label: [cols]}` dict or a delimiter string split out of the column
 names). Returns `self`.
 
+#api(".set_name(j=None, *, name)")
+Rename column headers for display only (the underlying DataFrame is untouched).
+Per-column: `.set_name(j, name="X")` (or `name=[...]` matching the selected
+count). Full-list replace: `.set_name(name=[...])` with `j` omitted — length
+must equal the column count. Subsequent `j` selectors use the new names.
+Returns `self`.
+
 #api(".theme(name_or_callable=None)")
 Apply a built-in theme (`default`, `striped`, `grid`, `empty`, `rotate`,
 `resize`) or a custom callable. Returns `self`. For parameterized themes such
@@ -507,6 +547,7 @@ compiled as part of the parent. Without an explicit `assets=`, images land in a
   [`print(x, "typst")`], [`.render("typst")`],
   [`save_tt(x, "out.typ")`], [`.save("out.typ")`],
   [`x %>% format(...) %>% ...`], [`.fmt(...).style(...)` — method chain],
+  [`colnames(x) <- c(...)`], [`.set_name(name=[...])`],
   [1-based rows; 0 = colnames], [*0-based* data rows; `i="header"`],
   [column by integer position], [column by *name* (preferred)],
 )

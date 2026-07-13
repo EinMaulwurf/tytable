@@ -15,6 +15,7 @@ import polars as pl
 
 from ._directives import FormatDirective, Note, PlotDirective, StyleDirective
 from ._groups import register_col_groups, register_row_groups
+from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
@@ -208,10 +209,11 @@ class TinyTable:
     ) -> None:
         """Direct constructor — prefer the :func:`tt` factory. See :func:`tt` for parameter docs."""
         self._data = data.clone()
-        if colnames_override:
-            self._colnames = [colnames_override.get(c, c) for c in data.columns]
-        else:
-            self._colnames = list(data.columns)
+        self._colnames: list[str] = (
+            [colnames_override.get(c, c) for c in data.columns]
+            if colnames_override
+            else list(data.columns)
+        )
         self._show_colnames = colnames
         self._caption = caption
         self._width = width
@@ -611,6 +613,100 @@ class TinyTable:
             register_row_groups(self, i)
         if j is not None:
             register_col_groups(self, j, self._colnames)
+        return self
+
+    def set_name(
+        self,
+        j: int | str | Sequence[int | str] | None = None,
+        *,
+        name: str | Sequence[str],
+    ) -> TinyTable:
+        """
+        Rename column(s) for display without touching the underlying DataFrame.
+
+        Unlike renaming columns in Polars, this only affects the rendered
+        header and subsequent ``j`` selectors — the original frame is
+        untouched, and arbitrary display names are allowed (including ``""``,
+        duplicates, or names that would be awkward as Polars column names).
+
+        Two calling modes:
+
+        - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
+          selected by ``j``. ``j`` follows the same selector rules as
+          :meth:`style` / :meth:`fmt` (name, integer position, regex, or a
+          list of these). ``name`` is a single ``str`` (applied to every
+          matched column, so duplicates are possible) or a ``list[str]`` with
+          one entry per matched column.
+        - **Full-list replace**: ``.set_name(name=[...])`` (``j`` omitted)
+          replaces every column display name; ``name`` must be a list whose
+          length equals the number of columns.
+
+        After renaming, subsequent ``j`` selectors use the **new** display
+        names — the old Polars column name no longer matches.
+
+        Parameters
+        ----------
+        j
+            Column selector — see :meth:`style`. ``None`` (default) selects
+            full-list replace mode (see ``name``).
+        name
+            New display name. A ``str`` (with ``j`` given) applies to every
+            matched column; a ``list[str]`` (with ``j`` given) must match the
+            number of matched columns; a ``list[str]`` with ``j=None`` must
+            match the total column count.
+
+        Returns
+        -------
+        TinyTable
+            ``self``, for chaining.
+
+        Examples
+        --------
+        >>> df = pl.DataFrame({"x": [1], "y": [2]})
+        >>> (tt(df)                              # doctest: +SKIP
+        ...  .set_name(j="x", name="Variable")
+        ...  .set_name(j="y", name="")
+        ...  .style(j="Variable", bold=True))
+
+        Replace all headers at once:
+
+        >>> (tt(df)                              # doctest: +SKIP
+        ...  .set_name(name=["Alpha", "Beta"]))
+        """
+        ncol = len(self._colnames)
+
+        if isinstance(name, str):
+            if j is None:
+                raise ValueError(
+                    "set_name(name=str) requires a column selector j; "
+                    "pass a list to replace all column names."
+                )
+            idxs = resolve_j(j, self._colnames)
+            if not idxs:
+                raise ValueError(f"set_name() column selector {j!r} matched no columns")
+            for k in idxs:
+                self._colnames[k - 1] = name
+            return self
+
+        names = list(name)
+        if j is None:
+            if len(names) != ncol:
+                raise ValueError(
+                    f"set_name() full-list replace got {len(names)} name(s) "
+                    f"for a {ncol}-column table"
+                )
+            self._colnames = names
+            return self
+
+        idxs = resolve_j(j, self._colnames)
+        if not idxs:
+            raise ValueError(f"set_name() column selector {j!r} matched no columns")
+        if len(names) != len(idxs):
+            raise ValueError(
+                f"set_name() got {len(names)} name(s) for {len(idxs)} selected column(s)"
+            )
+        for k, nm in zip(idxs, names, strict=True):
+            self._colnames[k - 1] = nm
         return self
 
     def theme(self, name: str | Callable | None = None) -> TinyTable:

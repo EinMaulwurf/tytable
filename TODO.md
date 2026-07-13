@@ -94,6 +94,15 @@ See `/home/debian/git/tinytable/R/format_vector_misc.R`
 - `fmt(i="header")` is silently dropped — `data_body` contains only body rows,
   so format directives targeting the header never apply. Low priority (format
   column names in polars, or via `colnames_override`).
+- HTML column-name double-escaping — column names containing `&`, `<`, or `>`
+  are escaped twice in HTML output. `tt(df, colnames_override={"x": "X<Y"})`
+  renders as `<th>X&amp;lt;Y</th>` instead of `<th>X&lt;Y</th>`. Reproduces via
+  both `colnames_override` and `.set_name()`. Root cause: `escape_html` is
+  applied to `colnames_display` in `_resolve.py` (`build`), then the HTML
+  renderer escapes the already-escaped string again. The Typst path is
+  unaffected (it emits names inside `[...]` content mode, where re-escaping is
+  harmless). Fix: either skip the pre-escape for HTML in `build`, or have
+  `HtmlRenderer` detect already-escaped names.
 
 ---
 
