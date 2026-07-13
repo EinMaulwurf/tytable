@@ -35,6 +35,7 @@ class StyleDirective:
     indent: float | None = None
     colspan: int | None = None
     rowspan: int | None = None
+    rotate: float | None = None
     line: str | None = None
     line_color: str | None = None
     line_width: float | None = 0.1

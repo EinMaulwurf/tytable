@@ -88,6 +88,9 @@ def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
         css_parts.append(f"font-size:{cell_props['fontsize']}em")
     if "indent" in cell_props and cell_props["indent"] > 0:
         css_parts.append(f"padding-left:{cell_props['indent']}em")
+    if "rotate" in cell_props:
+        css_parts.append(f"transform:rotate({cell_props['rotate']}deg)")
+        css_parts.append("white-space:nowrap")
 
     align = _align_to_css(
         cell_props.get("align"),

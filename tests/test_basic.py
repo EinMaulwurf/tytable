@@ -37,6 +37,7 @@ EXPECTED_BASIC_TYP = (
     '    if ("mono" in style) { tmp = math.mono(tmp) }\n'
     '    if ("strikeout" in style) { tmp = strike(tmp) }\n'
     '    if ("smallcaps" in style) { tmp = smallcaps(tmp) }\n'
+    '    if ("rotate" in style) { tmp = rotate(style.rotate, reflow: true, tmp) }\n'
     "    tmp\n"
     "  }\n"
     "\n"

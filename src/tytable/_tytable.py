@@ -194,9 +194,7 @@ def _normalize_width(
         return width
     entries = list(width)
     if len(entries) != ncol:
-        raise ValueError(
-            f"width list must have one entry per column ({ncol}), got {len(entries)}"
-        )
+        raise ValueError(f"width list must have one entry per column ({ncol}), got {len(entries)}")
     nums = []
     for w in entries:
         if w is None or isinstance(w, str):
@@ -318,6 +316,7 @@ class TinyTable:
         indent: float | None = None,
         colspan: int | None = None,
         rowspan: int | None = None,
+        rotate: float | None = None,
         line: str | None = None,
         line_color: str | None = None,
         line_width: float | None = 0.1,
@@ -357,6 +356,11 @@ class TinyTable:
             Left indent in ``em``.
         colspan, rowspan
             Merge the selected cell across ``N`` columns/rows.
+        rotate
+            Rotation angle in degrees for the cell content (e.g. ``90``
+            rotates text vertically). Useful for long column headers on
+            narrow data columns. Typst uses ``#rotate(…, reflow: true)``;
+            HTML uses ``transform:rotate(…)``. Ignored by the ASCII renderer.
         line
             Per-side border, any combination of ``t`` (top), ``b`` (bottom),
             ``l`` (left), ``r`` (right) — e.g. ``"tblr"`` or ``"b"``.
@@ -402,6 +406,7 @@ class TinyTable:
             line_width=line_width,
             fontsize=fontsize,
             indent=indent,
+            rotate=rotate,
         )
         self._style_directives.append(
             StyleDirective(
@@ -421,6 +426,7 @@ class TinyTable:
                 indent=indent,
                 colspan=colspan,
                 rowspan=rowspan,
+                rotate=rotate,
                 line=line,
                 line_color=line_color,
                 line_width=line_width,

@@ -20,5 +20,6 @@ STATIC_GET_STYLE_AND_SHOW_RULE: str = """\
     if ("mono" in style) { tmp = math.mono(tmp) }
     if ("strikeout" in style) { tmp = strike(tmp) }
     if ("smallcaps" in style) { tmp = smallcaps(tmp) }
+    if ("rotate" in style) { tmp = rotate(style.rotate, reflow: true, tmp) }
     tmp
   }"""

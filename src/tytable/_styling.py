@@ -31,6 +31,7 @@ OVERWRITE_PROPS = (
     "indent",
     "colspan",
     "rowspan",
+    "rotate",
 )
 
 # Props applicable to the non-grid "caption" / "notes" meta selectors
@@ -101,6 +102,7 @@ def _validate_style(
     line_width: int | float | None,
     fontsize: int | float | None,
     indent: int | float | None,
+    rotate: int | float | None,
 ) -> None:
     """Fail-fast validation at .style() call time. guide 06 §7."""
     for name, val in (("align", align), ("alignv", alignv)):
@@ -123,6 +125,8 @@ def _validate_style(
     for name, nval in (("fontsize", fontsize), ("indent", indent)):
         if nval is not None and (not isinstance(nval, int | float) or isinstance(nval, bool)):
             raise TypeError(f"{name} must be a number, got {type(nval).__name__}")
+    if rotate is not None and (not isinstance(rotate, int | float) or isinstance(rotate, bool)):
+        raise TypeError(f"rotate must be a number, got {type(rotate).__name__}")
 
 
 def build_style_grid(

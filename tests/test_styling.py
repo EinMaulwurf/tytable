@@ -67,6 +67,36 @@ class TestStyleProps:
         out = tt(DF).style(i=0, j=0, indent=0).render("typst")
         assert "indent:" not in out
 
+    def test_rotate(self):
+        out = tt(DF).style(i=0, j=0, rotate=90).render("typst")
+        assert "rotate: 90deg" in out
+        assert_snapshot("style_rotate", out)
+
+    def test_rotate_negative(self):
+        out = tt(DF).style(i=0, j=0, rotate=-90).render("typst")
+        assert "rotate: -90deg" in out
+
+    def test_rotate_header(self):
+        out = tt(DF).style(i="header", rotate=90).render("typst")
+        assert "rotate: 90deg" in out
+        assert '"0_0": 0' in out
+        assert '"0_1": 0' in out
+        assert_snapshot("style_rotate_header", out)
+
+    def test_rotate_header_specific_column(self):
+        out = tt(DF).style(i="header", j="A", rotate=90).render("typst")
+        assert "rotate: 90deg" in out
+        assert '"0_0": 0' in out
+        assert '"0_1": 0' not in out
+
+    def test_rotate_in_show_rule(self):
+        out = tt(DF).style(i="header", rotate=90).render("typst")
+        assert "rotate(style.rotate, reflow: true, tmp)" in out
+
+    def test_rotate_not_emitted_when_none(self):
+        out = tt(DF, theme=None).render("typst")
+        assert "rotate:" not in out
+
     def test_align(self):
         out = tt(DF).style(i=0, j=0, align="c").render("typst")
         assert "align: center" in out
@@ -190,6 +220,10 @@ class TestStyleValidation:
     def test_color_must_be_str(self):
         with pytest.raises(TypeError):
             tt(DF).style(i=0, color=(1, 2, 3))
+
+    def test_rotate_must_be_number(self):
+        with pytest.raises(TypeError):
+            tt(DF).style(i=0, rotate="90")
 
     def test_negative_line_width(self):
         with pytest.raises(ValueError):

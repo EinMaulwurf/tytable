@@ -1,0 +1,9 @@
+<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
+<thead>
+<tr><th style="border-top:0.08em solid black;border-bottom:0.05em solid black;">A</th></tr>
+</thead>
+<tbody>
+<tr><td style="transform:rotate(90deg); white-space:nowrap">1</td></tr>
+<tr><td style="border-bottom:0.08em solid black;">2</td></tr>
+</tbody>
+</table>

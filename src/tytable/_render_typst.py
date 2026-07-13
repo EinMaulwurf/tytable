@@ -42,6 +42,8 @@ def _props_to_signature(props: dict[str, Any]) -> str:
         parts.append(f"fontsize: {props['fontsize']}em")
     if "indent" in props and props["indent"] > 0:
         parts.append(f"indent: {props['indent']}em")
+    if "rotate" in props:
+        parts.append(f"rotate: {props['rotate']}deg")
     align = align_to_typst(props.get("align"), props.get("alignv"))
     if align:
         parts.append(f"align: {align}")

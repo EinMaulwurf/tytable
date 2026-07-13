@@ -83,6 +83,24 @@ class TestHtmlStyle:
         out = tt(df).style(i=0, j=0, fontsize=1.2).render("html")
         assert "font-size:1.2em" in out
 
+    def test_rotate(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).style(i=0, j=0, rotate=90).render("html")
+        assert "transform:rotate(90deg)" in out
+        assert "white-space:nowrap" in out
+        assert_snapshot("html_style_rotate", out)
+
+    def test_rotate_header(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df).style(i="header", rotate=-90).render("html")
+        assert "transform:rotate(-90deg)" in out
+        assert_snapshot("html_style_rotate_header", out)
+
+    def test_rotate_not_emitted_when_none(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df, theme=None).render("html")
+        assert "transform:rotate" not in out
+
     def test_column_style(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         out = tt(df).style(j="A", italic=True).render("html")
