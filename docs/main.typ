@@ -27,7 +27,10 @@
 #let source(path) = raw(read(path), block: true, lang: "python")
 
 // A small "Source / Result" label.
-#let tag(label) = text(size: 8.5pt, fill: luma(110), weight: "bold", tracking: 0.6pt)[#label]
+#let tag(label) = {
+  v(0.7em)
+  text(size: 8.5pt, fill: luma(110), weight: "bold", tracking: 0.6pt)[#label]
+}
 
 // An API-reference entry: a bold, monospaced signature line.
 #let api(sig) = block(spacing: 0.9em)[
@@ -37,6 +40,8 @@
 
 // Center every tytable figure and keep it from breaking awkwardly.
 #show figure.where(kind: "tytable"): set align(center)
+
+#import "build/meta.typ": commit, build_date
 
 // ---------------------------------------------------------------------------
 // Title page
@@ -53,7 +58,23 @@
   #line(length: 32%, stroke: 0.6pt + luma(70))
   #v(0.6cm)
   #text(size: 11pt)[Documentation]
+  #v(0.4cm)
+  #text(size: 9pt, fill: luma(140), tracking: 0.4pt)[#commit · built #build_date]
 ]
+
+#pagebreak()
+
+// ---------------------------------------------------------------------------
+// Table of contents
+// ---------------------------------------------------------------------------
+
+#set page(numbering: none)
+
+#align(center)[
+  #text(size: 18pt, weight: "bold")[Contents]
+]
+#v(0.8em)
+#outline(title: none, indent: 1.5em, depth: 2)
 
 #pagebreak()
 
@@ -76,14 +97,7 @@ The core idea: you record _intent_ (formatting, styling, grouping) by chaining
 methods, and tytable replays it at render time into a Typst fragment you
 `#import` straight into your reports.
 
-== Install
-
-```
-pip install tytable
-pip install tytable[images]   # for .plot() / .images() (matplotlib + numpy)
-```
-
-From GitHub with `uv`:
+Install from GitHub:
 ```
 uv add git+https://github.com/EinMaulwurf/tytable.git
 ```
@@ -94,7 +108,7 @@ uv add git+https://github.com/EinMaulwurf/tytable.git
 #source("examples/01_basic.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/01_basic.typ"
 
 The generated `.typ` file can be `#import`-ed into a Typst report and compiled
@@ -156,7 +170,7 @@ formats and aligns the renamed columns by their new names:
 #source("examples/15_set_name.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/15_set_name.typ"
 
 For one-off renames at construction time, `tt(df, colnames_override={old: new})`
@@ -180,7 +194,7 @@ an em dash, all before `tt()` ever sees the data:
 #source("examples/11_format_polars.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/11_format_polars.typ"
 
 (Tytable's per-cell Typst escaping — `escape=True` by default — still applies to
@@ -201,7 +215,7 @@ reaching back into polars:
 #source("examples/02_format.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/02_format.typ"
 
 == With `.fmt(fn=...)`
@@ -217,7 +231,7 @@ abbreviating large numbers into a human-readable scale where `201818` becomes
 #source("examples/10_format_fn.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/10_format_fn.typ"
 
 = Styling
@@ -242,7 +256,7 @@ e.g. `align="llr"` left-aligns the first two and right-aligns the third.
 #source("examples/03_style.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/03_style.typ"
 
 == Caption and notes
@@ -278,7 +292,7 @@ and every data row in a single directive.
 #source("examples/13_list_selectors.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/13_list_selectors.typ"
 
 == Data-driven row selectors
@@ -298,7 +312,7 @@ row-group insertion), so the column names you use are always the original ones.
 #source("examples/14_data_driven.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/14_data_driven.typ"
 
 = Grouping
@@ -329,7 +343,7 @@ background.
 #source("examples/04_group.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/04_group.typ"
 
 = Themes
@@ -343,19 +357,19 @@ built-in:
 #source("examples/05_theme.py")
 
 #tag("GALLERY — default")
-#v(0.3em)
+#v(0.12em)
 #include "build/05_theme_default.typ"
 
 #tag("GALLERY — striped")
-#v(0.3em)
+#v(0.12em)
 #include "build/05_theme_striped.typ"
 
 #tag("GALLERY — grid")
-#v(0.3em)
+#v(0.12em)
 #include "build/05_theme_grid.typ"
 
 #tag("GALLERY — empty")
-#v(0.3em)
+#v(0.12em)
 #include "build/05_theme_empty.typ"
 
 = Column widths
@@ -370,7 +384,7 @@ content width (e.g. `width=0.5` covers half).
 #source("examples/06_widths.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/06_widths.typ"
 
 Pin the first column to a fixed Typst length and let the rest share the
@@ -381,7 +395,7 @@ label column stays fixed:
 #source("examples/09_widths_fixed.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/09_widths_fixed.typ"
 
 = Resize
@@ -416,7 +430,7 @@ tt(df, theme="resize")
 #source("examples/12_resize.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/12_resize.typ"
 
 = Images & sparklines
@@ -429,7 +443,7 @@ and requires the `images` extra.
 #source("examples/07_images.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/07_images.typ"
 
 = Putting it together
@@ -443,7 +457,7 @@ and formatted in a single call.
 #source("examples/08_full_report.py")
 
 #tag("RESULT")
-#v(0.4em)
+#v(0.12em)
 #include "build/08_full_report.typ"
 
 = API reference

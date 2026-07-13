@@ -13,8 +13,6 @@ on:
       - pyproject.toml
       - uv.lock
       - .github/workflows/docs-pages.yml
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:

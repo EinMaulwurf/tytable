@@ -8,13 +8,6 @@ Jupyter HTML preview.
 ## Install
 
 ```
-pip install tytable
-pip install tytable[images]   # for .plot() / .images() (matplotlib + numpy)
-```
-
-From GitHub with uv:
-
-```
 uv add git+https://github.com/EinMaulwurf/tytable.git
 ```
 
