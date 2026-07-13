@@ -410,12 +410,7 @@ class TestDataDrivenRowSelectors:
 
     def test_data_driven_with_row_groups(self):
         df = pl.DataFrame({"v": [10, 20, 30]})
-        out = (
-            tt(df)
-            .group(i={"Mid": 1})
-            .style(i=pl.col("v") > 15, bold=True)
-            .render("typst")
-        )
+        out = tt(df).group(i={"Mid": 1}).style(i=pl.col("v") > 15, bold=True).render("typst")
         assert "20" in out
         assert "30" in out
         assert "(bold: true,)" in out

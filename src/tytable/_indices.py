@@ -49,9 +49,7 @@ def convert_col_to_typst(j: int) -> int:
     return j - 1
 
 
-def _map_original_to_internal(
-    orig_indices: list[int], group_positions: set[int]
-) -> list[int]:
+def _map_original_to_internal(orig_indices: list[int], group_positions: set[int]) -> list[int]:
     """Map 0-based original row indices to 1-based internal indices accounting for row groups."""
     if not group_positions:
         return [i + 1 for i in orig_indices]

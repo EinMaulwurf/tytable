@@ -50,7 +50,13 @@ class BuiltTable:
 
 
 def _resolve_i_internal(
-    i_selector: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None,
+    i_selector: int
+    | str
+    | Sequence[int | str]
+    | pl.Expr
+    | pl.Series
+    | Callable[[dict], bool]
+    | None,
     nhead: int,
     has_header: bool,
     n_merged_body: int,

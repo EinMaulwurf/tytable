@@ -87,11 +87,7 @@ class TestSetNameEdgeCases:
         assert "[],[y]," in out
 
     def test_empty_string_full_list(self):
-        out = (
-            tt(self.DF, theme=None)
-            .set_name(name=["", ""])
-            .render("typst")
-        )
+        out = tt(self.DF, theme=None).set_name(name=["", ""]).render("typst")
         assert "[],[]," in out
 
     def test_original_dataframe_untouched(self):
@@ -183,11 +179,7 @@ class TestSetNameSnapshots:
 
     def test_snapshot_full_list_with_empty(self):
         df = pl.DataFrame({"name": ["alice"], "score": [42]})
-        out = (
-            tt(df, theme=None)
-            .set_name(name=["", "Score"])
-            .render("typst")
-        )
+        out = tt(df, theme=None).set_name(name=["", "Score"]).render("typst")
         assert_snapshot("set_name_full_list_empty", out)
 
 

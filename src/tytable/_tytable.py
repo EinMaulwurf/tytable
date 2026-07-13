@@ -259,7 +259,13 @@ class TinyTable:
 
     def style(
         self,
-        i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None,
+        i: int
+        | str
+        | Sequence[int | str]
+        | pl.Expr
+        | pl.Series
+        | Callable[[dict], bool]
+        | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
         bold: bool | None = None,
@@ -390,7 +396,13 @@ class TinyTable:
 
     def fmt(
         self,
-        i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None,
+        i: int
+        | str
+        | Sequence[int | str]
+        | pl.Expr
+        | pl.Series
+        | Callable[[dict], bool]
+        | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
         digits: int | None = None,
@@ -458,7 +470,13 @@ class TinyTable:
 
     def plot(
         self,
-        i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None,
+        i: int
+        | str
+        | Sequence[int | str]
+        | pl.Expr
+        | pl.Series
+        | Callable[[dict], bool]
+        | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
         fun: Callable | None = None,
@@ -529,7 +547,13 @@ class TinyTable:
 
     def images(
         self,
-        i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None,
+        i: int
+        | str
+        | Sequence[int | str]
+        | pl.Expr
+        | pl.Series
+        | Callable[[dict], bool]
+        | None = None,
         j: int | str | Sequence[int | str] | None = None,
         *,
         paths: list[str] | None = None,

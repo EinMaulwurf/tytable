@@ -125,7 +125,9 @@ class TypstRenderer:
     """Render a :class:`BuiltTable` to a Typst source string."""
 
     @staticmethod
-    def _columns_spec(width: float | str | Sequence[float | str | None] | None, ncol: int) -> list[str]:
+    def _columns_spec(
+        width: float | str | Sequence[float | str | None] | None, ncol: int
+    ) -> list[str]:
         """Build the Typst ``columns: (…)`` entry list from a user width spec."""
         if width is None:
             return ["auto"] * ncol
