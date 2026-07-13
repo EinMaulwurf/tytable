@@ -66,7 +66,10 @@ def tt(
         Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
         half), a per-column list of fractions/strings/``None`` (``None`` =
         auto), or a Typst/HTML length string such as ``"3.5cm"``. ``None`` lets
-        every column auto-size.
+        every column auto-size. A per-column list must have one entry per
+        column; when every entry is numeric and the list sums to more than 1,
+        each entry is divided by the sum so the table fills the available width
+        with relative column sizes.
     height
         Row height in ``em`` (Typst). ``None`` = auto rows.
     gutter
@@ -176,6 +179,39 @@ def _assign_markers(notes: list[Note]) -> None:
             object.__setattr__(note, "marker", None)
 
 
+def _normalize_width(
+    width: float | Sequence[float | str | None] | str | None, ncol: int
+) -> float | Sequence[float | str | None] | str | None:
+    """Validate and normalize the ``width`` spec.
+
+    A per-column list must have one entry per column; each numeric entry must be
+    non-negative. When every entry is numeric and the list sums to more than 1,
+    each entry is divided by the sum so the table fills the available width with
+    relative column sizes (mirrors the tinytable contract). Mixed lists
+    (containing ``None`` or length strings) are left untouched.
+    """
+    if width is None or isinstance(width, (int, float, str)):
+        return width
+    entries = list(width)
+    if len(entries) != ncol:
+        raise ValueError(
+            f"width list must have one entry per column ({ncol}), got {len(entries)}"
+        )
+    nums = []
+    for w in entries:
+        if w is None or isinstance(w, str):
+            continue
+        if isinstance(w, bool) or not isinstance(w, (int, float)):
+            raise ValueError(f"width entries must be a number, string, or None, got {w!r}")
+        if w < 0:
+            raise ValueError(f"width entries must be non-negative, got {w!r}")
+        nums.append(w)
+    if len(nums) == len(entries) and sum(nums) > 1:
+        total = sum(nums)
+        return [n / total for n in nums]
+    return entries
+
+
 class TinyTable:
     """
     A chainable table built from a Polars DataFrame.
@@ -216,7 +252,7 @@ class TinyTable:
         )
         self._show_colnames = colnames
         self._caption = caption
-        self._width = width
+        self._width = _normalize_width(width, data.width)
         self._height = height
         self._escape = escape
         self._rownames = rownames

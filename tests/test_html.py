@@ -242,6 +242,19 @@ class TestHtmlWidth:
         assert "width:5cm" in out
         assert "<col>" in out
 
+    def test_list_width_sum_over_1_normalized(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=[0.6, 0.7]).render("html")
+        assert "width:46.15%" in out
+        assert "width:53.85%" in out
+
+    def test_mixed_list_sum_over_1_not_normalized(self):
+        df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
+        out = tt(df, theme=None, width=[0.6, None, 0.7]).render("html")
+        assert "width:60.00%" in out
+        assert "width:70.00%" in out
+        assert "<col>" in out
+
 
 @pytest.mark.typst
 class TestTypstWidth:
@@ -275,6 +288,16 @@ class TestTypstWidth:
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
         out = tt(df, theme=None, width=[0.3, None, "2cm"]).render("typst")
         assert "columns: (30.00%, auto, 2cm)" in out
+
+    def test_list_width_sum_over_1_normalized(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, theme=None, width=[0.6, 0.7]).render("typst")
+        assert "columns: (46.15%, 53.85%)" in out
+
+    def test_mixed_list_sum_over_1_not_normalized(self):
+        df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
+        out = tt(df, theme=None, width=[0.6, None, 0.7]).render("typst")
+        assert "columns: (60.00%, auto, 70.00%)" in out
 
     def test_finalize_callback(self):
         df = pl.DataFrame({"A": [1]})
@@ -383,3 +406,20 @@ class TestCaptionNotesStyleHtml:
         df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
         out = tt(df, notes=["Source"]).render("html")
         assert '<td colspan="2" style="text-align:left">Source</td>' in out
+
+
+class TestWidthValidation:
+    def test_wrong_length_raises(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(ValueError, match="width list must have one entry per column"):
+            tt(df, width=[0.5])
+
+    def test_negative_raises(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(ValueError, match="non-negative"):
+            tt(df, width=[-0.1, 0.5])
+
+    def test_bool_entry_raises(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(ValueError, match="width entries must be"):
+            tt(df, width=[True, 0.5])
