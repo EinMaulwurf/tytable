@@ -66,3 +66,16 @@ def test_compile_themes(tmp_path):
     df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
     for theme in ("default", "striped", "grid", "empty", "rotate"):
         assert _compile(tt(df, theme=theme).render("typst"), tmp_path) == 0
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_alpha_hex(tmp_path):
+    df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+    typ = (
+        tt(df)
+        .style(i="header", background="#3337")  # 4-digit hex alpha
+        .style(i=0, j="A", background="#ff000080")  # 8-digit hex alpha
+        .style(i=1, j="B", color="#00ff0033")  # 8-digit hex alpha
+        .render("typst")
+    )
+    assert _compile(typ, tmp_path) == 0

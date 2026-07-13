@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-_HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+_HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 
 _NAMED_COLORS: dict[str, str] = {
     "aliceblue": "#f0f8ff",
@@ -161,6 +161,7 @@ def color_to_typst(color: str) -> str:
     Map a user color spec to a Typst color expression (guide 05 §8).
 
     - "#RGB"/"#RRGGBB" -> rgb("#rrggbb") (normalize #RGB → #RRGGBB, lowercase)
+    - "#RGBA"/"#RRGGBBAA" -> rgb("#rrggbbaa") (normalize #RGBA → #RRGGBBAA, lowercase)
     - "black"/"white"  -> black / white (Typst built-ins)
     - named             -> rgb("#...") via the bundled dict
     - anything else     -> pass through unchanged
@@ -178,7 +179,7 @@ def color_to_typst(color: str) -> str:
     m = _HEX_RE.match(c)
     if m:
         digits = m.group(1)
-        if len(digits) == 3:
+        if len(digits) in (3, 4):
             digits = "".join(ch * 2 for ch in digits)
         return f'rgb("#{digits.lower()}")'
     return c

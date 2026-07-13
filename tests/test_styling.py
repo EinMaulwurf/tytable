@@ -86,6 +86,18 @@ class TestStyleProps:
         out = tt(DF).style(i=0, j=0, color="#f00").render("typst")
         assert 'rgb("#ff0000")' in out
 
+    def test_color_8hex_alpha(self):
+        out = tt(DF).style(i=0, j=0, color="#ff000080").render("typst")
+        assert 'rgb("#ff000080")' in out
+
+    def test_background_8hex_alpha(self):
+        out = tt(DF).style(i=0, j=0, background="#00ff0033").render("typst")
+        assert 'background: rgb("#00ff0033")' in out
+
+    def test_color_normalization_4hex_alpha(self):
+        out = tt(DF).style(i=0, j=0, color="#f008").render("typst")
+        assert 'rgb("#ff000088")' in out
+
     def test_named_color(self):
         out = tt(DF).style(i=0, j=0, color="red").render("typst")
         assert 'rgb("#ff0000")' in out
