@@ -71,6 +71,13 @@ class TestHtmlStyle:
         out = tt(df).style(i=0, j=0, align="c").render("html")
         assert "text-align:center" in out
 
+    def test_align_per_column(self):
+        df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
+        out = tt(df).style(i=0, j=[0, 1, 2], align="lcr").render("html")
+        assert "text-align:left" in out
+        assert "text-align:center" in out
+        assert "text-align:right" in out
+
     def test_fontsize(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).style(i=0, j=0, fontsize=1.2).render("html")

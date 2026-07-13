@@ -183,6 +183,14 @@ class TestStyleValidation:
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="t", line_width=-1)
 
+    def test_bad_multi_char_align(self):
+        with pytest.raises(ValueError):
+            tt(DF).style(i=0, j=[0, 1], align="lx")
+
+    def test_bad_multi_char_alignv(self):
+        with pytest.raises(ValueError):
+            tt(DF).style(i=0, j=[0, 1], alignv="tz")
+
 
 @pytest.mark.typst
 class TestBordersLines:
@@ -411,3 +419,76 @@ class TestDataDrivenRowSelectors:
     def test_match_all_works(self):
         out = tt(self.DF).style(i=pl.col("Score") > 0, italic=True).render("typst")
         assert out.count("(italic: true,)") >= 1
+
+
+@pytest.mark.typst
+class TestPerColumnAlign:
+    """Per-column alignment via multi-char strings like ``align="llr"``."""
+
+    DF3 = pl.DataFrame({"A": [1, 4], "B": [2, 5], "C": [3, 6]})
+
+    def test_align_j_list(self):
+        t = tt(self.DF3, theme=None).style(i=0, j=[0, 1, 2], align="lcr")
+        built = build(t, "typst")
+        assert built.style_grid[(1, 1)]["align"] == "l"
+        assert built.style_grid[(1, 2)]["align"] == "c"
+        assert built.style_grid[(1, 3)]["align"] == "r"
+
+    def test_align_all_rows(self):
+        t = tt(self.DF3, theme=None).style(j=[0, 1, 2], align="lcr")
+        built = build(t, "typst")
+        for i in (0, 1, 2):
+            assert built.style_grid[(i, 1)]["align"] == "l"
+            assert built.style_grid[(i, 2)]["align"] == "c"
+            assert built.style_grid[(i, 3)]["align"] == "r"
+
+    def test_alignv_j_list(self):
+        t = tt(self.DF3, theme=None).style(i=0, j=[0, 1, 2], alignv="tmb")
+        built = build(t, "typst")
+        assert built.style_grid[(1, 1)]["alignv"] == "t"
+        assert built.style_grid[(1, 2)]["alignv"] == "m"
+        assert built.style_grid[(1, 3)]["alignv"] == "b"
+
+    def test_align_implicit_all_columns(self):
+        t = tt(self.DF3, theme=None).style(i=0, align="lcr")
+        built = build(t, "typst")
+        assert built.style_grid[(1, 1)]["align"] == "l"
+        assert built.style_grid[(1, 2)]["align"] == "c"
+        assert built.style_grid[(1, 3)]["align"] == "r"
+
+    def test_align_single_value_broadcasts(self):
+        t = tt(self.DF3, theme=None).style(i=0, j=[0, 1, 2], align="r")
+        built = build(t, "typst")
+        for j in (1, 2, 3):
+            assert built.style_grid[(1, j)]["align"] == "r"
+
+    def test_align_and_alignv_per_column(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        t = tt(df, theme=None).style(i=0, j=[0, 1], align="lr", alignv="tm")
+        built = build(t, "typst")
+        assert built.style_grid[(1, 1)]["align"] == "l"
+        assert built.style_grid[(1, 1)]["alignv"] == "t"
+        assert built.style_grid[(1, 2)]["align"] == "r"
+        assert built.style_grid[(1, 2)]["alignv"] == "m"
+
+    def test_align_length_mismatch_raises(self):
+        with pytest.raises(ValueError, match="3 chars but 2 column"):
+            tt(self.DF3).style(i=0, j=[0, 1], align="lcr").render("typst")
+
+    def test_align_too_long_for_single_col(self):
+        with pytest.raises(ValueError, match="2 chars but 1 column"):
+            tt(self.DF3).style(i=0, j=0, align="lr").render("typst")
+
+    def test_align_renders_typst(self):
+        out = tt(self.DF3).style(i=0, j=[0, 1, 2], align="lcr").render("typst")
+        assert "align: left" in out
+        assert "align: center" in out
+        assert "align: right" in out
+
+    def test_align_snapshot(self):
+        out = tt(self.DF3).style(i=0, j=[0, 1, 2], align="lcr").render("typst")
+        assert_snapshot("style_align_per_column", out)
+
+    def test_align_meta_selector_rejects_per_column(self):
+        with pytest.raises(ValueError, match="per-column align"):
+            tt(DF).style(i="caption", align="lr").render("typst")

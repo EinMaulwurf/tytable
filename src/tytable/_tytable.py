@@ -305,9 +305,12 @@ class TinyTable:
         fontsize
             Font size in ``em``.
         align
-            Horizontal alignment: ``"l"`` / ``"c"`` / ``"r"``.
+            Horizontal alignment: ``"l"`` / ``"c"`` / ``"r"``. When ``j``
+            selects multiple columns, a multi-char string like ``"llr"``
+            sets per-column alignment (one char per selected column).
         alignv
-            Vertical alignment: ``"t"`` / ``"m"`` / ``"b"``.
+            Vertical alignment: ``"t"`` / ``"m"`` / ``"b"``. Per-column
+            strings (e.g. ``"tmb"``) are supported like ``align``.
         indent
             Left indent in ``em``.
         colspan, rowspan

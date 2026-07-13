@@ -234,6 +234,10 @@ they share the same `i`/`j` selector — e.g.
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
 
+When `j` selects several columns, `align` and `alignv` also accept a
+#emph[per-column string] with one shorthand character per selected column —
+e.g. `align="llr"` left-aligns the first two and right-aligns the third.
+
 #tag("SOURCE")
 #source("examples/03_style.py")
 
@@ -469,7 +473,8 @@ string like `"0.1em"`); `None` suppresses it.
 
 #api(".style(i=None, j=None, *, bold, italic, underline, strikeout, monospace, smallcaps, color, background, fontsize, align, alignv, indent, colspan, rowspan, line, line_color, line_width=0.1, line_trim, output=None)")
 Apply cell styling via selectors. `line` is any combo of `t`/`b`/`l`/`r`;
-`align` takes `l`/`c`/`r` and `alignv` takes `t`/`m`/`b`. Returns `self`.
+`align` takes `l`/`c`/`r` and `alignv` takes `t`/`m`/`b`; with multi-column `j`,
+a per-column string like `align="llr"` is accepted. Returns `self`.
 
 #api(".fmt(i=None, j=None, *, digits=None, num_fmt=\"decimal\", replace=None, escape=False, fn=None, output=None)")
 Apply value formatting: `digits` (with `num_fmt` of `"decimal"` or

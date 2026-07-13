@@ -68,6 +68,26 @@ def align_to_typst(h: str | None, v: str | None) -> str | None:
     return hs or vs
 
 
+def _expand_align(
+    val: str | None, n_cols: int, table: dict[str, str], name: str
+) -> list[str] | None:
+    """Expand an align/alignv value into per-column shorthand values.
+
+    A single value (e.g. ``"l"``, ``"left"``) is broadcast to all columns.
+    A multi-char shorthand string (e.g. ``"llr"``) is split per-column,
+    one character per selected column.
+    """
+    if val is None:
+        return None
+    if val in table:
+        return [val] * n_cols
+    if len(val) != n_cols:
+        raise ValueError(
+            f"{name} spec {val!r} has {len(val)} chars but {n_cols} column(s) were selected"
+        )
+    return list(val)
+
+
 def _validate_style(
     *,
     align: str | None,
@@ -86,7 +106,7 @@ def _validate_style(
     for name, val in (("align", align), ("alignv", alignv)):
         if val is not None:
             table = _ALIGN_H if name == "align" else _ALIGN_V
-            if val not in table:
+            if val not in table and not all(c in table for c in val):
                 raise ValueError(f"invalid {name} value: {val!r}")
     if line is not None and not _LINE_RE.match(line):
         raise ValueError(f"invalid line value: {line!r} (must be a combo of t,b,l,r)")
@@ -146,13 +166,20 @@ def build_style_grid(
         if i_vals is None:
             continue
 
+        align_vals = _expand_align(d.align, len(j_vals), _ALIGN_H, "align")
+        alignv_vals = _expand_align(d.alignv, len(j_vals), _ALIGN_V, "alignv")
+
         for i in i_vals:
-            for j in j_vals:
+            for idx, j in enumerate(j_vals):
                 cell = grid.setdefault((i, j), {})
                 for prop in OVERWRITE_PROPS:
                     v = getattr(d, prop)
                     if v is not None:
                         cell[prop] = v
+                if align_vals is not None:
+                    cell["align"] = align_vals[idx]
+                if alignv_vals is not None:
+                    cell["alignv"] = alignv_vals[idx]
                 if has_line:
                     lines.append(
                         {
@@ -196,6 +223,14 @@ def build_meta_styles(
         for prop in META_STYLE_PROPS:
             v = getattr(d, prop)
             if v is not None:
+                if prop == "align" and isinstance(v, str) and v not in _ALIGN_H:
+                    raise ValueError(
+                        f"per-column align spec {v!r} cannot be used with meta selector {d.i!r}"
+                    )
+                if prop == "alignv" and isinstance(v, str) and v not in _ALIGN_V:
+                    raise ValueError(
+                        f"per-column alignv spec {v!r} cannot be used with meta selector {d.i!r}"
+                    )
                 target[prop] = v
     return style_caption, style_notes
 
