@@ -1,0 +1,66 @@
+name: Docs site
+
+# Builds the Typst documentation PDF on every push to main and deploys it to
+# GitHub Pages, so the docs are always current without cutting a release.
+# The versioned, per-release PDF is still attached to each GitHub Release by
+# docs-release.yml.
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - src/tytable/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/docs-pages.yml
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one in-flight Pages deploy at a time; newer runs cancel older ones.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Build documentation
+        run: make docs
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site
+          cp docs/tytable-docs.pdf _site/tytable-docs.pdf
+          cp docs/site/index.html _site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

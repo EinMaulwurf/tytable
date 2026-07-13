@@ -1,13 +1,9 @@
 # tytable
 
-A small, easy-to-use Python library that turns **Polars DataFrames** into
-**Typst tables**, inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable)
+A small Python library that turns **Polars DataFrames** into **Typst tables**,
+inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable)
 package. Most of tinytable's styling power, plus image/sparkline support and a
 Jupyter HTML preview.
-
-> **Full documentation with rendered examples:** build the PDF with `make docs`
-> (requires the `typst` CLI). The source lives in `docs/` — `main.typ` weaves
-> narrative with live tables generated from `docs/examples/`.
 
 ## Install
 
@@ -19,8 +15,7 @@ pip install tytable[images]   # for .plot() / .images() (matplotlib + numpy)
 From GitHub with uv:
 
 ```
-uv pip install git+https://github.com/EinMaulwurf/tytable.git
-uv add git+https://github.com/EinMaulwurf/tytable.git   # as a dependency in pyproject.toml
+uv add git+https://github.com/EinMaulwurf/tytable.git
 ```
 
 For development (clone and):
@@ -69,211 +64,26 @@ the whole document.
   as _intent_ and replayed in a fixed order at render time. Row indices always
   refer to the final, visible table.
 
-## Formatting
+## Documentation
 
-**Format in polars first; `.fmt()` for the rest.** Most formatting (rounding,
-string ops, `fill_null`, percentages) is best done in polars before passing the
-dataframe to `tt()`:
+Full documentation with **rendered examples** (source + result side-by-side),
+the complete **API reference**, and an R-tinytable comparison table live in the
+PDF built from [`docs/main.typ`](docs/main.typ):
 
-```python
-df = df.with_columns(
-    (pl.col("rate") * 100).round(1).cast(pl.Utf8).alias("pct"),
-    pl.col("name").str.to_titlecase(),
-)
+- **Always-current build (HEAD):** <https://einmaulwurf.github.io/tytable/>
+- **Versioned (latest release):**
+  <https://github.com/EinMaulwurf/tytable/releases/latest/download/tytable-docs.pdf>
+
+Build locally (requires the `typst` CLI):
+
 ```
-
-`.fmt()` covers the high-value cases polars can't:
-
-- `digits` — fixed decimal places (`num_fmt="decimal"`) or significant figures
-  (`num_fmt="significant"`) for float columns
-- `replace` — replace missing/null/NaN values with a string or dict mapping
-- `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
-- `fn` — custom column-wise transformation
-
-```python
-tt(df)
-    .fmt(j="score", digits=2)
-    .fmt(j="status", replace="—")
-    .fmt(j="label", fn=lambda vec: [f"[{v}]" for v in vec])
-    .save("out.typ")
+make docs
+# → docs/tytable-docs.pdf
 ```
-
-## Styling
-
-```python
-tt(df)
-    .style(i="header", bold=True, line="b")
-    .style(j="Score", align="c")
-    .style(i=0, j="Score", color="#c0392b", background="#fdf2e9")
-    .style(i=2, italic=True, strikeout=True)
-```
-
-Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
-`smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`c`/`r`),
-`alignv` (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders
-(`line="tblr"`, any combination, with `line_color` / `line_width`).
-
-### Caption and notes
-
-The special selectors `i="caption"` and `i="notes"` style the table caption and
-footnotes. These are not grid cells, so the styling is applied as inline text
-markup (Typst `text(...)`/`#strong[...]`/`#smallcaps[...]`, or HTML `<span>` +
-`<b>`/`<i>`/…) rather than through the cell style grid — matching R tinytable's
-`style_tt(i="caption", …)` / `i="notes", …`.
-
-```python
-tt(df, caption="Product scores", notes=["Source: Q3 report"])
-    .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
-    .style(i="notes", italic=True, color="blue", align="c")
-```
-
-The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
-`monospace`, `smallcaps`, `color`, `fontsize` (plus `align`/`background`/`indent`
-for notes). Use the `output=` argument to restrict styling to one backend
-(e.g. `output=("typst",)`).
-
-> **Tip:** Multiple properties that share a selector combine in one call —
-> `.style(j="Score", align="r", background="#eee", bold=True)` is a single
-> directive, not three. Value formatting like `digits` lives in `.fmt()` (a
-> separate pipeline) and needs its own call.
-
-## Grouping
-
-```python
-# Column groups (spanning headers)
-tt(df).group(j={"Group A": [0, 1], "Group B": [2, 3]})
-
-# Row groups (separator label rows inserted before a 0-based data row)
-tt(df).group(i={"Financial": 0, "Operational": 3})
-```
-
-## Themes
-
-Built-in: `default` (booktab rules), `striped`, `grid`, `empty`, `rotate`,
-`resize`. Pass a callable for a custom theme.
-
-```python
-tt(df, theme="striped")
-tt(df, theme=None).theme("grid")
-```
-
-The `resize` theme scales a table to fit the page. It wraps the rendered
-fragment in a Typst `#layout(size => …)` block that measures the table and
-rescales it. Use the `theme_resize` callable for parameter control:
-
-```python
-from tytable._themes import theme_resize
-
-# Shrink only if wider than 95% of the page; leave smaller tables alone.
-tt(df).theme(lambda t: theme_resize(t, width=0.95, direction="down"))
-
-# Always scale to full page width (the plain theme name does this).
-tt(df, theme="resize")
-```
-
-`theme_resize(table, width=1, height=None, direction="both")` — `width`/`height`
-are fractions of the page content area (when `height` is set, it drives the
-scaling); `direction` is `"down"` (shrink only), `"up"` (expand only), or
-`"both"` (always scale).
-
-## Images & sparklines
-
-Supply your own plotting function (`fun(values) -> matplotlib Figure`); the package
-handles PNG saving and path handling. A `sparkline` example ships in
-`docs/examples/sparkline.py`.
-
-```python
-from sparkline import sparkline
-
-tt(df).plot(j="Trend", fun=sparkline, height=1.5).save("out.typ")
-```
-
-## Asset-path caveat (`#import` workflow)
-
-Because you `#import` the generated `.typ` into a parent report and compile
-elsewhere, image paths must resolve relative to your **Typst project root**
-(where `typst compile` runs). Make the assets location explicit:
-
-```python
-.save("build/tables/products.typ", assets="../assets/products")
-```
-
-Images then land in `build/assets/products/` and the `.typ` references
-`../assets/products/...`, which resolves correctly from `build/tables/` when
-compiled as part of the parent. Without an explicit `assets=`, images land in a
-`tytable_assets/` folder next to the output file.
 
 ## Coming from R tinytable
 
-| R (`tinytable`)                  | Python (`tytable`)                 |
-| -------------------------------- | ----------------------------------- | ------------------------------------- |
-| `tt(data)`                       | `tt(df)` (Polars DataFrame)         |
-| `style_tt(x, ...)`               | `.style(...)`                       |
-| `format_tt(x, ...)`              | `.fmt(...)`                         |
-| `group_tt(x, ...)`               | `.group(...)`                       |
-| `theme_tt(x, ...)`               | `.theme(...)` / `tt(theme=...)`     |
-| `print(x, "typst")`              | `.render("typst")`                  |
-| `save_tt(x, "out.typ")`          | `.save("out.typ")`                  |
-| `tt(x)                           | > format(...) %>% ...` (pipe)       | `.fmt(...).style(...)` (method chain) |
-| 1-based row indexing, 0=colnames | **0-based** data rows; `i="header"` |
-| column by integer position       | column by **name** (preferred)      |
-
-## API
-
-### `tt(data, *, caption=None, width=None, gutter=2, colnames=True, escape=True, theme="default", ...)`
-
-Create a `TinyTable` from a Polars DataFrame. `gutter` controls the Typst
-column-gutter (in pt when numeric, or a Typst length string like `"0.1em"`);
-set to `None` to suppress it entirely.
-
-### `.style(i=None, j=None, *, bold=None, italic=None, ..., line=None)`
-
-Apply cell styling via selectors. Returns `self` for chaining.
-
-### `.fmt(i=None, j=None, *, digits=None, num_fmt="decimal", replace=None, escape=False, fn=None)`
-
-Apply value formatting. Returns `self` for chaining.
-
-### `.group(i=None, j=None)`
-
-Add row groups (`i` dict or list) and column groups (`j` dict or delimiter).
-
-### `.theme(name_or_callable=None)`
-
-Apply a theme (`default`, `striped`, `grid`, `empty`, `rotate`, `resize`, or a
-callable).
-
-### `.plot(j, *, fun, data=None, height=1.0, ...)` / `.images(j, *, paths, ...)`
-
-Embed generated plots or existing images. Requires the `images` extra.
-
-### `.render(output="typst")` → `str`
-
-Render the table as a Typst (or `html`/`ascii`) string.
-
-### `.finalize(fn)` → `self`
-
-Register a post-render callback. `fn(rendered_string, output)` receives the
-fully rendered string and the output format, and must return the (possibly
-modified) string. Chainable; multiple callbacks run in registration order.
-
-```python
-tt(df).finalize(lambda s, o: s.replace("5pt", "2pt") if o == "typst" else s)
-```
-
-### Column widths
-
-The `width` parameter of `tt()` accepts several forms:
-
-```python
-tt(df, width=None)              # all columns auto (default)
-tt(df, width=0.8)               # equal percentage across all columns
-tt(df, width=[0.3, 0.7])        # per-column fractions → percentages
-tt(df, width="5cm")             # Typst/HTML unit for all columns
-tt(df, width=["5cm", None])     # first col 5cm, rest auto
-tt(df, width=[0.3, None, "2cm"])  # mix fractions, auto, and units
-```
-
-### `.save(path, assets=None)`
-
-Save the table to a file (`.typ` or `.html`).
+`tt(df)` ↔ `tt(data)`, `.style()` ↔ `style_tt()`, `.fmt()` ↔ `format_tt()`,
+`.group()` ↔ `group_tt()`, `.theme()` ↔ `theme_tt()`. Indexing is **0-based**
+(vs R's 1-based) and columns are selected by **name** (preferred). The full
+comparison table is in the PDF above.

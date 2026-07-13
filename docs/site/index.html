@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tytable — Documentation</title>
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    header {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.55rem 1rem; border-bottom: 1px solid #e3e3e3;
+      background: #fafafa;
+    }
+    header h1 { font-size: 1rem; margin: 0; font-weight: 600; }
+    header a { color: #0969da; text-decoration: none; font-size: 0.9rem; }
+    header a:hover { text-decoration: underline; }
+    .spacer { margin-left: auto; color: #6b6b6b; font-size: 0.85rem; }
+    .spacer code { font-size: 0.85rem; }
+    embed { width: 100%; height: calc(100vh - 45px); border: 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>tytable documentation</h1>
+    <a href="tytable-docs.pdf" download>Download PDF</a>
+    <span class="spacer">
+      built from <code>main</code> — for the versioned PDF see the latest
+      <a href="https://github.com/EinMaulwurf/tytable/releases/latest">release</a>
+    </span>
+  </header>
+  <embed src="tytable-docs.pdf" type="application/pdf">
+</body>
+</html>
