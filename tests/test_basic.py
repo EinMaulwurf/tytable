@@ -135,6 +135,12 @@ class TestEscape:
     def test_bracket_escaped(self):
         assert escape_typst("[") == "\\["
 
+    def test_backtick_escaped(self):
+        assert escape_typst("`") == "\\`"
+
+    def test_tilde_escaped(self):
+        assert escape_typst("~") == "\\~"
+
     def test_single_backslash(self):
         assert escape_typst("\\") == "\\\\"
 

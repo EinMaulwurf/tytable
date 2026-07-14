@@ -19,8 +19,10 @@ TYPST_ESCAPE = {
     "#": "\\#",
     "[": "\\[",
     "]": "\\]",
+    "`": "\\`",
+    "~": "\\~",
 }
-TYPST_SPECIAL_RE = re.compile(r"[\\<>*_@=+/\$#\[\]\-]")
+TYPST_SPECIAL_RE = re.compile(r"[\\<>*_@=+/\$#\[\]`~\-]")
 
 HTML_ESCAPE = {
     "&": "&amp;",
