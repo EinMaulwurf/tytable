@@ -16,24 +16,18 @@ from ._utils import _new_image_id, format_markup_num
 if TYPE_CHECKING:
     from ._tytable import TinyTable
 
-try:
-    import matplotlib
-
-    if matplotlib.get_backend() == "module://matplotlib_inline.backend_inline":
-        matplotlib.use("Agg")
-except ImportError:
-    pass
-
 
 def _require_images() -> None:
     """Raise an informative ``ImportError`` if matplotlib/numpy are not installed."""
     try:
-        import matplotlib  # noqa: F401
+        import matplotlib
         import numpy  # noqa: F401
     except ImportError as e:
         raise ImportError(
             ".plot()/.images() require the 'images' extra:\n    pip install tytable[images]"
         ) from e
+    if matplotlib.get_backend() == "module://matplotlib_inline.backend_inline":
+        matplotlib.use("Agg")
 
 
 def _height_to_float(h: str | float) -> float:
@@ -126,10 +120,12 @@ def _build_image_cell_string(
             return f'#image(bytes("{escaped}"), format: "svg", height: {h}em)'
         else:
             path = relpath.replace("\\", "/")
-            return f'#image("{path}", height: {h}em)'
+            return f'#image("{_escape_typst_bytes(path)}", height: {h}em)'
     elif output == "html":
+        from html import escape
+
         path = relpath.replace("\\", "/")
-        return f'<img src="{path}" style="height: {h}em;">'
+        return f'<img src="{escape(path, quote=True)}" style="height: {h}em;">'
     else:
         return "[plot]"
 

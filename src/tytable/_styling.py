@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from ._colors import _validate_color_string
 from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
@@ -58,16 +59,6 @@ _ALIGN_V = {
     "bottom": "bottom",
 }
 _LINE_RE = re.compile(r"^[tblr]+$")
-_UNSAFE_CSS_CHARS = re.compile(r'["\'\n<>]')
-
-
-def _validate_css_safe_value(value: str, name: str) -> None:
-    """Reject style property values containing characters unsafe in HTML/CSS contexts."""
-    if _UNSAFE_CSS_CHARS.search(value):
-        raise ValueError(
-            f"{name} value {value!r} contains disallowed characters "
-            f"(found: {set(_UNSAFE_CSS_CHARS.findall(value))})"
-        )
 
 
 def align_to_typst(h: str | None, v: str | None) -> str | None:
@@ -126,7 +117,10 @@ def _validate_style(
         if val is not None and not isinstance(val, str):
             raise TypeError(f"{name} must be a string, got {type(val).__name__}")
         if val is not None:
-            _validate_css_safe_value(val, name)
+            try:
+                _validate_color_string(val.strip())
+            except ValueError as exc:
+                raise ValueError(f"invalid {name}: {exc}") from exc
     for name, ival in (("colspan", colspan), ("rowspan", rowspan)):
         if ival is not None and (not isinstance(ival, int) or isinstance(ival, bool) or ival < 1):
             raise ValueError(f"{name} must be a positive int, got {ival!r}")

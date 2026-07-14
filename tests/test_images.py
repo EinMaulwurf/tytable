@@ -1,9 +1,24 @@
+import subprocess
+import sys
+
 import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._resolve import build
+
+
+def test_non_image_render_does_not_import_matplotlib():
+    code = """
+import sys
+import polars as pl
+from tytable import tt
+
+tt(pl.DataFrame({"A": [1]}), theme=None).render("html")
+assert "matplotlib" not in sys.modules
+"""
+    subprocess.run([sys.executable, "-c", code], check=True)
 
 
 def _sparkline(values, *, color="black", xlim=None, **kw):
@@ -71,6 +86,22 @@ class TestImages:
         result = (tmp_path / "out.typ").read_text()
         assert '#image("img/a.png", height: 1em)' in result
         assert '#image("img/b.png", height: 1em)' in result
+
+    def test_image_paths_are_escaped_for_markup(self):
+        df = pl.DataFrame({"Logo": ["placeholder"]})
+
+        html = (
+            tt(df, theme=None)
+            .images(j="Logo", paths=['x\" onerror=\"alert(1)'])
+            .render("html")
+        )
+        assert '<img src="x&amp;quot; onerror=&amp;quot;alert(1)"' not in html
+        assert '<img src="x&quot; onerror=&quot;alert(1)"' in html
+
+        typst = (
+            tt(df, theme=None).images(j="Logo", paths=['x\"), pagebreak(), image(\"']).render("typst")
+        )
+        assert '#image("x\\\"), pagebreak(), image(\\\"", height: 1em)' in typst
 
 
 @pytest.mark.images

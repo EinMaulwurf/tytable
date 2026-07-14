@@ -5,6 +5,11 @@ from __future__ import annotations
 import re
 
 _HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
+_COLOR_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+_COLOR_FUNCTION_RE = re.compile(
+    r"^(?:rgb|luma|oklab|oklch|hsl|hsv)\([A-Za-z0-9.%+/,\s-]*\)$",
+    re.IGNORECASE,
+)
 
 _NAMED_COLORS: dict[str, str] = {
     "aliceblue": "#f0f8ff",
@@ -164,7 +169,12 @@ def color_to_typst(color: str) -> str:
     - "#RGBA"/"#RRGGBBAA" -> rgb("#rrggbbaa") (normalize #RGBA → #RRGGBBAA, lowercase)
     - "black"/"white"  -> black / white (Typst built-ins)
     - named             -> rgb("#...") via the bundled dict
-    - anything else     -> pass through unchanged
+    - safe color expression -> pass through unchanged
+
+    Raw expressions are limited to a color name or one of Typst's color
+    constructors with scalar arguments. This keeps useful expressions such as
+    ``luma(50%)`` while preventing a value from breaking out of the generated
+    style signature.
     """
     if not isinstance(color, str):
         return str(color)
@@ -187,10 +197,14 @@ def color_to_typst(color: str) -> str:
 
 
 def _validate_color_string(color: str) -> None:
-    """Reject color values containing characters that could inject Typst code."""
-    dangerous = {"\n", ";", "{", "}"}
-    for char in dangerous:
-        if char in color:
-            raise ValueError(
-                f"invalid color value {color!r}: contains disallowed character {char!r}"
-            )
+    """Accept only standalone color names and known color constructors."""
+    if (
+        _HEX_RE.fullmatch(color)
+        or _COLOR_NAME_RE.fullmatch(color)
+        or _COLOR_FUNCTION_RE.fullmatch(color)
+    ):
+        return
+    raise ValueError(
+        f"invalid color value {color!r}: expected a color name, hex color, "
+        "or supported color function"
+    )

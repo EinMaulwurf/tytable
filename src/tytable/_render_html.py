@@ -208,11 +208,10 @@ class HtmlRenderer:
                 ti = convert_row_to_typst(i_internal, built.nhead)
                 border_css = border_map.get((ti, j_internal - 1), "")
                 style_str = _build_cell_style(cell_props, border_css)
-                escaped_col = escape_html(colname)
                 if style_str:
-                    tr_parts.append(f'<th style="{style_str}">{escaped_col}</th>')
+                    tr_parts.append(f'<th style="{style_str}">{colname}</th>')
                 else:
-                    tr_parts.append(f"<th>{escaped_col}</th>")
+                    tr_parts.append(f"<th>{colname}</th>")
             head_parts.append(f"<tr>{' '.join(tr_parts)}</tr>")
 
         if head_parts:

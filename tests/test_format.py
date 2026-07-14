@@ -78,6 +78,13 @@ class TestEscape:
 
 @pytest.mark.typst
 class TestFn:
+    def test_empty_row_selector_does_not_fall_back_to_body(self):
+        df = pl.DataFrame({"value": [1, 2]})
+        out = tt(df, theme=None).fmt(i=[], fn=lambda vec: ["changed"] * len(vec)).render("typst")
+        assert "changed" not in out
+        assert "[1]" in out
+        assert "[2]" in out
+
     def test_fn_column_transform(self):
         df = pl.DataFrame({"x": [1.0, 2.0, 3.0]})
         out = tt(df).fmt(j="x", fn=lambda vec: [f"#{v}" for v in vec]).render("typst")

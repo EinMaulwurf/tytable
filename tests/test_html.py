@@ -149,6 +149,23 @@ class TestHtmlNotes:
 
 @pytest.mark.html
 class TestHtmlEscape:
+    def test_column_name_escaped_once(self):
+        df = pl.DataFrame({"X<Y&Z": [1]})
+        out = tt(df, theme=None).render("html")
+        assert "<th>X&lt;Y&amp;Z</th>" in out
+        assert "&amp;lt;" not in out
+
+    def test_raw_column_name_when_escape_disabled(self):
+        df = pl.DataFrame({"<em>A</em>": [1]})
+        out = tt(df, theme=None, escape=False).render("html")
+        assert "<th><em>A</em></th>" in out
+
+    def test_user_image_markup_is_escaped(self):
+        df = pl.DataFrame({"A": ['<img src=x onerror="alert(1)">']})
+        out = tt(df, theme=None).render("html")
+        assert "<td>&lt;img src=x onerror=\"alert(1)\"&gt;</td>" in out
+        assert '<td><img src=x onerror="alert(1)">' not in out
+
     def test_brackets_escaped(self):
         df = pl.DataFrame({"A": ["x<y"]})
         out = tt(df, theme=None).render("html")

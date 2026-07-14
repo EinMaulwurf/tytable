@@ -143,6 +143,23 @@ class TestStyleProps:
         assert "color: black" in out
         assert "rgb" not in out
 
+    def test_typst_color_function(self):
+        out = tt(DF).style(i=0, j=0, color="luma(50%)").render("typst")
+        assert "color: luma(50%)" in out
+
+    @pytest.mark.parametrize("prop", ["color", "background", "line_color"])
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "red), pagebreak(), rgb(",
+            "red;background:url(https://example.invalid)",
+            'red\"><script>alert(1)</script>',
+        ],
+    )
+    def test_unsafe_color_value_rejected(self, prop, value):
+        with pytest.raises(ValueError, match=f"invalid {prop}"):
+            tt(DF, theme=None).style(**{prop: value})
+
 
 @pytest.mark.typst
 class TestOverwriteSemantics:
