@@ -16,3 +16,4 @@ report_assets/
 docs/tytable-docs.pdf
 .DS_Store
 TODO.md
+.opencode/
