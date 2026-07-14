@@ -104,7 +104,8 @@ class TypstRenderOptions:
 
     def align_to_typst(self) -> str:
         """Return the Typst alignment keyword for ``align_figure``."""
-        return {"l": "left", "c": "center", "r": "right"}.get(self.align_figure or "l", "left")
+        align = "l" if self.align_figure is None else self.align_figure
+        return {"l": "left", "c": "center", "r": "right"}.get(align, "left")
 
 
 def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
