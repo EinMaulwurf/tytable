@@ -76,6 +76,26 @@ def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[st
     return rows
 
 
+def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]]:
+    """Return ``(label, start, span)`` entries for a column-group header row.
+
+    An empty string immediately after a label extends that label's span, while
+    ``None`` and standalone empty strings each represent one blank cell.
+    """
+    spans: list[tuple[str, int, int]] = []
+    i = 0
+    while i < len(row):
+        value = row[i]
+        label = "" if value is None else value.strip()
+        start = i
+        i += 1
+        if label:
+            while i < len(row) and row[i] is not None and (row[i] or "").strip() == "":
+                i += 1
+        spans.append((label, start, i - start))
+    return spans
+
+
 def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> TinyTable:
     """Record row-group separators from a ``{label: row}`` dict or a run-length list."""
     if isinstance(i, dict):

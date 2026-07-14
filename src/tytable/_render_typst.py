@@ -15,6 +15,7 @@ from typing import Any
 from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
+from ._groups import _resolve_col_group_spans
 from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._renderer import Renderer
 from ._resolve import BuiltTable
@@ -460,23 +461,10 @@ class TypstRenderer(Renderer):
     def _build_col_group_row(self, row: list[str | None]) -> list[str]:
         """Turn one column-group header row into Typst cell fragments (with ``colspan`` merging)."""
         parts = []
-        i = 0
-        while i < len(row):
-            v = row[i]
-            if v is None:
+        for label, _start, span in _resolve_col_group_spans(row):
+            if not label:
                 parts.append("[ ]")
-                i += 1
                 continue
-            label = (v or "").strip()
-            if label == "":
-                parts.append("[ ]")
-                i += 1
-                continue
-            start = i
-            i += 1
-            while i < len(row) and row[i] is not None and (row[i] or "").strip() == "":
-                i += 1
-            span = i - start
             escaped = escape_typst(label)
             if span > 1:
                 parts.append(f"table.cell(colspan: {span}, align: center)[{escaped}]")

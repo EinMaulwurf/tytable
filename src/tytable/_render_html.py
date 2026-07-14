@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ._escape import escape_html
+from ._groups import _resolve_col_group_spans
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._styling import compute_covered_cells
@@ -167,27 +168,10 @@ class HtmlRenderer(Renderer):
         if built.col_groups:
             for cg_row in built.col_groups:
                 tr_parts: list[str] = []
-                i_col = 0
-                while i_col < len(cg_row):
-                    v = cg_row[i_col]
-                    if v is None:
+                for label, _start, span in _resolve_col_group_spans(cg_row):
+                    if not label:
                         tr_parts.append("<th></th>")
-                        i_col += 1
                         continue
-                    label = (v or "").strip()
-                    if label == "":
-                        tr_parts.append("<th></th>")
-                        i_col += 1
-                        continue
-                    start = i_col
-                    i_col += 1
-                    while (
-                        i_col < len(cg_row)
-                        and cg_row[i_col] is not None
-                        and (cg_row[i_col] or "").strip() == ""
-                    ):
-                        i_col += 1
-                    span = i_col - start
                     escaped_label = escape_html(label)
                     if span > 1:
                         tr_parts.append(

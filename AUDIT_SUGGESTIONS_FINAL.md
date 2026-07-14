@@ -136,7 +136,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `HtmlRenderer.render()` and `AsciiRenderer.render()` accept `_opts` but never use it. Drop the parameter.
 
-- [ ] **M-8** — [src/tytable/_render_typst.py, src/tytable/_render_html.py] Extract shared col-group span logic.
+- [x] **M-8** — [src/tytable/_render_typst.py, src/tytable/_render_html.py] Extract shared col-group span logic.
 
   The col-group row rendering in `_render_typst.py:430-455` and `_render_html.py:167-197` is ~70% identical. Extract a shared utility `_resolve_col_group_spans(cg_row) -> list[tuple[str, int, int]]`.
 

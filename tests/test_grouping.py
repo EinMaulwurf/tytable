@@ -3,11 +3,21 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
+from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 DF3 = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]})
 DF4 = pl.DataFrame({"Q1_a": [1, 2], "Q1_b": [3, 4], "Q2_c": [5, 6], "Q2_d": [7, 8]})
+
+
+def test_resolve_col_group_spans():
+    row = ["Group", "", None, "Solo", "", ""]
+    assert _resolve_col_group_spans(row) == [
+        ("Group", 0, 2),
+        ("", 2, 1),
+        ("Solo", 3, 3),
+    ]
 
 
 @pytest.mark.typst
