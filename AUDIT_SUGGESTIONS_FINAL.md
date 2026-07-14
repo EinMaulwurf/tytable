@@ -128,7 +128,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `j` is annotated as `int | str | Sequence[int | str] | None` but the runtime in `_indices.py` already handles `list[str]`. The annotation gap causes false type-checker errors.
 
-- [ ] **M-6** — [src/tytable/_tytable.py:854-859] Define a `Renderer` ABC and replace hardcoded dispatch.
+- [x] **M-6** — [src/tytable/_tytable.py:854-859] Define a `Renderer` ABC and replace hardcoded dispatch.
 
   Create a `class Renderer(ABC)` with `render(built: BuiltTable) -> str`. Make `TypstRenderer`, `HtmlRenderer`, `AsciiRenderer` inherit from it. Use a registry dict instead of if/elif dispatch.
 

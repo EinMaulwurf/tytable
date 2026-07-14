@@ -21,6 +21,7 @@ from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
+from ._renderer import Renderer
 from ._styling import _validate_style
 from ._themes import THEMES
 
@@ -996,12 +997,13 @@ class TinyTable:
         from ._resolve import build
 
         built = build(self, output)
-        if output == "html":
-            result = HtmlRenderer().render(built)
-        elif output == "ascii":
-            result = AsciiRenderer().render(built)
-        else:
-            result = TypstRenderer().render(built, self._typst_opts)
+        renderers: dict[str, Renderer] = {
+            "html": HtmlRenderer(),
+            "ascii": AsciiRenderer(),
+            "typst": TypstRenderer(self._typst_opts),
+        }
+        renderer = renderers.get(output, renderers["typst"])
+        result = renderer.render(built)
         for fn in self._finalize_hooks:
             result = fn(result, output)
         return result

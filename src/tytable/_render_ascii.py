@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from ._renderer import Renderer
 from ._resolve import BuiltTable
 
 
@@ -10,7 +11,7 @@ def _plain_text(val: str) -> str:
     return val.replace("\n", " ").replace("\r", "")
 
 
-class AsciiRenderer:
+class AsciiRenderer(Renderer):
     """Render a :class:`BuiltTable` to a fixed-width ASCII table string."""
 
     MAX_LINE_LENGTH = 60

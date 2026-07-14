@@ -16,6 +16,7 @@ from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
 from ._indices import convert_col_to_typst, convert_row_to_typst
+from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._styling import align_to_typst, compute_covered_cells
 
@@ -145,8 +146,11 @@ def _split_chunks(values: set[int]) -> list[tuple[int, int]]:
     return chunks
 
 
-class TypstRenderer:
+class TypstRenderer(Renderer):
     """Render a :class:`BuiltTable` to a Typst source string."""
+
+    def __init__(self, opts: TypstRenderOptions) -> None:
+        self._opts = opts
 
     @staticmethod
     def _columns_spec(
@@ -169,8 +173,9 @@ class TypstRenderer:
                 result.append(f"{w * 100:.2f}%")
         return result
 
-    def render(self, built: BuiltTable, opts: TypstRenderOptions) -> str:
+    def render(self, built: BuiltTable) -> str:
         """Produce the full Typst fragment (figure/table header, body, footer, notes)."""
+        opts = self._opts
         L: list[str] = []
         need_figure = opts.figure
         if not need_figure and (built.caption is not None or built.label is not None):

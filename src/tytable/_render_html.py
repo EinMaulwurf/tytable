@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ._escape import escape_html
+from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._styling import compute_covered_cells
 
@@ -128,7 +129,7 @@ def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tup
     return border_map
 
 
-class HtmlRenderer:
+class HtmlRenderer(Renderer):
     """Render a :class:`BuiltTable` to an HTML ``<table>`` string."""
 
     def render(self, built: BuiltTable, _opts: object = None) -> str:
