@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 
 _HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
-_COLOR_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 _COLOR_FUNCTION_RE = re.compile(
     r"^(?:rgb|luma|oklab|oklch|hsl|hsv)\([A-Za-z0-9.%+/,\s-]*\)$",
     re.IGNORECASE,
@@ -197,10 +196,11 @@ def color_to_typst(color: str) -> str:
 
 
 def _validate_color_string(color: str) -> None:
-    """Accept only standalone color names and known color constructors."""
+    """Accept only bundled color names, hex colors, and known color constructors."""
     if (
-        _HEX_RE.fullmatch(color)
-        or _COLOR_NAME_RE.fullmatch(color)
+        color.lower() in _NAMED_COLORS
+        or color.lower() in ("black", "white")
+        or _HEX_RE.fullmatch(color)
         or _COLOR_FUNCTION_RE.fullmatch(color)
     ):
         return

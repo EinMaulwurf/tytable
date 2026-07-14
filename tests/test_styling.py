@@ -5,6 +5,7 @@ from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._render_typst import _props_to_signature
 from tytable._resolve import build
+from tytable._styling import compute_covered_cells
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
@@ -131,6 +132,18 @@ class TestStyleProps:
         out = tt(DF).style(i=0, j=0, background="#00ff0033").render("typst")
         assert 'background: rgb("#00ff0033")' in out
 
+    def test_rowspan_typst(self):
+        df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
+        out = tt(df, theme=None).style(i=0, j="A", rowspan=2).render("typst")
+        assert "table.cell(rowspan: 2)[top]" in out
+        assert "covered" not in out
+
+    def test_rowspan_html(self):
+        df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
+        out = tt(df, theme=None).style(i=0, j="A", rowspan=2).render("html")
+        assert '<td rowspan="2">top</td>' in out
+        assert "covered" not in out
+
     def test_color_normalization_4hex_alpha(self):
         out = tt(DF).style(i=0, j=0, color="#f008").render("typst")
         assert 'rgb("#ff000088")' in out
@@ -218,6 +231,20 @@ class TestAppendVsOverwrite:
         t = tt(DF, theme=None).style(i=0, j=0, line="t").style(i=0, j=0, line="l")
         built = build(t, "typst")
         assert len(built.style_lines) == 2
+
+
+class TestCoveredCells:
+    @pytest.mark.parametrize(
+        ("grid", "expected"),
+        [
+            ({(1, 1): {"colspan": 3}}, {(1, 2), (1, 3)}),
+            ({(2, 2): {"rowspan": 3}}, {(3, 2), (4, 2)}),
+            ({(1, 1): {"colspan": 2, "rowspan": 2}}, {(1, 2), (2, 1), (2, 2)}),
+            ({(1, 1): {"bold": True}, (2, 2): {"colspan": 1, "rowspan": 1}}, set()),
+        ],
+    )
+    def test_span_coverage(self, grid, expected):
+        assert compute_covered_cells(grid) == expected
 
 
 @pytest.mark.typst

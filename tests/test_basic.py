@@ -4,6 +4,7 @@ import pytest
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._escape import escape_typst
+from tytable._resolve import build
 
 EXPECTED_BASIC_TYP = (
     "#show figure: set block(breakable: false)\n"
@@ -109,6 +110,38 @@ class TestSnapshots:
     def test_basic_3x3(self):
         df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})
         assert_snapshot("basic_3x3", tt(df, theme=None).render("typst"))
+
+
+@pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+def test_empty_dataframe_renders_with_all_backends(output):
+    df = pl.DataFrame(schema={"A": pl.Int64, "B": pl.String})
+    rendered = tt(df, theme=None).render(output)
+    assert rendered
+    assert "A" in rendered
+    assert "B" in rendered
+
+
+@pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+def test_unicode_text_survives_all_renderers(output):
+    values = ["日本語", "table 🎉", "مرحبا", "e\u0301"]
+    rendered = tt(pl.DataFrame({"text": values}), theme=None).render(output)
+    for value in values:
+        assert value in rendered
+
+
+@pytest.mark.parametrize(("suffix", "output"), [(".typ", "typst"), (".html", "html")])
+def test_save_plain_output(tmp_path, suffix, output):
+    table = tt(pl.DataFrame({"A": [1], "B": [2]}), theme=None)
+    expected = table.render(output)
+    destination = tmp_path / f"output{suffix}"
+    table.save(str(destination))
+    assert destination.read_text(encoding="utf-8") == expected
+
+
+def test_build_rejects_unknown_output():
+    table = tt(pl.DataFrame({"A": [1]}), theme=None)
+    with pytest.raises(NotImplementedError, match="output='markdown' not implemented"):
+        build(table, "markdown")
 
 
 @pytest.mark.typst

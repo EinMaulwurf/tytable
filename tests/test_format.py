@@ -3,6 +3,7 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
+from tytable._format import _apply_escape, _apply_replace, _matches
 
 
 @pytest.mark.typst
@@ -60,6 +61,55 @@ class TestReplace:
         df = pl.DataFrame({"x": [float("inf"), 10.0]})
         out = tt(df).fmt(replace={float("inf"): "INF"}).render("typst")
         assert "INF" in out
+
+
+class TestFormattingUtilities:
+    @pytest.mark.parametrize(
+        ("key", "typed", "rendered"),
+        [
+            (None, None, ""),
+            (float("nan"), float("nan"), "nan"),
+            (float("inf"), float("inf"), "inf"),
+            (float("-inf"), float("-inf"), "-inf"),
+            ("null", None, ""),
+            ("nan", float("nan"), "nan"),
+            ("inf", float("inf"), "inf"),
+            ("-inf", float("-inf"), "-inf"),
+            (7, 7, "7"),
+            ("7", 7, "7"),
+        ],
+    )
+    def test_matches_special_and_regular_values(self, key, typed, rendered):
+        assert _matches(key, typed, rendered)
+
+    def test_matches_distinguishes_infinity_signs(self):
+        assert not _matches(float("inf"), float("-inf"), "-inf")
+
+    @pytest.mark.parametrize(
+        ("typed", "rendered", "replace", "expected"),
+        [
+            (None, "", True, " "),
+            (float("nan"), "nan", "missing", "missing"),
+            (1, "1", "missing", "1"),
+            (None, "", {None: "NA"}, "NA"),
+            (float("inf"), "inf", {"inf": "infinity"}, "infinity"),
+            (2, "2", {1: "one"}, "2"),
+        ],
+    )
+    def test_apply_replace(self, typed, rendered, replace, expected):
+        assert _apply_replace(typed, rendered, replace) == expected
+
+    @pytest.mark.parametrize(
+        ("value", "escape_spec", "output", "expected"),
+        [
+            ("a#b", True, "typst", "a\\#b"),
+            ("a<b", True, "html", "a&lt;b"),
+            ("a&b", "typst", "ascii", "a&amp;b"),
+            ("a#b", False, "typst", "a#b"),
+        ],
+    )
+    def test_apply_escape(self, value, escape_spec, output, expected):
+        assert _apply_escape(value, escape_spec, output) == expected
 
 
 @pytest.mark.typst

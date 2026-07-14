@@ -312,43 +312,43 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
 ## TESTING
 
-- [ ] **T-1** — [tests/] Add tests for empty DataFrame rendering (0 rows).
+- [x] **T-1** — [tests/] Add tests for empty DataFrame rendering (0 rows).
 
   Create a `pl.DataFrame()` with columns but 0 rows, render with all three backends, assert no crash.
 
-- [ ] **T-2** — [tests/] Add tests for `rowspan` styling parameter.
+- [x] **T-2** — [tests/] Add tests for `rowspan` styling parameter.
 
   Test `rowspan` renders correctly in Typst and HTML. Test `compute_covered_cells()` with rowspan > 1.
 
-- [ ] **T-3** — [tests/] Add unit tests for `color_to_typst()`.
+- [x] **T-3** — [tests/] Add unit tests for `color_to_typst()`.
 
   Test: named colors, 3/4/6/8-digit hex, "black"/"white", empty string, invalid hex, unknown strings (should raise ValueError after C-4).
 
-- [ ] **T-4** — [tests/] Add unit tests for `format_markup_num()`.
+- [x] **T-4** — [tests/] Add unit tests for `format_markup_num()`.
 
   Test: ints, floats (whole-number vs fractional), bools, None, complex types.
 
-- [ ] **T-5** — [tests/] Add unit tests for `_matches()`, `_apply_replace()`, `_apply_escape()`.
+- [x] **T-5** — [tests/] Add unit tests for `_matches()`, `_apply_replace()`, `_apply_escape()`.
 
   Currently only tested through full render pipeline. Add direct unit tests for each formatting utility.
 
-- [ ] **T-6** — [tests/] Add unit tests for `compute_covered_cells()`.
+- [x] **T-6** — [tests/] Add unit tests for `compute_covered_cells()`.
 
   Test colspan and rowspan coverage logic with various configurations.
 
-- [ ] **T-7** — [tests/] Add Unicode/emoji rendering tests.
+- [x] **T-7** — [tests/] Add Unicode/emoji rendering tests.
 
   Test that Japanese, emoji, RTL text, and combining marks survive all three render pipelines without corruption.
 
-- [ ] **T-8** — [tests/] Add tests for `save()` with plain Typst/HTML output (no images).
+- [x] **T-8** — [tests/] Add tests for `save()` with plain Typst/HTML output (no images).
 
   Test `table.save("output.typ")` and `table.save("output.html")` write correct files.
 
-- [ ] **T-9** — [tests/] Add test for row grouping with list input (run-length encoding).
+- [x] **T-9** — [tests/] Add test for row grouping with list input (run-length encoding).
 
   `register_row_groups` accepts a list form — verify it produces correct group separators.
 
-- [ ] **T-10** — [tests/] Add test for `build()` raising `NotImplementedError` on unknown output format.
+- [x] **T-10** — [tests/] Add test for `build()` raising `NotImplementedError` on unknown output format.
 
   Simple `pytest.raises(NotImplementedError, match=...)`.
 

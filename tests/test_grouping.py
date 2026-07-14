@@ -35,6 +35,12 @@ class TestRowGroups:
         assert "table.header" in out
         assert "table.cell(colspan: 2)[Start]" in out
 
+    def test_row_groups_from_run_length_list(self):
+        df = pl.DataFrame({"value": [1, 2, 3, 4, 5]})
+        built = build(tt(df, theme=None).group(i=["A", "A", "B", "B", "C"]), "typst")
+        assert built.row_group_positions == {1: "A", 4: "B", 7: "C"}
+        assert [row[0] for row in built.data_body] == ["A", "1", "2", "B", "3", "4", "C", "5"]
+
 
 @pytest.mark.typst
 class TestRowGroupPositionFormula:
