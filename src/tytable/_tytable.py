@@ -19,7 +19,6 @@ from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
-from ._resolve import build
 from ._styling import _validate_style
 from ._themes import THEMES
 
@@ -847,9 +846,11 @@ class TinyTable:
         Returns
         -------
         str
-            The rendered table as a string. Terminal — does not return the
+            The rendered table as a string.         Terminal — does not return the
             table.
         """
+        from ._resolve import build
+
         built = build(self, output)
         if output == "html":
             result = HtmlRenderer().render(built)

@@ -182,4 +182,15 @@ def color_to_typst(color: str) -> str:
         if len(digits) in (3, 4):
             digits = "".join(ch * 2 for ch in digits)
         return f'rgb("#{digits.lower()}")'
+    _validate_color_string(c)
     return c
+
+
+def _validate_color_string(color: str) -> None:
+    """Reject color values containing characters that could inject Typst code."""
+    dangerous = {"\n", ";", "{", "}"}
+    for char in dangerous:
+        if char in color:
+            raise ValueError(
+                f"invalid color value {color!r}: contains disallowed character {char!r}"
+            )

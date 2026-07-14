@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 try:
     import matplotlib
 
-    matplotlib.use("Agg")
+    if matplotlib.get_backend() == "module://matplotlib_inline.backend_inline":
+        matplotlib.use("Agg")
 except ImportError:
     pass
 
@@ -143,10 +144,15 @@ def execute_plots(
     has_header: bool,
     n_merged_body: int,
     group_positions: set[int],
-) -> None:
-    """Run every ``PlotDirective`` (generated plots and static images), writing image cell markup in place."""
+) -> set[tuple[int, int]]:
+    """Run every ``PlotDirective`` (generated plots and static images), writing image cell markup in place.
+
+    Returns the set of ``(row, col)`` positions where safe image markup was injected,
+    so callers can selectively skip HTML/Typst escaping for those cells.
+    """
+    image_cells: set[tuple[int, int]] = set()
     if not table._plot_directives:
-        return
+        return image_cells
 
     _require_images()
 
@@ -201,6 +207,7 @@ def execute_plots(
                             img_path, height, output, portable, None, d.width_px, d.height_px
                         )
                         data_body[body_row][col_idx] = cell_str
+                        image_cells.add((body_row, col_idx))
                 else:
                     if d.data is not None:
                         total_idx = ri * len(j_vals) + rj
@@ -254,6 +261,8 @@ def execute_plots(
                         d.height_px,
                     )
                     data_body[body_row][col_idx] = cell_str
+                    image_cells.add((body_row, col_idx))
 
     for td in temp_dirs:
         shutil.rmtree(td, ignore_errors=True)
+    return image_cells

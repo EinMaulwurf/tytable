@@ -16,7 +16,6 @@ from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
-from ._images import execute_plots
 from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
 
@@ -172,8 +171,8 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     colnames_display: list[str] = []
     for c in table._colnames:
         name = str(c)
-        if table._escape:
-            name = escape_html(name) if output in ("html", "ascii") else escape_typst(name)
+        if table._escape and output == "typst":
+            name = escape_typst(name)
         colnames_display.append(name)
 
     show_colnames = table._show_colnames
@@ -222,18 +221,9 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         colnames=table._colnames,
     )
 
-    if table._escape:
-        for r in range(len(data_body)):
-            for col_idx in range(len(data_body[r])):
-                if (r, col_idx) not in escaped_cells:
-                    val = data_body[r][col_idx]
-                    if output in ("html", "ascii"):
-                        if not val.startswith("<img"):
-                            data_body[r][col_idx] = escape_html(val)
-                    else:
-                        data_body[r][col_idx] = escape_typst(val)
+    from ._images import execute_plots
 
-    execute_plots(
+    image_cells = execute_plots(
         table,
         data_body,
         typed_body,
@@ -243,6 +233,16 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         n_merged_body=n_merged_body,
         group_positions=group_position_set,
     )
+
+    if table._escape:
+        for r in range(len(data_body)):
+            for col_idx in range(len(data_body[r])):
+                if (r, col_idx) not in escaped_cells and (r, col_idx) not in image_cells:
+                    val = data_body[r][col_idx]
+                    if output in ("html", "ascii"):
+                        data_body[r][col_idx] = escape_html(val)
+                    else:
+                        data_body[r][col_idx] = escape_typst(val)
 
     _insert_footnote_markers(
         data_body,

@@ -115,14 +115,17 @@ def apply_formats(
             n_merged_body=n_merged_body,
             has_header=has_header,
             data=table._data,
-        ) or resolve_i(
-            "body",
-            nhead=nhead,
-            group_positions=group_positions,
-            n_merged_body=n_merged_body,
-            has_header=has_header,
         )
-        assert i_vals is not None
+        if i_vals is None:
+            i_vals = resolve_i(
+                "body",
+                nhead=nhead,
+                group_positions=group_positions,
+                n_merged_body=n_merged_body,
+                has_header=has_header,
+            )
+        if i_vals is None:
+            raise RuntimeError("i_vals unexpectedly None in apply_formats")
         j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
         target_cells: list[tuple[int, int]] = []
