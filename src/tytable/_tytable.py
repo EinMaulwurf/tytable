@@ -21,7 +21,7 @@ from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
-from ._renderer import Renderer
+from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style
 from ._themes import THEMES
 
@@ -965,7 +965,7 @@ class TinyTable:
         self._finalize_hooks.append(fn)
         return self
 
-    def render(self, output: str = "typst") -> str:
+    def render(self, output: OutputFormat = "typst") -> str:
         """
         Render the table to a string.
 
@@ -1053,7 +1053,7 @@ class TinyTable:
             self._assets_relpath = assets.replace("\\", "/")
 
         suffix = p.suffix.lower()
-        out = "html" if suffix in (".html", ".htm") else "typst"
+        out: OutputFormat = "html" if suffix in (".html", ".htm") else "typst"
         p.write_text(self.render(out), encoding="utf-8")
 
     def _repr_html_(self) -> str:

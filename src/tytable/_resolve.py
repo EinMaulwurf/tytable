@@ -17,6 +17,7 @@ from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
+from ._renderer import OutputFormat
 from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
 
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 class BuiltTable:
     """Backend-agnostic snapshot of a fully-resolved table, consumed by renderers."""
 
-    output: str
+    output: OutputFormat
     data_body: list[list[str]] = field(default_factory=list)
     colnames_display: list[str] = field(default_factory=list)
     show_colnames: bool = True
@@ -55,7 +56,7 @@ class _BuildState:
     """Mutable state passed between the phases of the render pipeline."""
 
     table: TinyTable
-    output: str
+    output: OutputFormat
     ncols: int
     data_body: list[list[str]]
     typed_body: list[list[Any]]
@@ -115,7 +116,7 @@ def _insert_footnote_markers(
     group_positions: set[int],
     has_header: bool,
     colnames: list[str],
-    output: str,
+    output: OutputFormat,
     data: pl.DataFrame | None = None,
 ) -> None:
     """Append superscript markers to cells targeted by a note (mutates in place)."""
@@ -174,7 +175,7 @@ def _copy_for_build(table: TinyTable) -> TinyTable:
     return working
 
 
-def _extract_body(table: TinyTable, output: str) -> _BuildState:
+def _extract_body(table: TinyTable, output: OutputFormat) -> _BuildState:
     """Extract display and typed cell matrices from the source dataframe."""
     nrows = table._data.height
     ncols = table._data.width
@@ -327,7 +328,7 @@ def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _B
         style_grid.setdefault((position, 1), {})["colspan"] = state.ncols
 
 
-def build(table: TinyTable, output: str) -> BuiltTable:
+def build(table: TinyTable, output: OutputFormat) -> BuiltTable:
     """
     Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
 
