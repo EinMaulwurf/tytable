@@ -180,6 +180,19 @@ class TestThemeMethod:
         assert 'rgb("#ff0000")' in out
         assert_snapshot("theme_override", out)
 
+    def test_prepare_hook_can_reorder_directives_without_corrupting_theme_order(self):
+        table = tt(DF, theme="striped")
+        user_style = table.style(i=0, j=0, background="#ff0000")._style_directives[-1]
+
+        def reorder(t):
+            t._style_directives.remove(user_style)
+            t._style_directives.insert(0, user_style)
+
+        table._prepare_hooks.insert(0, reorder)
+
+        out = table.render("typst")
+        assert 'background: rgb("#ff0000")' in out
+
     def test_unknown_theme_raises(self):
         with pytest.raises(ValueError, match="Unknown theme"):
             tt(DF, theme="nonexistent")

@@ -292,6 +292,7 @@ class TinyTable:
         self._theme_name = theme
 
         self._style_directives: list[StyleDirective] = []
+        self._deferred_style_directives: list[StyleDirective] = []
         self._format_directives: list[FormatDirective] = []
         self._plot_directives: list[PlotDirective] = []
         self._row_groups: list[RowGroup] = []
@@ -476,6 +477,15 @@ class TinyTable:
                 output=output,
             )
         )
+        return self
+
+    def _deferred_style(self, *args: Any, **kwargs: Any) -> TinyTable:
+        """Record a prepare-hook style separately so user styles retain precedence."""
+        before = len(self._style_directives)
+        self.style(*args, **kwargs)
+        if len(self._style_directives) != before + 1:
+            raise RuntimeError("style() did not record exactly one directive")
+        self._deferred_style_directives.append(self._style_directives.pop())
         return self
 
     def fmt(

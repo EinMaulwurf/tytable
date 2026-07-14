@@ -29,16 +29,16 @@ def theme_default(table: TinyTable) -> TinyTable:
 
     def prepare(t: TinyTable) -> None:
         last = t._n_merged_body_rows
-        t.style(i=last - 1, line="b", line_color=col, line_width=0.08)
+        t._deferred_style(i=last - 1, line="b", line_color=col, line_width=0.08)
         n_cg = len(t._col_group_rows)
         if n_cg > 0:
-            t.style(i=-(n_cg), line="t", line_color=col, line_width=0.08)
+            t._deferred_style(i=-(n_cg), line="t", line_color=col, line_width=0.08)
         elif t._show_colnames:
-            t.style(i="header", line="t", line_color=col, line_width=0.08)
+            t._deferred_style(i="header", line="t", line_color=col, line_width=0.08)
         else:
-            t.style(i=0, line="t", line_color=col, line_width=0.08)
+            t._deferred_style(i=0, line="t", line_color=col, line_width=0.08)
         if t._show_colnames:
-            t.style(i="header", line="b", line_color=col, line_width=0.05)
+            t._deferred_style(i="header", line="b", line_color=col, line_width=0.05)
 
     table._prepare_hooks.append(prepare)
     theme_typst(table)
@@ -52,7 +52,7 @@ def theme_striped(table: TinyTable) -> TinyTable:
         nrows = t._n_merged_body_rows
         even = list(range(0, nrows, 2))
         if even:
-            t.style(i=even, background="#ededed")
+            t._deferred_style(i=even, background="#ededed")
 
     table._prepare_hooks.append(prepare)
     return table
@@ -68,6 +68,7 @@ def theme_grid(table: TinyTable) -> TinyTable:
 def theme_empty(table: TinyTable) -> TinyTable:
     """Strip all styles, formats, prepare-hooks, and Typst options — a blank slate."""
     table._style_directives.clear()
+    table._deferred_style_directives.clear()
     table._format_directives.clear()
     table._prepare_hooks.clear()
     table._typst_opts = TypstRenderOptions(figure=table._typst_opts.figure)

@@ -160,7 +160,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   After setting attributes, validate that all keys are in `dataclasses.fields(TypstRenderOptions)`. Raise `ValueError` with valid keys for any unknown option.
 
-- [ ] **M-14** — [src/tytable/_resolve.py:200-211] Fix prepare-hooks fragile reordering.
+- [x] **M-14** — [src/tytable/_resolve.py:200-211] Fix prepare-hooks fragile reordering.
 
   Themes add directives during `build()`, and the code reorders by snapshotting lengths before/after. If a hook does anything other than append, order corrupts silently. Add a dedicated `_deferred_style()` method on `TinyTable` so themes register intent explicitly.
 

@@ -156,6 +156,7 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     # user's TinyTable instance.
     table = copy(table)
     table._style_directives = list(table._style_directives)
+    table._deferred_style_directives = []
     table._format_directives = list(table._format_directives)
     table._plot_directives = list(table._plot_directives)
     table._row_groups = list(table._row_groups)
@@ -206,18 +207,10 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     table._nhead = nhead
     table._n_merged_body_rows = n_merged_body
 
-    n_style_before = len(table._style_directives)
-    n_fmt_before = len(table._format_directives)
-
     for hook in table._prepare_hooks:
         hook(table)
 
-    if len(table._style_directives) > n_style_before:
-        added_styles = table._style_directives[n_style_before:]
-        table._style_directives = added_styles + table._style_directives[:n_style_before]
-    if len(table._format_directives) > n_fmt_before:
-        added_formats = table._format_directives[n_fmt_before:]
-        table._format_directives = added_formats + table._format_directives[:n_fmt_before]
+    table._style_directives = table._deferred_style_directives + table._style_directives
 
     escaped_cells = apply_formats(
         data_body,
