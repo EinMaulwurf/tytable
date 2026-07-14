@@ -218,6 +218,8 @@ def _normalize_width(
     relative column sizes (mirrors the tinytable contract). Mixed lists
     (containing ``None`` or length strings) are left untouched.
     """
+    if isinstance(width, bool):
+        raise TypeError("width must be a number, string, sequence, or None; bool is not supported")
     if width is None or isinstance(width, (int, float, str)):
         return width
     entries = list(width)

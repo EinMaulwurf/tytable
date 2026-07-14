@@ -192,9 +192,7 @@ def apply_formats(
                 else:
                     typed_val = None
                 current = (
-                    colnames_display[col_idx]
-                    if row_idx == -1
-                    else data_body[row_idx][col_idx]
+                    colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
                 )
                 formatted = _apply_replace(typed_val, current, d.replace)
                 if row_idx == -1:
@@ -205,9 +203,7 @@ def apply_formats(
         if d.escape:
             for row_idx, col_idx in target_cells:
                 current = (
-                    colnames_display[col_idx]
-                    if row_idx == -1
-                    else data_body[row_idx][col_idx]
+                    colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
                 )
                 formatted = _apply_escape(current, d.escape, output)
                 if row_idx == -1:

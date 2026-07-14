@@ -163,7 +163,7 @@ class TestHtmlEscape:
     def test_user_image_markup_is_escaped(self):
         df = pl.DataFrame({"A": ['<img src=x onerror="alert(1)">']})
         out = tt(df, theme=None).render("html")
-        assert "<td>&lt;img src=x onerror=\"alert(1)\"&gt;</td>" in out
+        assert '<td>&lt;img src=x onerror="alert(1)"&gt;</td>' in out
         assert '<td><img src=x onerror="alert(1)">' not in out
 
     def test_brackets_escaped(self):
@@ -181,9 +181,7 @@ class TestHtmlEscape:
         assert escape_html("a&b") == "a&amp;b"
         assert escape_html("plain") == "plain"
 
-    @pytest.mark.parametrize(
-        ("value", "expected"), [(42, "42"), (True, "True"), (None, "None")]
-    )
+    @pytest.mark.parametrize(("value", "expected"), [(42, "42"), (True, "True"), (None, "None")])
     def test_html_escape_converts_non_strings(self, value, expected):
         assert escape_html(value) == expected
 
@@ -450,6 +448,12 @@ class TestCaptionNotesStyleHtml:
 
 
 class TestWidthValidation:
+    @pytest.mark.parametrize("width", [True, False])
+    def test_bool_scalar_raises(self, width):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(TypeError, match="bool is not supported"):
+            tt(df, width=width)
+
     def test_wrong_length_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         with pytest.raises(ValueError, match="width list must have one entry per column"):

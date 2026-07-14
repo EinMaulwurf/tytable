@@ -18,9 +18,22 @@ from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._resolve import BuiltTable
 from ._styling import align_to_typst, compute_covered_cells
 
+_UNSAFE_SIGNATURE_CHARS = frozenset("#();[]")
+
 
 def _props_to_signature(props: dict[str, Any]) -> str:
     """Translate a cell-style prop dict into a comma-separated Typst signature fragment."""
+    for name, value in props.items():
+        if not isinstance(value, str):
+            continue
+        if name in ("color", "background"):
+            # Colors have their own strict parser and legitimately use ``#``
+            # and parentheses after conversion.
+            color_to_typst(value)
+            continue
+        if any(char in value for char in _UNSAFE_SIGNATURE_CHARS):
+            raise ValueError(f"unsafe Typst style property {name!r}: {value!r}")
+
     parts = []
     if props.get("bold"):
         parts.append("bold: true")

@@ -90,18 +90,14 @@ class TestImages:
     def test_image_paths_are_escaped_for_markup(self):
         df = pl.DataFrame({"Logo": ["placeholder"]})
 
-        html = (
-            tt(df, theme=None)
-            .images(j="Logo", paths=['x\" onerror=\"alert(1)'])
-            .render("html")
-        )
+        html = tt(df, theme=None).images(j="Logo", paths=['x" onerror="alert(1)']).render("html")
         assert '<img src="x&amp;quot; onerror=&amp;quot;alert(1)"' not in html
         assert '<img src="x&quot; onerror=&quot;alert(1)"' in html
 
         typst = (
-            tt(df, theme=None).images(j="Logo", paths=['x\"), pagebreak(), image(\"']).render("typst")
+            tt(df, theme=None).images(j="Logo", paths=['x"), pagebreak(), image("']).render("typst")
         )
-        assert '#image("x\\\"), pagebreak(), image(\\\"", height: 1em)' in typst
+        assert '#image("x\\"), pagebreak(), image(\\"", height: 1em)' in typst
 
 
 @pytest.mark.images

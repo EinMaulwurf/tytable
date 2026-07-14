@@ -3,6 +3,7 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
+from tytable._render_typst import _props_to_signature
 from tytable._resolve import build
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
@@ -153,12 +154,17 @@ class TestStyleProps:
         [
             "red), pagebreak(), rgb(",
             "red;background:url(https://example.invalid)",
-            'red\"><script>alert(1)</script>',
+            'red"><script>alert(1)</script>',
         ],
     )
     def test_unsafe_color_value_rejected(self, prop, value):
         with pytest.raises(ValueError, match=f"invalid {prop}"):
             tt(DF, theme=None).style(**{prop: value})
+
+    @pytest.mark.parametrize("value", ["left#", "left()", "left;", "left[]"])
+    def test_typst_signature_rejects_unsafe_string_properties(self, value):
+        with pytest.raises(ValueError, match="unsafe Typst style property 'align'"):
+            _props_to_signature({"align": value})
 
 
 @pytest.mark.typst
