@@ -120,7 +120,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `THEMES` is exported in `__all__` but has zero documentation. Users don't know it's a `dict[str, Callable]`. Add docstring and a section in the user guide.
 
-- [ ] **M-4** — [src/tytable/_tytable.py] Add `Raises:` sections to all 12 public method docstrings.
+- [x] **M-4** — [src/tytable/_tytable.py] Add `Raises:` sections to all 12 public method docstrings.
 
   0/12 public methods document their exceptions. Add `Raises: ValueError: ...` for invalid selectors, invalid style properties, missing required args, etc.
 

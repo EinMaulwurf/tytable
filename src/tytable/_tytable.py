@@ -113,6 +113,13 @@ def tt(
     TinyTable
         A new table ready for further chaining.
 
+    Raises
+    ------
+    TypeError
+        If ``width`` or one of its entries has an unsupported type.
+    ValueError
+        If figure metadata, ``width``, or the requested theme is invalid.
+
     Examples
     --------
     >>> import polars as pl
@@ -273,7 +280,17 @@ class TinyTable:
         escape: bool = True,
         theme: str | Callable | None = "default",
     ) -> None:
-        """Direct constructor — prefer the :func:`tt` factory. See :func:`tt` for parameter docs."""
+        """Direct constructor — prefer the :func:`tt` factory.
+
+        See :func:`tt` for parameter documentation.
+
+        Raises
+        ------
+        TypeError
+            If ``width`` or one of its entries has an unsupported type.
+        ValueError
+            If figure metadata, ``width``, or the requested theme is invalid.
+        """
         _validate_figure_options(figure, caption, label)
         self._data = data.clone()
         self._colnames: list[str] = (
@@ -421,6 +438,14 @@ class TinyTable:
         TinyTable
             ``self``, for chaining.
 
+        Raises
+        ------
+        TypeError
+            If a color or numeric style property has an unsupported type.
+        ValueError
+            If a style property is invalid. Invalid row or column selectors
+            raise when the table is rendered.
+
         Notes
         -----
         Any number of properties may be combined in a single call when they
@@ -542,6 +567,15 @@ class TinyTable:
         TinyTable
             ``self``, for chaining.
 
+        Raises
+        ------
+        TypeError
+            If a row or column selector has an unsupported type; raised when
+            the table is rendered.
+        ValueError
+            If a selector is invalid or ``fn`` returns the wrong number of
+            values; raised when the table is rendered.
+
         Examples
         --------
         >>> df = pl.DataFrame({"rev": [12450.5, None]})
@@ -619,6 +653,15 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        ValueError
+            If ``j`` or ``fun`` is missing, ``height`` cannot be parsed, or a
+            selector is invalid. Selector errors are raised at render time.
+        ImportError
+            If the table is rendered without the optional ``images``
+            dependencies installed.
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
@@ -682,6 +725,15 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        ValueError
+            If ``j`` or ``paths`` is missing, ``height`` cannot be parsed, or
+            a selector is invalid. Selector errors are raised at render time.
+        ImportError
+            If the table is rendered without the optional ``images``
+            dependencies installed.
         """
         if j is None:
             raise ValueError(".images() requires j (column selector)")
@@ -726,6 +778,15 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        TypeError
+            If a row-group or column-group specification has an unsupported
+            type.
+        ValueError
+            If a column is missing or a delimiter cannot split every column
+            name consistently.
 
         Examples
         --------
@@ -788,6 +849,14 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        TypeError
+            If ``name`` is neither a string nor a sequence of strings.
+        ValueError
+            If ``j`` is missing for a scalar name, a selected column is not
+            found, or the number of names does not match the selected columns.
 
         Examples
         --------
@@ -856,6 +925,11 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        ValueError
+            If ``name`` is not a registered theme name.
         """
         self._apply_theme(name)
         self._theme_name = name
@@ -878,6 +952,12 @@ class TinyTable:
         -------
         TinyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        Exception
+            Any exception raised by ``fn`` is propagated when the table is
+            subsequently rendered.
         """
         self._finalize_hooks.append(fn)
         return self
@@ -898,8 +978,18 @@ class TinyTable:
         Returns
         -------
         str
-            The rendered table as a string.         Terminal — does not return the
+            The rendered table as a string. Terminal — does not return the
             table.
+
+        Raises
+        ------
+        TypeError
+            If a recorded selector has an unsupported type.
+        ValueError
+            If a recorded selector, formatting transform, or style is invalid.
+        ImportError
+            If image directives are present but the optional ``images``
+            dependencies are not installed.
         """
         from ._resolve import build
 
@@ -930,6 +1020,16 @@ class TinyTable:
             Where generated image files are written, relative to the output
             file. ``None`` (default) uses a ``tytable_assets/`` folder next to
             the output.
+
+        Raises
+        ------
+        OSError
+            If the destination directory, table file, or generated image
+            assets cannot be written.
+        TypeError
+            If a recorded selector has an unsupported type.
+        ValueError
+            If a recorded selector, formatting transform, or style is invalid.
 
         Examples
         --------
