@@ -116,7 +116,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
 ## MEDIUM
 
-- [ ] **M-3** — [src/tytable/__init__.py] Document `THEMES` constant.
+- [x] **M-3** — [src/tytable/__init__.py] Document `THEMES` constant.
 
   `THEMES` is exported in `__all__` but has zero documentation. Users don't know it's a `dict[str, Callable]`. Add docstring and a section in the user guide.
 

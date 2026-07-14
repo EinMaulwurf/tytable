@@ -367,6 +367,12 @@ Built-in themes: `default` (booktab rules), `striped`, `grid`, `empty`, and
 the page. Pass a callable for a custom theme. The same data rendered under each
 built-in:
 
+The public `THEMES` constant is a dictionary mapping each built-in name to its
+theme callable. Import it with `from tytable import THEMES` to inspect available
+themes (`list(THEMES)`) or retrieve a callable for reuse in a custom theme. The
+registry should be treated as read-only; pass custom callables directly to
+`tt(theme=...)` or `.theme(...)` instead of modifying it.
+
 #tag("SOURCE")
 #source("examples/05_theme.py")
 
