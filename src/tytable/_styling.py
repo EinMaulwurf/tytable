@@ -176,16 +176,16 @@ def build_style_grid(
         if i_vals is None:
             continue
 
+        active_props = {
+            prop: value for prop in OVERWRITE_PROPS if (value := getattr(d, prop)) is not None
+        }
         align_vals = _expand_align(d.align, len(j_vals), _ALIGN_H, "align")
         alignv_vals = _expand_align(d.alignv, len(j_vals), _ALIGN_V, "alignv")
 
         for i in i_vals:
             for idx, j in enumerate(j_vals):
                 cell = grid.setdefault((i, j), {})
-                for prop in OVERWRITE_PROPS:
-                    v = getattr(d, prop)
-                    if v is not None:
-                        cell[prop] = v
+                cell.update(active_props)
                 if align_vals is not None:
                     cell["align"] = align_vals[idx]
                 if alignv_vals is not None:

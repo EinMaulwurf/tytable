@@ -176,7 +176,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `from ._indices import convert_row_to_typst` appears inside `render()` twice. `from ._escape import escape_html` is inside a loop body. Move all to top-level imports.
 
-- [ ] **M-18** — [src/tytable/_styling.py:176-185] Precompute active props in `build_style_grid`.
+- [x] **M-18** — [src/tytable/_styling.py:176-185] Precompute active props in `build_style_grid`.
 
   Inner loop calls `getattr(d, prop)` for 15 props per cell × per directive = ~55K calls for a 120×30 table. Most directives set only 1-2 props. Precompute:
 
