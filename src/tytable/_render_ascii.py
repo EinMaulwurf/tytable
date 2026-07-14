@@ -16,7 +16,7 @@ class AsciiRenderer(Renderer):
 
     MAX_LINE_LENGTH = 60
 
-    def render(self, built: BuiltTable, _opts: object = None) -> str:
+    def render(self, built: BuiltTable) -> str:
         """Produce the box-drawing ASCII table (header + body, columns auto-sized)."""
         max_widths = [len(str(c)) for c in built.colnames_display]
 

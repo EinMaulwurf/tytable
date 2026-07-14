@@ -132,7 +132,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   Create a `class Renderer(ABC)` with `render(built: BuiltTable) -> str`. Make `TypstRenderer`, `HtmlRenderer`, `AsciiRenderer` inherit from it. Use a registry dict instead of if/elif dispatch.
 
-- [ ] **M-7** — [src/tytable/_render_html.py, src/tytable/_render_ascii.py] Remove unused `_opts` ghost parameter.
+- [x] **M-7** — [src/tytable/_render_html.py, src/tytable/_render_ascii.py] Remove unused `_opts` ghost parameter.
 
   `HtmlRenderer.render()` and `AsciiRenderer.render()` accept `_opts` but never use it. Drop the parameter.
 

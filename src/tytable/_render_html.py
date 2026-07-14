@@ -132,7 +132,7 @@ def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tup
 class HtmlRenderer(Renderer):
     """Render a :class:`BuiltTable` to an HTML ``<table>`` string."""
 
-    def render(self, built: BuiltTable, _opts: object = None) -> str:
+    def render(self, built: BuiltTable) -> str:
         """Produce the full ``<table>…</table>`` HTML (colgroup, thead, tbody, tfoot)."""
         ncol = len(built.colnames_display)
         border_map = _build_border_map(built.style_lines, built.nhead)
