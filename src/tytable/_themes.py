@@ -9,6 +9,7 @@ public names (``"default"``, ``"striped"``, …) to these callables.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import fields
 from typing import TYPE_CHECKING
 
 from ._render_typst import TypstRenderOptions
@@ -89,6 +90,13 @@ def theme_rotate(
 
 def theme_typst(table: TinyTable, **opts: object) -> TinyTable:
     """Set raw Typst render options (``figure``, ``multipage``, ``portable``, …)."""
+    valid_keys = {field.name for field in fields(TypstRenderOptions)}
+    invalid_keys = opts.keys() - valid_keys
+    if invalid_keys:
+        invalid = ", ".join(sorted(invalid_keys))
+        valid = ", ".join(sorted(valid_keys))
+        raise ValueError(f"unknown Typst render option(s): {invalid}. Valid options: {valid}")
+
     for key, value in opts.items():
         if value is not None:
             setattr(table._typst_opts, key, value)

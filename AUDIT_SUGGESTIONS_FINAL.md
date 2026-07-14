@@ -156,7 +156,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `shutil.rmtree(td, ignore_errors=True)` is best-effort cleanup; temp dirs leak on unhandled exceptions. Use `tempfile.TemporaryDirectory()` as a context manager.
 
-- [ ] **M-13** — [src/tytable/_themes.py:94] Add validation for `theme_typst(**opts)` kwargs.
+- [x] **M-13** — [src/tytable/_themes.py:94] Add validation for `theme_typst(**opts)` kwargs.
 
   After setting attributes, validate that all keys are in `dataclasses.fields(TypstRenderOptions)`. Raise `ValueError` with valid keys for any unknown option.
 

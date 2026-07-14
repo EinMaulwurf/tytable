@@ -195,6 +195,27 @@ class TestThemeMethod:
         assert len(t._style_directives) == 0
 
 
+class TestThemeTypst:
+    def test_rejects_unknown_option(self):
+        from tytable._themes import theme_typst
+
+        table = tt(DF, theme=None)
+        with pytest.raises(
+            ValueError,
+            match=r"unknown Typst render option\(s\): portble.*Valid options:.*portable",
+        ):
+            theme_typst(table, portble=True)
+
+    def test_invalid_options_do_not_apply_valid_options(self):
+        from tytable._themes import theme_typst
+
+        table = tt(DF, theme=None)
+        with pytest.raises(ValueError, match="bad_option"):
+            theme_typst(table, portable=True, bad_option=True)
+
+        assert table._typst_opts.portable is False
+
+
 @pytest.mark.typst
 class TestFootnotes:
     def test_single_unlabelled_note(self):
