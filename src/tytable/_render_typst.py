@@ -19,9 +19,8 @@ from ._groups import _resolve_col_group_spans
 from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._renderer import Renderer
 from ._resolve import BuiltTable
+from ._style_markup import StyleMarkup
 from ._styling import align_to_typst, compute_covered_cells
-
-_UNSAFE_SIGNATURE_CHARS = frozenset("#();[]")
 
 
 def _props_to_signature(props: dict[str, Any]) -> str:
@@ -32,47 +31,7 @@ def _props_to_signature(props: dict[str, Any]) -> str:
 @lru_cache(maxsize=256)
 def _props_to_signature_cached(prop_items: tuple[tuple[str, Any], ...]) -> str:
     """Translate a hashable, canonical property tuple into a Typst signature."""
-    props = dict(prop_items)
-    for name, value in props.items():
-        if not isinstance(value, str):
-            continue
-        if name in ("color", "background"):
-            # Colors have their own strict parser and legitimately use ``#``
-            # and parentheses after conversion.
-            color_to_typst(value)
-            continue
-        if any(char in value for char in _UNSAFE_SIGNATURE_CHARS):
-            raise ValueError(f"unsafe Typst style property {name!r}: {value!r}")
-
-    parts = []
-    if props.get("bold"):
-        parts.append("bold: true")
-    if props.get("italic"):
-        parts.append("italic: true")
-    if props.get("underline"):
-        parts.append("underline: true")
-    if props.get("strikeout"):
-        parts.append("strikeout: true")
-    if props.get("monospace"):
-        parts.append("mono: true")
-    if props.get("smallcaps"):
-        parts.append("smallcaps: true")
-    if "color" in props:
-        parts.append(f"color: {color_to_typst(props['color'])}")
-    if "background" in props:
-        parts.append(f"background: {color_to_typst(props['background'])}")
-    if "fontsize" in props:
-        parts.append(f"fontsize: {props['fontsize']}em")
-    if "indent" in props and props["indent"] > 0:
-        parts.append(f"indent: {props['indent']}em")
-    if "rotate" in props:
-        parts.append(f"rotate: {props['rotate']}deg")
-    align = align_to_typst(props.get("align"), props.get("alignv"))
-    if align:
-        parts.append(f"align: {align}")
-    if not parts:
-        return ""
-    return ", ".join(parts) + ","
+    return StyleMarkup.from_props(dict(prop_items)).typst_signature()
 
 
 def _style_typst_content(props: dict[str, Any], content: str) -> str:
@@ -87,26 +46,7 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
     value (e.g. ``caption: <expr>``) or prefixed with ``#`` inside a markup
     block (e.g. notes' ``[…]`` cells).
     """
-    args: list[str] = []
-    if props.get("fontsize") is not None:
-        args.append(f"size: {props['fontsize']}em")
-    if "color" in props:
-        args.append(f"fill: {color_to_typst(props['color'])}")
-    if props.get("italic"):
-        args.append('style: "italic"')
-    if props.get("bold"):
-        args.append('weight: "bold"')
-    if args:
-        out: str = f"text({', '.join(args)}, [{content}])"
-    else:
-        out = f"[{content}]"
-    if props.get("underline"):
-        out = f"underline({out})"
-    if props.get("strikeout"):
-        out = f"strike({out})"
-    if props.get("smallcaps"):
-        out = f"smallcaps({out})"
-    return out
+    return StyleMarkup.from_props(props).typst_inline(content)
 
 
 @dataclass

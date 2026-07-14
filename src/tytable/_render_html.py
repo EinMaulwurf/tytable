@@ -10,23 +10,16 @@ from typing import Any
 
 from ._escape import escape_html
 from ._groups import _resolve_col_group_spans
+from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._renderer import Renderer
 from ._resolve import BuiltTable
+from ._style_markup import StyleMarkup, align_to_css
 from ._styling import compute_covered_cells
 
 
 def _align_to_css(h: str | None, v: str | None) -> str | None:
     """Translate alignment shorthands into a CSS ``text-align`` keyword string."""
-    if v == "m":
-        v = "middle"
-    if v == "horizon":
-        v = "middle"
-    parts = []
-    if h:
-        parts.append({"l": "left", "c": "center", "r": "right"}.get(h, h))
-    if v:
-        parts.append({"t": "top", "b": "bottom"}.get(v, v))
-    return " ".join(parts) if parts else None
+    return align_to_css(h, v)
 
 
 def _style_html_inline(props: dict[str, Any], content: str) -> str:
@@ -36,78 +29,16 @@ def _style_html_inline(props: dict[str, Any], content: str) -> str:
     (color, font-size, small-caps, mono, indent) go into a single ``<span>``,
     then non-CSS decorations (italic, strikeout, underline, bold) wrap it.
     """
-    css_parts: list[str] = []
-    if props.get("smallcaps"):
-        css_parts.append("font-variant:small-caps")
-    if "color" in props:
-        css_parts.append(f"color:{props['color']}")
-    if "fontsize" in props:
-        css_parts.append(f"font-size:{props['fontsize']}em")
-    if props.get("monospace"):
-        css_parts.append("font-family:monospace")
-    if props.get("background"):
-        css_parts.append(f"background-color:{props['background']}")
-    if props.get("indent") and props["indent"] > 0:
-        css_parts.append(f"padding-left:{props['indent']}em")
-    out = content
-    if css_parts:
-        out = f'<span style="{";".join(css_parts)}">{out}</span>'
-    if props.get("italic"):
-        out = f"<i>{out}</i>"
-    if props.get("strikeout"):
-        out = f"<s>{out}</s>"
-    if props.get("underline"):
-        out = f"<u>{out}</u>"
-    if props.get("bold"):
-        out = f"<b>{out}</b>"
-    return out
+    return StyleMarkup.from_props(props).html_inline(content)
 
 
 def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
     """Build a single CSS style attribute string from cell props and pre-computed border CSS."""
-    css_parts: list[str] = []
-
-    if border_css:
-        css_parts.append(border_css)
-
-    if cell_props.get("bold"):
-        css_parts.append("font-weight:bold")
-    if cell_props.get("italic"):
-        css_parts.append("font-style:italic")
-    if cell_props.get("underline"):
-        css_parts.append("text-decoration:underline")
-    if cell_props.get("strikeout"):
-        css_parts.append("text-decoration:line-through")
-    if cell_props.get("monospace"):
-        css_parts.append("font-family:monospace")
-    if cell_props.get("smallcaps"):
-        css_parts.append("font-variant:small-caps")
-    if "color" in cell_props:
-        css_parts.append(f"color:{cell_props['color']}")
-    if "background" in cell_props:
-        css_parts.append(f"background-color:{cell_props['background']}")
-    if "fontsize" in cell_props:
-        css_parts.append(f"font-size:{cell_props['fontsize']}em")
-    if "indent" in cell_props and cell_props["indent"] > 0:
-        css_parts.append(f"padding-left:{cell_props['indent']}em")
-    if "rotate" in cell_props:
-        css_parts.append(f"transform:rotate({cell_props['rotate']}deg)")
-        css_parts.append("white-space:nowrap")
-
-    align = _align_to_css(
-        cell_props.get("align"),
-        cell_props.get("alignv"),
-    )
-    if align:
-        css_parts.append(f"text-align:{align}")
-
-    return "; ".join(css_parts) if css_parts else ""
+    return StyleMarkup.from_props(cell_props).html_cell_css(border_css)
 
 
 def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tuple[int, int], str]:
     """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
-    from ._indices import convert_col_to_typst, convert_row_to_typst
-
     border_map: dict[tuple[int, int], str] = {}
     for entry in style_lines:
         ti = convert_row_to_typst(entry["i"], nhead)
