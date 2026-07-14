@@ -205,6 +205,8 @@ def execute_plots(
                         data_body[body_row][col_idx] = cell_str
                         image_cells.add((body_row, col_idx))
                 else:
+                    if d.fun is None:
+                        raise RuntimeError("plot directive unexpectedly missing fun")
                     if d.data is not None:
                         total_idx = ri * len(j_vals) + rj
                         entry = d.data[total_idx]

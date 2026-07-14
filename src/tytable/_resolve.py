@@ -200,11 +200,11 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         hook(table)
 
     if len(table._style_directives) > n_style_before:
-        added = table._style_directives[n_style_before:]
-        table._style_directives = added + table._style_directives[:n_style_before]
+        added_styles = table._style_directives[n_style_before:]
+        table._style_directives = added_styles + table._style_directives[:n_style_before]
     if len(table._format_directives) > n_fmt_before:
-        added = table._format_directives[n_fmt_before:]
-        table._format_directives = added + table._format_directives[:n_fmt_before]
+        added_formats = table._format_directives[n_fmt_before:]
+        table._format_directives = added_formats + table._format_directives[:n_fmt_before]
 
     escaped_cells = apply_formats(
         data_body,

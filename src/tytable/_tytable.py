@@ -14,7 +14,7 @@ from typing import Any
 
 import polars as pl
 
-from ._directives import FormatDirective, Note, PlotDirective, StyleDirective
+from ._directives import FormatDirective, Note, PlotDirective, RowGroup, StyleDirective
 from ._groups import register_col_groups, register_row_groups
 from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
@@ -259,11 +259,11 @@ class TinyTable:
         self._digits = digits
         self._theme_name = theme
 
-        self._style_directives: list = []
-        self._format_directives: list = []
-        self._plot_directives: list = []
-        self._row_groups: list = []
-        self._col_group_rows: list = []
+        self._style_directives: list[StyleDirective] = []
+        self._format_directives: list[FormatDirective] = []
+        self._plot_directives: list[PlotDirective] = []
+        self._row_groups: list[RowGroup] = []
+        self._col_group_rows: list[list[str | None]] = []
         self._notes: list[Note] = _normalize_notes(notes or [])
         self._prepare_hooks: list[Callable[[TinyTable], None]] = []
         self._finalize_hooks: list[Callable[[str, str], str]] = []
