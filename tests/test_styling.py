@@ -91,7 +91,13 @@ class TestStyleProps:
 
     def test_rotate_in_show_rule(self):
         out = tt(DF).style(i="header", rotate=90).render("typst")
-        assert "rotate(style.rotate, reflow: true, tmp)" in out
+        assert "align(a, rotate(style.rotate, reflow: true, tmp))" in out
+
+    def test_rotate_with_align_emit_signatures(self):
+        out = tt(DF).style(i="header", rotate=90, align="l", alignv="b").render("typst")
+        assert "rotate: 90deg" in out
+        assert "align: left + bottom" in out
+        assert "align(a, rotate(style.rotate, reflow: true, tmp))" in out
 
     def test_rotate_not_emitted_when_none(self):
         out = tt(DF, theme=None).render("typst")

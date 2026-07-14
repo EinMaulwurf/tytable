@@ -37,7 +37,10 @@ EXPECTED_BASIC_TYP = (
     '    if ("mono" in style) { tmp = math.mono(tmp) }\n'
     '    if ("strikeout" in style) { tmp = strike(tmp) }\n'
     '    if ("smallcaps" in style) { tmp = smallcaps(tmp) }\n'
-    '    if ("rotate" in style) { tmp = rotate(style.rotate, reflow: true, tmp) }\n'
+    '    if ("rotate" in style) {\n'
+    '      let a = if "align" in style { style.align } else { left }\n'
+    "      tmp = align(a, rotate(style.rotate, reflow: true, tmp))\n"
+    "    }\n"
     "    tmp\n"
     "  }\n"
     "\n"
