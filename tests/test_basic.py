@@ -80,6 +80,18 @@ class TestByteExact:
         t = tt(df, theme=None)
         assert t.render("typst") == t.render("typst")
 
+    def test_render_does_not_mutate_resolution_state(self):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        t = tt(df)
+        state = (len(t._style_directives), len(t._format_directives), t._nhead)
+
+        first = t.render("typst")
+        second = t.render("typst")
+
+        assert first == second
+        assert (len(t._style_directives), len(t._format_directives), t._nhead) == state
+        assert t._n_merged_body_rows == 0
+
     def test_pristine_data(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         t = tt(df)

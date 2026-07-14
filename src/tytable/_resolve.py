@@ -9,6 +9,7 @@ The render pipeline: resolve recorded directives into a :class:`BuiltTable`.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from copy import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -148,6 +149,17 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     """
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
+
+    # Prepare hooks record render-time intent. Replay them on a shallow working
+    # copy so rendering never appends directives or resolution metadata to the
+    # user's TinyTable instance.
+    table = copy(table)
+    table._style_directives = list(table._style_directives)
+    table._format_directives = list(table._format_directives)
+    table._plot_directives = list(table._plot_directives)
+    table._row_groups = list(table._row_groups)
+    table._col_group_rows = list(table._col_group_rows)
+    table._notes = list(table._notes)
 
     nrows = table._data.height
     ncols = table._data.width
