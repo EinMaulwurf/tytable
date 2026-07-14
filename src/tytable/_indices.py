@@ -23,6 +23,8 @@ from collections.abc import Callable, Sequence
 
 import polars as pl
 
+_MAX_REGEX_PATTERN_LENGTH = 500
+
 
 def convert_row_to_typst(i: int, nhead: int) -> int:
     """
@@ -196,6 +198,11 @@ def resolve_j(
 
 
 def _resolve_regex(pattern: str, colnames: list[str]) -> list[int]:
+    if len(pattern) > _MAX_REGEX_PATTERN_LENGTH:
+        raise ValueError(
+            "regex pattern is too long: "
+            f"{len(pattern)} characters (maximum {_MAX_REGEX_PATTERN_LENGTH})"
+        )
     try:
         compiled = re.compile(pattern)
     except re.error as e:

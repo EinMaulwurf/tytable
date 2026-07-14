@@ -99,6 +99,14 @@ class TestResolveJ:
         with pytest.raises(ValueError, match="invalid regex pattern"):
             resolve_j("[", self.COLS, regex=True)
 
+    def test_str_regex_too_long_raises(self):
+        with pytest.raises(ValueError, match=r"501 characters \(maximum 500\)"):
+            resolve_j("a" * 501, self.COLS, regex=True)
+
+    def test_list_regex_too_long_raises(self):
+        with pytest.raises(ValueError, match="regex pattern is too long"):
+            resolve_j(["A", "a" * 501], self.COLS, regex=True)
+
     def test_list_regex_each_element(self):
         assert resolve_j(["am", "v"], self.COLS, regex=True) == [3, 4]
         assert resolve_j(["A", "na"], self.COLS, regex=True) == [1, 3]

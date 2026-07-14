@@ -192,7 +192,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   In `_apply_theme()`, wrap the theme callable invocation in try/except and re-raise with the theme name in the error message.
 
-- [ ] **M-21** — [src/tytable/_indices.py:198-206] Add ReDoS protection for user-controlled regex patterns.
+- [x] **M-21** — [src/tytable/_indices.py:198-206] Add ReDoS protection for user-controlled regex patterns.
 
   Add a length limit on regex patterns (e.g., 500 chars). For Python ≥3.11, pass a timeout to `re.compile`. Consider `regex` library for older Python versions.
 
