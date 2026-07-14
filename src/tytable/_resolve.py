@@ -170,10 +170,7 @@ def build(table: TinyTable, output: str) -> BuiltTable:
 
     colnames_display: list[str] = []
     for c in table._colnames:
-        name = str(c)
-        if table._escape and output == "typst":
-            name = escape_typst(name)
-        colnames_display.append(name)
+        colnames_display.append(str(c))
 
     show_colnames = table._show_colnames
 
@@ -212,6 +209,7 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     escaped_cells = apply_formats(
         data_body,
         typed_body,
+        colnames_display,
         table,
         nhead=nhead,
         has_header=show_colnames,
@@ -235,6 +233,12 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     )
 
     if table._escape:
+        for col_idx, val in enumerate(colnames_display):
+            if (-1, col_idx) not in escaped_cells:
+                if output in ("html", "ascii"):
+                    colnames_display[col_idx] = escape_html(val)
+                else:
+                    colnames_display[col_idx] = escape_typst(val)
         for r in range(len(data_body)):
             for col_idx in range(len(data_body[r])):
                 if (r, col_idx) not in escaped_cells and (r, col_idx) not in image_cells:

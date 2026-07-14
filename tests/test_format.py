@@ -97,6 +97,38 @@ class TestFn:
         assert "x1" in out
         assert "x3" in out
 
+    def test_fn_on_header(self):
+        df = pl.DataFrame({"first": [1], "second": [2]})
+        out = (
+            tt(df)
+            .fmt(i="header", j="first", fn=lambda vec: [value.upper() for value in vec])
+            .render("typst")
+        )
+        assert "[FIRST]" in out
+        assert "[second]" in out
+
+    def test_fn_on_header_of_empty_table(self):
+        df = pl.DataFrame(schema={"value": pl.Int64})
+        out = tt(df, theme=None).fmt(i="header", fn=lambda vec: ["renamed"]).render("typst")
+        assert "[renamed]" in out
+
+    def test_fn_on_header_and_body(self):
+        df = pl.DataFrame({"value": [1, 2]})
+        out = tt(df).fmt(i="all", fn=lambda vec: [f"x{value}" for value in vec]).render("typst")
+        assert "[xvalue]" in out
+        assert "[x1]" in out
+        assert "[x2]" in out
+
+    def test_stacked_fn_and_escape_on_header(self):
+        df = pl.DataFrame({"value": [1]})
+        out = (
+            tt(df, escape=False)
+            .fmt(i="header", fn=lambda vec: [f"#{value}" for value in vec])
+            .fmt(i="header", escape=True)
+            .render("typst")
+        )
+        assert "[\\#value]" in out
+
 
 @pytest.mark.typst
 class TestPipeline:

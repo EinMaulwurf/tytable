@@ -92,6 +92,7 @@ def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
 def apply_formats(
     data_body: list[list[str]],
     typed_body: list[list[Any]],
+    colnames_display: list[str],
     table: TinyTable,
     *,
     nhead: int,
@@ -101,7 +102,11 @@ def apply_formats(
     output: str,
     colnames: list[str],
 ) -> set[tuple[int, int]]:
-    """Apply every ``FormatDirective`` to the data body, returning cells that were explicitly escaped."""
+    """Apply every ``FormatDirective``, returning cells that were explicitly escaped.
+
+    Body cells use their zero-based row index.  Header cells use row ``-1`` so
+    callers can distinguish them when applying the table-wide escape pass.
+    """
     escaped_cells: set[tuple[int, int]] = set()
 
     for d in table._format_directives:
@@ -130,6 +135,11 @@ def apply_formats(
 
         target_cells: list[tuple[int, int]] = []
         for i_idx in i_vals:
+            if i_idx == 0:
+                target_cells.extend(
+                    (-1, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(colnames_display)
+                )
+                continue
             row_idx = i_idx - 1
             if row_idx < 0 or row_idx >= len(data_body):
                 continue
@@ -141,7 +151,9 @@ def apply_formats(
 
         if d.digits is not None:
             for row_idx, col_idx in target_cells:
-                if row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
+                if row_idx == -1:
+                    typed_val = table._colnames[col_idx]
+                elif row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
                     typed_val = typed_body[row_idx][col_idx]
                 else:
                     typed_val = None
@@ -158,26 +170,50 @@ def apply_formats(
                 col_to_rows.setdefault(col_idx, []).append(row_idx)
             for col_idx, rows in col_to_rows.items():
                 sorted_rows = sorted(rows)
-                vec = [data_body[r][col_idx] for r in sorted_rows]
+                vec = [
+                    colnames_display[col_idx] if r == -1 else data_body[r][col_idx]
+                    for r in sorted_rows
+                ]
                 result = d.fn(vec)
                 if len(result) != len(vec):
                     raise ValueError(f"fn() returned {len(result)} items, expected {len(vec)}")
                 for r, val in zip(sorted_rows, result, strict=True):
-                    data_body[r][col_idx] = str(val)
+                    if r == -1:
+                        colnames_display[col_idx] = str(val)
+                    else:
+                        data_body[r][col_idx] = str(val)
 
         if d.replace is not None:
             for row_idx, col_idx in target_cells:
-                if row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
+                if row_idx == -1:
+                    typed_val = table._colnames[col_idx]
+                elif row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
                     typed_val = typed_body[row_idx][col_idx]
                 else:
                     typed_val = None
-                current = data_body[row_idx][col_idx]
-                data_body[row_idx][col_idx] = _apply_replace(typed_val, current, d.replace)
+                current = (
+                    colnames_display[col_idx]
+                    if row_idx == -1
+                    else data_body[row_idx][col_idx]
+                )
+                formatted = _apply_replace(typed_val, current, d.replace)
+                if row_idx == -1:
+                    colnames_display[col_idx] = formatted
+                else:
+                    data_body[row_idx][col_idx] = formatted
 
         if d.escape:
             for row_idx, col_idx in target_cells:
-                current = data_body[row_idx][col_idx]
-                data_body[row_idx][col_idx] = _apply_escape(current, d.escape, output)
+                current = (
+                    colnames_display[col_idx]
+                    if row_idx == -1
+                    else data_body[row_idx][col_idx]
+                )
+                formatted = _apply_escape(current, d.escape, output)
+                if row_idx == -1:
+                    colnames_display[col_idx] = formatted
+                else:
+                    data_body[row_idx][col_idx] = formatted
                 escaped_cells.add((row_idx, col_idx))
 
     return escaped_cells
