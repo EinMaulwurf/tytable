@@ -148,7 +148,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   `_props_to_signature()`, `_style_typst_content()`, `_build_cell_style()`, `_style_html_inline()` translate the same ~15 properties into four different markup formats. Extract shared logic into an intermediate representation or translator class.
 
-- [ ] **M-11** — [src/tytable/_resolve.py:143-294] Break up `build()` god function.
+- [x] **M-11** — [src/tytable/_resolve.py:143-294] Break up `build()` god function.
 
   Extract sub-functions: `_extract_body()`, `_merge_groups()`, `_run_prepare_hooks()`, `_reorder_directives()`, `_apply_formatting()`, `_apply_global_escape()`, `_execute_plots()`, `_insert_footnotes()`, `_build_style_grid()`, `_apply_meta_styles()`, `_apply_colspans()`.
 

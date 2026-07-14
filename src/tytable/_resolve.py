@@ -50,6 +50,26 @@ class BuiltTable:
     assets_relpath: str | None = None
 
 
+@dataclass
+class _BuildState:
+    """Mutable state passed between the phases of the render pipeline."""
+
+    table: TinyTable
+    output: str
+    ncols: int
+    data_body: list[list[str]]
+    typed_body: list[list[Any]]
+    colnames_display: list[str]
+    show_colnames: bool
+    row_group_positions: dict[int, str] = field(default_factory=dict)
+    col_groups: list[list[str | None]] = field(default_factory=list)
+    nhead: int = 0
+    n_merged_body: int = 0
+    group_positions: set[int] = field(default_factory=set)
+    escaped_cells: set[tuple[int, int]] = field(default_factory=set)
+    image_cells: set[tuple[int, int]] = field(default_factory=set)
+
+
 def _resolve_i_internal(
     i_selector: int
     | str
@@ -141,6 +161,172 @@ def _insert_footnote_markers(
                         data_body[ri][ci] += marker_text
 
 
+def _copy_for_build(table: TinyTable) -> TinyTable:
+    """Return a working copy whose mutable directive collections are isolated."""
+    working = copy(table)
+    working._style_directives = list(table._style_directives)
+    working._deferred_style_directives = []
+    working._format_directives = list(table._format_directives)
+    working._plot_directives = list(table._plot_directives)
+    working._row_groups = list(table._row_groups)
+    working._col_group_rows = list(table._col_group_rows)
+    working._notes = list(table._notes)
+    return working
+
+
+def _extract_body(table: TinyTable, output: str) -> _BuildState:
+    """Extract display and typed cell matrices from the source dataframe."""
+    nrows = table._data.height
+    ncols = table._data.width
+    data_body: list[list[str]] = []
+    typed_body: list[list[Any]] = []
+    raw_data = table._data.to_dict(as_series=False)
+    col_names = list(raw_data)
+
+    for row_idx in range(nrows):
+        display_row: list[str] = []
+        typed_row: list[Any] = []
+        for col_name in col_names:
+            raw_val = raw_data[col_name][row_idx]
+            typed_row.append(raw_val)
+            display_row.append(format_markup_num(raw_val))
+        data_body.append(display_row)
+        typed_body.append(typed_row)
+
+    return _BuildState(
+        table=table,
+        output=output,
+        ncols=ncols,
+        data_body=data_body,
+        typed_body=typed_body,
+        colnames_display=[str(colname) for colname in table._colnames],
+        show_colnames=table._show_colnames,
+    )
+
+
+def _merge_groups(state: _BuildState) -> None:
+    """Insert row-group rows into both display and typed cell matrices."""
+    state.data_body, state.row_group_positions = merge_row_groups(
+        state.data_body,
+        state.table._row_groups,
+        state.ncols,
+    )
+    state.typed_body, _ = merge_row_groups(
+        state.typed_body,
+        state.table._row_groups,
+        state.ncols,
+    )
+    state.n_merged_body = len(state.data_body)
+    state.col_groups = list(state.table._col_group_rows)
+    state.nhead = (1 if state.show_colnames else 0) + len(state.col_groups)
+    state.group_positions = set(state.row_group_positions)
+
+
+def _run_prepare_hooks(state: _BuildState) -> None:
+    """Run theme hooks after table dimensions and group positions are known."""
+    state.table._nhead = state.nhead
+    state.table._n_merged_body_rows = state.n_merged_body
+    for hook in state.table._prepare_hooks:
+        hook(state.table)
+
+
+def _reorder_directives(state: _BuildState) -> None:
+    """Place render-time style intent before user-recorded style directives."""
+    state.table._style_directives = (
+        state.table._deferred_style_directives + state.table._style_directives
+    )
+
+
+def _apply_formatting(state: _BuildState) -> None:
+    """Apply format directives and record cells containing trusted markup."""
+    state.escaped_cells = apply_formats(
+        state.data_body,
+        state.typed_body,
+        state.colnames_display,
+        state.table,
+        nhead=state.nhead,
+        has_header=state.show_colnames,
+        n_merged_body=state.n_merged_body,
+        group_positions=state.group_positions,
+        output=state.output,
+        colnames=state.table._colnames,
+    )
+
+
+def _execute_plots(state: _BuildState) -> None:
+    """Replace plot targets with backend markup and track generated image cells."""
+    from ._images import execute_plots
+
+    state.image_cells = execute_plots(
+        state.table,
+        state.data_body,
+        state.typed_body,
+        state.output,
+        nhead=state.nhead,
+        has_header=state.show_colnames,
+        n_merged_body=state.n_merged_body,
+        group_positions=state.group_positions,
+    )
+
+
+def _apply_global_escape(state: _BuildState) -> None:
+    """Escape ordinary cells while preserving explicitly generated markup."""
+    if not state.table._escape:
+        return
+
+    escape = escape_html if state.output in ("html", "ascii") else escape_typst
+    for col_idx, val in enumerate(state.colnames_display):
+        if (-1, col_idx) not in state.escaped_cells:
+            state.colnames_display[col_idx] = escape(val)
+
+    trusted_cells = state.escaped_cells | state.image_cells
+    for row_idx, row in enumerate(state.data_body):
+        for col_idx, val in enumerate(row):
+            if (row_idx, col_idx) not in trusted_cells:
+                row[col_idx] = escape(val)
+
+
+def _insert_footnotes(state: _BuildState) -> None:
+    """Insert note markers after escaping so their markup remains intact."""
+    _insert_footnote_markers(
+        state.data_body,
+        state.colnames_display,
+        state.table._notes,
+        state.nhead,
+        state.n_merged_body,
+        state.group_positions,
+        state.show_colnames,
+        state.table._colnames,
+        state.output,
+        data=state.table._data,
+    )
+
+
+def _build_style_grid(
+    state: _BuildState,
+) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
+    """Resolve cell and line style directives."""
+    return build_style_grid(
+        state.table,
+        nhead=state.nhead,
+        has_header=state.show_colnames,
+        n_merged_body=state.n_merged_body,
+        group_positions=state.group_positions,
+        output=state.output,
+    )
+
+
+def _apply_meta_styles(state: _BuildState) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve caption and note styles."""
+    return build_meta_styles(state.table, output=state.output)
+
+
+def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _BuildState) -> None:
+    """Span each row-group label across the full table width."""
+    for position in state.row_group_positions:
+        style_grid.setdefault((position, 1), {})["colspan"] = state.ncols
+
+
 def build(table: TinyTable, output: str) -> BuiltTable:
     """
     Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
@@ -151,155 +337,36 @@ def build(table: TinyTable, output: str) -> BuiltTable:
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
 
-    # Prepare hooks record render-time intent. Replay them on a shallow working
-    # copy so rendering never appends directives or resolution metadata to the
-    # user's TinyTable instance.
-    table = copy(table)
-    table._style_directives = list(table._style_directives)
-    table._deferred_style_directives = []
-    table._format_directives = list(table._format_directives)
-    table._plot_directives = list(table._plot_directives)
-    table._row_groups = list(table._row_groups)
-    table._col_group_rows = list(table._col_group_rows)
-    table._notes = list(table._notes)
-
-    nrows = table._data.height
-    ncols = table._data.width
-
-    data_body: list[list[str]] = []
-    typed_body: list[list[Any]] = []
-    raw_data = table._data.to_dict(as_series=False)
-    col_names = list(raw_data.keys())
-
-    for r in range(nrows):
-        row: list[str] = []
-        typed_row: list = []
-        for col_idx in range(ncols):
-            raw_val = raw_data[col_names[col_idx]][r]
-            typed_row.append(raw_val)
-            val = format_markup_num(raw_val)
-            row.append(val)
-        data_body.append(row)
-        typed_body.append(typed_row)
-
-    colnames_display: list[str] = []
-    for c in table._colnames:
-        colnames_display.append(str(c))
-
-    show_colnames = table._show_colnames
-
-    data_body, row_group_positions = merge_row_groups(
-        data_body,
-        table._row_groups,
-        ncols,
-    )
-    typed_body, _ = merge_row_groups(
-        typed_body,
-        table._row_groups,
-        ncols,
-    )
-
-    n_merged_body = len(data_body)
-    col_groups = list(table._col_group_rows)
-    nhead = (1 if show_colnames else 0) + len(col_groups)
-    group_position_set = set(row_group_positions.keys())
-
-    table._nhead = nhead
-    table._n_merged_body_rows = n_merged_body
-
-    for hook in table._prepare_hooks:
-        hook(table)
-
-    table._style_directives = table._deferred_style_directives + table._style_directives
-
-    escaped_cells = apply_formats(
-        data_body,
-        typed_body,
-        colnames_display,
-        table,
-        nhead=nhead,
-        has_header=show_colnames,
-        n_merged_body=n_merged_body,
-        group_positions=group_position_set,
-        output=output,
-        colnames=table._colnames,
-    )
-
-    from ._images import execute_plots
-
-    image_cells = execute_plots(
-        table,
-        data_body,
-        typed_body,
-        output,
-        nhead=nhead,
-        has_header=show_colnames,
-        n_merged_body=n_merged_body,
-        group_positions=group_position_set,
-    )
-
-    if table._escape:
-        for col_idx, val in enumerate(colnames_display):
-            if (-1, col_idx) not in escaped_cells:
-                if output in ("html", "ascii"):
-                    colnames_display[col_idx] = escape_html(val)
-                else:
-                    colnames_display[col_idx] = escape_typst(val)
-        for r in range(len(data_body)):
-            for col_idx in range(len(data_body[r])):
-                if (r, col_idx) not in escaped_cells and (r, col_idx) not in image_cells:
-                    val = data_body[r][col_idx]
-                    if output in ("html", "ascii"):
-                        data_body[r][col_idx] = escape_html(val)
-                    else:
-                        data_body[r][col_idx] = escape_typst(val)
-
-    _insert_footnote_markers(
-        data_body,
-        colnames_display,
-        table._notes,
-        nhead,
-        n_merged_body,
-        group_position_set,
-        show_colnames,
-        table._colnames,
-        output,
-        data=table._data,
-    )
-
-    style_grid, style_lines = build_style_grid(
-        table,
-        nhead=nhead,
-        has_header=show_colnames,
-        n_merged_body=n_merged_body,
-        group_positions=group_position_set,
-        output=output,
-    )
-
-    style_caption, style_notes = build_meta_styles(table, output=output)
-
-    for pos, _label in row_group_positions.items():
-        cell = style_grid.setdefault((pos, 1), {})
-        cell["colspan"] = ncols
+    state = _extract_body(_copy_for_build(table), output)
+    _merge_groups(state)
+    _run_prepare_hooks(state)
+    _reorder_directives(state)
+    _apply_formatting(state)
+    _execute_plots(state)
+    _apply_global_escape(state)
+    _insert_footnotes(state)
+    style_grid, style_lines = _build_style_grid(state)
+    style_caption, style_notes = _apply_meta_styles(state)
+    _apply_colspans(style_grid, state)
 
     has_background = any("background" in props for props in style_grid.values())
 
     return BuiltTable(
         output=output,
-        data_body=data_body,
-        colnames_display=colnames_display,
-        show_colnames=show_colnames,
-        nhead=nhead,
-        col_groups=col_groups,
-        row_group_positions=row_group_positions,
+        data_body=state.data_body,
+        colnames_display=state.colnames_display,
+        show_colnames=state.show_colnames,
+        nhead=state.nhead,
+        col_groups=state.col_groups,
+        row_group_positions=state.row_group_positions,
         style_grid=style_grid,
         style_lines=style_lines,
         style_caption=style_caption,
         style_notes=style_notes,
         has_background=has_background,
-        caption=table._caption,
-        label=table._label,
-        width=table._width,
-        height=table._height,
-        notes=table._notes,
+        caption=state.table._caption,
+        label=state.table._label,
+        width=state.table._width,
+        height=state.table._height,
+        notes=state.table._notes,
     )
