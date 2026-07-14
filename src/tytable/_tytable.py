@@ -770,7 +770,14 @@ class TinyTable:
                 self._colnames[k - 1] = name
             return self
 
+        if not isinstance(name, Sequence):
+            raise TypeError(
+                f"set_name() name must be a string or sequence of strings, "
+                f"got {type(name).__name__}"
+            )
         names = list(name)
+        if not all(isinstance(item, str) for item in names):
+            raise TypeError("set_name() name sequence must contain only strings")
         if j is None:
             if len(names) != ncol:
                 raise ValueError(

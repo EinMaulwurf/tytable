@@ -77,6 +77,16 @@ class TestSetNameFullList:
         with pytest.raises(ValueError, match="requires a column selector j"):
             t.set_name(name="Only")
 
+    def test_non_string_scalar_name_raises_clear_error(self):
+        t = tt(self.DF, theme=None)
+        with pytest.raises(TypeError, match="name must be a string or sequence of strings"):
+            t.set_name(j="x", name=123)  # type: ignore[arg-type]
+
+    def test_name_sequence_rejects_non_strings(self):
+        t = tt(self.DF, theme=None)
+        with pytest.raises(TypeError, match="sequence must contain only strings"):
+            t.set_name(name=["X", 123])  # type: ignore[list-item]
+
 
 @pytest.mark.typst
 class TestSetNameEdgeCases:
