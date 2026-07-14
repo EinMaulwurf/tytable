@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import pathlib
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from typing import Any
 
 import polars as pl
@@ -161,21 +162,23 @@ def _normalize_notes(raw: list[Any]) -> list[Note]:
             result.append(Note(text=item))
         else:
             result.append(Note(text=str(item)))
-    _assign_markers(result)
-    return result
+    return _assign_markers(result)
 
 
-def _assign_markers(notes: list[Note]) -> None:
+def _assign_markers(notes: list[Note]) -> list[Note]:
     """Auto-number targeted notes (those with ``i``/``j``) in document order."""
     auto = 0
+    result: list[Note] = []
     for note in notes:
         if note.marker is not None:
+            result.append(note)
             continue
         if note.i is not None or note.j is not None:
             auto += 1
-            object.__setattr__(note, "marker", str(auto))
+            result.append(replace(note, marker=str(auto)))
         else:
-            object.__setattr__(note, "marker", None)
+            result.append(note)
+    return result
 
 
 def _normalize_width(

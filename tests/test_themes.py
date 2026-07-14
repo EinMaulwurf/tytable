@@ -252,6 +252,16 @@ class TestFootnotes:
         assert "#super[x]" in out
         assert "Direct" in out
 
+    def test_auto_marker_does_not_mutate_frozen_note(self):
+        from tytable._directives import Note
+
+        note = Note(text="Direct", i=[0], j=[0])
+        table = tt(DF, notes=[note])
+
+        assert note.marker is None
+        assert table._notes[0].marker == "1"
+        assert table._notes[0] is not note
+
 
 @pytest.mark.typst
 class TestTHEMES:
