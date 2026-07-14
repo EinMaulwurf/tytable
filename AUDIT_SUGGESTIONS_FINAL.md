@@ -184,7 +184,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
   active_props = {p: v for p in OVERWRITE_PROPS if (v := getattr(d, p)) is not None}
   ```
 
-- [ ] **M-19** — [src/tytable/_render_typst.py:22-52, src/tytable/_colors.py:159, src/tytable/_escape.py:33] Add `@lru_cache` to hot-path pure functions.
+- [x] **M-19** — [src/tytable/_render_typst.py:22-52, src/tytable/_colors.py:159, src/tytable/_escape.py:33] Add `@lru_cache` to hot-path pure functions.
 
   `_props_to_signature` called 3,630 times for 6 unique prop-sets. `color_to_typst` called 3,720 times for 5 unique colors. `escape_typst` called 3,630 times on numeric strings. Cache all three. Estimated savings: ~8ms on 120×30, ~260ms on 500×100.
 

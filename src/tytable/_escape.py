@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 TYPST_ESCAPE = {
     "\\": "\\\\",
@@ -34,7 +35,12 @@ HTML_SPECIAL_RE = re.compile(r"[&<>]")
 
 def escape_typst(text: object) -> str:
     """Backslash-escape Typst metacharacters in ``text`` (no-op when none are present)."""
-    text = str(text)
+    return _escape_typst_cached(str(text))
+
+
+@lru_cache(maxsize=4096)
+def _escape_typst_cached(text: str) -> str:
+    """Cache escaped strings used repeatedly across table cells."""
     if not text:
         return text
     if not TYPST_SPECIAL_RE.search(text):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 _HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 _COLOR_FUNCTION_RE = re.compile(
@@ -160,6 +161,7 @@ _NAMED_COLORS: dict[str, str] = {
 }
 
 
+@lru_cache(maxsize=256)
 def color_to_typst(color: str) -> str:
     """
     Map a user color spec to a Typst color expression (guide 05 §8).

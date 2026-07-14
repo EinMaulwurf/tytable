@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from ._colors import color_to_typst
@@ -23,6 +24,13 @@ _UNSAFE_SIGNATURE_CHARS = frozenset("#();[]")
 
 def _props_to_signature(props: dict[str, Any]) -> str:
     """Translate a cell-style prop dict into a comma-separated Typst signature fragment."""
+    return _props_to_signature_cached(tuple(sorted(props.items())))
+
+
+@lru_cache(maxsize=256)
+def _props_to_signature_cached(prop_items: tuple[tuple[str, Any], ...]) -> str:
+    """Translate a hashable, canonical property tuple into a Typst signature."""
+    props = dict(prop_items)
     for name, value in props.items():
         if not isinstance(value, str):
             continue
