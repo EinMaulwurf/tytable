@@ -257,6 +257,21 @@ class TestOutputGating:
 
 @pytest.mark.typst
 class TestStyleValidation:
+    @pytest.mark.parametrize(
+        ("prop", "value", "error"),
+        [
+            ("colspan", True, ValueError),
+            ("rowspan", 0, ValueError),
+            ("line_width", True, ValueError),
+            ("fontsize", True, TypeError),
+            ("indent", "1", TypeError),
+            ("rotate", False, TypeError),
+        ],
+    )
+    def test_numeric_property_schema(self, prop, value, error):
+        with pytest.raises(error, match=prop):
+            tt(DF).style(i=0, **{prop: value})
+
     def test_bad_align(self):
         with pytest.raises(ValueError):
             tt(DF).style(i=0, align="x")

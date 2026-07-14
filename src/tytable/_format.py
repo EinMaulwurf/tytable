@@ -13,7 +13,10 @@ from ._escape import escape_typst
 from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
+    from ._directives import FormatDirective
     from ._tytable import TinyTable
+
+Cell = tuple[int, int]
 
 
 def _is_numeric_typed(val: object) -> bool:
@@ -89,6 +92,141 @@ def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
     return current_str
 
 
+def _resolve_target_cells(
+    i_vals: list[int],
+    j_vals: list[int],
+    data_body: list[list[str]],
+    colnames_display: list[str],
+) -> list[Cell]:
+    """Translate resolved table coordinates into body/header cell coordinates."""
+    target_cells: list[Cell] = []
+    for i_idx in i_vals:
+        if i_idx == 0:
+            target_cells.extend(
+                (-1, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(colnames_display)
+            )
+            continue
+        row_idx = i_idx - 1
+        if row_idx < 0 or row_idx >= len(data_body):
+            continue
+        target_cells.extend(
+            (row_idx, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(data_body[row_idx])
+        )
+    return target_cells
+
+
+def _typed_value(cell: Cell, typed_body: list[list[Any]], colnames: list[str]) -> object | None:
+    """Return the original typed value for a body or header cell."""
+    row_idx, col_idx = cell
+    if row_idx == -1:
+        return colnames[col_idx]
+    if row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
+        return typed_body[row_idx][col_idx]
+    return None
+
+
+def _cell_value(cell: Cell, data_body: list[list[str]], colnames_display: list[str]) -> str:
+    """Read the current rendered value of a body or header cell."""
+    row_idx, col_idx = cell
+    return colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
+
+
+def _set_cell_value(
+    cell: Cell,
+    value: object,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+) -> None:
+    """Set the rendered value of a body or header cell."""
+    row_idx, col_idx = cell
+    if row_idx == -1:
+        colnames_display[col_idx] = str(value)
+    else:
+        data_body[row_idx][col_idx] = str(value)
+
+
+def _apply_digits(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    typed_body: list[list[Any]],
+    colnames_display: list[str],
+    colnames: list[str],
+) -> None:
+    """Apply numeric formatting to the selected cells."""
+    if directive.digits is None:
+        return
+    formatter = (
+        _fmt_numeric_significant if directive.num_fmt == "significant" else _fmt_numeric_decimal
+    )
+    for cell in cells:
+        typed_val = _typed_value(cell, typed_body, colnames)
+        if _is_numeric_typed(typed_val) and not isinstance(typed_val, int):
+            _set_cell_value(
+                cell, formatter(typed_val, directive.digits), data_body, colnames_display
+            )
+
+
+def _apply_fn(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+) -> None:
+    """Apply a column-wise transform to the selected cells."""
+    if directive.fn is None:
+        return
+    col_to_rows: dict[int, list[int]] = {}
+    for row_idx, col_idx in cells:
+        col_to_rows.setdefault(col_idx, []).append(row_idx)
+    for col_idx, rows in col_to_rows.items():
+        column_cells = [(row_idx, col_idx) for row_idx in sorted(rows)]
+        values = [_cell_value(cell, data_body, colnames_display) for cell in column_cells]
+        result = directive.fn(values)
+        if len(result) != len(values):
+            raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
+        for cell, value in zip(column_cells, result, strict=True):
+            _set_cell_value(cell, value, data_body, colnames_display)
+
+
+def _apply_replacements(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    typed_body: list[list[Any]],
+    colnames_display: list[str],
+    colnames: list[str],
+) -> None:
+    """Apply replacement rules to the selected cells."""
+    if directive.replace is None:
+        return
+    for cell in cells:
+        formatted = _apply_replace(
+            _typed_value(cell, typed_body, colnames),
+            _cell_value(cell, data_body, colnames_display),
+            directive.replace,
+        )
+        _set_cell_value(cell, formatted, data_body, colnames_display)
+
+
+def _apply_escapes(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+    output: str,
+) -> set[Cell]:
+    """Apply directive-level escaping and return the escaped cell coordinates."""
+    if not directive.escape:
+        return set()
+    for cell in cells:
+        formatted = _apply_escape(
+            _cell_value(cell, data_body, colnames_display), directive.escape, output
+        )
+        _set_cell_value(cell, formatted, data_body, colnames_display)
+    return set(cells)
+
+
 def apply_formats(
     data_body: list[list[str]],
     typed_body: list[list[Any]],
@@ -133,83 +271,12 @@ def apply_formats(
             raise RuntimeError("i_vals unexpectedly None in apply_formats")
         j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
-        target_cells: list[tuple[int, int]] = []
-        for i_idx in i_vals:
-            if i_idx == 0:
-                target_cells.extend(
-                    (-1, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(colnames_display)
-                )
-                continue
-            row_idx = i_idx - 1
-            if row_idx < 0 or row_idx >= len(data_body):
-                continue
-            for j_idx in j_vals:
-                col_idx = j_idx - 1
-                if col_idx < 0 or col_idx >= len(data_body[row_idx]):
-                    continue
-                target_cells.append((row_idx, col_idx))
-
-        if d.digits is not None:
-            for row_idx, col_idx in target_cells:
-                if row_idx == -1:
-                    typed_val = table._colnames[col_idx]
-                elif row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
-                    typed_val = typed_body[row_idx][col_idx]
-                else:
-                    typed_val = None
-                if _is_numeric_typed(typed_val) and not isinstance(typed_val, int):
-                    num_fmt = d.num_fmt or "decimal"
-                    if num_fmt == "significant":
-                        data_body[row_idx][col_idx] = _fmt_numeric_significant(typed_val, d.digits)
-                    else:
-                        data_body[row_idx][col_idx] = _fmt_numeric_decimal(typed_val, d.digits)
-
-        if d.fn is not None:
-            col_to_rows: dict[int, list[int]] = {}
-            for row_idx, col_idx in target_cells:
-                col_to_rows.setdefault(col_idx, []).append(row_idx)
-            for col_idx, rows in col_to_rows.items():
-                sorted_rows = sorted(rows)
-                vec = [
-                    colnames_display[col_idx] if r == -1 else data_body[r][col_idx]
-                    for r in sorted_rows
-                ]
-                result = d.fn(vec)
-                if len(result) != len(vec):
-                    raise ValueError(f"fn() returned {len(result)} items, expected {len(vec)}")
-                for r, val in zip(sorted_rows, result, strict=True):
-                    if r == -1:
-                        colnames_display[col_idx] = str(val)
-                    else:
-                        data_body[r][col_idx] = str(val)
-
-        if d.replace is not None:
-            for row_idx, col_idx in target_cells:
-                if row_idx == -1:
-                    typed_val = table._colnames[col_idx]
-                elif row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
-                    typed_val = typed_body[row_idx][col_idx]
-                else:
-                    typed_val = None
-                current = (
-                    colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
-                )
-                formatted = _apply_replace(typed_val, current, d.replace)
-                if row_idx == -1:
-                    colnames_display[col_idx] = formatted
-                else:
-                    data_body[row_idx][col_idx] = formatted
-
-        if d.escape:
-            for row_idx, col_idx in target_cells:
-                current = (
-                    colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
-                )
-                formatted = _apply_escape(current, d.escape, output)
-                if row_idx == -1:
-                    colnames_display[col_idx] = formatted
-                else:
-                    data_body[row_idx][col_idx] = formatted
-                escaped_cells.add((row_idx, col_idx))
+        target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)
+        _apply_digits(target_cells, d, data_body, typed_body, colnames_display, table._colnames)
+        _apply_fn(target_cells, d, data_body, colnames_display)
+        _apply_replacements(
+            target_cells, d, data_body, typed_body, colnames_display, table._colnames
+        )
+        escaped_cells.update(_apply_escapes(target_cells, d, data_body, colnames_display, output))
 
     return escaped_cells

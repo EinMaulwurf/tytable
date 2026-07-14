@@ -9,6 +9,7 @@ last-writer-wins), append line props. Never scan the grid per directive.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from ._colors import _validate_color_string
@@ -60,6 +61,8 @@ _ALIGN_V = {
 }
 _LINE_RE = re.compile(r"^[tblr]+$")
 
+StyleValidator = Callable[[str, object], None]
+
 
 def align_to_typst(h: str | None, v: str | None) -> str | None:
     """Translate horizontal/vertical alignment shorthands into a Typst ``align`` expression."""
@@ -90,6 +93,69 @@ def _expand_align(
     return list(val)
 
 
+def _validate_align(name: str, value: object) -> None:
+    """Validate horizontal or vertical alignment syntax."""
+    if value is None:
+        return
+    table = _ALIGN_H if name == "align" else _ALIGN_V
+    if not isinstance(value, str) or (value not in table and not all(c in table for c in value)):
+        raise ValueError(f"invalid {name} value: {value!r}")
+
+
+def _validate_line(name: str, value: object) -> None:
+    """Validate a cell-edge line specification."""
+    if value is not None and (not isinstance(value, str) or not _LINE_RE.match(value)):
+        raise ValueError(f"invalid {name} value: {value!r} (must be a combo of t,b,l,r)")
+
+
+def _validate_color(name: str, value: object) -> None:
+    """Validate a color-valued style property."""
+    if value is None:
+        return
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string, got {type(value).__name__}")
+    try:
+        _validate_color_string(value.strip())
+    except ValueError as exc:
+        raise ValueError(f"invalid {name}: {exc}") from exc
+
+
+def _validate_positive_int(name: str, value: object) -> None:
+    """Validate a positive integer span property."""
+    if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 1):
+        raise ValueError(f"{name} must be a positive int, got {value!r}")
+
+
+def _validate_non_negative_number(name: str, value: object) -> None:
+    """Validate a non-negative numeric style property."""
+    if value is not None and (
+        not isinstance(value, int | float) or isinstance(value, bool) or value < 0
+    ):
+        raise ValueError(f"{name} must be a non-negative number, got {value!r}")
+
+
+def _validate_number(name: str, value: object) -> None:
+    """Validate a numeric style property."""
+    if value is not None and (not isinstance(value, int | float) or isinstance(value, bool)):
+        raise TypeError(f"{name} must be a number, got {type(value).__name__}")
+
+
+_STYLE_VALIDATORS: dict[str, StyleValidator] = {
+    "align": _validate_align,
+    "alignv": _validate_align,
+    "line": _validate_line,
+    "color": _validate_color,
+    "background": _validate_color,
+    "line_color": _validate_color,
+    "colspan": _validate_positive_int,
+    "rowspan": _validate_positive_int,
+    "line_width": _validate_non_negative_number,
+    "fontsize": _validate_number,
+    "indent": _validate_number,
+    "rotate": _validate_number,
+}
+
+
 def _validate_style(
     *,
     align: str | None,
@@ -106,33 +172,9 @@ def _validate_style(
     rotate: int | float | None,
 ) -> None:
     """Fail-fast validation at .style() call time. guide 06 §7."""
-    for name, val in (("align", align), ("alignv", alignv)):
-        if val is not None:
-            table = _ALIGN_H if name == "align" else _ALIGN_V
-            if val not in table and not all(c in table for c in val):
-                raise ValueError(f"invalid {name} value: {val!r}")
-    if line is not None and not _LINE_RE.match(line):
-        raise ValueError(f"invalid line value: {line!r} (must be a combo of t,b,l,r)")
-    for name, val in (("color", color), ("background", background), ("line_color", line_color)):
-        if val is not None and not isinstance(val, str):
-            raise TypeError(f"{name} must be a string, got {type(val).__name__}")
-        if val is not None:
-            try:
-                _validate_color_string(val.strip())
-            except ValueError as exc:
-                raise ValueError(f"invalid {name}: {exc}") from exc
-    for name, ival in (("colspan", colspan), ("rowspan", rowspan)):
-        if ival is not None and (not isinstance(ival, int) or isinstance(ival, bool) or ival < 1):
-            raise ValueError(f"{name} must be a positive int, got {ival!r}")
-    if line_width is not None and (
-        not isinstance(line_width, int | float) or isinstance(line_width, bool) or line_width < 0
-    ):
-        raise ValueError(f"line_width must be a non-negative number, got {line_width!r}")
-    for name, nval in (("fontsize", fontsize), ("indent", indent)):
-        if nval is not None and (not isinstance(nval, int | float) or isinstance(nval, bool)):
-            raise TypeError(f"{name} must be a number, got {type(nval).__name__}")
-    if rotate is not None and (not isinstance(rotate, int | float) or isinstance(rotate, bool)):
-        raise TypeError(f"rotate must be a number, got {type(rotate).__name__}")
+    values = locals()
+    for name, validator in _STYLE_VALIDATORS.items():
+        validator(name, values[name])
 
 
 def build_style_grid(

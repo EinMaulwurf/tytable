@@ -116,24 +116,25 @@ class TypstRenderer(Renderer):
 
     def render(self, built: BuiltTable) -> str:
         """Produce the full Typst fragment (figure/table header, body, footer, notes)."""
-        opts = self._opts
         L: list[str] = []
-        need_figure = opts.figure
-        if not need_figure and (built.caption is not None or built.label is not None):
-            raise ValueError("caption and label require figure=True")
+        self._emit_outer_open(L, built)
+        self._emit_style_block(L, built)
+        L.append("")
+        self._emit_table(L, built)
+        self._emit_outer_close(L, built)
+        return self._wrap_result(L)
 
-        if need_figure and opts.multipage is not None:
+    def _emit_outer_open(self, L: list[str], built: BuiltTable) -> None:
+        """Open the optional figure and its containing block."""
+        opts = self._opts
+        if not opts.figure and (built.caption is not None or built.label is not None):
+            raise ValueError("caption and label require figure=True")
+        if opts.figure and opts.multipage is not None:
             breakable = "true" if opts.multipage else "false"
             L.append(f"#show figure: set block(breakable: {breakable})")
-        if need_figure:
+        if opts.figure:
             L.append("#figure(")
-            if built.caption is not None:
-                escaped = escape_typst(built.caption)
-                if built.style_caption:
-                    caption_body = _style_typst_content(built.style_caption, escaped)
-                    L.append(f"  caption: {caption_body},")
-                else:
-                    L.append(f"  caption: text([{escaped}]),")
+            self._emit_caption(L, built)
             L.append('  kind: "tytable",')
             L.append('  supplement: "Table",')
             L.append("")
@@ -145,30 +146,22 @@ class TypstRenderer(Renderer):
                 breakable_arg = f"breakable: {breakable}"
             L.append(f"#block({breakable_arg})[")
 
-        self._emit_style_block(L, built)
-        L.append("")
-
-        ncol = len(built.colnames_display)
-
-        L.append("  #table(")
-
-        cells = self._columns_spec(built.width, ncol)
-        L.append(f"    columns: ({', '.join(cells)}),")
-
-        if built.col_groups and not built.has_background:
-            gutter = opts.column_gutter
-            if gutter is not None:
-                unit = "pt" if isinstance(gutter, (int, float)) else ""
-                L.append(f"    column-gutter: {gutter}{unit},")
-
-        stroke_val = opts.grid_stroke if opts.grid_stroke else "none"
-        L.append(f"    stroke: {stroke_val},")
-
-        if opts.row_height_em is not None:
-            L.append(f"    rows: {opts.row_height_em}em,")
+    @staticmethod
+    def _emit_caption(L: list[str], built: BuiltTable) -> None:
+        """Append an escaped, optionally styled figure caption."""
+        if built.caption is None:
+            return
+        escaped = escape_typst(built.caption)
+        if built.style_caption:
+            L.append(f"  caption: {_style_typst_content(built.style_caption, escaped)},")
         else:
-            L.append("    rows: auto,")
+            L.append(f"  caption: text([{escaped}]),")
 
+    def _emit_table(self, L: list[str], built: BuiltTable) -> None:
+        """Append the table configuration, header, body, and footer."""
+        ncol = len(built.colnames_display)
+        L.append("  #table(")
+        self._emit_table_options(L, built, ncol)
         L.append("    align: (x, y) => {")
         L.append("      let style = get-style(x, y)")
         L.append('      if style != none and "align" in style { style.align } else { left }')
@@ -178,9 +171,26 @@ class TypstRenderer(Renderer):
         L.append("      let style = get-style(x, y)")
         L.append('      if style != none and "background" in style { style.background }')
         L.append("    },")
-
         self._emit_lines(L, built)
+        self._emit_header(L, built)
+        self._emit_body(L, built)
+        self._emit_footer(L, built, ncol)
+        L.append("  )")
 
+    def _emit_table_options(self, L: list[str], built: BuiltTable, ncol: int) -> None:
+        """Append column, gutter, stroke, and row-height table options."""
+        opts = self._opts
+        L.append(f"    columns: ({', '.join(self._columns_spec(built.width, ncol))}),")
+        if built.col_groups and not built.has_background and opts.column_gutter is not None:
+            gutter = opts.column_gutter
+            unit = "pt" if isinstance(gutter, (int, float)) else ""
+            L.append(f"    column-gutter: {gutter}{unit},")
+        L.append(f"    stroke: {opts.grid_stroke or 'none'},")
+        rows = f"{opts.row_height_em}em" if opts.row_height_em is not None else "auto"
+        L.append(f"    rows: {rows},")
+
+    def _emit_header(self, L: list[str], built: BuiltTable) -> None:
+        """Append column-group and column-name header rows."""
         if built.show_colnames or built.col_groups:
             L.append("    table.header(")
             L.append("      repeat: true,")
@@ -192,8 +202,10 @@ class TypstRenderer(Renderer):
                 L.append(col_line)
             L.append("    ),")
 
+    @staticmethod
+    def _emit_body(L: list[str], built: BuiltTable) -> None:
+        """Append visible table body cells, including span declarations."""
         covered = compute_covered_cells(built.style_grid)
-        ncol = len(built.colnames_display)
         for r, row in enumerate(built.data_body):
             i_internal = r + 1
             parts = []
@@ -216,21 +228,21 @@ class TypstRenderer(Renderer):
             if parts:
                 L.append("    " + ",".join(parts) + ",")
 
-        self._emit_footer(L, built, ncol)
-
-        L.append("  )")
-
+    def _emit_outer_close(self, L: list[str], built: BuiltTable) -> None:
+        """Close the block and optional figure, including its label."""
         L.append("]")
-        if need_figure:
+        if self._opts.figure:
             closing = ")"
             if built.label is not None:
                 closing += f" <{built.label}>"
             L.append(closing)
 
+    def _wrap_result(self, L: list[str]) -> str:
+        """Apply figure alignment, rotation, and resize wrappers."""
+        opts = self._opts
         if opts.align_figure:
-            aligned = opts.align_to_typst()
             L = [
-                f"#align({aligned}, [",
+                f"#align({opts.align_to_typst()}, [",
                 *L,
                 "])",
             ]
