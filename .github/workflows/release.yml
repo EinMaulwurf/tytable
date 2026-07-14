@@ -1,0 +1,57 @@
+name: Release
+
+# Cut a release by pushing a `v*` tag, e.g.:
+#   git tag -a v0.6.0 -m "Release v0.6.0"
+#   git push origin v0.6.0
+#
+# The job builds the wheel + sdist with `uv build`, attaches them to a
+# GitHub Release with auto-generated notes, and publishes to PyPI via
+# trusted publishing (no stored API token). Trusted publishing requires
+# this workflow file to exist on the default branch *before* the first
+# tagged run can publish — merge to main before cutting v0.6.0.
+#
+# One-time setup: on PyPI (and TestPyPI for dry runs) add a trusted
+# publisher for EinMaulwurf/tytable, workflow filename `release.yml`,
+# environment `release`.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release and its notes
+  id-token: write # trusted publishing to PyPI
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release # matches the trusted-publisher env on PyPI
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # hatch-vcs needs full history to derive version
+
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Validate metadata
+        run: uvx twine check dist/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
