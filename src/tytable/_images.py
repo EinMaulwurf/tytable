@@ -9,6 +9,7 @@ import tempfile
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
+from ._directives import ImageDirective
 from ._indices import resolve_i, resolve_j
 from ._utils import _new_image_id, format_markup_num
 
@@ -105,8 +106,8 @@ def _build_image_cell_string(
     output: str,
     portable: bool,
     png_path: str | None,
-    width_px: int,
-    height_px: int,
+    width_px: int = 0,
+    height_px: int = 0,
 ) -> str:
     """Build the markup string for one image cell, backend- and portability-specific."""
     h = format_markup_num(height)
@@ -140,13 +141,13 @@ def execute_plots(
     n_merged_body: int,
     group_positions: set[int],
 ) -> set[tuple[int, int]]:
-    """Run every ``PlotDirective`` (generated plots and static images), writing image cell markup in place.
+    """Run generated-plot and static-image directives, writing image markup in place.
 
     Returns the set of ``(row, col)`` positions where safe image markup was injected,
     so callers can selectively skip HTML/Typst escaping for those cells.
     """
     image_cells: set[tuple[int, int]] = set()
-    if not table._plot_directives:
+    if not table._media_directives:
         return image_cells
 
     _require_images()
@@ -154,7 +155,7 @@ def execute_plots(
     portable = table._typst_opts.portable
     colnames = table._colnames
 
-    for rank, d in enumerate(table._plot_directives):
+    for rank, d in enumerate(table._media_directives):
         if d.output is not None and output not in d.output:
             continue
 
@@ -192,18 +193,16 @@ def execute_plots(
                 if col_idx < 0 or col_idx >= len(data_body[body_row]):
                     continue
 
-                if d.images is not None:
+                if isinstance(d, ImageDirective):
                     total_idx = ri * len(j_vals) + rj
                     if total_idx < len(d.images):
                         img_path = d.images[total_idx].replace("\\", "/")
                         cell_str = _build_image_cell_string(
-                            img_path, height, output, portable, None, d.width_px, d.height_px
+                            img_path, height, output, portable, None
                         )
                         data_body[body_row][col_idx] = cell_str
                         image_cells.add((body_row, col_idx))
                 else:
-                    if d.fun is None:
-                        raise RuntimeError("plot directive unexpectedly missing fun")
                     if d.data is not None:
                         total_idx = ri * len(j_vals) + rj
                         entry = d.data[total_idx]

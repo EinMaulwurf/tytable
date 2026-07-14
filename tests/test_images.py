@@ -7,6 +7,7 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
+from tytable._directives import ImageDirective, PlotDirective
 from tytable._resolve import build
 
 
@@ -20,6 +21,22 @@ tt(pl.DataFrame({"A": [1]}), theme=None).render("html")
 assert "matplotlib" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_plot_and_image_calls_record_distinct_directive_types():
+    table = (
+        tt(pl.DataFrame({"Value": [[1, 2, 3]]}), theme=None)
+        .images(j="Value", paths=["image.png"])
+        .plot(j="Value", fun=_sparkline)
+    )
+
+    assert len(table._plot_directives) == 1
+    assert isinstance(table._plot_directives[0], PlotDirective)
+    assert not hasattr(table._plot_directives[0], "images")
+    assert len(table._image_directives) == 1
+    assert isinstance(table._image_directives[0], ImageDirective)
+    assert not hasattr(table._image_directives[0], "fun")
+    assert table._media_directives == [table._image_directives[0], table._plot_directives[0]]
 
 
 def _sparkline(values, *, color="black", xlim=None, **kw):

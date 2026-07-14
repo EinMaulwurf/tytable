@@ -169,6 +169,8 @@ def _copy_for_build(table: TinyTable) -> TinyTable:
     working._deferred_style_directives = []
     working._format_directives = list(table._format_directives)
     working._plot_directives = list(table._plot_directives)
+    working._image_directives = list(table._image_directives)
+    working._media_directives = list(table._media_directives)
     working._row_groups = list(table._row_groups)
     working._col_group_rows = list(table._col_group_rows)
     working._notes = list(table._notes)

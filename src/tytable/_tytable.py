@@ -15,7 +15,14 @@ from typing import Any, TypeAlias
 
 import polars as pl
 
-from ._directives import FormatDirective, Note, PlotDirective, RowGroup, StyleDirective
+from ._directives import (
+    FormatDirective,
+    ImageDirective,
+    Note,
+    PlotDirective,
+    RowGroup,
+    StyleDirective,
+)
 from ._groups import register_col_groups, register_row_groups
 from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
@@ -315,6 +322,8 @@ class TinyTable:
         self._deferred_style_directives: list[StyleDirective] = []
         self._format_directives: list[FormatDirective] = []
         self._plot_directives: list[PlotDirective] = []
+        self._image_directives: list[ImageDirective] = []
+        self._media_directives: list[PlotDirective | ImageDirective] = []
         self._row_groups: list[RowGroup] = []
         self._col_group_rows: list[list[str | None]] = []
         self._notes: list[Note] = _normalize_notes(notes or [])
@@ -672,21 +681,21 @@ class TinyTable:
             raise ValueError(".plot() requires fun (plotting function)")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
-        self._plot_directives.append(
-            PlotDirective(
-                i=i,
-                j=j,
-                regex=regex,
-                fun=fun,
-                data=data,
-                color=color,
-                xlim=xlim,
-                height=height,
-                height_px=height_px,
-                width_px=width_px,
-                output=output,
-            )
+        directive = PlotDirective(
+            i=i,
+            j=j,
+            regex=regex,
+            fun=fun,
+            data=data,
+            color=color,
+            xlim=xlim,
+            height=height,
+            height_px=height_px,
+            width_px=width_px,
+            output=output,
         )
+        self._plot_directives.append(directive)
+        self._media_directives.append(directive)
         return self
 
     def images(
@@ -744,16 +753,16 @@ class TinyTable:
             raise ValueError(".images() requires paths")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
-        self._plot_directives.append(
-            PlotDirective(
-                i=i,
-                j=j,
-                regex=regex,
-                images=list(paths),
-                height=height,
-                output=output,
-            )
+        directive = ImageDirective(
+            i=i,
+            j=j,
+            regex=regex,
+            images=list(paths),
+            height=height,
+            output=output,
         )
+        self._image_directives.append(directive)
+        self._media_directives.append(directive)
         return self
 
     def group(

@@ -61,19 +61,30 @@ class FormatDirective:
 
 @dataclass(frozen=True)
 class PlotDirective:
-    """A single ``.plot()`` / ``.images()`` call."""
+    """A single ``.plot()`` call."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
+    fun: Callable
     regex: bool = False
-    fun: Callable | None = None
     data: list | None = None
-    images: list[str] | None = None
     color: str = "black"
     xlim: list[float] | None = None
     height: float = 1.0
     height_px: int = 400
     width_px: int = 1200
+    output: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True)
+class ImageDirective:
+    """A single ``.images()`` call."""
+
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    j: int | str | Sequence[int | str] | None
+    images: list[str]
+    regex: bool = False
+    height: float = 1.0
     output: tuple[str, ...] | None = None
 
 
