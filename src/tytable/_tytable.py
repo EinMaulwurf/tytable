@@ -11,7 +11,7 @@ import pathlib
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Any
+from typing import Any, TypeAlias
 
 import polars as pl
 
@@ -23,6 +23,8 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._styling import _validate_style
 from ._themes import THEMES
+
+_ColumnSelector: TypeAlias = int | str | Sequence[int] | Sequence[str] | None
 
 
 def tt(
@@ -352,7 +354,7 @@ class TinyTable:
         | pl.Series
         | Callable[[dict], bool]
         | None = None,
-        j: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
         *,
         regex: bool = False,
         bold: bool | None = None,
@@ -522,7 +524,7 @@ class TinyTable:
         | pl.Series
         | Callable[[dict], bool]
         | None = None,
-        j: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
         *,
         regex: bool = False,
         digits: int | None = None,
@@ -607,7 +609,7 @@ class TinyTable:
         | pl.Series
         | Callable[[dict], bool]
         | None = None,
-        j: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
         *,
         regex: bool = False,
         fun: Callable | None = None,
@@ -695,7 +697,7 @@ class TinyTable:
         | pl.Series
         | Callable[[dict], bool]
         | None = None,
-        j: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
         *,
         regex: bool = False,
         paths: list[str] | None = None,
@@ -805,7 +807,7 @@ class TinyTable:
 
     def set_name(
         self,
-        j: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
         *,
         regex: bool = False,
         name: str | Sequence[str],

@@ -124,7 +124,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   0/12 public methods document their exceptions. Add `Raises: ValueError: ...` for invalid selectors, invalid style properties, missing required args, etc.
 
-- [ ] **M-5** — [src/tytable/_tytable.py] Widen `j` type annotations to accept `list[str]`.
+- [x] **M-5** — [src/tytable/_tytable.py] Widen `j` type annotations to accept `list[str]`.
 
   `j` is annotated as `int | str | Sequence[int | str] | None` but the runtime in `_indices.py` already handles `list[str]`. The annotation gap causes false type-checker errors.
 
