@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import tempfile
 
 import polars as pl
 import pytest
@@ -142,6 +143,25 @@ class TestPortable:
         )
         assert "#image(bytes(" in result
         assert 'format: "svg"' in result
+
+    def test_temp_dir_cleaned_up_when_plot_fails(self, tmp_path, monkeypatch):
+        from tytable._themes import theme_typst
+
+        monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+
+        def fail(_value):
+            raise RuntimeError("plot failed")
+
+        table = (
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}), theme=None)
+            .plot(j="Trend", fun=fail)
+            .theme(lambda t: theme_typst(t, portable=True))
+        )
+
+        with pytest.raises(RuntimeError, match="plot failed"):
+            table.render("typst")
+
+        assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.images

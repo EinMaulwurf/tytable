@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import inspect
 import pathlib
-import shutil
 import tempfile
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
@@ -155,8 +154,6 @@ def execute_plots(
     portable = table._typst_opts.portable
     colnames = table._colnames
 
-    temp_dirs: list[str] = []
-
     for rank, d in enumerate(table._plot_directives):
         if d.output is not None and output not in d.output:
             continue
@@ -213,54 +210,62 @@ def execute_plots(
                     else:
                         entry = typed_body[body_row][col_idx]
 
+                    image_id = _new_image_id()
+                    name = "plot"
+                    filename = f"{name}_{rank:04d}_{image_id}.png"
+
                     if portable:
-                        td = tempfile.mkdtemp(prefix="tytable_portable_")
-                        temp_dirs.append(td)
-                        assets_dir = pathlib.Path(td)
+                        with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
+                            png_path = pathlib.Path(td) / filename
+                            _save_plot_image(
+                                d.fun,
+                                entry,
+                                png_path,
+                                width_px=d.width_px,
+                                height_px=d.height_px,
+                                color=d.color,
+                                xlim=d.xlim,
+                            )
+                            cell_str = _build_image_cell_string(
+                                filename,
+                                height,
+                                output,
+                                portable,
+                                str(png_path),
+                                d.width_px,
+                                d.height_px,
+                            )
                     else:
                         raw = table._assets_dir
                         assets_dir = (
                             pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
                         )
-
-                    assets_dir.mkdir(parents=True, exist_ok=True)
-
-                    image_id = _new_image_id()
-                    name = "plot"
-                    filename = f"{name}_{rank:04d}_{image_id}.png"
-                    png_path = assets_dir / filename
-
-                    _save_plot_image(
-                        d.fun,
-                        entry,
-                        png_path,
-                        width_px=d.width_px,
-                        height_px=d.height_px,
-                        color=d.color,
-                        xlim=d.xlim,
-                    )
-
-                    if portable:
-                        relpath = filename
-                    else:
+                        assets_dir.mkdir(parents=True, exist_ok=True)
+                        png_path = assets_dir / filename
+                        _save_plot_image(
+                            d.fun,
+                            entry,
+                            png_path,
+                            width_px=d.width_px,
+                            height_px=d.height_px,
+                            color=d.color,
+                            xlim=d.xlim,
+                        )
                         assets_relpath = table._assets_relpath
                         if assets_relpath:
                             relpath = f"{assets_relpath}/{filename}"
                         else:
                             relpath = f"tytable_assets/{filename}"
-
-                    cell_str = _build_image_cell_string(
-                        relpath,
-                        height,
-                        output,
-                        portable,
-                        str(png_path),
-                        d.width_px,
-                        d.height_px,
-                    )
+                        cell_str = _build_image_cell_string(
+                            relpath,
+                            height,
+                            output,
+                            portable,
+                            str(png_path),
+                            d.width_px,
+                            d.height_px,
+                        )
                     data_body[body_row][col_idx] = cell_str
                     image_cells.add((body_row, col_idx))
 
-    for td in temp_dirs:
-        shutil.rmtree(td, ignore_errors=True)
     return image_cells

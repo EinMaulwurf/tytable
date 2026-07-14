@@ -152,7 +152,7 @@ Generated 2026-07-13 from two independent audits (6-dimension subagent audit + m
 
   Extract sub-functions: `_extract_body()`, `_merge_groups()`, `_run_prepare_hooks()`, `_reorder_directives()`, `_apply_formatting()`, `_apply_global_escape()`, `_execute_plots()`, `_insert_footnotes()`, `_build_style_grid()`, `_apply_meta_styles()`, `_apply_colspans()`.
 
-- [ ] **M-12** — [src/tytable/_images.py:211-259] Replace `tempfile.mkdtemp` with `TemporaryDirectory` context manager.
+- [x] **M-12** — [src/tytable/_images.py:211-259] Replace `tempfile.mkdtemp` with `TemporaryDirectory` context manager.
 
   `shutil.rmtree(td, ignore_errors=True)` is best-effort cleanup; temp dirs leak on unhandled exceptions. Use `tempfile.TemporaryDirectory()` as a context manager.
 
