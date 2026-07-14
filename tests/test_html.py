@@ -181,6 +181,12 @@ class TestHtmlEscape:
         assert escape_html("a&b") == "a&amp;b"
         assert escape_html("plain") == "plain"
 
+    @pytest.mark.parametrize(
+        ("value", "expected"), [(42, "42"), (True, "True"), (None, "None")]
+    )
+    def test_html_escape_converts_non_strings(self, value, expected):
+        assert escape_html(value) == expected
+
 
 @pytest.mark.html
 class TestHtmlOutputGating:

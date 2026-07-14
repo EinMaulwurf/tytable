@@ -129,6 +129,10 @@ class TestEscape:
     def test_plain_text_unchanged(self):
         assert escape_typst("plain text") == "plain text"
 
+    @pytest.mark.parametrize(("value", "expected"), [(42, "42"), (True, "True"), (None, "None")])
+    def test_non_string_values_are_converted(self, value, expected):
+        assert escape_typst(value) == expected
+
     def test_hash_escaped(self):
         assert escape_typst("#") == "\\#"
 

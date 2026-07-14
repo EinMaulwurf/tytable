@@ -32,18 +32,20 @@ HTML_ESCAPE = {
 HTML_SPECIAL_RE = re.compile(r"[&<>]")
 
 
-def escape_typst(text: str) -> str:
+def escape_typst(text: object) -> str:
     """Backslash-escape Typst metacharacters in ``text`` (no-op when none are present)."""
-    if not isinstance(text, str) or not text:
+    text = str(text)
+    if not text:
         return text
     if not TYPST_SPECIAL_RE.search(text):
         return text
     return TYPST_SPECIAL_RE.sub(lambda m: TYPST_ESCAPE[m.group(0)], text)
 
 
-def escape_html(text: str) -> str:
+def escape_html(text: object) -> str:
     """Escape ``&``, ``<``, ``>`` for safe inclusion in HTML text."""
-    if not isinstance(text, str) or not text:
+    text = str(text)
+    if not text:
         return text
     if not HTML_SPECIAL_RE.search(text):
         return text
