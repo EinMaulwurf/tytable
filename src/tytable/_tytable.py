@@ -8,6 +8,7 @@ replayed in a fixed order when ``.render()`` / ``.save()`` is called.
 from __future__ import annotations
 
 import pathlib
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import Any
@@ -27,7 +28,9 @@ from ._themes import THEMES
 def tt(
     data: pl.DataFrame,
     *,
+    figure: bool = True,
     caption: str | None = None,
+    label: str | None = None,
     notes: list | None = None,
     width: float | Sequence[float | str | None] | str | None = None,
     height: float | None = None,
@@ -54,9 +57,17 @@ def tt(
     data
         The Polars DataFrame to render. The frame is cloned, so the original
         is never mutated.
+    figure
+        Wrap Typst output in a ``figure`` (default ``True``). Set ``False``
+        to emit an unnumbered table without figure semantics. Captions and
+        labels require ``figure=True``.
     caption
         Table caption (rendered as a Typst ``figure`` caption or an HTML
         ``<caption>``). ``None`` omits it.
+    label
+        Typst label attached to the figure, without angle brackets, for
+        cross-references such as ``@product-scores``. Requires
+        ``figure=True``. Ignored by non-Typst renderers.
     notes
         List of footnotes. Each entry may be a plain ``str`` (untargeted note),
         a :class:`dict` with keys ``text``, ``marker``, ``i``, ``j``, or a
@@ -124,7 +135,9 @@ def tt(
 
     t = TinyTable(
         data,
+        figure=figure,
         caption=caption,
+        label=label,
         notes=notes,
         width=width,
         height=height,
@@ -181,6 +194,19 @@ def _assign_markers(notes: list[Note]) -> list[Note]:
     return result
 
 
+_TYPST_LABEL_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.:-]*$")
+
+
+def _validate_figure_options(figure: bool, caption: str | None, label: str | None) -> None:
+    """Validate figure-only metadata and keep label interpolation safe."""
+    if not figure and (caption is not None or label is not None):
+        raise ValueError("caption and label require figure=True")
+    if label is not None and not _TYPST_LABEL_RE.fullmatch(label):
+        raise ValueError(
+            "label must contain only letters, numbers, underscores, hyphens, periods, or colons"
+        )
+
+
 def _normalize_width(
     width: float | Sequence[float | str | None] | str | None, ncol: int
 ) -> float | Sequence[float | str | None] | str | None:
@@ -231,7 +257,9 @@ class TinyTable:
         self,
         data: pl.DataFrame,
         *,
+        figure: bool = True,
         caption: str | None = None,
+        label: str | None = None,
         notes: list | None = None,
         width: float | Sequence[float | str | None] | str | None = None,
         height: float | None = None,
@@ -244,6 +272,7 @@ class TinyTable:
         theme: str | Callable | None = "default",
     ) -> None:
         """Direct constructor — prefer the :func:`tt` factory. See :func:`tt` for parameter docs."""
+        _validate_figure_options(figure, caption, label)
         self._data = data.clone()
         self._colnames: list[str] = (
             [colnames_override.get(c, c) for c in data.columns]
@@ -252,6 +281,7 @@ class TinyTable:
         )
         self._show_colnames = colnames
         self._caption = caption
+        self._label = label
         self._width = _normalize_width(width, data.width)
         self._height = height
         self._escape = escape
@@ -272,7 +302,7 @@ class TinyTable:
         self._assets_dir: str | None = None
         self._assets_relpath: str | None = None
 
-        self._typst_opts = TypstRenderOptions(multipage=False)
+        self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
         self._typst_opts.column_gutter = gutter

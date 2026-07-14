@@ -267,10 +267,24 @@ markup — Typst `text(...)` / `#strong[...]` / `#smallcaps[...]`, or HTML `<spa
 plus `<b>` / `<i>` / … — rather than through the cell style grid. This mirrors
 R tinytable's `style_tt(i="caption", …)` / `i="notes", …`.
 
+Typst output is wrapped in a `figure` by default. Pass `label="product-scores"`
+to attach `<product-scores>` to that figure, then reference the numbered table
+with `@product-scores` in the surrounding Typst document. Pass `figure=False`
+when an unnumbered table without figure semantics is more appropriate. Because
+captions and numbered labels are figure features, combining `figure=False` with
+either `caption` or `label` raises `ValueError`.
+
 ```python
-tt(df, caption="Product scores", notes=["Source: Q3 report"])
+(
+    tt(
+        df,
+        caption="Product scores",
+        label="product-scores",
+        notes=["Source: Q3 report"],
+    )
     .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
     .style(i="notes", italic=True, color="blue", align="c")
+)
 ```
 
 The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
@@ -480,11 +494,13 @@ The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
 `.style()` additionally accepts `i="caption"` and `i="notes"` to style the table
 caption and footnotes as inline text (see the *Caption and notes* section).
 
-#api("tt(data, *, caption=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
+#api("tt(data, *, figure=True, caption=None, label=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
 Create a `TinyTable` from a Polars DataFrame. `width=1` produces a full-width
 table; it also takes a per-column list of fractions/units, a length string, or
-`None` (auto). `gutter` is the Typst column gutter (pt when numeric, or a
-string like `"0.1em"`); `None` suppresses it.
+`None` (auto). Typst output uses a figure by default; `figure=False` emits an
+unnumbered table, while `label="name"` labels the figure for cross-references.
+Captions and labels require `figure=True`. `gutter` is the Typst column gutter
+(pt when numeric, or a string like `"0.1em"`); `None` suppresses it.
 
 #api(".style(i=None, j=None, *, bold, italic, underline, strikeout, monospace, smallcaps, color, background, fontsize, align, alignv, indent, colspan, rowspan, line, line_color, line_width=0.1, line_trim, output=None)")
 Apply cell styling via selectors. `line` is any combo of `t`/`b`/`l`/`r`;

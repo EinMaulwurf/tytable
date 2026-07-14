@@ -69,7 +69,7 @@ def theme_empty(table: TinyTable) -> TinyTable:
     table._style_directives.clear()
     table._format_directives.clear()
     table._prepare_hooks.clear()
-    table._typst_opts = TypstRenderOptions()
+    table._typst_opts = TypstRenderOptions(figure=table._typst_opts.figure)
     return table
 
 

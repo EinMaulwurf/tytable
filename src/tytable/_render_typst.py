@@ -152,14 +152,12 @@ class TypstRenderer:
         """Produce the full Typst fragment (figure/table header, body, footer, notes)."""
         L: list[str] = []
         need_figure = opts.figure
+        if not need_figure and (built.caption is not None or built.label is not None):
+            raise ValueError("caption and label require figure=True")
 
         if need_figure and opts.multipage is not None:
             breakable = "true" if opts.multipage else "false"
             L.append(f"#show figure: set block(breakable: {breakable})")
-        elif not need_figure and opts.multipage is not None:
-            breakable = "true" if opts.multipage else "false"
-            L.append(f"#set page(breakable: {breakable})")
-
         if need_figure:
             L.append("#figure(")
             if built.caption is not None:
@@ -174,16 +172,18 @@ class TypstRenderer:
             L.append("")
             L.append("block[")
         else:
-            L.append("#table(")
+            breakable_arg = ""
+            if opts.multipage is not None:
+                breakable = "true" if opts.multipage else "false"
+                breakable_arg = f"breakable: {breakable}"
+            L.append(f"#block({breakable_arg})[")
 
-        if need_figure:
-            self._emit_style_block(L, built)
-            L.append("")
+        self._emit_style_block(L, built)
+        L.append("")
 
         ncol = len(built.colnames_display)
 
-        if need_figure:
-            L.append("  #table(")
+        L.append("  #table(")
 
         cells = self._columns_spec(built.width, ncol)
         L.append(f"    columns: ({', '.join(cells)}),")
@@ -253,9 +253,12 @@ class TypstRenderer:
 
         L.append("  )")
 
+        L.append("]")
         if need_figure:
-            L.append("]")
-            L.append(")")
+            closing = ")"
+            if built.label is not None:
+                closing += f" <{built.label}>"
+            L.append(closing)
 
         if opts.align_figure:
             aligned = opts.align_to_typst()

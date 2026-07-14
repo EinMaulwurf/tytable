@@ -36,6 +36,20 @@ def test_compile_basic(tmp_path):
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_without_figure(tmp_path):
+    df = pl.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
+    typ = tt(df, figure=False).style(i=0, j="A", bold=True).render("typst")
+    assert _compile(typ, tmp_path) == 0
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_labelled_figure(tmp_path):
+    df = pl.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
+    typ = tt(df, label="results-table").render("typst") + "\nSee @results-table."
+    assert _compile(typ, tmp_path) == 0
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_styled(tmp_path):
     df = pl.DataFrame({"A": [1.5, 2.5], "B": [3.5, 4.5]})
     typ = (

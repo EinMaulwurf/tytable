@@ -30,7 +30,7 @@ df = pl.DataFrame({
 })
 
 tab = (
-    tt(df, caption="Product scores")
+    tt(df, caption="Product scores", label="product-scores")
     .fmt(j="Score", digits=2)
     .style(j="Score", align="c")
     .style(i=0, bold=True, background="#2c3e50", color="white")
@@ -56,6 +56,9 @@ the whole document.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
   as _intent_ and replayed in a fixed order at render time. Row indices always
   refer to the final, visible table.
+- **Figure wrapping**: Typst tables are figures by default, enabling captions,
+  numbering, and labels such as `label="product-scores"`. Use `figure=False`
+  for an unnumbered table; captions and labels cannot be combined with it.
 
 ## Documentation
 

@@ -43,6 +43,7 @@ class BuiltTable:
     style_notes: dict[str, Any] = field(default_factory=dict)
     notes: list[Note] = field(default_factory=list)
     caption: str | None = None
+    label: str | None = None
     width: float | Sequence[float | str | None] | str | None = None
     height: float | None = None
     has_background: bool = False
@@ -304,6 +305,7 @@ def build(table: TinyTable, output: str) -> BuiltTable:
         style_notes=style_notes,
         has_background=has_background,
         caption=table._caption,
+        label=table._label,
         width=table._width,
         height=table._height,
         notes=table._notes,

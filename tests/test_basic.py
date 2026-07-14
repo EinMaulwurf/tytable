@@ -126,6 +126,38 @@ class TestCaption:
         assert "caption:" not in out
         assert_snapshot("basic_typ", out)
 
+    def test_label_attached_to_figure(self):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        out = tt(df, label="results-table", theme=None).render("typst")
+        assert out.endswith(") <results-table>")
+
+    def test_figure_false_emits_table_without_figure(self):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        out = tt(df, figure=False, theme=None).style(i=0, bold=True).render("typst")
+        assert "#figure(" not in out
+        assert "#table(" in out
+        assert "#block(breakable: false)[" in out
+        assert "bold: true" in out
+
+    @pytest.mark.parametrize("metadata", [{"caption": "Results"}, {"label": "results"}])
+    def test_figure_false_rejects_figure_metadata(self, metadata):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        with pytest.raises(ValueError, match="caption and label require figure=True"):
+            tt(df, figure=False, **metadata)
+
+    @pytest.mark.parametrize("label", ["has space", "<wrapped>", "bad#label", ""])
+    def test_invalid_label_rejected(self, label):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        with pytest.raises(ValueError, match="label must contain"):
+            tt(df, label=label)
+
+    def test_theme_cannot_silently_drop_caption(self):
+        df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
+        table = tt(df, caption="Results", theme=None)
+        table._typst_opts.figure = False
+        with pytest.raises(ValueError, match="caption and label require figure=True"):
+            table.render("typst")
+
 
 @pytest.mark.typst
 class TestNoColnames:
