@@ -395,9 +395,11 @@ class TyTable:
         ----------
         i
             Row selector: ``0`` = first data row, ``"header"`` = column-name
-            row, negative ints = column-group header rows (``-1`` topmost),
-            ``"groupi"`` / ``"groupj"`` = row/column group separators, or a
-            ``list[int]``. ``None`` means *all* rows.
+            row, negative ints = column-group header rows (``-1`` is the
+            innermost row, immediately above the column-name header;
+            increasingly negative values move upward), ``"groupi"`` /
+            ``"groupj"`` = row/column group separators, or a ``list[int]``.
+            ``None`` means *all* rows.
         j
             Column selector: a name (``"Score"``), an integer position (``0``),
             or a ``list`` of any of these. ``None`` means *all* columns.

@@ -62,7 +62,8 @@ whole document.
 
 - **0-based row indexing**: `i=0` is the first data row (the row _after_ the
   column-name header). Use `i="header"` for the column-name row, negative ints
-  for column-group header rows (`-1` is the topmost level).
+  for column-group header rows (`-1` is the innermost row, immediately above
+  the column-name header; increasingly negative values move upward).
 - **Column selection by name**: `j="Score"` (preferred); `j=0` selects the first
   column by position.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, `.theme()` all return

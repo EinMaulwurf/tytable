@@ -241,8 +241,9 @@ formatting, styling, and grouping directives.
 
 `i=0` is the first _data_ row (the row *after* the column-name header). Use
 `i="header"` for the column-name row, and negative integers for column-group
-header rows (`-1` is the topmost level). Row-group separator rows are addressed
-with `i="groupi"`, column-group rows with `i="groupj"`.
+header rows (`-1` is the innermost row, immediately above the column-name
+header; increasingly negative values move upward). Row-group separator rows
+are addressed with `i="groupi"`, column-group rows with `i="groupj"`.
 
 == Select columns by name
 
@@ -800,7 +801,7 @@ Start here when you know the task but not the method. Methods marked
   [`i`], [`0`, `2`, `[0, 2]`], [0-based data row(s)],
   [`i`], [`"header"`, `"body"`], [column names or all data rows],
   [`i`], [`"groupi"`, `"groupj"`], [row- or column-group header rows],
-  [`i`], [`-1`], [topmost column-group header row],
+  [`i`], [`-1`, `-2`], [column-group rows, from innermost upward],
   [`i`], [`pl.col("Score") > 80`], [Polars expression evaluated on source data],
   [`i`], [`pl.Series(...)`], [boolean mask with one value per source row],
   [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],

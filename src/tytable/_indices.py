@@ -4,14 +4,14 @@ Internal row/column index conventions and Typst conversion.
 Convention (documented once, referenced everywhere):
 - Data rows: 0-based (first data row is i=0)
 - Column names header: i="header" maps to internal i=0
-- Column-group headers: negative ints, i=-1 is topmost
+- Column-group headers: negative ints, i=-1 is innermost (nearest colnames)
 - Columns: 0-based positions
 
 Internal (1-based for Typst compatibility with nhead):
 - nhead = (1 if show_colnames else 0) + len(col_groups)
 - Data rows: 1-based positive (i=1 = first data row)
 - Colnames: i=0
-- Column-group headers: i<0 (i=-1 topmost)
+- Column-group headers: i<0 (i=-1 innermost; decreasing values move upward)
 
 Typst rows are 0-based for Typst's table model.
 """
@@ -31,7 +31,7 @@ def convert_row_to_typst(i: int, nhead: int) -> int:
     Convert an internal row index to a 0-based Typst row index.
 
     Internal convention: i=0 is colnames, i>=1 are data rows (1-based),
-    i<0 are column-group header rows (i=-1 topmost). See module docstring.
+    i<0 are column-group header rows (i=-1 innermost). See module docstring.
 
     nhead=3 examples: -2->0, -1->1, 0->2, 1->3, 2->4.
     nhead=1 examples: 0->0, 1->1, 2->2.
@@ -104,7 +104,7 @@ def resolve_i(
     Resolve user row selector to internal row indices. guide 06 §1.
 
     Returns list[int], or None when i is None (caller decides the default).
-    Internal convention: 0 = colnames, -k = col-group header (−1 topmost),
+    Internal convention: 0 = colnames, -k = col-group header (−1 innermost),
     1,2,... = data rows in the MERGED body.
 
     Data-driven selectors (``pl.Expr``, boolean ``pl.Series``, or

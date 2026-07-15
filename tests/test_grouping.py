@@ -123,7 +123,7 @@ class TestNhead:
         built = build(tt(DF, colnames=False), "typst")
         assert built.nhead == 0
 
-    def test_style_i_neg1_hits_topmost(self):
+    def test_style_i_neg1_hits_innermost(self):
         built = build(
             tt(DF).group(j={"Bottom": [0, 1]}).group(j={"Top": [0, 1]}).style(i=-1, bold=True),
             "typst",
