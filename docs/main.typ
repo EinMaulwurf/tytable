@@ -334,9 +334,9 @@ row-group insertion), so the column names you use are always the original ones.
 == Column groups
 
 Column groups add #emph[spanning header rows] above the regular column names, so
-you can label clusters of related columns. The simplest way is to pass a
-delimiter string: `.group(j="_")` splits every column name on that character and
-turns the shared prefix into a group. In the example below the dataframe has
+you can label clusters of related columns. The simplest way is to pass an
+explicit delimiter: `.group(delimiter="_")` splits every column name on that
+string and turns the shared prefix into a group. In the example below the dataframe has
 four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the
 underscore split yields two groups — `Q1` spanning the first two columns and
 `Q2` spanning the last two. For full control you can instead pass a dict mapping
@@ -518,10 +518,11 @@ Apply value formatting: `digits` (with `num_fmt` of `"decimal"` or
 `"significant"`), `replace` (a value or `{old: new}` mapping for nulls/NaNs),
 or a custom column-wise transform `fn`. Returns `self`.
 
-#api(".group(i=None, j=None)")
+#api(".group(i=None, j=None, *, delimiter=None)")
 Add row groups (`i` as a `{label: row}` dict or a list) and column groups (`j`
-as a `{label: [cols]}` dict or a delimiter string split out of the column
-names). Returns `self`.
+as a `{label: [cols]}` dict). Alternatively, pass a literal `delimiter` string
+to split every column name; `j` and `delimiter` are mutually exclusive. Returns
+`self`.
 
 #api(".set_name(j=None, *, name)")
 Rename column headers for display only (the underlying DataFrame is untouched).

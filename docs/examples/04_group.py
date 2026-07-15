@@ -15,7 +15,7 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Half-year financials")
-    .group(j="_")
+    .group(delimiter="_")
     .group(i={"Division B": 1})
     .style(i="groupi", bold=True, background="#f0f0f0")
     .save("build/04_group.typ")
