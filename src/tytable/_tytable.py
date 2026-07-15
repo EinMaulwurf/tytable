@@ -23,7 +23,7 @@ from ._directives import (
     RowGroup,
     StyleDirective,
 )
-from ._groups import register_col_groups, register_row_groups
+from ._groups import register_col_groups, register_delimiter_groups, register_row_groups
 from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
@@ -768,7 +768,9 @@ class TyTable:
     def group(
         self,
         i: dict[str, int] | list[object] | None = None,
-        j: dict[str, list[str | int]] | str | None = None,
+        j: dict[str, list[str | int]] | None = None,
+        *,
+        delimiter: str | None = None,
     ) -> TyTable:
         """
         Add row and/or column groups.
@@ -782,9 +784,12 @@ class TyTable:
         j
             Column groups. A ``{label: [cols]}`` dict adds a spanning header
             row where each value maps a label to a list of column names or
-            positions. A ``str`` delimiter splits every column name and turns
-            the shared prefixes into group labels (e.g. ``"_"`` on
-            ``"Q1_rev"`` yields a ``"Q1"`` group).
+            positions.
+        delimiter
+            Split every column name on this literal string and turn the shared
+            parts into hierarchical group labels. For example, ``"_"`` on
+            ``"Q1_rev"`` yields a ``"Q1"`` group. The delimiter must be
+            non-empty and occur equally often in every column name.
 
         Returns
         -------
@@ -797,22 +802,25 @@ class TyTable:
             If a row-group or column-group specification has an unsupported
             type.
         ValueError
-            If a column is missing or a delimiter cannot split every column
-            name consistently.
+            If both ``j`` and ``delimiter`` are provided, a column is missing,
+            or a delimiter cannot split every column name consistently.
 
         Examples
         --------
         >>> df = pl.DataFrame({"Q1_rev": [1], "Q1_cost": [2],
         ...                    "Q2_rev": [3], "Q2_cost": [4]})
         >>> (tt(df)                                 # doctest: +SKIP
-        ...  .group(j={"Q1": ["Q1_rev", "Q1_cost"],
-        ...            "Q2": ["Q2_rev", "Q2_cost"]})
+        ...  .group(delimiter="_")
         ...  .group(i={"Section B": 1}))
         """
+        if j is not None and delimiter is not None:
+            raise ValueError("group() accepts either j or delimiter, not both")
         if i is not None:
             register_row_groups(self, i)
         if j is not None:
             register_col_groups(self, j, self._colnames)
+        if delimiter is not None:
+            register_delimiter_groups(self, delimiter, self._colnames)
         return self
 
     def set_name(

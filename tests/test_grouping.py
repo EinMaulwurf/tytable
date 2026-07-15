@@ -177,20 +177,36 @@ class TestGroupValidation:
         with pytest.raises(TypeError):
             tt(DF).group(j=123)
 
+    def test_string_is_not_a_col_group_spec(self):
+        with pytest.raises(TypeError, match=r"group\(j=.*must be a dict"):
+            tt(DF4).group(j="_")
+
+    def test_j_and_delimiter_are_mutually_exclusive(self):
+        with pytest.raises(ValueError, match="either j or delimiter"):
+            tt(DF4).group(j={"Q1": [0, 1]}, delimiter="_")
+
 
 @pytest.mark.typst
 class TestDelimiterGrouping:
     def test_delimiter_single_level(self):
-        out = tt(DF4).group(j="_").render("typst")
+        out = tt(DF4).group(delimiter="_").render("typst")
         assert_snapshot("group_delim", out)
 
     def test_delimiter_mismatched_parts(self):
         df = pl.DataFrame({"A_b": [1], "C": [2]})
         with pytest.raises(ValueError):
-            tt(df).group(j="_")
+            tt(df).group(delimiter="_")
 
     def test_delimiter_basic(self):
         df = pl.DataFrame({"A_x": [1], "A_y": [2]})
-        out = tt(df).group(j="_")
+        out = tt(df).group(delimiter="_")
         result = out.render("typst")
         assert "table.header" in result
+
+    def test_delimiter_must_not_be_empty(self):
+        with pytest.raises(ValueError, match="must not be empty"):
+            tt(DF).group(delimiter="")
+
+    def test_delimiter_must_occur_in_every_column(self):
+        with pytest.raises(ValueError, match="must occur in every column name"):
+            tt(DF).group(delimiter="_")

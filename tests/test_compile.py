@@ -65,7 +65,7 @@ def test_compile_styled(tmp_path):
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_grouped(tmp_path):
     df = pl.DataFrame({"Q1_a": [1, 2], "Q1_b": [3, 4], "Q2_c": [5, 6], "Q2_d": [7, 8]})
-    typ = tt(df).group(j="_").group(i={"Section": 1}).render("typst")
+    typ = tt(df).group(delimiter="_").group(i={"Section": 1}).render("typst")
     assert _compile(typ, tmp_path) == 0
 
 

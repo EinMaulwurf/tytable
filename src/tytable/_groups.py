@@ -51,7 +51,11 @@ def _build_col_group_row(
 
 def _build_col_group_rows_delim(delim: str, colnames: list[str]) -> list[list[str | None]]:
     """Split column names on ``delim`` and build one header row per hierarchical level."""
+    if not delim:
+        raise ValueError("delimiter must not be empty")
     parts = [c.split(delim) for c in colnames]
+    if not parts or any(len(p) == 1 for p in parts):
+        raise ValueError(f"delimiter {delim!r} must occur in every column name")
     nlevels = len(parts[0])
     if any(len(p) != nlevels for p in parts):
         raise ValueError(
@@ -118,18 +122,24 @@ def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTabl
 
 
 def register_col_groups(
-    table: TyTable, j: dict[str, list[str | int]] | str, colnames: list[str]
+    table: TyTable, j: dict[str, list[str | int]], colnames: list[str]
 ) -> TyTable:
-    """Record column-group header rows from a ``{label: [cols]}`` dict or a delimiter string."""
+    """Record a column-group header row from a ``{label: [cols]}`` dict."""
     if isinstance(j, dict):
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
-    elif isinstance(j, str):
-        rows = _build_col_group_rows_delim(j, colnames)
-        for row in reversed(rows):
-            table._col_group_rows.insert(0, row)
     else:
-        raise TypeError("group(j=...) must be a dict or str")
+        raise TypeError("group(j=...) must be a dict")
+    return table
+
+
+def register_delimiter_groups(table: TyTable, delimiter: str, colnames: list[str]) -> TyTable:
+    """Record hierarchical column-group rows derived from a column-name delimiter."""
+    if not isinstance(delimiter, str):
+        raise TypeError("group(delimiter=...) must be a str")
+    rows = _build_col_group_rows_delim(delimiter, colnames)
+    for row in reversed(rows):
+        table._col_group_rows.insert(0, row)
     return table
 
 
