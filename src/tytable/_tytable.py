@@ -633,7 +633,9 @@ class TyTable:
         height
             Plot height in ``em`` (default ``1.0``).
         height_px, width_px
-            Pixel dimensions of the generated PNG (default 400×1200).
+            Pixel dimensions of the generated PNG (default 400×1200). These
+            dimensions apply to both Matplotlib and plotnine output and
+            override the canvas size of a returned Matplotlib figure.
         color
             Color forwarded to ``fun`` (default ``"black"``).
         xlim
@@ -649,9 +651,12 @@ class TyTable:
 
         Raises
         ------
+        TypeError
+            If ``height_px`` or ``width_px`` is not an integer.
         ValueError
-            If ``j`` or ``fun`` is missing, ``height`` cannot be parsed, or a
-            selector is invalid. Selector errors are raised at render time.
+            If ``j`` or ``fun`` is missing, a pixel dimension is not positive,
+            ``height`` cannot be parsed, or a selector is invalid. Selector
+            errors are raised at render time.
         ImportError
             If the table is rendered without the optional ``images``
             dependencies installed.
@@ -660,6 +665,11 @@ class TyTable:
             raise ValueError(".plot() requires j (column selector)")
         if fun is None:
             raise ValueError(".plot() requires fun (plotting function)")
+        for name, value in (("height_px", height_px), ("width_px", width_px)):
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{name} must be an integer, got {value!r}")
+            if value <= 0:
+                raise ValueError(f"{name} must be positive, got {value!r}")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
         directive = PlotDirective(

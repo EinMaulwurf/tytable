@@ -51,6 +51,17 @@ def _sparkline(values, *, color="black", xlim=None, **kw):
 
 @pytest.mark.images
 class TestPlotSparkline:
+    def test_matplotlib_uses_requested_pixel_dimensions(self, tmp_path):
+        df = pl.DataFrame({"Trend": [[1, 2, 3]]})
+        tt(df).theme_empty().plot(j="Trend", fun=_sparkline, width_px=320, height_px=96).save(
+            str(tmp_path / "out.typ")
+        )
+
+        import matplotlib.image as mpimg
+
+        image = mpimg.imread(tmp_path / "tytable_assets" / "plot_0000_testid0001.png")
+        assert image.shape[:2] == (96, 320)
+
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
         tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
@@ -137,12 +148,16 @@ class TestPlotnine:
             data = pd.DataFrame({"x": range(len(values)), "y": values})
             return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line(color=color)
 
-        tt(df).theme_empty().plot(j="Trend", fun=p9_sparkline, height_px=400, width_px=1200).save(
+        tt(df).theme_empty().plot(j="Trend", fun=p9_sparkline, height_px=96, width_px=320).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
         assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
-        assert (tmp_path / "tytable_assets" / "plot_0000_testid0001.png").exists()
+
+        import matplotlib.image as mpimg
+
+        image = mpimg.imread(tmp_path / "tytable_assets" / "plot_0000_testid0001.png")
+        assert image.shape[:2] == (96, 320)
 
 
 @pytest.mark.images
@@ -165,6 +180,21 @@ class TestPortable:
         )
         assert "#image(bytes(" in result
         assert 'format: "svg"' in result
+
+    def test_portable_wrapper_uses_requested_pixel_dimensions(self):
+        from tytable._themes import theme_typst
+
+        df = pl.DataFrame({"Trend": [[1, 2, 3]]})
+        result = (
+            tt(df)
+            .theme_empty()
+            .plot(j="Trend", fun=_sparkline, width_px=320, height_px=96)
+            .theme(lambda t: theme_typst(t, portable=True))
+            .render("typst")
+        )
+
+        assert "width='320' height='96'" in result
+        assert "viewBox='0 0 320 96'" in result
 
     def test_temp_dir_cleaned_up_when_plot_fails(self, tmp_path, monkeypatch):
         from tytable._themes import theme_typst
@@ -198,6 +228,20 @@ class TestValidation:
         df = pl.DataFrame({"X": [1]})
         with pytest.raises(ValueError, match="requires fun"):
             tt(df).plot(j="X")
+
+    @pytest.mark.parametrize("name", ["width_px", "height_px"])
+    @pytest.mark.parametrize("value", [0, -1])
+    def test_plot_pixel_dimensions_must_be_positive(self, name, value):
+        df = pl.DataFrame({"X": [[1, 2, 3]]})
+        with pytest.raises(ValueError, match=rf"{name} must be positive"):
+            tt(df).plot(j="X", fun=_sparkline, **{name: value})
+
+    @pytest.mark.parametrize("name", ["width_px", "height_px"])
+    @pytest.mark.parametrize("value", [True, 1.5, "100"])
+    def test_plot_pixel_dimensions_must_be_integers(self, name, value):
+        df = pl.DataFrame({"X": [[1, 2, 3]]})
+        with pytest.raises(TypeError, match=rf"{name} must be an integer"):
+            tt(df).plot(j="X", fun=_sparkline, **{name: value})
 
     def test_missing_images_paths(self):
         df = pl.DataFrame({"X": [1]})

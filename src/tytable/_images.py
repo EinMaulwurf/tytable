@@ -61,19 +61,29 @@ def _save_plot_image(
     """Call ``fun(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
     import matplotlib.pyplot as plt
 
+    dpi = 100
     obj = fun(entry, color=color, xlim=xlim) if _accepts_kwargs(fun) else fun(entry)
 
     if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
         obj.save(
             filename=str(path),
-            width=width_px / 100,
-            height=height_px / 100,
-            dpi=100,
+            width=width_px / dpi,
+            height=height_px / dpi,
+            dpi=dpi,
             verbose=False,
         )
     elif isinstance(obj, plt.Figure):
-        obj.savefig(str(path), dpi=100, transparent=True, bbox_inches="tight", pad_inches=0)
-        plt.close(obj)
+        try:
+            obj.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
+            obj.savefig(
+                str(path),
+                dpi=dpi,
+                transparent=True,
+                bbox_inches=obj.bbox_inches,
+                pad_inches=0,
+            )
+        finally:
+            plt.close(obj)
     else:
         raise TypeError(
             f".plot() fun must return a matplotlib Figure or a plotnine ggplot; "

@@ -923,7 +923,9 @@ table renders or saves, not when the directive is recorded.
 
 `j` and `fun` are required. The callable receives the typed cell value (or the
 matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Pixel
-dimensions control PNG generation; `height` controls its displayed cell size.
+dimensions control PNG generation for both backends and override a returned
+Matplotlib figure's canvas size; `height` independently controls the displayed
+cell size.
 
 #api("Embed files", api_signatures.at("images"))
 

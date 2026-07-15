@@ -17,6 +17,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   an unstyled table. It clears prior theme/style/format intent while preserving
   constructor-level figure and layout options.
 
+### Fixes
+
+- Apply `.plot()` pixel dimensions consistently to both Matplotlib and plotnine
+  output.
+
 ### Docs / CI
 
 - Build and attach the documentation PDF directly in the release workflow, and restrict release
