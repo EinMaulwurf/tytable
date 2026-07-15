@@ -1,14 +1,12 @@
 name: Release
 
 # Cut a release by pushing a `v*` tag, e.g.:
-#   git tag -a v0.6.0 -m "Release v0.6.0"
-#   git push origin v0.6.0
+#   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+#   git push origin vX.Y.Z
 #
-# The job builds the wheel + sdist with `uv build`, attaches them to a
-# GitHub Release with auto-generated notes, and publishes to PyPI via
-# trusted publishing (no stored API token). Trusted publishing requires
-# this workflow file to exist on the default branch *before* the first
-# tagged run can publish — merge to main before cutting v0.6.0.
+# The job extracts the matching entry from CHANGELOG.md, builds the wheel +
+# sdist with `uv build`, attaches them to a GitHub Release with those notes,
+# and publishes to PyPI via trusted publishing (no stored API token).
 #
 # One-time setup: on PyPI (and TestPyPI for dry runs) add a trusted
 # publisher for EinMaulwurf/tytable, workflow filename `release.yml`,
@@ -35,6 +33,32 @@ jobs:
         with:
           fetch-depth: 0 # hatch-vcs needs full history to derive version
 
+      - name: Extract release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          heading="## [$version] - "
+          output="$RUNNER_TEMP/release-notes.md"
+          matches="$(awk -v heading="$heading" '
+            index($0, heading) == 1 { count++ }
+            END { print count + 0 }
+          ' CHANGELOG.md)"
+
+          if [[ "$matches" -ne 1 ]]; then
+            echo "Expected exactly one changelog entry starting with '$heading'; found $matches" >&2
+            exit 1
+          fi
+
+          awk -v heading="$heading" '
+            index($0, heading) == 1 { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > "$output"
+
+          if ! grep -q '[^[:space:]]' "$output"; then
+            echo "Changelog entry for $GITHUB_REF_NAME is empty" >&2
+            exit 1
+          fi
+
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
@@ -49,7 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/release-notes.md
           draft: false
           prerelease: false
 

@@ -1,6 +1,13 @@
-# Release notes
+# Changelog
 
-## v0.6.0 (2026-07-14)
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.6.0] - 2026-07-14
 
 ### Fixes
 
@@ -31,7 +38,7 @@
 
 [Full changelog](https://github.com/EinMaulwurf/tytable/compare/0.5.0...v0.6.0)
 
-## 0.5.0 (2026-07-14)
+## [0.5.0] - 2026-07-14
 
 ### Breaking
 
@@ -70,7 +77,7 @@
   sub-heading.
 - Tightened `SOURCE`/`RESULT` tag spacing in examples.
 
-## 0.4.0 (2026-07-13)
+## [0.4.0] - 2026-07-13
 
 ### Breaking
 
@@ -91,14 +98,14 @@
 - Slimmed README; docs PDF deployed to GitHub Pages.
 - Bumped `actions/checkout` to v5.
 
-## 0.3.1 (2026-07-13)
+## [0.3.1] - 2026-07-13
 
 ### Fixes
 
 - Run `ruff format` on `src/` and `tests/` to satisfy the `ruff format --check` CI gate (no code
   changes).
 
-## 0.3.0 (2026-07-13)
+## [0.3.0] - 2026-07-13
 
 ### Features
 
@@ -115,7 +122,7 @@
 - Widen `replace` type (`dict | str | bool | None`) and make `width` covariant
   (`Sequence[...]`) so `list[int]` is accepted.
 
-## 0.2.0 (2026-07-12)
+## [0.2.0] - 2026-07-12
 
 ### What's new
 
@@ -128,10 +135,20 @@
 - Version now derived from git tags via hatch-vcs.
 - Miscellaneous docs improvements.
 
-## 0.1.1 (2026-07-10)
+## [0.1.1] - 2026-07-10
 
 No release notes were provided for this release.
 
-## 0.1.0 (2026-07-10)
+## [0.1.0] - 2026-07-10
 
 No release notes were provided for this release.
+
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/EinMaulwurf/tytable/compare/0.5.0...v0.6.0
+[0.5.0]: https://github.com/EinMaulwurf/tytable/compare/0.4.0...0.5.0
+[0.4.0]: https://github.com/EinMaulwurf/tytable/compare/0.3.1...0.4.0
+[0.3.1]: https://github.com/EinMaulwurf/tytable/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/EinMaulwurf/tytable/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/EinMaulwurf/tytable/compare/0.1.1...0.2.0
+[0.1.1]: https://github.com/EinMaulwurf/tytable/compare/0.1.0...0.1.1
+[0.1.0]: https://github.com/EinMaulwurf/tytable/releases/tag/0.1.0

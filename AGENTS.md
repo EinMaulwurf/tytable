@@ -19,6 +19,23 @@ make test-images  # pytest -m "images" (requires matplotlib/numpy)
 
 Pre-commit order: `lint` → `typecheck` → `test`.
 
+## Release workflow
+
+1. Keep notable user-facing changes under `Unreleased` in `CHANGELOG.md`. To release, rename that
+   section to `[X.Y.Z] - YYYY-MM-DD`, add a new empty `Unreleased` section, update the comparison
+   links at the bottom, run the checks above, commit, and push `main`.
+2. Tag that commit and push the tag:
+
+   ```bash
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+3. Verify the `Release` GitHub Actions run. CI builds and validates the wheel/sdist, creates the
+   GitHub release from the matching changelog entry, attaches the artifacts, and publishes to PyPI
+   through trusted publishing; do not upload packages manually. The workflow fails if the matching
+   changelog entry is missing, duplicated, or empty.
+
 ## Tooling quirks
 
 - **ruff**: line-length 100, double-quotes, selects E/F/I/UP/B/SIM/C4; E501 ignored
