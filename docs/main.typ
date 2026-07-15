@@ -32,10 +32,21 @@
   text(size: 8.5pt, fill: luma(110), weight: "bold", tracking: 0.6pt)[#label]
 }
 
-// An API-reference entry: a bold, monospaced signature line.
-#let api(sig) = block(spacing: 0.9em)[
+// A scannable API-reference card: task label followed by a Python signature.
+#let api(title, sig) = block(
+  width: 100%,
+  breakable: false,
+  fill: rgb("#eef5f6"),
+  inset: (x: 10pt, y: 8pt),
+  radius: 5pt,
+  spacing: 0.8em,
+)[
   #set par(justify: false)
-  #text(weight: "bold", raw(sig))
+  #text(size: 8.5pt, weight: "bold", fill: rgb("#087e8b"), tracking: 0.4pt)[
+    #upper(title)
+  ]
+  #v(0.35em)
+  #raw(sig, block: true, lang: "python")
 ]
 
 // Center every tytable figure and keep it from breaking awkwardly.
@@ -93,16 +104,67 @@ DataFrames into Typst tables. It is inspired by R's
 mirrors most of its styling power, while adding image and sparkline support plus
 a Jupyter HTML preview.
 
-The core idea: you record _intent_ (formatting, styling, grouping) by chaining
-methods, and tytable replays it at render time into a Typst fragment you
-`#import` straight into your reports.
+== What is Typst?
 
-Install from GitHub:
-```
-uv add git+https://github.com/EinMaulwurf/tytable.git
+Typst is a markup-based typesetting system: you write a plain-text `.typ` file
+containing prose, headings, equations, figures, and layout instructions, then
+compile it into a PDF. It fills a role similar to LaTeX, with a compact modern
+syntax and a fast compiler. A tiny Typst document looks like this:
+
+```typst
+#set page(paper: "a4")
+= Results
+
+The experiment completed successfully.
 ```
 
-= Quickstart
+Typst is excellent at page layout, but an analysis usually starts somewhere
+else: in Python, with a Polars DataFrame produced by a query, aggregation, or
+model. Rewriting that data by hand as Typst table cells is repetitive and
+error-prone. It also leaves you to solve escaping, number formatting, spanning
+headers, footnotes, image paths, and consistent styling over and over.
+
+== Why tytable exists
+
+Tytable is the bridge between those two jobs:
+
+#table(
+  columns: (1fr, 0.25fr, 1fr, 0.25fr, 1fr),
+  align: center + horizon,
+  inset: 7pt,
+  stroke: none,
+  [*Polars*\ data and computation], [→], [*tytable*\ table intent], [→], [*Typst*\ document and PDF],
+)
+
+Python continues to own the data. Typst continues to own the document. Tytable
+only describes how the DataFrame becomes a table: format these values, style
+those cells, add these groups, and emit a self-contained Typst fragment. The
+same object can also render HTML for a notebook preview or ASCII for a terminal.
+
+The core idea is to record _intent_ by chaining methods. Tytable replays that
+intent at render time, after the final table shape is known. This keeps the
+Python code readable and avoids generating Typst markup by hand.
+
+Install the latest release from
+#link("https://pypi.org/project/tytable/")[PyPI]:
+
+```
+uv add tytable
+```
+
+The equivalent pip command is `pip install tytable`. Install the optional
+images extra when using plots, sparklines, or existing image files:
+
+```
+uv add "tytable[images]"
+```
+
+#pagebreak()
+
+= Start here: your first table
+
+Begin with a Polars DataFrame and pass it to `tt`. That is enough to make a
+table—there is no style configuration to learn first.
 
 #tag("SOURCE")
 #source("examples/01_basic.py")
@@ -111,11 +173,68 @@ uv add git+https://github.com/EinMaulwurf/tytable.git
 #v(0.12em)
 #include "build/01_basic.typ"
 
-The generated `.typ` file can be `#import`-ed into a Typst report and compiled
-as part of the whole document. In Jupyter, let the `tt(...)` object be the last
-line of a cell to see an HTML preview.
+In Jupyter, the last two lines can simply be:
+
+```python
+table = tt(data)
+table
+```
+
+Jupyter shows an HTML preview. In a script, `.save("catalog.typ")` writes the
+Typst fragment shown above.
+
+== Make one column easier to read
+
+Now add one formatting decision. Column names are used directly, so this reads
+as “show Price with two decimal places”:
+
+```python
+table = tt(data).fmt(j="Price", digits=2)
+```
+
+== Add one visual cue
+
+Styling is another chained instruction. A header treatment is a useful first
+one because it does not depend on the number of data rows:
+
+```python
+table = (
+    tt(data)
+    .fmt(j="Price", digits=2)
+    .style(i="header", bold=True, background="#17324d", color="white")
+)
+```
+
+== Put it in a report
+
+Add figure metadata when the table becomes part of a larger document, then
+save it:
+
+#tag("SOURCE")
+#source("examples/01_report_ready.py")
+
+#tag("RESULT — ready for the report")
+#v(0.12em)
+#include "build/tables/catalog.typ"
+
+The generated file can be `#include`-ed in a Typst report. Refer to the
+numbered figure there with `@product-catalog`.
+
+== The storyline from here
+
+The rest of this guide grows that first table one concern at a time:
+
+1. understand rows, columns, and chaining;
+2. format values and rename display headers;
+3. add styling, groups, themes, and layout;
+4. embed plots and assemble a complete report table;
+5. turn the same chain into a reusable, typed Python component;
+6. use the API reference when you need an exact option.
 
 = Core concepts
+
+Four conventions make tytable chains predictable before you begin combining
+formatting, styling, and grouping directives.
 
 == Row indexing is 0-based
 
@@ -132,6 +251,11 @@ one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "body"]`. `i` additionally
 accepts Polars expressions, boolean series, and callables for data-driven
 selection (see the *Styling* section).
 
+`.fmt()` and `.style()` use the intersection of `i` and `j`, so combining them
+targets individual cells—for example, `.fmt(i=1, j="Score", digits=1)` formats
+only the `Score` cell in the second data row, and `.style(i=1, j="Score",
+bold=True)` styles only that cell.
+
 == Everything returns `self`
 
 `.style()`, `.fmt()`, `.group()`, `.set_name()`, and `.theme()` all return the
@@ -146,10 +270,10 @@ visible table.
 = Renaming columns
 
 `.set_name()` renames column headers for display without touching the
-underlying Polars DataFrame — the original frame is never modified. This is
-useful when the polars column names are machine-friendly identifiers but you
+underlying Polars `DataFrame` — the original frame is never modified. This is
+useful when the Polars column names are machine-friendly identifiers but you
 want human-readable headers in the rendered table, or when you need a header
-that polars would reject as a column name (such as an empty string ``""`` or a
+that Polars would reject as a column name (such as an empty string `""` or a
 duplicate).
 
 Two calling modes:
@@ -181,12 +305,12 @@ does the same thing without a chained call.
 Cell values can be formatted in three complementary ways. Pick whichever suits
 the column, or mix them across columns in the same table.
 
-== In polars
+== In Polars
 
 The most capable option: do everything #emph[before] passing the dataframe to
 `tt()`. Polars expressions can round, cast numbers to strings, swap the decimal
 delimiter, prepend a currency symbol, add thousands separators, and fill nulls —
-anything polars can express, the table will render. Here revenue is rounded to
+anything Polars can express, the table will render. Here revenue is rounded to
 two decimals, formatted as USD with thousands separators, and nulls filled with
 an em dash, all before `tt()` ever sees the data:
 
@@ -198,7 +322,7 @@ an em dash, all before `tt()` ever sees the data:
 #include "build/11_format_polars.typ"
 
 (Tytable's per-cell Typst escaping — `escape=True` by default — still applies to
-whatever strings polars produces, so characters like `$` are escaped for you.)
+whatever strings Polars produces, so characters like `$` are escaped for you.)
 
 == With `.fmt()`
 
@@ -225,7 +349,7 @@ For anything the built-ins don't cover, pass a callable to `fn`. It runs
 column (as a `list`) and expects a `list` of the same length back. This makes it
 easy to implement transforms that depend on magnitude — for example,
 abbreviating large numbers into a human-readable scale where `201818` becomes
-"201.8 thousand" and `2729179` becomes "2.7 million":
+`"201.8 thousand"` and `2729179` becomes `"2.7 million"`:
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")
@@ -234,7 +358,30 @@ abbreviating large numbers into a human-readable scale where `201818` becomes
 #v(0.12em)
 #include "build/10_format_fn.typ"
 
+The #link("https://mizani.readthedocs.io/en/stable/labels.html")[Mizani]
+package is the closest Python equivalent to R's `scales`. Its vectorized label
+callables cover currencies, percentages, scientific notation, dates, and more.
+Because `.fmt(fn=...)` supplies strings, a small typed adapter converts the
+values to numbers first. A following `.fmt(escape=True)` safely escapes symbols
+introduced by the external formatter when required by the output backend, such
+as `$` in Typst:
+
+#tag("SOURCE")
+#source("examples/10_mizani.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/10_mizani.typ"
+
+Mizani is an optional development dependency used for this documentation
+example; it is not installed with tytable at runtime.
+
 = Styling
+
+Styling directives control the appearance of cells and table-adjacent text
+without changing the underlying values.
+
+== Styling cells
 
 Apply per-cell styling through selectors `i` (rows) and `j` (columns).
 Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
@@ -244,7 +391,7 @@ in any combination, with `line_color` / `line_width`).
 
 Any number of these properties can be combined in a single `.style()` call when
 they share the same `i`/`j` selector — e.g.
-`*style(j="Score", align="r", background="#eee", bold=True)*` is one directive
+`style(j="Score", align="r", background="#eee", bold=True)` is one directive
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
 
@@ -258,6 +405,22 @@ e.g. `align="llr"` left-aligns the first two and right-aligns the third.
 #tag("RESULT")
 #v(0.12em)
 #include "build/03_style.typ"
+
+== Rotated headers for compact columns
+
+Long labels can make otherwise small numeric columns unnecessarily wide.
+Select only those header cells with `i="header"`, rotate them, and leave the
+first descriptive column horizontal. `alignv="b"` pins the rotated labels to
+the bottom of the header row, next to the values they describe (and keeps the
+first header on the same baseline); `align="l"` sets the rotated labels'
+horizontal anchor. Explicit narrow widths then keep the numeric columns compact.
+
+#tag("SOURCE")
+#source("examples/03_rotated_headers.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/03_rotated_headers.typ"
 
 == Caption and notes
 
@@ -294,12 +457,12 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 
 == List selectors
 
-``i`` and ``j`` accept a list of strings as well as integers, so you can name
+`i` and `j` accept a list of strings as well as integers, so you can name
 several rows or columns in one call without repeating yourself. A list-of-strings
-``j`` selector like ``j=["Revenue", "Cost", "Growth %"]`` is self-documenting
+`j` selector like `j=["Revenue", "Cost", "Growth %"]` is self-documenting
 and resilient to column reordering — no need to track integer positions.
 
-The same works for ``i``: ``i=["header", "body"]`` styles the column-name row
+The same works for `i`: `i=["header", "body"]` styles the column-name row
 and every data row in a single directive.
 
 #tag("SOURCE")
@@ -311,16 +474,21 @@ and every data row in a single directive.
 
 == Data-driven row selectors
 
-Instead of hard-coding row numbers, select rows by value. ``i`` accepts three
+Instead of hard-coding row numbers, select rows by value. `i` accepts three
 dynamic forms evaluated against the original DataFrame at render time:
 
-- A #emph[polars expression]: ``i=pl.col("Score") > 80``
-- A #emph[boolean ``pl.Series``]: ``i=pl.Series("m", [True, False, True, False])``
-- A #emph[Python callable]: ``i=lambda row: row["Grade"] == "D"``
+- A #emph[Polars expression]: `i=(pl.col("Growth %") > 0) & (pl.col("Profit") > 0)`
+- A boolean `pl.Series`: `i=pl.Series("review", [False, True, False, True])`
+- A Python callable: `i=lambda row: row["Profit"] < 0`
 
-All three work with ``.style()``, ``.fmt()``, ``.plot()``, and ``.images()``.
-The expression or callable runs against the #emph[original] DataFrame (before
+All three work with `.style()`, `.fmt()`, `.plot()`, and `.images()`.
+The expression or callable runs against the #emph[original] `DataFrame` (before
 row-group insertion), so the column names you use are always the original ones.
+Polars expressions may combine any number of columns: the example marks a row
+green and bold only when growth is positive *and* profit is above zero. It also
+uses an explicit review mask and a callable that targets only the `Profit` cell
+in loss-making rows. South deliberately combines positive growth (`3.1`) with a
+loss (`-44`), demonstrating why both sides of the expression matter.
 
 #tag("SOURCE")
 #source("examples/14_data_driven.py")
@@ -330,6 +498,9 @@ row-group insertion), so the column names you use are always the original ones.
 #include "build/14_data_driven.typ"
 
 = Grouping
+
+Grouping adds visual hierarchy by placing spanning labels above related columns
+or separator labels between related data rows.
 
 == Column groups
 
@@ -341,7 +512,9 @@ four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the
 underscore split yields two groups — `Q1` spanning the first two columns and
 `Q2` spanning the last two. For full control you can instead pass a dict mapping
 each label to its column positions, e.g.
-`.group(j={"Group A": [0, 1], "Group B": [2, 3]})`.
+`.group(j={"Group A": [0, 1], "Group B": [2, 3]})`. These spanning header
+rows are then addressable through the special selector `i="groupj"`, for
+example to style every column-group label in one call.
 
 == Row groups
 
@@ -455,9 +628,11 @@ tt(df, theme="resize")
 
 = Images & sparklines
 
-Supply your own plotting function `fun(values) -> matplotlib Figure`; tytable
-handles PNG saving and path management. This example embeds a sparkline per row
-and requires the `images` extra.
+Use `.images()` to embed existing files and `.plot()` to generate graphics from
+cell values. This example adds three committed SVG country flags, then supplies
+a plotting function `fun(values) -> matplotlib.figure.Figure` for the sparkline
+column. Tytable handles generated PNG saving and path management. Both methods
+require the `images` extra.
 
 #tag("SOURCE")
 #source("examples/07_images.py")
@@ -480,89 +655,294 @@ and formatted in a single call.
 #v(0.12em)
 #include "build/08_full_report.typ"
 
+= Advanced Python: reusable table components
+
+The `tt()` factory is the shortest way to create a table, while `TyTable` is
+the public class it returns. Import the class when a larger program needs type
+annotations, reusable theme functions, dependency injection, or a report
+component with a stable `build() -> TyTable` contract:
+
+```python
+from tytable import TyTable, tt
+
+def add_brand_style(table: TyTable) -> TyTable:
+    return table.style(i="header", bold=True, background="#17324d", color="white")
+
+table: TyTable = add_brand_style(tt(df))
+```
+
+Using `tt(df)` is still preferred to spelling `TyTable(df)` directly: the
+factory is the stable construction entry point, and the annotation exposes the
+useful class contract without coupling application code to implementation
+details.
+
+== A report component, end to end
+
+The following script separates four concerns that tend to become tangled in a
+larger report: data preparation in Polars, design tokens, table construction,
+and filesystem output. The `build()` method returns a fully configured
+`TyTable`, so callers can preview it in a notebook, render it to a string, add a
+one-off style, or save it themselves.
+
+#tag("SOURCE")
+#source("examples/16_advanced_pipeline.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/16_advanced_pipeline.typ"
+
+== Design rules for larger programs
+
+- *Accept and return `TyTable` in reusable styling functions.* This is the
+  simplest custom-theme interface and keeps those functions easy to test.
+- *Keep `build()` separate from `save()`.* Building describes the table;
+  saving decides where report artifacts belong. This also makes HTML previews
+  and tests (`table.render("html")`) straightforward.
+- *Build fresh variants when they should diverge.* Chaining methods mutate the
+  table and return `self`. If a print version and a web version need different
+  directives, call the component's `build()` method twice rather than trying
+  to copy internal state.
+- *Let Polars own data preparation.* Derived columns, sorting, aggregation,
+  joins, and input validation belong before `tt(...)`; tytable should describe
+  presentation intent.
+- *Test rendered contracts at the right level.* Assert the prepared DataFrame
+  separately, then use a small snapshot of `render("typst")` or
+  `render("html")` for the table layer.
+
+== Data from a web source
+
+Polars can read a stable CSV endpoint directly, and the resulting DataFrame is
+no different to tytable. For reproducible reports, download or cache the input
+and record its retrieval date (or a content hash) instead of making every docs
+or CI build depend on the network:
+
+```python
+from pathlib import Path
+import polars as pl
+from tytable import tt
+
+cache = Path("data/indicator.csv")
+if not cache.exists():
+    frame = pl.read_csv(STABLE_CSV_URL)
+    frame.write_csv(cache)
+
+df = pl.read_csv(cache)
+tt(df, notes=["Source: provider name; retrieved 2026-07-15"]).save("build/indicator.typ")
+```
+
+In production, pin a versioned URL when the provider offers one and validate
+the expected columns before building the table. This keeps a harmless upstream
+schema change from silently reshaping a report.
+
+= Table showcase
+
+A polished table usually needs less decoration than expected: one strong
+header colour, a quiet secondary band for column groups, restrained striping,
+right-aligned numbers, and a single highlight that communicates the decision.
+This model scorecard combines those choices with a targeted footnote and a
+Typst label for cross-referencing.
+
+#tag("SOURCE")
+#source("examples/17_showcase.py")
+
+#tag("RESULT — publication-ready scorecard")
+#v(0.12em)
+#include "build/17_showcase.typ"
+
+For other visual idioms, compare the sparse financial table in *Putting it
+together*, the built-in variants in *Themes*, and the trend column in *Images &
+sparklines*. Together they cover a publication table, a dense report table,
+and a compact dashboard table without requiring a separate rendering system.
+
 = API reference
 
-Every chaining method returns the `TyTable`, so they compose in a single
-chain; `.render()` and `.save()` are terminal.
+Start here when you know the task but not the method. Methods marked
+*chainable* mutate the `TyTable` and return `self`; output methods are terminal.
 
-The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
-`.plot()`, and `.images()`:
+#table(
+  columns: (1.15fr, 1.2fr, 2.65fr),
+  align: (left, left, left),
+  inset: 6pt,
+  stroke: (x, y) => if y == 0 { (bottom: 0.7pt + rgb("#153243")) } else { none },
+  table.header(
+    text(weight: "bold")[Task],
+    text(weight: "bold")[Use],
+    text(weight: "bold")[Result],
+  ),
+  [Create], [`tt(...)`], [`TyTable`],
+  [Style cells], [`.style(...)`], [chainable],
+  [Format values], [`.fmt(...)`], [chainable],
+  [Group rows/columns], [`.group(...)`], [chainable],
+  [Rename headers], [`.set_name(...)`], [chainable],
+  [Apply a theme], [`.theme(...)`], [chainable],
+  [Add plots/images], [`.plot(...)` / `.images(...)`], [chainable],
+  [Post-process output], [`.finalize(...)`], [chainable],
+  [Get a string], [`.render(...)`], [`str` (terminal)],
+  [Write a file], [`.save(...)`], [`None` (terminal)],
+)
 
-- *rows* (`i`): `0` = first data row, `"header"` = column-name row, negative
-  ints = column-group header rows (`-1` topmost), `"groupi"`/`"groupj"` = the
-  row/column group separators, a `list` of any of the above, a Polars expression
-  (`pl.col("Score") > 80`), a boolean `pl.Series`, or a callable
-  ``lambda row: bool``.
-- *columns* (`j`): a name (`"Score"`), an integer position (`0`), or a
-  `list` of names/positions — e.g. `j=["Q1 Rev", "Q1 Cost"]`. Set `regex=True`
-  to treat string selectors as regex patterns.
+== Selector cheat sheet
 
-`.style()` additionally accepts `i="caption"` and `i="notes"` to style the table
-caption and footnotes as inline text (see the *Caption and notes* section).
+`.style()`, `.fmt()`, `.plot()`, and `.images()` share the same selectors;
+`.set_name()` shares the column selector. Names are exact matches by default.
 
-#api("tt(data, *, figure=True, caption=None, label=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
-Create a `TyTable` from a Polars DataFrame. `width=1` produces a full-width
-table; it also takes a per-column list of fractions/units, a length string, or
-`None` (auto). Typst output uses a figure by default; `figure=False` emits an
-unnumbered table, while `label="name"` labels the figure for cross-references.
-Captions and labels require `figure=True`. `gutter` is the Typst column gutter
-(pt when numeric, or a string like `"0.1em"`); `None` suppresses it.
+#table(
+  columns: (0.8fr, 1.45fr, 2.75fr),
+  align: (left, left, left),
+  inset: 6pt,
+  fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
+  table.header(
+    text(weight: "bold")[Selector],
+    text(weight: "bold")[Example],
+    text(weight: "bold")[Meaning],
+  ),
+  [`i`], [`0`, `2`, `[0, 2]`], [0-based data row(s)],
+  [`i`], [`"header"`, `"body"`], [column names or all data rows],
+  [`i`], [`"groupi"`, `"groupj"`], [row- or column-group header rows],
+  [`i`], [`-1`], [topmost column-group header row],
+  [`i`], [`pl.col("Score") > 80`], [Polars expression evaluated on source data],
+  [`i`], [`pl.Series(...)`], [boolean mask with one value per source row],
+  [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],
+  [`j`], [`"Score"`, `0`], [column name (preferred) or position],
+  [`j`], [`["Revenue", "Cost"]`], [several columns in one directive],
+)
 
-#api(".style(i=None, j=None, *, bold, italic, underline, strikeout, monospace, smallcaps, color, background, fontsize, align, alignv, indent, colspan, rowspan, line, line_color, line_width=0.1, line_trim, output=None)")
-Apply cell styling via selectors. `line` is any combo of `t`/`b`/`l`/`r`;
-`align` takes `l`/`c`/`r` and `alignv` takes `t`/`m`/`b`; with multi-column `j`,
-a per-column string like `align="llr"` is accepted. Returns `self`.
+Set `regex=True` on an individual method call to treat its string `j`
+selectors as `re.search` patterns. `.style()` also accepts `i="caption"` and
+`i="notes"`; those targets support text-oriented properties rather than cell
+spans or borders.
 
-#api(".fmt(i=None, j=None, *, digits=None, num_fmt=\"decimal\", replace=None, escape=False, fn=None, output=None)")
-Apply value formatting: `digits` (with `num_fmt` of `"decimal"` or
-`"significant"`), `replace` (a value or `{old: new}` mapping for nulls/NaNs),
-or a custom column-wise transform `fn`. Returns `self`.
+== Creating a table
 
-#api(".group(i=None, j=None, *, delimiter=None)")
-Add row groups (`i` as a `{label: row}` dict or a list) and column groups (`j`
-as a `{label: [cols]}` dict). Alternatively, pass a literal `delimiter` string
-to split every column name; `j` and `delimiter` are mutually exclusive. Returns
-`self`.
+#api("Create", "tt(\n    data, *, figure=True, caption=None, label=None, notes=None,\n    width=None, height=None, gutter=2, colnames=True,\n    colnames_override=None, rownames=False, digits=None, escape=True,\n    theme=\"default\", finalize=None,\n) -> TyTable")
 
-#api(".set_name(j=None, *, name)")
-Rename column headers for display only (the underlying DataFrame is untouched).
-Per-column: `.set_name(j, name="X")` (or `name=[...]` matching the selected
-count). Full-list replace: `.set_name(name=[...])` with `j` omitted — length
-must equal the column count. Subsequent `j` selectors use the new names.
-Returns `self`.
+`data` is a Polars `DataFrame` and is cloned on construction. The constructor
+options fall into four groups:
 
-#api(".theme(name_or_callable=None)")
-Apply a built-in theme (`default`, `striped`, `grid`, `empty`, `rotate`,
-`resize`) or a custom callable. Returns `self`. For parameterized themes such
-as `resize`, pass a callable: `.theme(lambda t: theme_resize(t, width=0.9, direction="down"))`.
+#table(
+  columns: (1.05fr, 1.9fr, 2.05fr),
+  align: (left, left, left),
+  inset: 5pt,
+  table.header(
+    text(weight: "bold")[Concern],
+    text(weight: "bold")[Options],
+    text(weight: "bold")[Notes],
+  ),
+  [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
+  [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
+  [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
+  [Values], [`digits`, `escape`], [global numeric precision and safe markup],
+  [Behaviour], [`theme`, `finalize`], [initial theme and output callback],
+  [Reserved], [`rownames`], [present for parity; not implemented],
+)
 
-#api(".plot(j, *, fun, data=None, height=1.0, color=\"black\", xlim=None, output=None)")
-Embed a generated plot per cell. `fun(values, ...) -> matplotlib Figure` is
-called once per row; tytable handles PNG saving and paths. Requires the
-`images` extra. Returns `self`.
+`width` accepts a fraction, a Typst length string, or one entry per column
+(fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
+`gutter` accepts points as a number, a unit string, or `None`. A note is a
+string or a dictionary with `text`, `marker`, `i`, and `j` keys.
 
-#api(".images(j, *, paths, height=1.0, output=None)")
-Embed existing image files into the selected column. Requires the `images`
-extra. Returns `self`.
+`TyTable(...)` has the same constructor options, but application code should
+normally construct with `tt(...)` and use `TyTable` for annotations.
 
-#api(".render(output=\"typst\") -> str")
-Render the table as a `"typst"` (default), `"html"`, or `"ascii"` string.
-Terminal — does not return the table.
+== Formatting and structure
 
-#api(".finalize(fn) -> self")
-Register a post-render callback. `fn(rendered_string, output)` receives the
-fully rendered string and the output format, and must return the (possibly
-modified) string. Chainable; multiple callbacks run in registration order.
+#api("Style", ".style(\n    i=None, j=None, *, regex=False, bold=None, italic=None,\n    underline=None, strikeout=None, monospace=None, smallcaps=None,\n    color=None, background=None, fontsize=None, align=None, alignv=None,\n    indent=None, colspan=None, rowspan=None, rotate=None, line=None,\n    line_color=None, line_width=0.1, line_trim=None, output=None,\n) -> TyTable")
 
-#api(".save(path, assets=None)")
-Render and write to `path` (`.typ` or `.html`). `assets` overrides where image
-files are written, relative to the output file. Terminal.
+Combines any properties sharing one selector. `align` uses `l`/`c`/`r`,
+`alignv` uses `t`/`m`/`b`, `rotate` is degrees, and `line` is any combination
+of `t`/`b`/`l`/`r`. With several columns, `align="llr"` assigns one alignment
+per column. `fontsize`, `indent`, and `line_width` are in `em`. `output` can
+restrict a directive to a tuple such as `("typst",)`.
 
-= Workflow: importing into a Typst report
+#api("Format", ".fmt(\n    i=None, j=None, *, regex=False, digits=None,\n    num_fmt=\"decimal\", replace=None, escape=False, fn=None, output=None,\n) -> TyTable")
 
-Because you `#import` the generated `.typ` into a parent report and compile
-elsewhere, image paths must resolve relative to your _Typst project root_ (where
-`typst compile` runs). Make the assets location explicit:
+Transforms values in this order: `digits`, `replace`, `escape`, `fn`.
+`num_fmt` is `"decimal"` or `"significant"`; `replace` may blank missing
+values, supply a replacement string, or map old values to new ones. `fn`
+receives one column as `list[str]` and must return a list of the same length.
+
+#api("Group", ".group(i=None, j=None, *, delimiter=None) -> TyTable")
+
+For row groups, pass `{label: row}` or a list with one group value per data row.
+For spanning column headers, pass `{label: [columns]}` as `j`, or pass a literal
+string as `delimiter` to split every column name. `j` and `delimiter` are
+mutually exclusive.
+
+#api("Rename display headers", ".set_name(j=None, *, regex=False, name) -> TyTable")
+
+With `j`, `name` is one display name or a list matching the selected columns.
+Without `j`, pass the complete list of display names. The DataFrame remains
+unchanged; later `j` selectors use the new display names.
+
+#api("Theme", ".theme(name=None) -> TyTable")
+
+`name` is a built-in theme name, a callable `theme(table) -> TyTable`, or
+`None`. Built-ins are `default`, `striped`, `grid`, `empty`, `rotate`, and
+`resize`; `THEMES` exposes the registry of callables, which should be treated
+as read-only.
+
+== Plots and images
+
+Install the `images` extra for both methods. Media is materialized when the
+table renders or saves, not when the directive is recorded.
+
+#api("Generate plots", ".plot(\n    i=None, j=None, *, regex=False, fun, data=None, height=1.0,\n    height_px=400, width_px=1200, color=\"black\", xlim=None, output=None,\n) -> TyTable")
+
+`j` and `fun` are required. The callable receives the typed cell value (or the
+matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Pixel
+dimensions control PNG generation; `height` controls its displayed cell size.
+
+#api("Embed files", ".images(\n    i=None, j=None, *, regex=False, paths, height=1.0, output=None,\n) -> TyTable")
+
+`j` and `paths` are required. Paths are assigned row-major across selected
+cells. Use `.save(..., assets=...)` to control where referenced files live.
+
+== Rendering and output
+
+#api("Post-process", ".finalize(fn) -> TyTable")
+
+Registers `fn(rendered: str, output: str) -> str`. Callbacks run in registration
+order after any renderer and are useful for narrowly scoped integration markup.
+
+#api("Render string", ".render(output=\"typst\") -> str")
+
+`output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
+intent and runs finalizers. The same table can be rendered more than once.
+
+#api("Save file", ".save(path, assets=None) -> None")
+
+Creates parent directories and infers HTML from `.html` / `.htm`; other
+suffixes produce Typst. `assets` is relative to the output file and defaults to
+a sibling `tytable_assets/` directory.
+
+= Using a generated table in Typst
+
+`.save()` writes a Typst content fragment, so place it in the document with
+`#include` (not `#import`, which is for importing named definitions):
+
+```typst
+// report.typ
+#set page(paper: "a4", margin: 2.5cm)
+#set text(size: 10pt)
+
+= Product catalog
+
+The current catalog is shown in @product-catalog.
+
+#include "build/tables/catalog.typ"
+```
+
+Build the fragment first, then compile the parent document:
+
+```sh
+uv run python make_tables.py
+typst compile report.typ report.pdf
+```
+
+The include path is relative to the `.typ` file containing the `#include`.
+Generated image references need a little more care: they must resolve within
+the _Typst project root_ (the directory tree available to `typst compile`). Make
+the assets location explicit in Python:
 
 ```python
 .save("build/tables/products.typ", assets="../assets/products")
@@ -574,6 +954,10 @@ compiled as part of the parent. Without an explicit `assets=`, images land in a
 `tytable_assets/` folder next to the output file.
 
 = Coming from R tinytable
+
+If you already use R's `tinytable`, tytable should feel familiar: create a table,
+then layer on formatting, styling, grouping, and themes. The main adjustments are
+Python method chaining, 0-based row indices, and selecting columns by name.
 
 #table(
   columns: (1fr, 1fr),

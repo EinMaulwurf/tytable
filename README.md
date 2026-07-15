@@ -7,8 +7,22 @@ Jupyter HTML preview.
 
 ## Install
 
+Install the latest release from [PyPI](https://pypi.org/project/tytable/):
+
 ```
-uv add git+https://github.com/EinMaulwurf/tytable.git
+uv add tytable
+```
+
+Or with pip:
+
+```
+pip install tytable
+```
+
+For plots, sparklines, and embedded images, install the optional extra:
+
+```
+uv add "tytable[images]"
 ```
 
 For development (clone and):
@@ -34,15 +48,15 @@ tab = (
     .fmt(j="Score", digits=2)
     .style(j="Score", align="c")
     .style(i=0, bold=True, background="#2c3e50", color="white")
-    .save("report_assets/products.typ")
 )
 
-# In Jupyter, let `tab` be the last line of a cell to see an HTML preview.
+# Save in a script, or let `tab` be the last line of a Jupyter cell for a preview.
+tab.save("report_assets/products.typ")
 tab
 ```
 
-The `.typ` file can be `#import`ed into a Typst report and compiled as part of
-the whole document.
+The `.typ` file can be `#include`d in a Typst report and compiled as part of the
+whole document.
 
 ## Conventions
 

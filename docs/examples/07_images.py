@@ -1,5 +1,5 @@
 """
-Images & sparklines example — embedding generated plots in cells.
+Images & sparklines example — embedding existing files and generated plots.
 
 Requires the `images` extra:  pip install tytable[images]
 """
@@ -21,20 +21,35 @@ def sparkline(values, *, color="#2c3e50", **kw):
 
 df = pl.DataFrame(
     {
-        "Product": ["A", "B", "C", "D"],
-        "Score": [85.43, 72.10, 91.87, 68.55],
-        "Trend": [[1, 3, 2, 5, 4], [5, 4, 3, 2, 1], [1, 2, 3, 4, 5], [3, 1, 4, 1, 5]],
+        "Flag": ["DE", "FR", "IT"],
+        "Country": ["Germany", "France", "Italy"],
+        "Score": [85.43, 72.10, 91.87],
+        "Trend": [[1, 3, 2, 5, 4], [5, 4, 3, 2, 1], [1, 2, 3, 4, 5]],
     }
 )
 
 (
-    tt(df, caption="Product scores with trend sparklines", theme="striped")
+    tt(df, caption="Country scores with flags and trend sparklines", theme="striped")
     .fmt(j="Score", digits=2)
+    # Existing image paths are relative to the saved build/07_images.typ fragment.
+    .images(
+        j="Flag",
+        paths=[
+            "../assets/flags/de.svg",
+            "../assets/flags/fr.svg",
+            "../assets/flags/it.svg",
+        ],
+        height=1.2,
+    )
     .plot(j="Trend", fun=sparkline, height=1.5, color="#2c3e50")
     .style(j="Score", align="c")
-    .style(i="header", bold=True, line="b", line_width=0.08)
-    .style(i=0, bold=True, background="#2c3e50", color="white")
-    .group(i={"Highlight": 2})
-    .style(i="groupi", bold=True, background="#ecf0f1")
+    .style(
+        i="header",
+        bold=True,
+        background="#2c3e50",
+        color="white",
+        line="b",
+        line_width=0.08,
+    )
     .save("build/07_images.typ", assets="assets")
 )

@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Build and attach the documentation PDF directly in the release workflow, and restrict release
   assets to distributions and the PDF.
+- Add an advanced `TyTable` programming guide, a polished table showcase, and a task-oriented API
+  reference with selector and method summaries.
+- Document installation from PyPI in the README and PDF guide.
+- Add a Mizani integration example for scales-style currency and percentage labels.
 
 ## [0.6.0] - 2026-07-14
 

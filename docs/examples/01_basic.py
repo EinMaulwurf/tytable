@@ -1,10 +1,10 @@
-"""Minimal tytable example — a plain table from a Polars DataFrame."""
+"""The smallest complete tytable example."""
 
 import polars as pl
 
 from tytable import tt
 
-df = pl.DataFrame(
+data = pl.DataFrame(
     {
         "Product": ["Widget", "Gadget", "Gizmo"],
         "Price": [9.99, 14.50, 3.25],
@@ -12,4 +12,5 @@ df = pl.DataFrame(
     }
 )
 
-tt(df, caption="Catalog").save("build/01_basic.typ")
+table = tt(data)
+table.save("build/01_basic.typ")

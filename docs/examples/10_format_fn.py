@@ -5,10 +5,10 @@ import polars as pl
 from tytable import tt
 
 
-def humanize(values):
+def humanize(values: list[str]) -> list[str]:
     """Abbreviate large numbers into a human-readable scale."""
 
-    def scale(n):
+    def scale(n: float) -> str:
         if abs(n) >= 1_000_000:
             return f"{n / 1_000_000:.1f} million"
         if abs(n) >= 1_000:
