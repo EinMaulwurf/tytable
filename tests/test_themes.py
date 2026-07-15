@@ -2,7 +2,7 @@ import polars as pl
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import THEMES, TinyTable, tt
+from tytable import THEMES, TyTable, tt
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
@@ -308,5 +308,5 @@ class TestTHEMES:
     def test_theme_returns_table(self):
         t = tt(DF, theme=None)
         result = THEMES["default"](t)
-        assert isinstance(result, TinyTable)
+        assert isinstance(result, TyTable)
         assert result is t

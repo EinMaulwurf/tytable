@@ -1,7 +1,7 @@
 """
 Built-in theme registry and the theme functions behind it.
 
-Each theme is a callable ``theme(table) -> TinyTable`` that records style
+Each theme is a callable ``theme(table) -> TyTable`` that records style
 directives and/or Typst options on the table. The ``THEMES`` dict maps the
 public names (``"default"``, ``"striped"``, …) to these callables.
 """
@@ -15,19 +15,19 @@ from typing import TYPE_CHECKING
 from ._render_typst import TypstRenderOptions
 
 if TYPE_CHECKING:
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 
-def default_line_color(table: TinyTable) -> str:
+def default_line_color(table: TyTable) -> str:
     """Return the default rule color (always black)."""
     return "black"
 
 
-def theme_default(table: TinyTable) -> TinyTable:
+def theme_default(table: TyTable) -> TyTable:
     """Apply the booktab-style default theme: thin top/bottom rules under the header."""
     col = default_line_color(table)
 
-    def prepare(t: TinyTable) -> None:
+    def prepare(t: TyTable) -> None:
         last = t._n_merged_body_rows
         t._deferred_style(i=last - 1, line="b", line_color=col, line_width=0.08)
         n_cg = len(t._col_group_rows)
@@ -45,10 +45,10 @@ def theme_default(table: TinyTable) -> TinyTable:
     return table
 
 
-def theme_striped(table: TinyTable) -> TinyTable:
+def theme_striped(table: TyTable) -> TyTable:
     """Apply alternating grey background stripes to even data rows."""
 
-    def prepare(t: TinyTable) -> None:
+    def prepare(t: TyTable) -> None:
         nrows = t._n_merged_body_rows
         even = list(range(0, nrows, 2))
         if even:
@@ -58,14 +58,14 @@ def theme_striped(table: TinyTable) -> TinyTable:
     return table
 
 
-def theme_grid(table: TinyTable) -> TinyTable:
+def theme_grid(table: TyTable) -> TyTable:
     """Apply a full grid: black borders around every cell."""
     table._typst_opts.grid_stroke = "(paint: black)"
     table.style(line="tblr", line_color="black", line_width=0.05)
     return table
 
 
-def theme_empty(table: TinyTable) -> TinyTable:
+def theme_empty(table: TyTable) -> TyTable:
     """Strip all styles, formats, prepare-hooks, and Typst options — a blank slate."""
     table._style_directives.clear()
     table._deferred_style_directives.clear()
@@ -76,11 +76,11 @@ def theme_empty(table: TinyTable) -> TinyTable:
 
 
 def theme_rotate(
-    table: TinyTable,
+    table: TyTable,
     angle: int = 90,
     i: int | str | Sequence[int | str] | None = None,
     j: int | str | Sequence[int] | Sequence[str] | None = None,
-) -> TinyTable:
+) -> TyTable:
     """Rotate the whole table (``i``/``j`` both ``None``) or just selected cells."""
     if i is None and j is None:
         table._typst_opts.rotate_angle = angle
@@ -89,7 +89,7 @@ def theme_rotate(
     return table
 
 
-def theme_typst(table: TinyTable, **opts: object) -> TinyTable:
+def theme_typst(table: TyTable, **opts: object) -> TyTable:
     """Set raw Typst render options (``figure``, ``multipage``, ``portable``, …)."""
     valid_keys = {field.name for field in fields(TypstRenderOptions)}
     invalid_keys = opts.keys() - valid_keys
@@ -105,11 +105,11 @@ def theme_typst(table: TinyTable, **opts: object) -> TinyTable:
 
 
 def theme_resize(
-    table: TinyTable,
+    table: TyTable,
     width: float | None = 1,
     height: float | None = None,
     direction: str = "both",
-) -> TinyTable:
+) -> TyTable:
     """Scale the table to fit a target size (a fraction of the available area).
 
     Wraps the rendered Typst fragment in a ``#layout(size => …)`` block that

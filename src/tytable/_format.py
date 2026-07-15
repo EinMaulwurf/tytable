@@ -14,7 +14,7 @@ from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
     from ._directives import FormatDirective
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 Cell = tuple[int, int]
 
@@ -231,7 +231,7 @@ def apply_formats(
     data_body: list[list[str]],
     typed_body: list[list[Any]],
     colnames_display: list[str],
-    table: TinyTable,
+    table: TyTable,
     *,
     nhead: int,
     has_header: bool,

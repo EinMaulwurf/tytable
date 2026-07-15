@@ -36,7 +36,7 @@ Pre-commit order: `lint` → `typecheck` → `test`.
 ## Architecture
 
 ```text
-tt(df, ...)               # _tytable.py — factory + TinyTable class
+tt(df, ...)               # _tytable.py — factory + TyTable class
   .style() / .fmt() / ... # record directives (StyleDirective, FormatDirective, …)
   .render() / .save()     # resolve pipeline → render
 
@@ -52,7 +52,7 @@ Styling, formatting, grouping, and plotting are recorded as **intent** and repla
 
 | File               | Role                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------- |
-| `_tytable.py`      | Public API: `TinyTable` class, `tt()` factory                                                     |
+| `_tytable.py`      | Public API: `TyTable` class, `tt()` factory                                                       |
 | `_directives.py`   | Dataclasses: `StyleDirective`, `FormatDirective`, `PlotDirective`, `Note`, `RowGroup`, `ColGroup` |
 | `_resolve.py`      | `build()` pipeline and `BuiltTable` output dataclass                                              |
 | `_styling.py`      | Style validation, style-grid construction                                                         |

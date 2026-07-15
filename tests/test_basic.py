@@ -1,8 +1,9 @@
 import polars as pl
 import pytest
 
+import tytable
 from tests.helpers import assert_snapshot
-from tytable import tt
+from tytable import TyTable, tt
 from tytable._escape import escape_typst
 from tytable._resolve import build
 
@@ -67,6 +68,15 @@ EXPECTED_BASIC_TYP = (
     "]\n"
     ")"
 )
+
+
+def test_public_table_class_is_tytable():
+    table = tt(pl.DataFrame({"A": [1]}), theme=None)
+
+    assert isinstance(table, TyTable)
+    assert "TyTable" in tytable.__all__
+    assert "TinyTable" not in tytable.__all__
+    assert not hasattr(tytable, "TinyTable")
 
 
 @pytest.mark.typst

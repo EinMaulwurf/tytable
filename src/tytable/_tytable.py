@@ -1,5 +1,5 @@
 """
-Public API: the ``tt()`` factory and the :class:`TinyTable` class.
+Public API: the ``tt()`` factory and the :class:`TyTable` class.
 
 All styling, formatting, grouping, and plotting is recorded as *intent* and
 replayed in a fixed order when ``.render()`` / ``.save()`` is called.
@@ -52,9 +52,9 @@ def tt(
     escape: bool = True,
     theme: str | Callable | None = "default",
     finalize: Callable[[str, str], str] | None = None,
-) -> TinyTable:
+) -> TyTable:
     """
-    Create a :class:`TinyTable` from a Polars DataFrame.
+    Create a :class:`TyTable` from a Polars DataFrame.
 
     This is the main entry point of the library. The returned table is
     configured by chaining methods — ``.style()``, ``.fmt()``, ``.group()``,
@@ -112,7 +112,7 @@ def tt(
         raw markup through.
     theme
         Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
-        ``"empty"``, ``"rotate"``), a callable ``theme(table) -> TinyTable``,
+        ``"empty"``, ``"rotate"``), a callable ``theme(table) -> TyTable``,
         or ``None`` for no theme.
     finalize
         Optional post-render callback ``fn(rendered_string, output) -> str``
@@ -120,7 +120,7 @@ def tt(
 
     Returns
     -------
-    TinyTable
+    TyTable
         A new table ready for further chaining.
 
     Raises
@@ -136,7 +136,7 @@ def tt(
     >>> from tytable import tt
     >>> df = pl.DataFrame({"x": [1, 2], "y": [3.5, 4.5]})
     >>> type(tt(df))
-    <class 'tytable._tytable.TinyTable'>
+    <class 'tytable._tytable.TyTable'>
 
     A minimal table written to disk:
 
@@ -150,7 +150,7 @@ def tt(
     ...  .save("build/demo.typ"))
     """
 
-    t = TinyTable(
+    t = TyTable(
         data,
         figure=figure,
         caption=caption,
@@ -257,7 +257,7 @@ def _normalize_width(
     return entries
 
 
-class TinyTable:
+class TyTable:
     """
     A chainable table built from a Polars DataFrame.
 
@@ -327,7 +327,7 @@ class TinyTable:
         self._row_groups: list[RowGroup] = []
         self._col_group_rows: list[list[str | None]] = []
         self._notes: list[Note] = _normalize_notes(notes or [])
-        self._prepare_hooks: list[Callable[[TinyTable], None]] = []
+        self._prepare_hooks: list[Callable[[TyTable], None]] = []
         self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._nhead: int = 0
         self._n_merged_body_rows: int = 0
@@ -387,7 +387,7 @@ class TinyTable:
         line_width: float | None = 0.1,
         line_trim: str | None = None,
         output: tuple[str, ...] | None = None,
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Apply per-cell styling via row/column selectors.
 
@@ -447,7 +447,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -516,7 +516,7 @@ class TinyTable:
         )
         return self
 
-    def _deferred_style(self, *args: Any, **kwargs: Any) -> TinyTable:
+    def _deferred_style(self, *args: Any, **kwargs: Any) -> TyTable:
         """Record a prepare-hook style separately so user styles retain precedence."""
         before = len(self._style_directives)
         self.style(*args, **kwargs)
@@ -543,7 +543,7 @@ class TinyTable:
         escape: bool = False,
         fn: Callable | None = None,
         output: tuple[str, ...] | None = None,
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Apply value formatting to selected cells.
 
@@ -576,7 +576,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -630,7 +630,7 @@ class TinyTable:
         color: str = "black",
         xlim: list[float] | None = None,
         output: tuple[str, ...] | None = None,
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Embed a generated plot in each selected cell.
 
@@ -663,7 +663,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -713,7 +713,7 @@ class TinyTable:
         paths: list[str] | None = None,
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Embed existing image files into the selected cells.
 
@@ -735,7 +735,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -769,7 +769,7 @@ class TinyTable:
         self,
         i: dict[str, int] | list[object] | None = None,
         j: dict[str, list[str | int]] | str | None = None,
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Add row and/or column groups.
 
@@ -788,7 +788,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -821,7 +821,7 @@ class TinyTable:
         *,
         regex: bool = False,
         name: str | Sequence[str],
-    ) -> TinyTable:
+    ) -> TyTable:
         """
         Rename column(s) for display without touching the underlying DataFrame.
 
@@ -859,7 +859,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -922,7 +922,7 @@ class TinyTable:
             self._colnames[k - 1] = nm
         return self
 
-    def theme(self, name: str | Callable | None = None) -> TinyTable:
+    def theme(self, name: str | Callable | None = None) -> TyTable:
         """
         Apply (or re-apply) a theme to the table.
 
@@ -931,11 +931,11 @@ class TinyTable:
         name
             Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
             ``"empty"``, ``"rotate"``), a callable
-            ``theme(table) -> TinyTable``, or ``None`` to apply no theme.
+            ``theme(table) -> TyTable``, or ``None`` to apply no theme.
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises
@@ -947,7 +947,7 @@ class TinyTable:
         self._theme_name = name
         return self
 
-    def finalize(self, fn: Callable[[str, str], str]) -> TinyTable:
+    def finalize(self, fn: Callable[[str, str], str]) -> TyTable:
         """
         Register a post-render callback.
 
@@ -962,7 +962,7 @@ class TinyTable:
 
         Returns
         -------
-        TinyTable
+        TyTable
             ``self``, for chaining.
 
         Raises

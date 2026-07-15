@@ -1,7 +1,7 @@
 """
 HTML renderer — produces a self-contained ``<table>`` for Jupyter previews.
 
-Used by :meth:`TinyTable._repr_html_` and by ``.render("html")`` / ``.save("*.html")``.
+Used by :meth:`TyTable._repr_html_` and by ``.render("html")`` / ``.save("*.html")``.
 """
 
 from __future__ import annotations

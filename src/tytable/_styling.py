@@ -16,7 +16,7 @@ from ._colors import _validate_color_string
 from ._indices import resolve_i, resolve_j
 
 if TYPE_CHECKING:
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 OVERWRITE_PROPS = (
     "bold",
@@ -178,7 +178,7 @@ def _validate_style(
 
 
 def build_style_grid(
-    table: TinyTable,
+    table: TyTable,
     *,
     nhead: int,
     has_header: bool,
@@ -247,7 +247,7 @@ def build_style_grid(
 
 
 def build_meta_styles(
-    table: TinyTable,
+    table: TyTable,
     *,
     output: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:

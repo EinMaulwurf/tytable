@@ -14,7 +14,7 @@ from ._indices import resolve_i, resolve_j
 from ._utils import _new_image_id, format_markup_num
 
 if TYPE_CHECKING:
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 
 def _require_images() -> None:
@@ -131,7 +131,7 @@ def _build_image_cell_string(
 
 
 def execute_plots(
-    table: TinyTable,
+    table: TyTable,
     data_body: list[list[str]],
     typed_body: list[list[Any]],
     output: str,

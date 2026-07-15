@@ -1,7 +1,7 @@
 """
 Row and column group registration and merging into the table body.
 
-Called by :meth:`TinyTable.group` to record groups, and by
+Called by :meth:`TyTable.group` to record groups, and by
 :func:`tytable._resolve.build` to merge row-group separator rows into the body.
 """
 
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from ._directives import RowGroup
 
 if TYPE_CHECKING:
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 
 def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
@@ -96,7 +96,7 @@ def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]
     return spans
 
 
-def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> TinyTable:
+def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTable:
     """Record row-group separators from a ``{label: row}`` dict or a run-length list."""
     if isinstance(i, dict):
         pairs = sorted(i.items(), key=lambda x: x[1])
@@ -118,8 +118,8 @@ def register_row_groups(table: TinyTable, i: dict[str, int] | list[Any]) -> Tiny
 
 
 def register_col_groups(
-    table: TinyTable, j: dict[str, list[str | int]] | str, colnames: list[str]
-) -> TinyTable:
+    table: TyTable, j: dict[str, list[str | int]] | str, colnames: list[str]
+) -> TyTable:
     """Record column-group header rows from a ``{label: [cols]}`` dict or a delimiter string."""
     if isinstance(j, dict):
         row = _build_col_group_row(j, colnames)

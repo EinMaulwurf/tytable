@@ -1,7 +1,7 @@
 """
 The render pipeline: resolve recorded directives into a :class:`BuiltTable`.
 
-:func:`build` is called by :meth:`TinyTable.render` and turns the lazy intent
+:func:`build` is called by :meth:`TyTable.render` and turns the lazy intent
 (style / format / group / plot directives) into a backend-agnostic
 :class:`BuiltTable` that the renderers consume.
 """
@@ -24,7 +24,7 @@ from ._utils import format_markup_num
 if TYPE_CHECKING:
     import polars as pl
 
-    from ._tytable import TinyTable
+    from ._tytable import TyTable
 
 
 @dataclass
@@ -55,7 +55,7 @@ class BuiltTable:
 class _BuildState:
     """Mutable state passed between the phases of the render pipeline."""
 
-    table: TinyTable
+    table: TyTable
     output: OutputFormat
     ncols: int
     data_body: list[list[str]]
@@ -162,7 +162,7 @@ def _insert_footnote_markers(
                         data_body[ri][ci] += marker_text
 
 
-def _copy_for_build(table: TinyTable) -> TinyTable:
+def _copy_for_build(table: TyTable) -> TyTable:
     """Return a working copy whose mutable directive collections are isolated."""
     working = copy(table)
     working._style_directives = list(table._style_directives)
@@ -177,7 +177,7 @@ def _copy_for_build(table: TinyTable) -> TinyTable:
     return working
 
 
-def _extract_body(table: TinyTable, output: OutputFormat) -> _BuildState:
+def _extract_body(table: TyTable, output: OutputFormat) -> _BuildState:
     """Extract display and typed cell matrices from the source dataframe."""
     nrows = table._data.height
     ncols = table._data.width
@@ -330,7 +330,7 @@ def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _B
         style_grid.setdefault((position, 1), {})["colspan"] = state.ncols
 
 
-def build(table: TinyTable, output: OutputFormat) -> BuiltTable:
+def build(table: TyTable, output: OutputFormat) -> BuiltTable:
     """
     Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
 

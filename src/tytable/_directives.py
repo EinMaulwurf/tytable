@@ -1,7 +1,7 @@
 """
 Frozen dataclasses recording user *intent* (styles, formats, plots, groups).
 
-These are produced by the chaining methods on :class:`~tytable._tytable.TinyTable`
+These are produced by the chaining methods on :class:`~tytable._tytable.TyTable`
 and replayed at render time by :func:`tytable._resolve.build`.
 """
 

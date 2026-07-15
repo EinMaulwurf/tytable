@@ -482,7 +482,7 @@ and formatted in a single call.
 
 = API reference
 
-Every chaining method returns the `TinyTable`, so they compose in a single
+Every chaining method returns the `TyTable`, so they compose in a single
 chain; `.render()` and `.save()` are terminal.
 
 The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
@@ -501,7 +501,7 @@ The selectors `i` (rows) and `j` (columns) are shared by `.style()`, `.fmt()`,
 caption and footnotes as inline text (see the *Caption and notes* section).
 
 #api("tt(data, *, figure=True, caption=None, label=None, notes=None, width=None, gutter=2, colnames=True, escape=True, theme=\"default\", finalize=None)")
-Create a `TinyTable` from a Polars DataFrame. `width=1` produces a full-width
+Create a `TyTable` from a Polars DataFrame. `width=1` produces a full-width
 table; it also takes a per-column list of fractions/units, a length string, or
 `None` (auto). Typst output uses a figure by default; `figure=False` emits an
 unnumbered table, while `label="name"` labels the figure for cross-references.
