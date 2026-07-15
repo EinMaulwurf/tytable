@@ -24,8 +24,8 @@ df = pl.DataFrame(
             "Latency measured on the same CPU batch (milliseconds; lower is better).",
         ],
         width=["2.8cm", "1fr", "1fr", "1fr", "1.2fr"],
-        theme=None,
     )
+    .theme_empty()
     .group(j={"Quality": ["Accuracy", "F1"], "Cost": ["Latency", "Parameters"]})
     .fmt(j=["Accuracy", "F1"], digits=3)
     .fmt(j="Latency", digits=1)

@@ -2,14 +2,15 @@
 Built-in theme registry and the theme functions behind it.
 
 Each theme is a callable ``theme(table) -> TyTable`` that records style
-directives and/or Typst options on the table. The ``THEMES`` dict maps the
-public names (``"default"``, ``"striped"``, …) to these callables.
+directives and/or Typst options on the table. Public application code normally
+uses the typed ``TyTable.theme_*()`` methods; ``THEMES`` remains available for
+discovery and advanced composition.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import fields
+from dataclasses import fields, replace
 from typing import TYPE_CHECKING
 
 from ._render_typst import TypstRenderOptions
@@ -66,18 +67,18 @@ def theme_grid(table: TyTable) -> TyTable:
 
 
 def theme_empty(table: TyTable) -> TyTable:
-    """Strip all styles, formats, prepare-hooks, and Typst options — a blank slate."""
+    """Strip prior styles, formats, prepare hooks, and theme-level Typst options."""
     table._style_directives.clear()
     table._deferred_style_directives.clear()
     table._format_directives.clear()
     table._prepare_hooks.clear()
-    table._typst_opts = TypstRenderOptions(figure=table._typst_opts.figure)
+    table._typst_opts = replace(table._base_typst_opts)
     return table
 
 
 def theme_rotate(
     table: TyTable,
-    angle: int = 90,
+    angle: float = 90,
     i: int | str | Sequence[int | str] | None = None,
     j: int | str | Sequence[int] | Sequence[str] | None = None,
 ) -> TyTable:
@@ -85,7 +86,7 @@ def theme_rotate(
     if i is None and j is None:
         table._typst_opts.rotate_angle = angle
     else:
-        table.fmt(i=i, j=j, fn=lambda v: f"#rotate({-angle}, reflow: true, [{v}])")
+        table.style(i=i, j=j, rotate=angle)
     return table
 
 

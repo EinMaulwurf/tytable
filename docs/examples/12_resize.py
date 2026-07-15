@@ -3,7 +3,6 @@
 import polars as pl
 
 from tytable import tt
-from tytable._themes import theme_resize
 
 # A wide frame whose natural width would overflow the text column.
 df = pl.DataFrame(
@@ -21,6 +20,6 @@ df = pl.DataFrame(
 # page; smaller tables are left untouched. Use direction="both" to always scale.
 (
     tt(df, caption='Resized to fit (width=0.95, direction="down")')
-    .theme(lambda t: theme_resize(t, width=0.95, direction="down"))
+    .theme_resize(width=0.95, direction="down")
     .save("build/12_resize.typ")
 )

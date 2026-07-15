@@ -28,7 +28,7 @@ def _build_heavy_table() -> "pl.DataFrame":
 @pytest.mark.typst
 def test_heavy_table_under_budget():
     df = _build_heavy_table()
-    tab = tt(df, theme="default")
+    tab = tt(df)
     heat = ["#fff", "#eee", "#ddd", "#ccc", "#bbb"]
     for r in range(N_ROWS):
         tab.style(i=r, background=heat[r % 5])

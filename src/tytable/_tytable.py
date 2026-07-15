@@ -15,6 +15,7 @@ from typing import Any, TypeAlias
 
 import polars as pl
 
+from . import _themes
 from ._directives import (
     FormatDirective,
     ImageDirective,
@@ -30,7 +31,6 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style
-from ._themes import THEMES
 
 _ColumnSelector: TypeAlias = int | str | Sequence[int] | Sequence[str] | None
 
@@ -50,7 +50,6 @@ def tt(
     rownames: bool = False,
     digits: int | None = None,
     escape: bool = True,
-    theme: str | Callable | None = "default",
     finalize: Callable[[str, str], str] | None = None,
 ) -> TyTable:
     """
@@ -58,9 +57,10 @@ def tt(
 
     This is the main entry point of the library. The returned table is
     configured by chaining methods — ``.style()``, ``.fmt()``, ``.group()``,
-    ``.theme()``, ``.plot()`` — and finally rendered to Typst, HTML, or ASCII
-    with ``.render()`` or ``.save()``. All chaining methods return the table
-    (``self``), so a single fluent expression can describe a complex table.
+    the built-in theme methods, ``.theme()``, and ``.plot()`` — and finally
+    rendered to Typst, HTML, or ASCII with ``.render()`` or ``.save()``. All
+    chaining methods return the table (``self``), so a single fluent expression
+    can describe a complex table.
 
     Parameters
     ----------
@@ -110,10 +110,6 @@ def tt(
         Escape cell text for the target backend (default ``True``). Typst and
         HTML metacharacters are escaped automatically; set ``False`` to pass
         raw markup through.
-    theme
-        Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
-        ``"empty"``, ``"rotate"``), a callable ``theme(table) -> TyTable``,
-        or ``None`` for no theme.
     finalize
         Optional post-render callback ``fn(rendered_string, output) -> str``
         run after every renderer; equivalent to calling ``.finalize(fn)``.
@@ -128,7 +124,7 @@ def tt(
     TypeError
         If ``width`` or one of its entries has an unsupported type.
     ValueError
-        If figure metadata, ``width``, or the requested theme is invalid.
+        If figure metadata or ``width`` is invalid.
 
     Examples
     --------
@@ -164,7 +160,6 @@ def tt(
         rownames=rownames,
         digits=digits,
         escape=escape,
-        theme=theme,
     )
     if finalize is not None:
         t.finalize(finalize)
@@ -267,9 +262,9 @@ class TyTable:
     ``.save()`` is called, so row indices always refer to the final, visible
     table.
 
-    Every mutator method (``.style()``, ``.fmt()``, ``.group()``, ``.theme()``,
-    ``.plot()``, ``.images()``, ``.finalize()``) returns ``self`` to enable
-    fluent chaining. ``.render()`` and ``.save()`` are terminal.
+    Every mutator method (``.style()``, ``.fmt()``, ``.group()``, the theme
+    methods, ``.plot()``, ``.images()``, ``.finalize()``) returns ``self`` to
+    enable fluent chaining. ``.render()`` and ``.save()`` are terminal.
     """
 
     def __init__(
@@ -288,7 +283,6 @@ class TyTable:
         rownames: bool = False,
         digits: int | None = None,
         escape: bool = True,
-        theme: str | Callable | None = "default",
     ) -> None:
         """Direct constructor — prefer the :func:`tt` factory.
 
@@ -299,7 +293,7 @@ class TyTable:
         TypeError
             If ``width`` or one of its entries has an unsupported type.
         ValueError
-            If figure metadata, ``width``, or the requested theme is invalid.
+            If figure metadata or ``width`` is invalid.
         """
         _validate_figure_options(figure, caption, label)
         self._data = data.clone()
@@ -316,8 +310,6 @@ class TyTable:
         self._escape = escape
         self._rownames = rownames
         self._digits = digits
-        self._theme_name = theme
-
         self._style_directives: list[StyleDirective] = []
         self._deferred_style_directives: list[StyleDirective] = []
         self._format_directives: list[FormatDirective] = []
@@ -338,22 +330,9 @@ class TyTable:
         if height is not None:
             self._typst_opts.row_height_em = float(height)
         self._typst_opts.column_gutter = gutter
+        self._base_typst_opts = replace(self._typst_opts)
 
-        self._apply_theme(theme)
-
-    def _apply_theme(self, theme: str | Callable | None) -> None:
-        """Resolve a theme spec (name, callable, or ``None``) and apply it to the table."""
-        if theme is None:
-            return
-        if callable(theme):
-            theme(self)
-            return
-        if isinstance(theme, str):
-            fn = THEMES.get(theme)
-            if fn is None:
-                raise ValueError(f"Unknown theme: {theme!r}. Available: {list(THEMES)}")
-            fn(self)
-            return
+        _themes.theme_default(self)
 
     def style(
         self,
@@ -932,16 +911,99 @@ class TyTable:
             self._colnames[k - 1] = nm
         return self
 
-    def theme(self, name: str | Callable | None = None) -> TyTable:
+    def theme(self, fn: Callable[[TyTable], TyTable | None]) -> TyTable:
         """
-        Apply (or re-apply) a theme to the table.
+        Apply a custom theme callable.
+
+        Use :meth:`theme_striped`, :meth:`theme_grid`, :meth:`theme_empty`,
+        :meth:`theme_rotate`, or :meth:`theme_resize` for built-in themes.
 
         Parameters
         ----------
-        name
-            Built-in theme name (``"default"``, ``"striped"``, ``"grid"``,
-            ``"empty"``, ``"rotate"``), a callable
-            ``theme(table) -> TyTable``, or ``None`` to apply no theme.
+        fn
+            Callable ``theme(table) -> TyTable | None``. It receives this table
+            and may add styles, formats, hooks, or rendering options.
+
+        Returns
+        -------
+        TyTable
+            ``self``, for chaining.
+
+        Raises
+        ------
+        TypeError
+            If ``fn`` is not callable.
+        """
+        if not callable(fn):
+            raise TypeError("theme() requires a callable; use a built-in theme_*() method")
+        fn(self)
+        return self
+
+    def theme_striped(self) -> TyTable:
+        """Add alternating grey backgrounds to data rows."""
+        _themes.theme_striped(self)
+        return self
+
+    def theme_grid(self) -> TyTable:
+        """Add borders around every cell."""
+        _themes.theme_grid(self)
+        return self
+
+    def theme_empty(self) -> TyTable:
+        """Reset prior themes, styles, formats, and Typst theme options.
+
+        This method is destructive and order-sensitive. Call it immediately
+        after :func:`tt` when starting from an unstyled table, then add any
+        formatting and styling that should remain. Constructor-level figure,
+        row-height, and gutter settings are preserved.
+        """
+        _themes.theme_empty(self)
+        return self
+
+    def theme_rotate(
+        self,
+        angle: float = 90,
+        i: int | str | Sequence[int | str] | None = None,
+        j: _ColumnSelector = None,
+    ) -> TyTable:
+        """Rotate the table, or selected cells when ``i`` or ``j`` is given.
+
+        Parameters
+        ----------
+        angle
+            Rotation in degrees (default ``90``).
+        i, j
+            Optional row/column selectors. With neither selector, rotate the
+            entire rendered table. With either selector, rotate matching cell
+            content using the same selector rules as :meth:`style`.
+
+        Returns
+        -------
+        TyTable
+            ``self``, for chaining.
+        """
+        _themes.theme_rotate(self, angle=angle, i=i, j=j)
+        return self
+
+    def theme_resize(
+        self,
+        width: float | None = 1,
+        height: float | None = None,
+        direction: str = "both",
+    ) -> TyTable:
+        """Scale Typst output to a fraction of the available page area.
+
+        Parameters
+        ----------
+        width
+            Target fraction of available page width (default ``1``). Used
+            unless ``height`` is provided.
+        height
+            Optional target fraction of available page height. When provided,
+            height drives uniform scaling and ``width`` is ignored.
+        direction
+            ``"down"`` shrinks only, ``"up"`` expands only, and ``"both"``
+            (default) always scales to the target.
 
         Returns
         -------
@@ -951,10 +1013,9 @@ class TyTable:
         Raises
         ------
         ValueError
-            If ``name`` is not a registered theme name.
+            If the resize configuration is invalid; raised when rendering.
         """
-        self._apply_theme(name)
-        self._theme_name = name
+        _themes.theme_resize(self, width=width, height=height, direction=direction)
         return self
 
     def finalize(self, fn: Callable[[str, str], str]) -> TyTable:

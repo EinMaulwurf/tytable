@@ -12,5 +12,7 @@ df = pl.DataFrame(
     }
 )
 
-for theme in ["default", "striped", "grid", "empty"]:
-    tt(df, theme=theme, caption=f"theme = {theme!r}").save(f"build/05_theme_{theme}.typ")
+tt(df, caption="default theme").save("build/05_theme_default.typ")
+tt(df, caption="default + striped themes").theme_striped().save("build/05_theme_striped.typ")
+tt(df, caption="default + grid themes").theme_grid().save("build/05_theme_grid.typ")
+tt(df, caption="empty theme").theme_empty().save("build/05_theme_empty.typ")

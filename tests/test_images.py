@@ -17,7 +17,7 @@ import sys
 import polars as pl
 from tytable import tt
 
-tt(pl.DataFrame({"A": [1]}), theme=None).render("html")
+tt(pl.DataFrame({"A": [1]})).theme_empty().render("html")
 assert "matplotlib" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", code], check=True)
@@ -25,7 +25,8 @@ assert "matplotlib" not in sys.modules
 
 def test_plot_and_image_calls_record_distinct_directive_types():
     table = (
-        tt(pl.DataFrame({"Value": [[1, 2, 3]]}), theme=None)
+        tt(pl.DataFrame({"Value": [[1, 2, 3]]}))
+        .theme_empty()
         .images(j="Value", paths=["image.png"])
         .plot(j="Value", fun=_sparkline)
     )
@@ -52,14 +53,14 @@ def _sparkline(values, *, color="black", xlim=None, **kw):
 class TestPlotSparkline:
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
         assert (tmp_path / "tytable_assets" / "plot_0000_testid0001.png").exists()
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
-        tt(df, theme=None).plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
+        tt(df).theme_empty().plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -67,13 +68,13 @@ class TestPlotSparkline:
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert_snapshot("images_sparkline", result)
 
     def test_sparkline_height_str(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline, height="1.5em").save(
+        tt(df).theme_empty().plot(j="Trend", fun=_sparkline, height="1.5em").save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -81,7 +82,7 @@ class TestPlotSparkline:
 
     def test_sparkline_custom_assets(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        tt(df, theme=None).plot(j="Trend", fun=_sparkline).save(
+        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(
             str(tmp_path / "sub/out.typ"), assets="../assets/myplots"
         )
         result = (tmp_path / "sub" / "out.typ").read_text()
@@ -90,7 +91,7 @@ class TestPlotSparkline:
 
     def test_sparkline_render_default_assets(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
         assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
 
 
@@ -98,7 +99,7 @@ class TestPlotSparkline:
 class TestImages:
     def test_images_existing_files(self, tmp_path):
         df = pl.DataFrame({"Logo": ["a.png", "b.png"]})
-        tt(df, theme=None).images(j="Logo", paths=["img/a.png", "img/b.png"]).save(
+        tt(df).theme_empty().images(j="Logo", paths=["img/a.png", "img/b.png"]).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -108,12 +109,15 @@ class TestImages:
     def test_image_paths_are_escaped_for_markup(self):
         df = pl.DataFrame({"Logo": ["placeholder"]})
 
-        html = tt(df, theme=None).images(j="Logo", paths=['x" onerror="alert(1)']).render("html")
+        html = tt(df).theme_empty().images(j="Logo", paths=['x" onerror="alert(1)']).render("html")
         assert '<img src="x&amp;quot; onerror=&amp;quot;alert(1)"' not in html
         assert '<img src="x&quot; onerror=&quot;alert(1)"' in html
 
         typst = (
-            tt(df, theme=None).images(j="Logo", paths=['x"), pagebreak(), image("']).render("typst")
+            tt(df)
+            .theme_empty()
+            .images(j="Logo", paths=['x"), pagebreak(), image("'])
+            .render("typst")
         )
         assert '#image("x\\"), pagebreak(), image(\\"", height: 1em)' in typst
 
@@ -133,7 +137,7 @@ class TestPlotnine:
             data = pd.DataFrame({"x": range(len(values)), "y": values})
             return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line(color=color)
 
-        tt(df, theme=None).plot(j="Trend", fun=p9_sparkline, height_px=400, width_px=1200).save(
+        tt(df).theme_empty().plot(j="Trend", fun=p9_sparkline, height_px=400, width_px=1200).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -145,7 +149,7 @@ class TestPlotnine:
 class TestPortable:
     def test_portable_mode_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df, theme=None).plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
         assert '#image("tytable_assets/plot_0000_testid0001.png"' in result
 
     def test_portable_theme_typst_inline_svg(self):
@@ -153,7 +157,8 @@ class TestPortable:
 
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = (
-            tt(df, theme=None)
+            tt(df)
+            .theme_empty()
             .plot(j="Trend", fun=_sparkline)
             .theme(lambda t: theme_typst(t, portable=True))
             .render("typst")
@@ -170,7 +175,8 @@ class TestPortable:
             raise RuntimeError("plot failed")
 
         table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}), theme=None)
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
+            .theme_empty()
             .plot(j="Trend", fun=fail)
             .theme(lambda t: theme_typst(t, portable=True))
         )
@@ -207,4 +213,4 @@ class TestValidation:
         monkeypatch.setattr("tytable._images._require_images", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match="images.*extra"):
-            build(tt(df, theme=None).plot(j="Trend", fun=_sparkline), "typst")
+            build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")

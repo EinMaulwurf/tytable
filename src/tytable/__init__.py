@@ -1,15 +1,15 @@
 """Public exports for :mod:`tytable`.
 
 Besides the :func:`tt` factory and :class:`TyTable`, the package exposes
-:data:`THEMES`, the registry of built-in theme callables.
+:data:`THEMES` for theme discovery and advanced composition. Apply built-ins
+through the chainable ``TyTable.theme_*()`` methods.
 """
 
 from ._themes import THEMES
 from ._tytable import TyTable, tt
 
-#: Built-in theme registry mapping public names to ``theme(table)`` callables.
-#: Pass a key to ``tt(theme=...)`` / ``TyTable.theme()``, or inspect and call
-#: a registry value when building a custom theme.
+#: Built-in theme registry mapping names to ``theme(table)`` callables.
+#: Normal application code should use the typed ``TyTable.theme_*()`` methods.
 
 try:
     from ._version import __version__

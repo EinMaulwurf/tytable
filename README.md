@@ -66,8 +66,8 @@ whole document.
   the column-name header; increasingly negative values move upward).
 - **Column selection by name**: `j="Score"` (preferred); `j=0` selects the first
   column by position.
-- **Method chaining**: `.style()`, `.fmt()`, `.group()`, `.theme()` all return
-  `self`. `.render()` / `.save()` are terminal.
+- **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()`
+  methods all return `self`. `.render()` / `.save()` are terminal.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
   as _intent_ and replayed in a fixed order at render time. Row indices always
   refer to the final, visible table.
@@ -95,6 +95,7 @@ make docs
 ## Coming from R tinytable
 
 `tt(df)` ↔ `tt(data)`, `.style()` ↔ `style_tt()`, `.fmt()` ↔ `format_tt()`,
-`.group()` ↔ `group_tt()`, `.theme()` ↔ `theme_tt()`. Indexing is **0-based**
+`.group()` ↔ `group_tt()`, and `.theme_striped()` / `.theme_grid()` correspond
+to `theme_tt()`. Indexing is **0-based**
 (vs R's 1-based) and columns are selected by **name** (preferred). The full
 comparison table is in the PDF above.

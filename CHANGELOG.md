@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking
+
+- Remove the `theme=` constructor option. Tables retain the implicit default
+  booktab styling; apply built-ins through typed chainable methods such as
+  `.theme_striped()`, `.theme_grid()`, `.theme_rotate()`, and `.theme_resize()`.
+  `.theme()` now accepts custom callables only.
+- Make `.theme_empty()` the explicit, order-sensitive reset for starting from
+  an unstyled table. It clears prior theme/style/format intent while preserving
+  constructor-level figure and layout options.
+
 ### Docs / CI
 
 - Build and attach the documentation PDF directly in the release workflow, and restrict release

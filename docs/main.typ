@@ -260,8 +260,9 @@ bold=True)` styles only that cell.
 
 == Everything returns `self`
 
-`.style()`, `.fmt()`, `.group()`, `.set_name()`, and `.theme()` all return the
-table, so you chain them. `.render()` and `.save()` are terminal.
+`.style()`, `.fmt()`, `.group()`, `.set_name()`, and the `.theme_*()` methods
+all return the table, so you chain them. `.theme(fn)` applies a custom theme
+callable. `.render()` and `.save()` are terminal.
 
 == Evaluation is lazy
 
@@ -537,16 +538,29 @@ background.
 
 = Themes
 
-Built-in themes: `default` (booktab rules), `striped`, `grid`, `empty`, and
-`rotate`. The `resize` theme (see the dedicated section) scales a table to fit
-the page. Pass a callable for a custom theme. The same data rendered under each
-built-in:
+Every table starts with the `default` booktab treatment: restrained top,
+header, and bottom rules. Add built-in themes through dedicated, typed methods:
+`.theme_striped()`, `.theme_grid()`, `.theme_rotate(...)`, and
+`.theme_resize(...)`. Calls stack, so a table can combine the default rules,
+striping, and resizing. Explicit `.style()` calls retain precedence over the
+deferred default and striped styles.
 
-The public `THEMES` constant is a dictionary mapping each built-in name to its
-theme callable. Import it with `from tytable import THEMES` to inspect available
-themes (`list(THEMES)`) or retrieve a callable for reuse in a custom theme. The
-registry should be treated as read-only; pass custom callables directly to
-`tt(theme=...)` or `.theme(...)` instead of modifying it.
+`.theme_empty()` is the escape hatch for a blank slate. It clears all themes,
+styles, formats, prepare hooks, and theme-level Typst options recorded before
+it, so call it immediately after `tt(...)` and before adding anything that
+should remain:
+
+```python
+table = tt(df).theme_empty().fmt(j="Score", digits=2).style(i="header", bold=True)
+```
+
+Use `.theme(custom_theme)` for a custom callable accepting the table and
+returning it (or `None`). The public `THEMES` registry remains available for
+discovery and advanced composition, but normal application code should prefer
+the typed methods.
+
+The gallery compares the default, stacked striped and grid treatments, and the
+unstyled result:
 
 #tag("SOURCE")
 #source("examples/05_theme.py")
@@ -601,7 +615,7 @@ of the available page area. It wraps the rendered fragment in a Typst
 factor. This is useful when a wide table would otherwise overflow the text
 column.
 
-Three knobs control the behaviour, exposed by the `theme_resize` callable:
+Three knobs control `.theme_resize()`:
 
 - `width` — target width as a fraction of the page content width (`1` = full
   width). Used unless `height` is given.
@@ -612,13 +626,12 @@ Three knobs control the behaviour, exposed by the `theme_resize` callable:
 
 ```python
 from tytable import tt
-from tytable._themes import theme_resize
 
 # Shrink only if wider than 95% of the page; leave smaller tables alone.
-tt(df).theme(lambda t: theme_resize(t, width=0.95, direction="down"))
+tt(df).theme_resize(width=0.95, direction="down")
 
-# Always scale to the full page width (the plain theme name does this).
-tt(df, theme="resize")
+# Always scale to the full page width.
+tt(df).theme_resize()
 ```
 
 #tag("SOURCE")
@@ -776,7 +789,8 @@ Start here when you know the task but not the method. Methods marked
   [Format values], [`.fmt(...)`], [chainable],
   [Group rows/columns], [`.group(...)`], [chainable],
   [Rename headers], [`.set_name(...)`], [chainable],
-  [Apply a theme], [`.theme(...)`], [chainable],
+  [Add a built-in theme], [`.theme_striped()` / `.theme_resize(...)`], [chainable],
+  [Apply a custom theme], [`.theme(fn)`], [chainable],
   [Add plots/images], [`.plot(...)` / `.images(...)`], [chainable],
   [Post-process output], [`.finalize(...)`], [chainable],
   [Get a string], [`.render(...)`], [`str` (terminal)],
@@ -834,7 +848,7 @@ options fall into four groups:
   [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
   [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
   [Values], [`digits`, `escape`], [global numeric precision and safe markup],
-  [Behaviour], [`theme`, `finalize`], [initial theme and output callback],
+  [Behaviour], [`finalize`], [initial output callback],
   [Reserved], [`rownames`], [present for parity; not implemented],
 )
 
@@ -876,12 +890,29 @@ With `j`, `name` is one display name or a list matching the selected columns.
 Without `j`, pass the complete list of display names. The DataFrame remains
 unchanged; later `j` selectors use the new display names.
 
-#api("Theme", api_signatures.at("theme"))
+#api("Custom theme", api_signatures.at("theme"))
 
-`name` is a built-in theme name, a callable `theme(table) -> TyTable`, or
-`None`. Built-ins are `default`, `striped`, `grid`, `empty`, `rotate`, and
-`resize`; `THEMES` exposes the registry of callables, which should be treated
-as read-only.
+`fn` is a callable `theme(table) -> TyTable | None`. Built-in themes use the
+typed methods below; they stack on the implicit default theme.
+
+#api("Add stripes", api_signatures.at("theme_striped"))
+
+#api("Add a grid", api_signatures.at("theme_grid"))
+
+#api("Reset styling", api_signatures.at("theme_empty"))
+
+This reset is destructive and order-sensitive. Call it immediately after
+`tt(...)`; constructor-level figure, row-height, and gutter settings survive.
+
+#api("Rotate", api_signatures.at("theme_rotate"))
+
+With no selectors, rotates the whole table. Pass `i` and/or `j` to rotate
+selected cell content instead.
+
+#api("Resize", api_signatures.at("theme_resize"))
+
+Scales Typst output by width or height. `direction` is `"down"`, `"up"`, or
+`"both"`.
 
 == Plots and images
 
@@ -972,7 +1003,7 @@ Python method chaining, 0-based row indices, and selecting columns by name.
   [`style_tt(x, ...)`], [`.style(...)`],
   [`format_tt(x, ...)`], [`.fmt(...)`],
   [`group_tt(x, ...)`], [`.group(...)`],
-  [`theme_tt(x, ...)`], [`.theme(...)` / `tt(theme=...)`],
+  [`theme_tt(x, ...)`], [`.theme_striped()` / `.theme_grid()` / other theme methods],
   [`print(x, "typst")`], [`.render("typst")`],
   [`save_tt(x, "out.typ")`], [`.save("out.typ")`],
   [`x %>% format(...) %>% ...`], [`.fmt(...).style(...)` — method chain],

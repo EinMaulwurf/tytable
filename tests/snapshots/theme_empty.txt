@@ -1,3 +1,4 @@
+#show figure: set block(breakable: false)
 #figure(
   kind: "tytable",
   supplement: "Table",

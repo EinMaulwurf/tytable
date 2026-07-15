@@ -10,7 +10,7 @@ DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 @pytest.mark.typst
 class TestThemeDefault:
     def test_booktab_rules(self):
-        out = tt(DF, theme="default").render("typst")
+        out = tt(DF).render("typst")
         assert out.count("table.hline") == 3
         assert "0.08em" in out
         assert "0.05em" in out
@@ -18,13 +18,13 @@ class TestThemeDefault:
 
     def test_no_colnames_still_top_and_bottom(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        out = tt(df, theme="default", colnames=False).render("typst")
+        out = tt(df, colnames=False).render("typst")
         assert out.count("table.hline") == 2
         assert_snapshot("theme_default_no_colnames", out)
 
     def test_with_col_groups(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4], "c": [5, 6], "d": [7, 8]})
-        out = tt(df, theme="default").group(j={"Group": [0, 1]}).render("typst")
+        out = tt(df).group(j={"Group": [0, 1]}).render("typst")
         assert out.count("table.hline") == 3
         assert_snapshot("theme_default_with_groups", out)
 
@@ -32,20 +32,21 @@ class TestThemeDefault:
 @pytest.mark.typst
 class TestThemeStriped:
     def test_even_row_background(self):
-        out = tt(DF, theme="striped").render("typst")
+        out = tt(DF).theme_striped().render("typst")
         assert "#ededed" in out
+        assert out.count("table.hline") == 3
         assert_snapshot("theme_striped", out)
 
     def test_three_rows(self):
         df = pl.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
-        out = tt(df, theme="striped").render("typst")
+        out = tt(df).theme_striped().render("typst")
         assert_snapshot("theme_striped_3rows", out)
 
 
 @pytest.mark.typst
 class TestThemeGrid:
     def test_grid_stroke_and_lines(self):
-        out = tt(DF, theme="grid").render("typst")
+        out = tt(DF).theme_grid().render("typst")
         assert "(paint: black)" in out
         assert "table.hline" in out
         assert "table.vline" in out
@@ -55,32 +56,45 @@ class TestThemeGrid:
 @pytest.mark.typst
 class TestThemeEmpty:
     def test_clears_all(self):
-        t = tt(DF, theme="default")
+        t = tt(DF).style(i=0, bold=True).fmt(j="A", digits=1)
         assert len(t._prepare_hooks) > 0
-        t.theme("empty")
+        assert len(t._style_directives) == 1
+        assert len(t._format_directives) == 1
+        t.theme_empty()
         assert len(t._style_directives) == 0
         assert len(t._format_directives) == 0
         assert len(t._prepare_hooks) == 0
 
     def test_no_lines_in_output(self):
-        out = tt(DF, theme="empty").render("typst")
+        out = tt(DF).theme_empty().render("typst")
         assert "table.hline" not in out
         assert "table.vline" not in out
         assert_snapshot("theme_empty", out)
+
+    def test_preserves_constructor_options(self):
+        t = tt(DF, figure=False, height=1.5, gutter="0.2em").theme_empty()
+        assert t._typst_opts.figure is False
+        assert t._typst_opts.row_height_em == 1.5
+        assert t._typst_opts.column_gutter == "0.2em"
 
 
 @pytest.mark.typst
 class TestThemeRotate:
     def test_whole_table_rotate(self):
-        out = tt(DF, theme="rotate").render("typst")
+        out = tt(DF).theme_rotate().render("typst")
         assert "#rotate(90" in out
         assert_snapshot("theme_rotate", out)
+
+    def test_selected_cell_rotate(self):
+        out = tt(DF).theme_rotate(angle=45, i="header", j="A").render("typst")
+        assert "rotate: 45deg" in out
+        assert "#rotate(45deg, reflow: true" not in out
 
 
 @pytest.mark.typst
 class TestThemeResize:
     def test_default_full_width_both(self):
-        out = tt(DF, theme="resize").render("typst")
+        out = tt(DF).theme_resize().render("typst")
         assert "#layout(size => {" in out
         assert "let body = [" in out
         assert "measure(body)" in out
@@ -90,46 +104,28 @@ class TestThemeResize:
         assert_snapshot("theme_resize_default", out)
 
     def test_shrink_only_down(self):
-        from tytable._themes import theme_resize
-
-        out = (
-            tt(DF, theme=None)
-            .theme(lambda t: theme_resize(t, width=0.8, direction="down"))
-            .render("typst")
-        )
+        out = tt(DF).theme_resize(width=0.8, direction="down").render("typst")
         assert "let target-width = size.width * 0.8" in out
         assert "if body-size.width > target-width {" in out
         assert_snapshot("theme_resize_down", out)
 
     def test_height_target(self):
-        from tytable._themes import theme_resize
-
-        out = (
-            tt(DF, theme=None)
-            .theme(lambda t: theme_resize(t, height=0.5, direction="both"))
-            .render("typst")
-        )
+        out = tt(DF).theme_resize(height=0.5, direction="both").render("typst")
         assert "let target-height = size.height * 0.5" in out
         assert "body-size.height" in out
         assert "target-width" not in out
         assert_snapshot("theme_resize_height", out)
 
     def test_up_direction(self):
-        from tytable._themes import theme_resize
-
-        out = (
-            tt(DF, theme=None)
-            .theme(lambda t: theme_resize(t, width=0.9, direction="up"))
-            .render("typst")
-        )
+        out = tt(DF).theme_resize(width=0.9, direction="up").render("typst")
         assert "if body-size.width < target-width {" in out
 
     def test_no_resize_without_direction(self):
-        out = tt(DF, theme=None).render("typst")
+        out = tt(DF).render("typst")
         assert "#layout(size => {" not in out
 
     def test_wraps_rotate_and_align(self):
-        t = tt(DF, theme="resize")
+        t = tt(DF).theme_resize()
         t._typst_opts.rotate_angle = 45
         t._typst_opts.align_figure = "c"
         out = t.render("typst")
@@ -138,14 +134,14 @@ class TestThemeResize:
         assert layout_idx < rotate_idx
 
     def test_invalid_direction_raises(self):
-        t = tt(DF, theme=None)
+        t = tt(DF)
         t._typst_opts.resize_direction = "sideways"
         t._typst_opts.resize_width = 0.5
         with pytest.raises(ValueError, match="resize_direction"):
             t.render("typst")
 
     def test_invalid_width_raises(self):
-        t = tt(DF, theme=None)
+        t = tt(DF)
         t._typst_opts.resize_direction = "both"
         t._typst_opts.resize_width = 0
         with pytest.raises(ValueError, match="resize_width"):
@@ -158,9 +154,8 @@ class TestThemeResize:
 
 @pytest.mark.typst
 class TestThemeMethod:
-    def test_dot_theme(self):
-        t = tt(DF, theme=None)
-        t.theme("grid")
+    def test_builtin_method(self):
+        t = tt(DF).theme_grid()
         out = t.render("typst")
         assert "(paint: black)" in out
         assert_snapshot("theme_method", out)
@@ -170,18 +165,18 @@ class TestThemeMethod:
             t.style(i="header", bold=True, background="#333333", color="white")
             return t
 
-        out = tt(DF, theme=None).theme(my_theme).render("typst")
+        out = tt(DF).theme(my_theme).render("typst")
         assert "bold: true" in out
         assert 'background: rgb("#333333")' in out
         assert_snapshot("theme_callable", out)
 
     def test_theme_then_user_override(self):
-        out = tt(DF, theme="striped").style(i=0, j=0, background="#ff0000").render("typst")
+        out = tt(DF).theme_striped().style(i=0, j=0, background="#ff0000").render("typst")
         assert 'rgb("#ff0000")' in out
         assert_snapshot("theme_override", out)
 
     def test_prepare_hook_can_reorder_directives_without_corrupting_theme_order(self):
-        table = tt(DF, theme="striped")
+        table = tt(DF).theme_striped()
         user_style = table.style(i=0, j=0, background="#ff0000")._style_directives[-1]
 
         def reorder(t):
@@ -193,18 +188,17 @@ class TestThemeMethod:
         out = table.render("typst")
         assert 'background: rgb("#ff0000")' in out
 
-    def test_unknown_theme_raises(self):
-        with pytest.raises(ValueError, match="Unknown theme"):
-            tt(DF, theme="nonexistent")
+    def test_theme_rejects_builtin_name(self):
+        with pytest.raises(TypeError, match="requires a callable"):
+            tt(DF).theme("grid")  # type: ignore[arg-type]
 
-    def test_theme_none_skips(self):
-        t = tt(DF, theme=None)
-        assert len(t._style_directives) == 0
-        assert len(t._prepare_hooks) == 0
+    def test_constructor_rejects_removed_theme_option(self):
+        with pytest.raises(TypeError, match="unexpected keyword argument 'theme'"):
+            tt(DF, theme="striped")  # type: ignore[call-arg]
 
     def test_theme_empty_method(self):
         t = tt(DF)
-        t.theme("empty")
+        t.theme_empty()
         assert len(t._style_directives) == 0
 
 
@@ -212,7 +206,7 @@ class TestThemeTypst:
     def test_rejects_unknown_option(self):
         from tytable._themes import theme_typst
 
-        table = tt(DF, theme=None)
+        table = tt(DF).theme_empty()
         with pytest.raises(
             ValueError,
             match=r"unknown Typst render option\(s\): portble.*Valid options:.*portable",
@@ -222,7 +216,7 @@ class TestThemeTypst:
     def test_invalid_options_do_not_apply_valid_options(self):
         from tytable._themes import theme_typst
 
-        table = tt(DF, theme=None)
+        table = tt(DF).theme_empty()
         with pytest.raises(ValueError, match="bad_option"):
             theme_typst(table, portable=True, bad_option=True)
 
@@ -306,7 +300,7 @@ class TestTHEMES:
         assert callable(THEMES["default"])
 
     def test_theme_returns_table(self):
-        t = tt(DF, theme=None)
+        t = tt(DF).theme_empty()
         result = THEMES["default"](t)
         assert isinstance(result, TyTable)
         assert result is t

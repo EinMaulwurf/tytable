@@ -130,7 +130,7 @@ class TestEscape:
 class TestFn:
     def test_empty_row_selector_does_not_fall_back_to_body(self):
         df = pl.DataFrame({"value": [1, 2]})
-        out = tt(df, theme=None).fmt(i=[], fn=lambda vec: ["changed"] * len(vec)).render("typst")
+        out = tt(df).theme_empty().fmt(i=[], fn=lambda vec: ["changed"] * len(vec)).render("typst")
         assert "changed" not in out
         assert "[1]" in out
         assert "[2]" in out
@@ -166,7 +166,7 @@ class TestFn:
 
     def test_fn_on_header_of_empty_table(self):
         df = pl.DataFrame(schema={"value": pl.Int64})
-        out = tt(df, theme=None).fmt(i="header", fn=lambda vec: ["renamed"]).render("typst")
+        out = tt(df).theme_empty().fmt(i="header", fn=lambda vec: ["renamed"]).render("typst")
         assert "[renamed]" in out
 
     def test_fn_on_header_and_body(self):

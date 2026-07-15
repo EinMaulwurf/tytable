@@ -78,8 +78,15 @@ def test_compile_special_chars(tmp_path):
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_themes(tmp_path):
     df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-    for theme in ("default", "striped", "grid", "empty", "rotate"):
-        assert _compile(tt(df, theme=theme).render("typst"), tmp_path) == 0
+    tables = (
+        tt(df),
+        tt(df).theme_striped(),
+        tt(df).theme_grid(),
+        tt(df).theme_empty(),
+        tt(df).theme_rotate(),
+    )
+    for table in tables:
+        assert _compile(table.render("typst"), tmp_path) == 0
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")

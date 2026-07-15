@@ -29,7 +29,8 @@ df = pl.DataFrame(
 )
 
 (
-    tt(df, caption="Country scores with flags and trend sparklines", theme="striped")
+    tt(df, caption="Country scores with flags and trend sparklines")
+    .theme_striped()
     .fmt(j="Score", digits=2)
     # Existing image paths are relative to the saved build/07_images.typ fragment.
     .images(
