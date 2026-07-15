@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Docs / CI
+
+- Build and attach the documentation PDF directly in the release workflow, and restrict release
+  assets to distributions and the PDF.
+
 ## [0.6.0] - 2026-07-14
 
 ### Fixes
