@@ -53,6 +53,7 @@
 #show figure.where(kind: "tytable"): set align(center)
 
 #import "build/meta.typ": commit, build_date
+#let api_signatures = json("build/api.json")
 
 // ---------------------------------------------------------------------------
 // Title page
@@ -814,7 +815,7 @@ spans or borders.
 
 == Creating a table
 
-#api("Create", "tt(\n    data, *, figure=True, caption=None, label=None, notes=None,\n    width=None, height=None, gutter=2, colnames=True,\n    colnames_override=None, rownames=False, digits=None, escape=True,\n    theme=\"default\", finalize=None,\n) -> TyTable")
+#api("Create", api_signatures.at("tt"))
 
 `data` is a Polars `DataFrame` and is cloned on construction. The constructor
 options fall into four groups:
@@ -846,7 +847,7 @@ normally construct with `tt(...)` and use `TyTable` for annotations.
 
 == Formatting and structure
 
-#api("Style", ".style(\n    i=None, j=None, *, regex=False, bold=None, italic=None,\n    underline=None, strikeout=None, monospace=None, smallcaps=None,\n    color=None, background=None, fontsize=None, align=None, alignv=None,\n    indent=None, colspan=None, rowspan=None, rotate=None, line=None,\n    line_color=None, line_width=0.1, line_trim=None, output=None,\n) -> TyTable")
+#api("Style", api_signatures.at("style"))
 
 Combines any properties sharing one selector. `align` uses `l`/`c`/`r`,
 `alignv` uses `t`/`m`/`b`, `rotate` is degrees, and `line` is any combination
@@ -854,27 +855,27 @@ of `t`/`b`/`l`/`r`. With several columns, `align="llr"` assigns one alignment
 per column. `fontsize`, `indent`, and `line_width` are in `em`. `output` can
 restrict a directive to a tuple such as `("typst",)`.
 
-#api("Format", ".fmt(\n    i=None, j=None, *, regex=False, digits=None,\n    num_fmt=\"decimal\", replace=None, escape=False, fn=None, output=None,\n) -> TyTable")
+#api("Format", api_signatures.at("fmt"))
 
 Transforms values in this order: `digits`, `replace`, `escape`, `fn`.
 `num_fmt` is `"decimal"` or `"significant"`; `replace` may blank missing
 values, supply a replacement string, or map old values to new ones. `fn`
 receives one column as `list[str]` and must return a list of the same length.
 
-#api("Group", ".group(i=None, j=None, *, delimiter=None) -> TyTable")
+#api("Group", api_signatures.at("group"))
 
 For row groups, pass `{label: row}` or a list with one group value per data row.
 For spanning column headers, pass `{label: [columns]}` as `j`, or pass a literal
 string as `delimiter` to split every column name. `j` and `delimiter` are
 mutually exclusive.
 
-#api("Rename display headers", ".set_name(j=None, *, regex=False, name) -> TyTable")
+#api("Rename display headers", api_signatures.at("set_name"))
 
 With `j`, `name` is one display name or a list matching the selected columns.
 Without `j`, pass the complete list of display names. The DataFrame remains
 unchanged; later `j` selectors use the new display names.
 
-#api("Theme", ".theme(name=None) -> TyTable")
+#api("Theme", api_signatures.at("theme"))
 
 `name` is a built-in theme name, a callable `theme(table) -> TyTable`, or
 `None`. Built-ins are `default`, `striped`, `grid`, `empty`, `rotate`, and
@@ -886,30 +887,30 @@ as read-only.
 Install the `images` extra for both methods. Media is materialized when the
 table renders or saves, not when the directive is recorded.
 
-#api("Generate plots", ".plot(\n    i=None, j=None, *, regex=False, fun, data=None, height=1.0,\n    height_px=400, width_px=1200, color=\"black\", xlim=None, output=None,\n) -> TyTable")
+#api("Generate plots", api_signatures.at("plot"))
 
 `j` and `fun` are required. The callable receives the typed cell value (or the
 matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Pixel
 dimensions control PNG generation; `height` controls its displayed cell size.
 
-#api("Embed files", ".images(\n    i=None, j=None, *, regex=False, paths, height=1.0, output=None,\n) -> TyTable")
+#api("Embed files", api_signatures.at("images"))
 
 `j` and `paths` are required. Paths are assigned row-major across selected
 cells. Use `.save(..., assets=...)` to control where referenced files live.
 
 == Rendering and output
 
-#api("Post-process", ".finalize(fn) -> TyTable")
+#api("Post-process", api_signatures.at("finalize"))
 
 Registers `fn(rendered: str, output: str) -> str`. Callbacks run in registration
 order after any renderer and are useful for narrowly scoped integration markup.
 
-#api("Render string", ".render(output=\"typst\") -> str")
+#api("Render string", api_signatures.at("render"))
 
 `output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
 intent and runs finalizers. The same table can be rendered more than once.
 
-#api("Save file", ".save(path, assets=None) -> None")
+#api("Save file", api_signatures.at("save"))
 
 Creates parent directories and infers HTML from `.html` / `.htm`; other
 suffixes produce Typst. `assets` is relative to the output file and defaults to
