@@ -149,11 +149,11 @@ No release notes were provided for this release.
 No release notes were provided for this release.
 
 [Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...HEAD
-[0.6.0]: https://github.com/EinMaulwurf/tytable/compare/0.5.0...v0.6.0
-[0.5.0]: https://github.com/EinMaulwurf/tytable/compare/0.4.0...0.5.0
-[0.4.0]: https://github.com/EinMaulwurf/tytable/compare/0.3.1...0.4.0
-[0.3.1]: https://github.com/EinMaulwurf/tytable/compare/0.3.0...0.3.1
-[0.3.0]: https://github.com/EinMaulwurf/tytable/compare/0.2.0...0.3.0
-[0.2.0]: https://github.com/EinMaulwurf/tytable/compare/0.1.1...0.2.0
-[0.1.1]: https://github.com/EinMaulwurf/tytable/compare/0.1.0...0.1.1
-[0.1.0]: https://github.com/EinMaulwurf/tytable/releases/tag/0.1.0
+[0.6.0]: https://github.com/EinMaulwurf/tytable/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/EinMaulwurf/tytable/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/EinMaulwurf/tytable/compare/v0.3.1...v0.4.0
+[0.3.1]: https://github.com/EinMaulwurf/tytable/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/EinMaulwurf/tytable/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/EinMaulwurf/tytable/compare/v0.1.1...v0.2.0
+[0.1.1]: https://github.com/EinMaulwurf/tytable/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/EinMaulwurf/tytable/releases/tag/v0.1.0
