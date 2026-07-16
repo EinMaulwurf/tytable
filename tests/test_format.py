@@ -104,7 +104,7 @@ class TestFormattingUtilities:
         [
             ("a#b", True, "typst", "a\\#b"),
             ("a<b", True, "html", "a&lt;b"),
-            ("a&b", "typst", "ascii", "a&amp;b"),
+            ("a&b", "typst", "ascii", "a&b"),
             ("a#b", False, "typst", "a#b"),
         ],
     )

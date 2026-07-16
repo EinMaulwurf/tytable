@@ -131,8 +131,10 @@ def _insert_footnote_markers(
         if marker is None:
             continue
 
-        if output in ("html", "ascii"):
+        if output == "html":
             marker_text = f"<sup>{escape_html(str(marker))}</sup>"
+        elif output == "ascii":
+            marker_text = f"[{marker}]"
         else:
             marker_text = f"#super[{escape_typst(marker)}]"
 
@@ -283,7 +285,9 @@ def _apply_global_escape(state: _BuildState) -> None:
     if not state.table._escape:
         return
 
-    escape = escape_html if state.output in ("html", "ascii") else escape_typst
+    if state.output == "ascii":
+        return
+    escape = escape_html if state.output == "html" else escape_typst
     for col_idx, val in enumerate(state.colnames_display):
         if (-1, col_idx) not in state.escaped_cells:
             state.colnames_display[col_idx] = escape(val)

@@ -1,5 +1,6 @@
 import polars as pl
 import pytest
+from wcwidth import wcswidth
 
 from tests.helpers import assert_snapshot
 from tytable import tt
@@ -229,6 +230,44 @@ class TestAscii:
         df = pl.DataFrame({"A": ["x" * 70]})
         out = tt(df).theme_empty().render("ascii")
         assert "…" in out
+
+    def test_plain_text_does_not_leak_html_escaping(self):
+        df = pl.DataFrame({"A&B": ["<tag>"]})
+        out = tt(df).theme_empty().render("ascii")
+
+        assert "A&B" in out
+        assert "<tag>" in out
+        assert "&amp;" not in out
+        assert "&lt;" not in out
+
+    def test_caption_and_notes_use_plain_text_markers(self):
+        df = pl.DataFrame({"A": [1]})
+        out = tt(
+            df,
+            caption="Results & notes",
+            notes=[
+                {"text": "Significant < 0.05", "i": [0], "j": [0]},
+                "Source: example",
+            ],
+        ).render("ascii")
+
+        assert out.startswith("Results & notes\n\n+")
+        assert "| 1[1] |" in out
+        assert out.endswith("[1] Significant < 0.05\nSource: example")
+        assert "<sup>" not in out
+
+    def test_unicode_display_width_keeps_borders_aligned(self):
+        df = pl.DataFrame({"text": ["日本語", "abc"], "n": [1, 2]})
+        lines = tt(df).theme_empty().render("ascii").splitlines()
+
+        assert len({wcswidth(line) for line in lines}) == 1
+
+    def test_long_unicode_cell_truncates_by_display_width(self):
+        df = pl.DataFrame({"text": ["界" * 40]})
+        out = tt(df).theme_empty().render("ascii")
+
+        assert "界" * 29 + "…" in out
+        assert max(wcswidth(line) for line in out.splitlines()) == 64
 
 
 @pytest.mark.html

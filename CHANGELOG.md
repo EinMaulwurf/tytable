@@ -29,6 +29,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Apply `.plot()` pixel dimensions consistently to both Matplotlib and plotnine
   output.
+- Render ASCII previews as native plain text instead of leaking HTML entities and
+  footnote tags, include captions and notes, and align/truncate Unicode content by
+  terminal display width.
 
 ### Docs / CI
 

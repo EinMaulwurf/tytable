@@ -17,7 +17,7 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Operating System :: OS Independent",
 ]
-dependencies = ["polars>=1.0"]
+dependencies = ["polars>=1.0", "wcwidth>=0.2.13"]
 
 [project.optional-dependencies]
 images = ["matplotlib>=3.7", "numpy>=1.24"]

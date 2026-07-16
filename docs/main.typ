@@ -1009,6 +1009,22 @@ order after any renderer and are useful for narrowly scoped integration markup.
 `output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
 intent and runs finalizers. The same table can be rendered more than once.
 
+=== ASCII terminal preview
+
+`repr(table)` and `table.render("ascii")` produce a fixed-width plain-text
+preview. Formatting, renamed columns, row groups, and horizontal alignment are
+preserved. Captions and notes are emitted as plain text, with targeted note
+markers written as `[1]`, `[*]`, and so on. Cells are limited to 60 terminal
+columns and truncated with an ellipsis; wide and combining Unicode characters
+are measured by their terminal display width.
+
+ASCII output intentionally omits visual properties that plain text cannot
+represent reliably, including colors, backgrounds, font styles, rotation, and
+line styling. Column-group headers and general row/column spans are currently
+not represented. Use HTML or Typst when those layout features matter. ASCII is
+available through `.render("ascii")`; `.save()` continues to infer only HTML or
+Typst from the destination suffix.
+
 #api("Save file", api_signatures.at("save"))
 
 Creates parent directories and infers HTML from `.html` / `.htm`; other

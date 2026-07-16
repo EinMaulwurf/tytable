@@ -84,10 +84,12 @@ def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
 def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
     """Re-escape a cell string for the target backend when ``fmt(escape=...)`` is set."""
     if escape_spec is True or escape_spec == "typst":
-        if output in ("html", "ascii"):
+        if output == "html":
             from ._escape import escape_html
 
             return escape_html(current_str)
+        if output == "ascii":
+            return current_str
         return escape_typst(current_str)
     return current_str
 
