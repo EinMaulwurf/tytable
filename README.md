@@ -2,7 +2,7 @@
 
 A small Python library that turns **Polars DataFrames** into **Typst tables**,
 inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable)
-package. Most of tinytable's styling power, plus image/sparkline support and a
+package. Most of tinytable's styling power, including image/sparkline support and a
 Jupyter HTML preview.
 
 ## Install
@@ -25,7 +25,7 @@ For plots, sparklines, and embedded images, install the optional extra:
 uv add "tytable[images]"
 ```
 
-For development (clone and):
+For development, clone the repo and run:
 
 ```
 uv sync --all-extras
@@ -77,15 +77,14 @@ whole document.
 
 ## Documentation
 
-Full documentation with **rendered examples** (source + result side-by-side),
-the complete **API reference**, and an R-tinytable comparison table live in the
-PDF built from [`docs/main.typ`](docs/main.typ):
+A practical guide with **rendered examples** (source + result) from easy to complex,
+**API reference**, and an R-tinytable comparison table live in the PDF built from [`docs/main.typ`](docs/main.typ):
 
 - **Always-current build (HEAD):** <https://einmaulwurf.github.io/tytable/>
 - **Versioned (latest release):**
   <https://github.com/EinMaulwurf/tytable/releases/latest/download/tytable-docs.pdf>
 
-Build locally (requires the `typst` CLI):
+Build locally (requires the `typst` CLI, install from [here](https://typst.app/open-source)):
 
 ```
 make docs
