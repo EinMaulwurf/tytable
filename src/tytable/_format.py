@@ -1,5 +1,5 @@
 """
-Value formatting: decimal, significant, scientific, replace, escape, and fn transforms.
+Value formatting: numeric, replace, escape, function, line-break, and math transforms.
 
 Applied during the render pipeline by :func:`tytable._resolve.build`.
 """
@@ -255,6 +255,62 @@ def _apply_escapes(
     return set(cells)
 
 
+def _apply_linebreaks(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+    output: str,
+    *,
+    global_escape: bool,
+    escaped_cells: set[Cell],
+) -> dict[Cell, str]:
+    """Replace a literal marker with safe backend-native line-break markup."""
+    marker = directive.linebreak
+    separators = {"typst": " \\ ", "html": "<br>"}
+    separator = separators.get(output)
+    if marker is None or separator is None:
+        return {}
+
+    generated_markup: dict[Cell, str] = {}
+    for cell in cells:
+        current = _cell_value(cell, data_body, colnames_display)
+        if marker not in current:
+            continue
+        chunks = current.split(marker)
+        math_content = directive.math and output == "typst"
+        if (
+            not math_content
+            and cell not in escaped_cells
+            and (global_escape or bool(directive.escape))
+        ):
+            chunks = [_apply_escape(chunk, True, output) for chunk in chunks]
+        formatted = separator.join(chunks)
+        _set_cell_value(cell, formatted, data_body, colnames_display)
+        generated_markup[cell] = formatted
+    return generated_markup
+
+
+def _apply_math(
+    cells: list[Cell],
+    directive: FormatDirective,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+    output: str,
+) -> dict[Cell, str]:
+    """Wrap selected values in Typst math, leaving other backends unchanged."""
+    if not directive.math or output != "typst":
+        return {}
+
+    generated_markup: dict[Cell, str] = {}
+    for cell in cells:
+        current = _cell_value(cell, data_body, colnames_display)
+        formatted = current if current.startswith("$") and current.endswith("$") else f"${current}$"
+        _set_cell_value(cell, formatted, data_body, colnames_display)
+        generated_markup[cell] = formatted
+    return generated_markup
+
+
 def apply_formats(
     data_body: list[list[str]],
     typed_body: list[list[Any]],
@@ -316,6 +372,18 @@ def apply_formats(
         _apply_replacements(
             target_cells, d, data_body, typed_body, colnames_display, table._colnames
         )
+        generated_markup.update(
+            _apply_linebreaks(
+                target_cells,
+                d,
+                data_body,
+                colnames_display,
+                output,
+                global_escape=table._escape,
+                escaped_cells=escaped_cells,
+            )
+        )
+        generated_markup.update(_apply_math(target_cells, d, data_body, colnames_display, output))
         intact_markup = {
             cell
             for cell, generated in generated_markup.items()

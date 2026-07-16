@@ -26,6 +26,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   optional repeated header rows.
 - Add `num_fmt="scientific"` to `.fmt()` with native mathematical notation in
   Typst and HTML output.
+- Add `.fmt(linebreak=...)` for safe backend-native multiline cells and
+  `.fmt(math=True)` for Typst equations.
 
 ### Fixes
 

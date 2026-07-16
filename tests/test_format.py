@@ -149,6 +149,98 @@ class TestEscape:
         assert "\\#" in out
 
 
+class TestLinebreak:
+    def test_typst_uses_native_linebreak_and_escapes_text(self):
+        df = pl.DataFrame({"text": ["first\n#second"]})
+        out = tt(df).theme_empty().fmt(j="text", linebreak="\n").render("typst")
+        assert "[first \\ \\#second]" in out
+
+    def test_html_uses_br_and_escapes_text(self):
+        df = pl.DataFrame({"text": ["<first>|second&"]})
+        out = tt(df).theme_empty().fmt(j="text", linebreak="|").render("html")
+        assert "&lt;first&gt;<br>second&amp;" in out
+
+    def test_escape_false_preserves_raw_text_around_html_break(self):
+        df = pl.DataFrame({"text": ["<b>first</b>|second"]})
+        out = tt(df, escape=False).theme_empty().fmt(j="text", linebreak="|").render("html")
+        assert "<b>first</b><br>second" in out
+
+    def test_directive_escape_escapes_chunks(self):
+        df = pl.DataFrame({"text": ["#first|[second]"]})
+        out = (
+            tt(df, escape=False)
+            .theme_empty()
+            .fmt(j="text", linebreak="|", escape=True)
+            .render("typst")
+        )
+        assert "[\\#first \\ \\[second\\]]" in out
+
+    def test_ascii_leaves_marker_intact(self):
+        df = pl.DataFrame({"text": ["first|second"]})
+        out = tt(df).theme_empty().fmt(j="text", linebreak="|").render("ascii")
+        assert "first|second" in out
+
+    def test_linebreak_can_target_header(self):
+        df = pl.DataFrame({"first|second": [1]})
+        out = tt(df).theme_empty().fmt(i="header", linebreak="|").render("html")
+        assert ">first<br>second</th>" in out
+
+    def test_absent_marker_does_not_make_cell_trusted(self):
+        df = pl.DataFrame({"text": ["#value"]})
+        out = tt(df).theme_empty().fmt(j="text", linebreak="|").render("typst")
+        assert "[\\#value]" in out
+
+    def test_empty_marker_raises(self):
+        df = pl.DataFrame({"text": ["value"]})
+        with pytest.raises(ValueError, match="must not be empty"):
+            tt(df).fmt(linebreak="")
+
+    def test_non_string_marker_raises(self):
+        df = pl.DataFrame({"text": ["value"]})
+        with pytest.raises(TypeError, match="must be a string or None"):
+            tt(df).fmt(linebreak=1)  # type: ignore[arg-type]
+
+
+class TestMath:
+    def test_typst_wraps_equation_without_escaping_math_syntax(self):
+        df = pl.DataFrame({"equation": ["sum_(i=1)^n i"]})
+        out = tt(df).theme_empty().fmt(j="equation", math=True).render("typst")
+        assert "[$sum_(i=1)^n i$]" in out
+
+    def test_existing_math_is_not_double_wrapped(self):
+        df = pl.DataFrame({"equation": ["$x^2$"]})
+        out = tt(df).theme_empty().fmt(j="equation", math=True).render("typst")
+        assert "[$x^2$]" in out
+        assert "[$$x^2$$]" not in out
+
+    def test_scientific_math_is_not_double_wrapped(self):
+        df = pl.DataFrame({"value": [1200.0]})
+        out = (
+            tt(df)
+            .theme_empty()
+            .fmt(j="value", digits=1, num_fmt="scientific", math=True)
+            .render("typst")
+        )
+        assert "[$1.2 times 10^3$]" in out
+
+    @pytest.mark.parametrize("output", ["html", "ascii"])
+    def test_other_backends_retain_original_value(self, output):
+        df = pl.DataFrame({"equation": ["x^2"]})
+        out = tt(df).theme_empty().fmt(j="equation", math=True).render(output)
+        assert "x^2" in out
+        assert "$x^2$" not in out
+
+    def test_math_and_linebreak_compose(self):
+        df = pl.DataFrame({"equation": ["x = 1|y = 2"]})
+        out = tt(df).theme_empty().fmt(j="equation", linebreak="|", math=True).render("typst")
+        assert "[$x = 1 \\ y = 2$]" in out
+
+    def test_non_bool_math_raises(self):
+        df = pl.DataFrame({"equation": ["x"]})
+        with pytest.raises(TypeError, match="math must be a bool"):
+            tt(df).fmt(math="yes")  # type: ignore[arg-type]
+
+
 @pytest.mark.typst
 class TestFn:
     def test_empty_row_selector_does_not_fall_back_to_body(self):

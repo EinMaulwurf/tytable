@@ -46,7 +46,7 @@ class StyleDirective:
 
 @dataclass(frozen=True)
 class FormatDirective:
-    """A single ``.fmt()`` call: selectors plus numeric/format/replace/fn transforms."""
+    """A single ``.fmt()`` call: selectors plus value-formatting transforms."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
@@ -56,6 +56,8 @@ class FormatDirective:
     replace: dict | str | bool | None = None
     escape: bool | str = False
     fn: Callable | None = None
+    linebreak: str | None = None
+    math: bool = False
     output: tuple[str, ...] | None = None
 
 

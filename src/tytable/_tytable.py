@@ -529,13 +529,16 @@ class TyTable:
         replace: dict | str | bool | None = None,
         escape: bool = False,
         fn: Callable | None = None,
+        linebreak: str | None = None,
+        math: bool = False,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
         """
         Apply value formatting to selected cells.
 
-        ``digits``, ``replace``, ``escape``, and ``fn`` may be combined in a
-        single call — they run in that order.
+        The formatting options may be combined in a single call. Numeric
+        formatting runs first, followed by ``fn``, ``replace``, ``linebreak``,
+        ``math``, and escaping.
 
         Parameters
         ----------
@@ -558,6 +561,12 @@ class TyTable:
             Custom column-wise transform ``fn(values: list[str]) -> list[str]``.
             Called once per selected column with the current string values; the
             returned list must have the same length.
+        linebreak
+            Replace this literal marker with a backend-native line break: ``\\ ``
+            in Typst and ``<br>`` in HTML. ASCII output leaves the marker intact.
+        math
+            Wrap selected values in Typst math delimiters (``$...$``). This is
+            intentionally a no-op for HTML and ASCII output.
         output
             Restrict this directive to the given output backends. ``None``
             applies to all.
@@ -570,8 +579,9 @@ class TyTable:
         Raises
         ------
         TypeError
-            If a row or column selector has an unsupported type; raised when
-            the table is rendered.
+            If ``linebreak`` or ``math`` has an unsupported type, or if a row
+            or column selector has an unsupported type. Selector errors are
+            raised when the table is rendered.
         ValueError
             If a selector is invalid or ``fn`` returns the wrong number of
             values; raised when the table is rendered.
@@ -583,6 +593,12 @@ class TyTable:
         ...  .fmt(j="rev", digits=2)
         ...  .fmt(j="rev", replace={"null": "—"}))
         """
+        if linebreak is not None and not isinstance(linebreak, str):
+            raise TypeError("linebreak marker must be a string or None")
+        if linebreak == "":
+            raise ValueError("linebreak marker must not be empty")
+        if not isinstance(math, bool):
+            raise TypeError("math must be a bool")
         self._format_directives.append(
             FormatDirective(
                 i=i,
@@ -593,6 +609,8 @@ class TyTable:
                 replace=replace,
                 escape=escape,
                 fn=fn,
+                linebreak=linebreak,
+                math=math,
                 output=output,
             )
         )

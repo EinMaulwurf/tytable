@@ -76,6 +76,13 @@ def test_compile_special_chars(tmp_path):
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_math_and_linebreak(tmp_path):
+    df = pl.DataFrame({"Formula": ["x^2 + y^2"], "Detail": ["first|second"]})
+    typ = tt(df).fmt(j="Formula", math=True).fmt(j="Detail", linebreak="|").render("typst")
+    assert _compile(typ, tmp_path) == 0
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_themes(tmp_path):
     df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
     tables = (

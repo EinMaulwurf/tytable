@@ -351,7 +351,28 @@ reaching back into polars:
   (`num_fmt="scientific"`)
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}`
   mapping
+- `linebreak` — replace a literal marker with a native line break (`\\ ` in
+  Typst and `<br>` in HTML)
+- `math` — typeset selected values as Typst equations
 - `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
+
+Formatting text and equations does not require disabling safe escaping:
+
+```python
+df = pl.DataFrame({
+    "Formula": ["x^2 + y^2", "sum_(i=1)^n i"],
+    "Detail": ["first line|second line", "one line"],
+})
+
+table = (
+    tt(df)
+    .fmt(j="Formula", math=True)
+    .fmt(j="Detail", linebreak="|")
+)
+```
+
+Math mode is Typst-specific; HTML and ASCII retain the original value.
+Line-break replacement targets Typst and HTML, while ASCII retains the marker.
 
 #tag("SOURCE")
 #source("examples/02_format.py")
@@ -1048,10 +1069,13 @@ restrict a directive to a tuple such as `("typst",)`.
 
 #api("Format", api_signatures.at("fmt"))
 
-Transforms values in this order: `digits`, `replace`, `escape`, `fn`.
+Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`,
+`math`, then `escape`.
 `num_fmt` is `"decimal"`, `"significant"`, or `"scientific"`; `replace` may blank missing
-values, supply a replacement string, or map old values to new ones. `fn`
-receives one column as `list[str]` and must return a list of the same length.
+values, supply a replacement string, or map old values to new ones. `linebreak`
+is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst
+values in math delimiters without changing HTML or ASCII. `fn` receives one
+column as `list[str]` and must return a list of the same length.
 
 #api("Group", api_signatures.at("group"))
 
