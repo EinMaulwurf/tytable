@@ -9,8 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Docs / CI
 
-- Compile generated tables against Typst 0.13.1, 0.14.2, and 0.15.0 in CI, with compiler
-  diagnostics included in test failures.
+- Support Typst 0.11.0 or newer, compile generated tables against Typst 0.11.0, 0.14.2,
+  and 0.15.0 in CI, and build published documentation with Typst 0.15.0. Compiler
+  diagnostics are included in test failures.
 
 ## [1.0.0] - 2026-07-16
 

@@ -33,6 +33,8 @@ jobs:
 
       - name: Install Typst
         uses: typst-community/setup-typst@v5
+        with:
+          typst-version: "0.15.0"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
