@@ -52,7 +52,7 @@
 // Center every tytable figure and keep it from breaking awkwardly.
 #show figure.where(kind: "tytable"): set align(center)
 
-#import "build/meta.typ": commit, build_date
+#import "build/meta.typ": build_date, commit
 #let api_signatures = json("build/api.json")
 
 // ---------------------------------------------------------------------------
@@ -182,7 +182,9 @@ table
 ```
 
 Jupyter shows an HTML preview. In a script, `.save("catalog.typ")` writes the
-Typst fragment shown above.
+Typst fragment shown above. Saving does not compile a PDF; install the
+#link("https://typst.app/open-source/")[Typst CLI] before using `typst compile`
+locally.
 
 == Make one column easier to read
 
@@ -457,6 +459,28 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 `monospace`, `smallcaps`, `color`, `fontsize` (plus `align`, `background`, and
 `indent` for notes). Use `output=` to restrict styling to one backend, e.g.
 `output=("typst",)`.
+
+== Target notes to cells
+
+A plain string in `notes` is an unmarked footer note. Use a dictionary when a
+note should point back to one or more cells. Its `text` value is the footer
+text, while `i` selects rows and `j` selects columns. Row selectors follow the
+normal conventions (`0` is the first data row and `"header"` is the column-name
+row); column names are preferred over positions.
+
+If no `marker` is supplied, targeted notes receive superscript numbers in note
+order. Set `marker` explicitly for a symbol or label such as `"*"`; the same
+marker appears at every selected cell and beside the footer text. For a cell
+target, supply `i`; omitting `j` targets every column in those rows. When both
+selectors are lists, tytable marks their cross-product, not pairwise row/column
+coordinates.
+
+#tag("SOURCE")
+#source("examples/04_targeted_notes.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/04_targeted_notes.typ"
 
 == List selectors
 
@@ -779,11 +803,7 @@ Start here when you know the task but not the method. Methods marked
   align: (left, left, left),
   inset: 6pt,
   stroke: (x, y) => if y == 0 { (bottom: 0.7pt + rgb("#153243")) } else { none },
-  table.header(
-    text(weight: "bold")[Task],
-    text(weight: "bold")[Use],
-    text(weight: "bold")[Result],
-  ),
+  table.header(text(weight: "bold")[Task], text(weight: "bold")[Use], text(weight: "bold")[Result]),
   [Create], [`tt(...)`], [`TyTable`],
   [Style cells], [`.style(...)`], [chainable],
   [Format values], [`.fmt(...)`], [chainable],
@@ -807,11 +827,7 @@ Start here when you know the task but not the method. Methods marked
   align: (left, left, left),
   inset: 6pt,
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
-  table.header(
-    text(weight: "bold")[Selector],
-    text(weight: "bold")[Example],
-    text(weight: "bold")[Meaning],
-  ),
+  table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
   [`i`], [`0`, `2`, `[0, 2]`], [0-based data row(s)],
   [`i`], [`"header"`, `"body"`], [column names or all data rows],
   [`i`], [`"groupi"`, `"groupj"`], [row- or column-group header rows],
@@ -839,11 +855,7 @@ options fall into four groups:
   columns: (1.05fr, 1.9fr, 2.05fr),
   align: (left, left, left),
   inset: 5pt,
-  table.header(
-    text(weight: "bold")[Concern],
-    text(weight: "bold")[Options],
-    text(weight: "bold")[Notes],
-  ),
+  table.header(text(weight: "bold")[Concern], text(weight: "bold")[Options], text(weight: "bold")[Notes]),
   [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
   [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
   [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
