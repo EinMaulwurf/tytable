@@ -24,6 +24,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add `.theme_multipage(repeat_headers=True)` for breakable Typst tables with
   optional repeated header rows.
+- Add `num_fmt="scientific"` to `.fmt()` with native mathematical notation in
+  Typst and HTML output.
 
 ### Fixes
 

@@ -545,8 +545,9 @@ class TyTable:
         digits
             Number of decimal places. Combined with ``num_fmt``.
         num_fmt
-            Numeric style: ``"decimal"`` (fixed decimals, default) or
-            ``"significant"`` (significant figures).
+            Numeric style: ``"decimal"`` (fixed decimals, default),
+            ``"significant"`` (significant figures), or ``"scientific"``
+            (scientific notation).
         replace
             Substitute values: ``True`` blanks out nulls/NaNs, a ``str`` fills
             them, or a ``{old: new}`` dict maps old (typed values or string

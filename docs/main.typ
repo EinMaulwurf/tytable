@@ -346,8 +346,9 @@ whatever strings Polars produces, so characters like `$` are escaped for you.)
 For quick, in-table transforms that stay inside the `tt()` chain, without
 reaching back into polars:
 
-- `digits` — fixed decimal places (`num_fmt="decimal"`) or significant figures
-  (`num_fmt="significant"`)
+- `digits` — fixed decimal places (`num_fmt="decimal"`), significant figures
+  (`num_fmt="significant"`), or typeset scientific notation
+  (`num_fmt="scientific"`)
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}`
   mapping
 - `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
@@ -1048,7 +1049,7 @@ restrict a directive to a tuple such as `("typst",)`.
 #api("Format", api_signatures.at("fmt"))
 
 Transforms values in this order: `digits`, `replace`, `escape`, `fn`.
-`num_fmt` is `"decimal"` or `"significant"`; `replace` may blank missing
+`num_fmt` is `"decimal"`, `"significant"`, or `"scientific"`; `replace` may blank missing
 values, supply a replacement string, or map old values to new ones. `fn`
 receives one column as `list[str]` and must return a list of the same length.
 

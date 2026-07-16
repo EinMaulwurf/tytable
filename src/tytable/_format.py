@@ -1,5 +1,5 @@
 """
-Value formatting: digits, significant figures, replace, escape, and fn transforms.
+Value formatting: decimal, significant, scientific, replace, escape, and fn transforms.
 
 Applied during the render pipeline by :func:`tytable._resolve.build`.
 """
@@ -34,6 +34,22 @@ def _fmt_numeric_decimal(val: Any, digits: int) -> str:
 def _fmt_numeric_significant(val: Any, digits: int) -> str:
     """Format a number to a given number of significant figures."""
     return f"{float(val):.{digits}g}"
+
+
+def _fmt_numeric_scientific(val: Any, digits: int, output: str) -> str:
+    """Format a number using backend-native scientific notation."""
+    formatted = f"{float(val):.{digits}e}"
+    if "e" not in formatted:
+        return formatted
+
+    mantissa, raw_exponent = formatted.split("e", maxsplit=1)
+    exponent = int(raw_exponent)
+    if output == "typst":
+        exponent_expr = f"({exponent})" if exponent < 0 else str(exponent)
+        return f"${mantissa} times 10^{exponent_expr}$"
+    if output == "html":
+        return f"{mantissa} &times; 10<sup>{exponent}</sup>"
+    return f"{mantissa} * 10^{exponent}"
 
 
 def _matches(o: object, typed: object, s: str) -> bool:
@@ -154,19 +170,29 @@ def _apply_digits(
     typed_body: list[list[Any]],
     colnames_display: list[str],
     colnames: list[str],
-) -> None:
-    """Apply numeric formatting to the selected cells."""
+    output: str,
+) -> dict[Cell, str]:
+    """Apply numeric formatting and return any generated backend markup."""
     if directive.digits is None:
-        return
-    formatter = (
-        _fmt_numeric_significant if directive.num_fmt == "significant" else _fmt_numeric_decimal
-    )
+        return {}
+    formatters = {
+        "decimal": _fmt_numeric_decimal,
+        "significant": _fmt_numeric_significant,
+    }
+    formatter = formatters.get(directive.num_fmt or "decimal", _fmt_numeric_decimal)
+    generated_markup: dict[Cell, str] = {}
     for cell in cells:
         typed_val = _typed_value(cell, typed_body, colnames)
-        if _is_numeric_typed(typed_val) and not isinstance(typed_val, int):
-            _set_cell_value(
-                cell, formatter(typed_val, directive.digits), data_body, colnames_display
-            )
+        if _is_numeric_typed(typed_val) and (
+            not isinstance(typed_val, int) or directive.num_fmt == "scientific"
+        ):
+            if directive.num_fmt == "scientific":
+                formatted = _fmt_numeric_scientific(typed_val, directive.digits, output)
+                generated_markup[cell] = formatted
+            else:
+                formatted = formatter(typed_val, directive.digits)
+            _set_cell_value(cell, formatted, data_body, colnames_display)
+    return generated_markup
 
 
 def _apply_fn(
@@ -274,11 +300,37 @@ def apply_formats(
         j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
         target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)
-        _apply_digits(target_cells, d, data_body, typed_body, colnames_display, table._colnames)
+        values_before = {
+            cell: _cell_value(cell, data_body, colnames_display) for cell in target_cells
+        }
+        generated_markup = _apply_digits(
+            target_cells,
+            d,
+            data_body,
+            typed_body,
+            colnames_display,
+            table._colnames,
+            output,
+        )
         _apply_fn(target_cells, d, data_body, colnames_display)
         _apply_replacements(
             target_cells, d, data_body, typed_body, colnames_display, table._colnames
         )
-        escaped_cells.update(_apply_escapes(target_cells, d, data_body, colnames_display, output))
+        intact_markup = {
+            cell
+            for cell, generated in generated_markup.items()
+            if _cell_value(cell, data_body, colnames_display) == generated
+        }
+        escape_targets = [
+            cell for cell in target_cells if cell not in intact_markup and cell not in escaped_cells
+        ]
+        explicitly_escaped = _apply_escapes(escape_targets, d, data_body, colnames_display, output)
+        changed_cells = {
+            cell
+            for cell, before in values_before.items()
+            if _cell_value(cell, data_body, colnames_display) != before
+        }
+        escaped_cells.difference_update(changed_cells)
+        escaped_cells.update(intact_markup | explicitly_escaped)
 
     return escaped_cells

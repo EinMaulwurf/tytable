@@ -22,6 +22,29 @@ class TestDigits:
         assert "0.00123" in out
         assert_snapshot("fmt_significant", out)
 
+    def test_scientific(self):
+        df = pl.DataFrame({"v": [3141.59, 0.00123]})
+        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("typst")
+        assert "$3.14 times 10^3$" in out
+        assert "$1.23 times 10^(-3)$" in out
+
+    def test_scientific_formats_integers(self):
+        df = pl.DataFrame({"x": [10, 200]})
+        out = tt(df).fmt(j="x", digits=1, num_fmt="scientific").render("typst")
+        assert "$1.0 times 10^1$" in out
+        assert "$2.0 times 10^2$" in out
+
+    def test_scientific_uses_html_markup(self):
+        df = pl.DataFrame({"v": [3141.59, 0.00123]})
+        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("html")
+        assert "3.14 &times; 10<sup>3</sup>" in out
+        assert "1.23 &times; 10<sup>-3</sup>" in out
+
+    def test_scientific_remains_readable_in_ascii(self):
+        df = pl.DataFrame({"v": [3141.59]})
+        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("ascii")
+        assert "3.14 * 10^3" in out
+
     def test_integer_ignores_digits(self):
         df = pl.DataFrame({"x": [10, 20, 30]})
         out = tt(df).fmt(j="x", digits=2).render("typst")
