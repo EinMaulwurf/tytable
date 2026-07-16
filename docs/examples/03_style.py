@@ -20,6 +20,6 @@ df = pl.DataFrame(
     .style(i=2, bold=True, color="#27ae60")
     .style(i=1, color="#c0392b")
     .style(i=0, line="b", line_color="#bdc3c7")
-    .style(line="lr", line_width=0.05)
+    .style(i="body", line="lr", line_width=0.05)
     .save("build/03_style.typ")
 )

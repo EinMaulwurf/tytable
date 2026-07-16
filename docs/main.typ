@@ -244,10 +244,12 @@ formatting, styling, and grouping directives.
 == Row indexing is 0-based
 
 `i=0` is the first _data_ row (the row *after* the column-name header). Use
-`i="header"` for the column-name row, and negative integers for column-group
-header rows (`-1` is the innermost row, immediately above the column-name
-header; increasingly negative values move upward). Row-group separator rows
-are addressed with `i="groupi"`, column-group rows with `i="groupj"`.
+`i="header"` for the column-name row and `i="body"` for every table-body row.
+The explicit `"body"` selector is useful when you want to leave headers
+unchanged. Negative integers select column-group header rows (`-1` is the
+innermost row, immediately above the column-name header; increasingly negative
+values move upward). Row-group separator rows are addressed with `i="groupi"`,
+column-group rows with `i="groupj"`.
 
 == Select columns by name
 
@@ -414,6 +416,10 @@ they share the same `i`/`j` selector — e.g.
 `style(j="Score", align="c", background="#eee", bold=True)` is one directive
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
+
+Use `i="body"` when a style should apply to every table-body row while leaving
+the header rows alone. The example below uses it to draw the left and right
+borders around the body; its header has a separate style.
 
 When `j` selects several columns, `align` and `alignv` also accept a
 #emph[per-column string] with one shorthand character per selected column —

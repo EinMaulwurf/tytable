@@ -374,10 +374,13 @@ class TyTable:
         ----------
         i
             Row selector: ``0`` = first data row, ``"header"`` = column-name
-            row, negative ints = column-group header rows (``-1`` is the
-            innermost row, immediately above the column-name header;
-            increasingly negative values move upward), ``"groupi"`` /
-            ``"groupj"`` = row/column group separators, or a ``list[int]``.
+            row, ``"body"`` = all table-body rows, and negative ints =
+            column-group header rows (``-1`` is the innermost row, immediately
+            above the column-name header; increasingly negative values move
+            upward). ``"groupi"`` / ``"groupj"`` select row/column group
+            separators, ``"all"`` selects headers and body, and lists may mix
+            integer and string selectors. Polars expressions, boolean series,
+            and ``callable(row) -> bool`` predicates select data rows by value.
             ``None`` means *all* rows.
         j
             Column selector: a name (``"Score"``), an integer position (``0``),
