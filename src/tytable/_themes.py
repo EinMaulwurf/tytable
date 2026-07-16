@@ -134,6 +134,13 @@ def theme_resize(
     return table
 
 
+def theme_multipage(table: TyTable, *, repeat_headers: bool = True) -> TyTable:
+    """Allow a Typst table to span pages and optionally repeat its header rows."""
+    table._typst_opts.multipage = True
+    table._typst_opts.repeat_headers = repeat_headers
+    return table
+
+
 THEMES = {
     "default": theme_default,
     "grid": theme_grid,
@@ -141,4 +148,5 @@ THEMES = {
     "empty": theme_empty,
     "rotate": theme_rotate,
     "resize": theme_resize,
+    "multipage": theme_multipage,
 }

@@ -153,6 +153,41 @@ class TestThemeResize:
 
 
 @pytest.mark.typst
+class TestThemeMultipage:
+    def test_enables_scoped_breakable_figure(self):
+        out = tt(DF).theme_multipage().render("typst")
+        assert '#show figure.where(kind: "tytable"): set block(breakable: true)' in out
+        assert "#show figure: set block" not in out
+        assert "repeat: true" in out
+
+    def test_can_disable_repeated_headers(self):
+        out = tt(DF).theme_multipage(repeat_headers=False).render("typst")
+        assert "breakable: true" in out
+        assert "repeat: false" in out
+
+    def test_without_figure_uses_breakable_block(self):
+        out = tt(DF, figure=False).theme_multipage().render("typst")
+        assert out.startswith("#block(breakable: true)[")
+        assert "#show figure" not in out
+
+    def test_repeats_complete_grouped_header(self):
+        out = (
+            tt(DF)
+            .group(j={"All columns": [0, 1]})
+            .theme_multipage(repeat_headers=True)
+            .render("typst")
+        )
+        header = out.split("table.header(", 1)[1].split("    ),", 1)[0]
+        assert "repeat: true" in header
+        assert "All columns" in header
+        assert "[A],[B]" in header
+
+    def test_registered_in_themes(self):
+        assert "multipage" in THEMES
+        assert THEMES["multipage"] is not None
+
+
+@pytest.mark.typst
 class TestThemeMethod:
     def test_builtin_method(self):
         t = tt(DF).theme_grid()

@@ -8,7 +8,7 @@ from tytable._escape import escape_typst
 from tytable._resolve import build
 
 EXPECTED_BASIC_TYP = (
-    "#show figure: set block(breakable: false)\n"
+    '#show figure.where(kind: "tytable"): set block(breakable: false)\n'
     "#figure(\n"
     '  kind: "tytable",\n'
     '  supplement: "Table",\n'

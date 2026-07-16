@@ -17,6 +17,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   an unstyled table. It clears prior theme/style/format intent while preserving
   constructor-level figure and layout options.
 
+### Features
+
+- Add `.theme_multipage(repeat_headers=True)` for breakable Typst tables with
+  optional repeated header rows.
+
 ### Fixes
 
 - Apply `.plot()` pixel dimensions consistently to both Matplotlib and plotnine

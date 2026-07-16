@@ -926,7 +926,8 @@ class TyTable:
         Apply a custom theme callable.
 
         Use :meth:`theme_striped`, :meth:`theme_grid`, :meth:`theme_empty`,
-        :meth:`theme_rotate`, or :meth:`theme_resize` for built-in themes.
+        :meth:`theme_rotate`, :meth:`theme_resize`, or :meth:`theme_multipage`
+        for built-in themes.
 
         Parameters
         ----------
@@ -1026,6 +1027,29 @@ class TyTable:
             If the resize configuration is invalid; raised when rendering.
         """
         _themes.theme_resize(self, width=width, height=height, direction=direction)
+        return self
+
+    def theme_multipage(self, *, repeat_headers: bool = True) -> TyTable:
+        """Allow the Typst table to span pages.
+
+        Parameters
+        ----------
+        repeat_headers
+            Repeat the complete table header, including column-group rows, at
+            the top of each page. Defaults to ``True``.
+
+        Returns
+        -------
+        TyTable
+            ``self``, for chaining.
+
+        Notes
+        -----
+        Typst figures are unbreakable by default. This theme makes only
+        figures with tytable's custom figure kind breakable, so other figures
+        in the surrounding document are unaffected.
+        """
+        _themes.theme_multipage(self, repeat_headers=repeat_headers)
         return self
 
     def finalize(self, fn: Callable[[str, str], str]) -> TyTable:

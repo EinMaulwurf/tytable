@@ -84,6 +84,8 @@ def test_compile_themes(tmp_path):
         tt(df).theme_grid(),
         tt(df).theme_empty(),
         tt(df).theme_rotate(),
+        tt(df).theme_multipage(),
+        tt(df).theme_multipage(repeat_headers=False),
     )
     for table in tables:
         assert _compile(table.render("typst"), tmp_path) == 0

@@ -1,5 +1,5 @@
 #rotate(90deg, reflow: true, [
-#show figure: set block(breakable: false)
+#show figure.where(kind: "tytable"): set block(breakable: false)
 #figure(
   kind: "tytable",
   supplement: "Table",

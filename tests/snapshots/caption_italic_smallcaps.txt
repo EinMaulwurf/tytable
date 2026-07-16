@@ -1,4 +1,4 @@
-#show figure: set block(breakable: false)
+#show figure.where(kind: "tytable"): set block(breakable: false)
 #figure(
   caption: smallcaps(text(style: "italic", [Demo])),
   kind: "tytable",

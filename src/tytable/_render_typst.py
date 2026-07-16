@@ -55,6 +55,7 @@ class TypstRenderOptions:
 
     figure: bool = True
     multipage: bool | None = None
+    repeat_headers: bool = True
     align_figure: str | None = None
     resize_width: float | None = None
     resize_height: float | None = None
@@ -131,7 +132,7 @@ class TypstRenderer(Renderer):
             raise ValueError("caption and label require figure=True")
         if opts.figure and opts.multipage is not None:
             breakable = "true" if opts.multipage else "false"
-            L.append(f"#show figure: set block(breakable: {breakable})")
+            L.append(f'#show figure.where(kind: "tytable"): set block(breakable: {breakable})')
         if opts.figure:
             L.append("#figure(")
             self._emit_caption(L, built)
@@ -193,7 +194,8 @@ class TypstRenderer(Renderer):
         """Append column-group and column-name header rows."""
         if built.show_colnames or built.col_groups:
             L.append("    table.header(")
-            L.append("      repeat: true,")
+            repeat = "true" if self._opts.repeat_headers else "false"
+            L.append(f"      repeat: {repeat},")
             for cg_row in built.col_groups:
                 parts = self._build_col_group_row(cg_row)
                 L.append(f"      {', '.join(parts)},")

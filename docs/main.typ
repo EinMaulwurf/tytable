@@ -565,12 +565,16 @@ background.
 
 = Themes
 
-Every table starts with the `default` booktab treatment: restrained top,
-header, and bottom rules. Add built-in themes through dedicated, typed methods:
-`.theme_striped()`, `.theme_grid()`, `.theme_rotate(...)`, and
-`.theme_resize(...)`. Calls stack, so a table can combine the default rules,
-striping, and resizing. Explicit `.style()` calls retain precedence over the
-deferred default and striped styles.
+Themes bundle reusable appearance and layout choices behind chainable methods.
+The subsections below cover styling and composition, resizing, and pagination.
+
+== Styling and composition
+
+Restrained top, header, and bottom rules give every new table the `default`
+booktab treatment. Add striping with `.theme_striped()` or cell borders with
+`.theme_grid()`. Themes stack, so both can be combined with the default rules
+and the layout themes described below. Explicit `.style()` calls retain
+precedence over the deferred default and striped styles.
 
 `.theme_empty()` is the escape hatch for a blank slate. It clears all themes,
 styles, formats, prepare hooks, and theme-level Typst options recorded before
@@ -608,33 +612,7 @@ unstyled result:
 #v(0.12em)
 #include "build/05_theme_empty.typ"
 
-= Column widths
-
-The `width` parameter of `tt()` accepts several forms: a single fraction spread
-evenly, a per-column list of fractions, a Typst/HTML unit string, or `None` for
-auto. You may mix all three in one list. Pass `width=1` for a #emph[full-width]
-table — the fraction is split across columns so the table fills the available
-content width (e.g. `width=0.5` covers half).
-
-#tag("SOURCE")
-#source("examples/06_widths.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/06_widths.typ"
-
-Pin the first column to a fixed Typst length and let the rest share the
-remaining space with `1fr`, so the table spans the full content width while the
-label column stays fixed:
-
-#tag("SOURCE")
-#source("examples/09_widths_fixed.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/09_widths_fixed.typ"
-
-= Resize
+== Resize
 
 The `resize` theme scales a table to fit a target size, expressed as a fraction
 of the available page area. It wraps the rendered fragment in a Typst
@@ -667,6 +645,54 @@ tt(df).theme_resize()
 #tag("RESULT")
 #v(0.12em)
 #include "build/12_resize.typ"
+
+== Multipage tables
+
+Typst figures normally keep their contents on one page. For a long table,
+`.theme_multipage()` makes tytable figures breakable while preserving their
+caption, numbering, label, and reference semantics. The complete header block,
+including column-group rows, repeats at the top of each page by default:
+
+```python
+tt(df, caption="Long results", label="long-results").theme_multipage()
+```
+
+Disable header repetition when the surrounding document supplies its own page
+context:
+
+```python
+tt(df).theme_multipage(repeat_headers=False)
+```
+
+The generated Typst show rule is scoped to figures whose kind is `"tytable"`,
+so images and other figures later in the document retain their own page-break
+behaviour.
+
+= Column widths
+
+The `width` parameter of `tt()` accepts several forms: a single fraction spread
+evenly, a per-column list of fractions, a Typst/HTML unit string, or `None` for
+auto. You may mix all three in one list. Pass `width=1` for a #emph[full-width]
+table — the fraction is split across columns so the table fills the available
+content width (e.g. `width=0.5` covers half).
+
+#tag("SOURCE")
+#source("examples/06_widths.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/06_widths.typ"
+
+Pin the first column to a fixed Typst length and let the rest share the
+remaining space with `1fr`, so the table spans the full content width while the
+label column stays fixed:
+
+#tag("SOURCE")
+#source("examples/09_widths_fixed.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/09_widths_fixed.typ"
 
 = Images & sparklines
 
@@ -928,6 +954,11 @@ selected cell content instead.
 
 Scales Typst output by width or height. `direction` is `"down"`, `"up"`, or
 `"both"`.
+
+#api("Span pages", api_signatures.at("theme_multipage"))
+
+Makes the Typst figure breakable. Header and column-group rows repeat on each
+page unless `repeat_headers=False`.
 
 == Plots and images
 
