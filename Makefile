@@ -4,19 +4,19 @@ install:
 	uv sync --all-extras
 
 lint:
-	ruff check src tests
+	uv run ruff check src tests
 
 format:
-	ruff format src tests
+	uv run ruff format src tests
 
 typecheck:
-	mypy
+	uv run mypy
 
 test:
-	pytest -m "not images"
+	uv run pytest -m "not images"
 
 test-images:
-	pytest -m "images"
+	uv run pytest -m "images"
 
 docs:
 	MPLCONFIGDIR=$(CURDIR)/docs/build/.mplconfig uv run python docs/build_examples.py
