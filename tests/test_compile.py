@@ -8,6 +8,7 @@ when typst is absent so it never blocks dev.
 
 import shutil
 import subprocess
+from pathlib import Path
 
 import polars as pl
 import pytest
@@ -19,34 +20,42 @@ pytestmark = pytest.mark.typst
 HAS_TYPST = shutil.which("typst") is not None
 
 
-def _compile(typ_string: str, tmp_path) -> int:
+def _compile(typ_string: str, tmp_path: Path) -> None:
     typ_file = tmp_path / "table.typ"
     out_file = tmp_path / "table.pdf"
     typ_file.write_text(typ_string, encoding="utf-8")
-    return subprocess.run(
+    result = subprocess.run(
         ["typst", "compile", str(typ_file), str(out_file)],
         capture_output=True,
-    ).returncode
+        text=True,
+    )
+    if result.returncode != 0:
+        pytest.fail(
+            "Typst compilation failed"
+            f"\n\nstdout:\n{result.stdout or '(empty)'}"
+            f"\n\nstderr:\n{result.stderr or '(empty)'}",
+            pytrace=False,
+        )
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_basic(tmp_path):
     df = pl.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
-    assert _compile(tt(df).render("typst"), tmp_path) == 0
+    _compile(tt(df).render("typst"), tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_without_figure(tmp_path):
     df = pl.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
     typ = tt(df, figure=False).style(i=0, j="A", bold=True).render("typst")
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_labelled_figure(tmp_path):
     df = pl.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
     typ = tt(df, label="results-table").render("typst") + "\nSee @results-table."
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
@@ -59,27 +68,27 @@ def test_compile_styled(tmp_path):
         .style(i=0, j="A", align="c", line="tblr")
         .render("typst")
     )
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_grouped(tmp_path):
     df = pl.DataFrame({"Q1_a": [1, 2], "Q1_b": [3, 4], "Q2_c": [5, 6], "Q2_d": [7, 8]})
     typ = tt(df).group(delimiter="_").group(i={"Section": 1}).render("typst")
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_special_chars(tmp_path):
     df = pl.DataFrame({"A": ["$100", "#tag", "[bracket]"], "B": ["<x>", "*y*", "100%"]})
-    assert _compile(tt(df).render("typst"), tmp_path) == 0
+    _compile(tt(df).render("typst"), tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_math_and_linebreak(tmp_path):
     df = pl.DataFrame({"Formula": ["x^2 + y^2"], "Detail": ["first|second"]})
     typ = tt(df).fmt(j="Formula", math=True).fmt(j="Detail", linebreak="|").render("typst")
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
@@ -95,7 +104,7 @@ def test_compile_themes(tmp_path):
         tt(df).theme_multipage(repeat_headers=False),
     )
     for table in tables:
-        assert _compile(table.render("typst"), tmp_path) == 0
+        _compile(table.render("typst"), tmp_path)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
@@ -108,4 +117,4 @@ def test_compile_alpha_hex(tmp_path):
         .style(i=1, j="B", color="#00ff0033")  # 8-digit hex alpha
         .render("typst")
     )
-    assert _compile(typ, tmp_path) == 0
+    _compile(typ, tmp_path)

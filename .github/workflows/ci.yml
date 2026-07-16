@@ -51,3 +51,25 @@ jobs:
           enable-cache: true
       - run: uv sync --all-extras --python ${{ matrix.python-version }}
       - run: uv run pytest --cov=tytable --cov-report=term-missing
+
+  typst-compat:
+    name: Typst ${{ matrix.typst-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        typst-version: ["0.13.1", "0.14.2", "0.15.0"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - uses: typst-community/setup-typst@v5
+        with:
+          typst-version: ${{ matrix.typst-version }}
+      - run: uv sync --python 3.11
+      - run: typst --version
+      - run: uv run pytest tests/test_compile.py

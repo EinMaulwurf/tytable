@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Docs / CI
+
+- Compile generated tables against Typst 0.13.1, 0.14.2, and 0.15.0 in CI, with compiler
+  diagnostics included in test failures.
+
 ## [1.0.0] - 2026-07-16
 
 ### Breaking
