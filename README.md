@@ -96,6 +96,9 @@ make docs
 # → docs/tytable-docs.pdf
 ```
 
+Starting with version 1.0, documented public APIs remain backward compatible throughout
+the 1.x series; breaking changes are reserved for 2.0.
+
 ## Coming from R tinytable
 
 `tt(df)` ↔ `tt(data)`, `.style()` ↔ `style_tt()`, `.fmt()` ↔ `format_tt()`,

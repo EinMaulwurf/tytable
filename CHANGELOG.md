@@ -7,8 +7,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-16
+
 ### Breaking
 
+- Rename the public `TinyTable` class to `TyTable`; replace imports such as
+  `from tytable import TinyTable` with `from tytable import TyTable`. The `tt()`
+  factory remains unchanged.
+- Replace delimiter-based `.group(j="_")` calls with the explicit
+  `.group(delimiter="_")` parameter; `j=` now accepts column-group mappings only.
 - Right-align columns with Polars numeric dtypes, including their headers, by default.
   Text and other non-numeric columns remain left-aligned, and explicit alignment styles
   retain precedence.
@@ -187,7 +194,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/EinMaulwurf/tytable/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/EinMaulwurf/tytable/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/EinMaulwurf/tytable/compare/v0.3.1...v0.4.0
