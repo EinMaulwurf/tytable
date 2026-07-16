@@ -50,4 +50,4 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - run: uv sync --all-extras --python ${{ matrix.python-version }}
-      - run: uv run pytest
+      - run: uv run pytest --cov=tytable --cov-report=term-missing

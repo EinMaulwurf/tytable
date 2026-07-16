@@ -40,6 +40,18 @@ def test_plot_and_image_calls_record_distinct_directive_types():
     assert table._media_directives == [table._image_directives[0], table._plot_directives[0]]
 
 
+def test_existing_images_do_not_require_plotting_dependencies(monkeypatch):
+    def _unexpected_require():
+        raise AssertionError("static images must not load plotting dependencies")
+
+    monkeypatch.setattr("tytable._images._require_plotting", _unexpected_require)
+    df = pl.DataFrame({"Logo": ["placeholder"]})
+
+    result = tt(df).theme_empty().images(j="Logo", paths=["img/a.png"]).render("typst")
+
+    assert '#image("img/a.png", height: 1em)' in result
+
+
 def _sparkline(values, *, color="black", xlim=None, **kw):
     import matplotlib.pyplot as plt
 
@@ -251,10 +263,10 @@ class TestValidation:
     def test_missing_extra_hint(self, monkeypatch):
         def _fake_require():
             raise ImportError(
-                ".plot()/.images() require the 'images' extra:\n    pip install tytable[images]"
+                ".plot() requires the 'images' extra:\n    pip install tytable[images]"
             )
 
-        monkeypatch.setattr("tytable._images._require_images", _fake_require)
+        monkeypatch.setattr("tytable._images._require_plotting", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match="images.*extra"):
             build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")

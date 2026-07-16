@@ -19,7 +19,8 @@ Or with pip:
 pip install tytable
 ```
 
-For plots, sparklines, and embedded images, install the optional extra:
+For generated plots and sparklines, install the optional extra. Embedding existing
+image files with `.images()` needs no additional Python dependencies:
 
 ```
 uv add "tytable[images]"

@@ -14,7 +14,7 @@ make lint         # ruff check src tests
 make format       # ruff format src tests
 make typecheck    # mypy
 make test         # pytest -m "not images" (excludes images tests)
-make test-images  # pytest -m "images" (requires matplotlib/numpy)
+make test-images  # pytest -m "images" (requires matplotlib)
 ```
 
 Pre-commit order: `lint` → `typecheck` → `test`.
@@ -48,7 +48,6 @@ Pre-commit order: `lint` → `typecheck` → `test`.
 - `conftest.py` monkeypatches `_new_image_id` for deterministic image tests.
 - Performance gate: `test_perf.py` asserts a 120×30 table renders under 0.3 s.
 - Pytest markers: `typst`, `html`, `images`. Default `make test` skips `images` (needs the `images` extra).
-- The `pytest-snapshot` dep is in `pyproject.toml` but **not** the active snapshot mechanism — `tests/helpers.py` handles snapshots.
 
 ## Architecture
 

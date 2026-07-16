@@ -25,19 +25,17 @@ classifiers = [
 dependencies = ["polars>=1.0", "wcwidth>=0.2.13"]
 
 [project.optional-dependencies]
-images = ["matplotlib>=3.7", "numpy>=1.24"]
+images = ["matplotlib>=3.7"]
+
+[dependency-groups]
 dev = [
   "pytest>=8",
-  "pytest-snapshot>=0.9",
   "pytest-cov>=5",
   "ruff>=0.5",
   "mypy>=1.10",
-  "polars>=1.0",
   "matplotlib>=3.7",
-  "numpy>=1.24",
   "mizani>=0.14",
   "plotnine>=0.13",
-  "hatch-vcs>=0.4",
 ]
 
 [project.urls]

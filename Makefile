@@ -13,7 +13,7 @@ typecheck:
 	uv run mypy
 
 test:
-	uv run pytest -m "not images"
+	uv run pytest --cov=tytable --cov-report=term-missing -m "not images"
 
 test-images:
 	uv run pytest -m "images"

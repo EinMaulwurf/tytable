@@ -27,6 +27,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Allow `.images()` to embed existing files without installing plotting dependencies.
 - Apply `.plot()` pixel dimensions consistently to both Matplotlib and plotnine
   output.
 - Render ASCII previews as native plain text instead of leaking HTML entities and
@@ -35,6 +36,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Docs / CI
 
+- Remove redundant development dependencies and enforce the configured branch-coverage gate in
+  the default test and CI commands.
 - Test on Python 3.14 and advertise support for Python 3.10 through 3.14.
 - Expose documentation, changelog, and issue-tracker links in the PyPI project metadata.
 - Build and attach the documentation PDF directly in the release workflow, and restrict release

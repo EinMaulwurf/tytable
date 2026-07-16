@@ -156,7 +156,8 @@ uv add tytable
 ```
 
 The equivalent pip command is `pip install tytable`. Install the optional
-images extra when using plots, sparklines, or existing image files:
+images extra when generating plots or sparklines. Existing image files can be
+embedded without additional Python dependencies:
 
 ```
 uv add "tytable[images]"
@@ -717,8 +718,9 @@ label column stays fixed:
 Use `.images()` to embed existing files and `.plot()` to generate graphics from
 cell values. This example adds three committed SVG country flags, then supplies
 a plotting function `fun(values) -> matplotlib.figure.Figure` for the sparkline
-column. Tytable handles generated PNG saving and path management. Both methods
-require the `images` extra.
+column. Tytable handles generated PNG saving and path management. Only `.plot()`
+requires the `images` extra; `.images()` embeds existing files without additional
+Python dependencies.
 
 #tag("SOURCE")
 #source("examples/07_images.py")

@@ -714,8 +714,6 @@ class TyTable:
         """
         Embed existing image files into the selected cells.
 
-        Requires the ``images`` extra (``pip install tytable[images]``).
-
         Parameters
         ----------
         i, j
@@ -740,9 +738,6 @@ class TyTable:
         ValueError
             If ``j`` or ``paths`` is missing, ``height`` cannot be parsed, or
             a selector is invalid. Selector errors are raised at render time.
-        ImportError
-            If the table is rendered without the optional ``images``
-            dependencies installed.
         """
         if j is None:
             raise ValueError(".images() requires j (column selector)")

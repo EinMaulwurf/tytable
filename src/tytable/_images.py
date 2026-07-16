@@ -17,14 +17,13 @@ if TYPE_CHECKING:
     from ._tytable import TyTable
 
 
-def _require_images() -> None:
-    """Raise an informative ``ImportError`` if matplotlib/numpy are not installed."""
+def _require_plotting() -> None:
+    """Raise an informative ``ImportError`` if Matplotlib is not installed."""
     try:
         import matplotlib
-        import numpy  # noqa: F401
     except ImportError as e:
         raise ImportError(
-            ".plot()/.images() require the 'images' extra:\n    pip install tytable[images]"
+            ".plot() requires the 'images' extra:\n    pip install tytable[images]"
         ) from e
     if matplotlib.get_backend() == "module://matplotlib_inline.backend_inline":
         matplotlib.use("Agg")
@@ -160,14 +159,15 @@ def execute_plots(
     if not table._media_directives:
         return image_cells
 
-    _require_images()
-
     portable = table._typst_opts.portable
     colnames = table._colnames
 
     for rank, d in enumerate(table._media_directives):
         if d.output is not None and output not in d.output:
             continue
+
+        if not isinstance(d, ImageDirective):
+            _require_plotting()
 
         i_vals = resolve_i(
             d.i,
