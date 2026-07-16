@@ -8,11 +8,15 @@ from tytable import tt
 df = pl.DataFrame(
     {
         "Region": ["North", "South", "East"],
-        "Q1": [12450, 9810, 7320],
-        "Q2": [13120, 10105, 7980],
-        "Q3": [11980, 11240, 8455],
-        "Q4": [14250, 12010, 9020],
-        "Notes": ["Strong finish", "Recovery", "Growth market"],
+        "Product category": ["Enterprise", "Consumer", "Public sector"],
+        "January revenue": [12450, 9810, 7320],
+        "February revenue": [13120, 10105, 7980],
+        "March revenue": [11980, 11240, 8455],
+        "April revenue": [14250, 12010, 9020],
+        "May revenue": [15110, 12640, 9440],
+        "June revenue": [15890, 13120, 9870],
+        "Forecast status": ["Above target", "On track", "Above target"],
+        "Commentary": ["Strong finish", "Recovery continuing", "Growth market"],
     }
 )
 
