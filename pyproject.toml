@@ -37,6 +37,9 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/EinMaulwurf/tytable"
+Documentation = "https://einmaulwurf.github.io/tytable/"
+Changelog = "https://github.com/EinMaulwurf/tytable/blob/main/CHANGELOG.md"
+Issues = "https://github.com/EinMaulwurf/tytable/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tytable"]

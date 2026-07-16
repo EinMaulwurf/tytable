@@ -24,6 +24,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Docs / CI
 
+- Expose documentation, changelog, and issue-tracker links in the PyPI project metadata.
 - Build and attach the documentation PDF directly in the release workflow, and restrict release
   assets to distributions and the PDF.
 - Add an advanced `TyTable` programming guide, a polished table showcase, and a task-oriented API
