@@ -52,7 +52,7 @@
 // Center every tytable figure and keep it from breaking awkwardly.
 #show figure.where(kind: "tytable"): set align(center)
 
-#import "build/meta.typ": build_date, commit
+#import "build/meta.typ": build_date, commit, version
 #let api_signatures = json("build/api.json")
 
 // ---------------------------------------------------------------------------
@@ -71,6 +71,8 @@
   #v(0.6cm)
   #text(size: 11pt)[Documentation]
   #v(0.4cm)
+  #text(size: 10pt, fill: luma(110))[Version #version]
+  #v(0.25cm)
   #text(size: 9pt, fill: luma(140), tracking: 0.4pt)[#commit · built #build_date]
 ]
 

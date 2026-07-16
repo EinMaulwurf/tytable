@@ -24,7 +24,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from tytable import TyTable, tt
+from tytable import TyTable, __version__, tt
 
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "examples"
@@ -127,7 +127,11 @@ def write_meta() -> None:
         commit = "unknown"
     build_date = datetime.date.today().isoformat()
     BUILD.mkdir(parents=True, exist_ok=True)
-    (BUILD / "meta.typ").write_text(f'#let commit = "{commit}"\n#let build_date = "{build_date}"\n')
+    (BUILD / "meta.typ").write_text(
+        f'#let version = "{__version__}"\n'
+        f'#let commit = "{commit}"\n'
+        f'#let build_date = "{build_date}"\n'
+    )
 
 
 def main() -> None:

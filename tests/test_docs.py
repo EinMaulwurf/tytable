@@ -2,7 +2,12 @@ import json
 import re
 from pathlib import Path
 
-from docs.build_examples import DOCUMENTED_API, format_api_signature, write_api_signatures
+from docs.build_examples import (
+    DOCUMENTED_API,
+    format_api_signature,
+    write_api_signatures,
+    write_meta,
+)
 
 
 def test_api_signature_file_covers_every_reference(tmp_path: Path) -> None:
@@ -26,3 +31,13 @@ def test_api_signatures_come_from_runtime_defaults() -> None:
 
     assert "fun=None" in plot
     assert "paths=None" in images
+
+
+def test_meta_includes_package_version(monkeypatch, tmp_path: Path) -> None:
+    output = tmp_path / "meta.typ"
+    monkeypatch.setattr("docs.build_examples.BUILD", tmp_path)
+    monkeypatch.setattr("docs.build_examples.__version__", "1.2.3")
+
+    write_meta()
+
+    assert '#let version = "1.2.3"' in output.read_text()
