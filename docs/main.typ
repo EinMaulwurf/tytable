@@ -795,6 +795,58 @@ one-off style, or save it themselves.
   separately, then use a small snapshot of `render("typst")` or
   `render("html")` for the table layer.
 
+== Developing and debugging a table
+
+Keep the function that builds a table separate from the code that fetches data,
+assembles the full report, and writes production artifacts. A small preview
+script can then call that function with representative data, without running
+the rest of the application:
+
+```python
+# scripts/preview_sales_table.py
+import polars as pl
+
+from reports.sales_table import build_sales_table
+
+sample = pl.DataFrame({
+    "Region": ["North", "South"],
+    "Revenue": [12500.0, 9875.5],
+})
+table = build_sales_table(sample)
+
+print(table)
+table.save("build/sales-preview.html")
+table.save("build/sales-preview.typ")
+```
+
+`print(table)` works because every `TyTable` has an ASCII representation. It is
+the fastest way to check the visible rows and columns, formatted values, names,
+row groups, notes, and alignment from a terminal. Open `build/sales-preview.html`
+in a browser when visual styling matters; HTML output does not require Jupyter.
+See #link(<alternative-backends>)[Alternative backends] for the capabilities and
+limitations of both previews.
+
+For the authoritative Typst result, make a tiny wrapper document next to the
+generated fragment:
+
+```typst
+// build/preview.typ
+#set page(paper: "a4", margin: 2.5cm)
+#set text(size: 10pt)
+#include "sales-preview.typ"
+```
+
+Then leave Typst watching that wrapper in one terminal:
+
+```sh
+typst watch build/preview.typ build/preview.pdf
+```
+
+After changing the Python builder, run the preview script again. Typst notices
+the regenerated fragment and recompiles the PDF. This gives a short feedback
+loop while still testing the real paged backend and its surrounding page width,
+fonts, and document settings.
+
 == Data from a web source
 
 Polars can read a stable CSV endpoint directly, and the resulting DataFrame is
@@ -819,6 +871,67 @@ tt(df, notes=["Source: provider name; retrieved 2026-07-15"]).save("build/indica
 In production, pin a versioned URL when the provider offers one and validate
 the expected columns before building the table. This keeps a harmless upstream
 schema change from silently reshaping a report.
+
+= Alternative backends <alternative-backends>
+
+Typst is the primary output format, but a `TyTable` can render the same recorded
+intent as HTML or fixed-width terminal text. These backends are useful for
+development, tests, and applications that do not need a paged document. They
+are independent renderers, not conversions of the generated Typst, so use a
+compiled Typst preview for final layout decisions.
+
+== HTML
+
+`table.render("html")` returns an HTML table fragment as a string. Jupyter calls
+the same renderer automatically when a `TyTable` is the last value in a cell,
+but the backend does not depend on Jupyter. In a regular script, save a browser
+preview directly:
+
+```python
+table.save("build/preview.html")
+```
+
+The HTML backend represents captions, notes, row and column groups, images,
+spans, alignment, and most visual cell styling. It is also convenient for web
+applications and snapshot tests that need inspectable markup:
+
+```python
+html = table.render("html")
+assert "Total" in html
+```
+
+HTML layout follows browser and CSS rules. Page-oriented Typst behavior such as
+multipage tables, repeated page headers, and exact Typst sizing is therefore
+not reproduced, and browser output should not be treated as a pixel-accurate
+preview of the final PDF.
+
+== ASCII terminal output
+
+`print(table)`, `repr(table)`, and `table.render("ascii")` produce a fixed-width
+plain-text table. An interactive Python prompt also shows this representation
+when the table is the value of an expression:
+
+```python
+table = build_sales_table(sample)
+print(table)
+
+text = table.render("ascii")
+assert "Revenue" in text
+```
+
+Formatting, renamed columns, row groups, and horizontal alignment are
+preserved. Captions and notes are emitted as plain text, with targeted note
+markers written as `[1]`, `[*]`, and so on. Cells are limited to 60 terminal
+columns and truncated with an ellipsis; wide and combining Unicode characters
+are measured by their terminal display width.
+
+ASCII output intentionally omits properties that plain text cannot represent
+reliably, including colors, backgrounds, font styles, rotation, and line
+styling. Column-group headers and general row or column spans are not currently
+represented. Use HTML for a quick visual check and compiled Typst when exact
+layout matters. `.save()` infers only HTML or Typst from the destination suffix;
+write the string returned by `.render("ascii")` yourself when a text artifact is
+needed.
 
 = Table showcase
 
@@ -1007,23 +1120,9 @@ order after any renderer and are useful for narrowly scoped integration markup.
 #api("Render string", api_signatures.at("render"))
 
 `output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
-intent and runs finalizers. The same table can be rendered more than once.
-
-=== ASCII terminal preview
-
-`repr(table)` and `table.render("ascii")` produce a fixed-width plain-text
-preview. Formatting, renamed columns, row groups, and horizontal alignment are
-preserved. Captions and notes are emitted as plain text, with targeted note
-markers written as `[1]`, `[*]`, and so on. Cells are limited to 60 terminal
-columns and truncated with an ellipsis; wide and combining Unicode characters
-are measured by their terminal display width.
-
-ASCII output intentionally omits visual properties that plain text cannot
-represent reliably, including colors, backgrounds, font styles, rotation, and
-line styling. Column-group headers and general row/column spans are currently
-not represented. Use HTML or Typst when those layout features matter. ASCII is
-available through `.render("ascii")`; `.save()` continues to infer only HTML or
-Typst from the destination suffix.
+intent and runs finalizers. The same table can be rendered more than once. See
+#link(<alternative-backends>)[Alternative backends] for HTML and ASCII usage,
+including terminal previews with `print(table)`.
 
 #api("Save file", api_signatures.at("save"))
 
