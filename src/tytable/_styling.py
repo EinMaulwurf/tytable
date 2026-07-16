@@ -187,7 +187,9 @@ def build_style_grid(
     output: str,
 ) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
     """Resolve all style directives into one grid + a line list. guide 06 §3, 15 §2."""
-    grid: dict[tuple[int, int], dict] = {}
+    # Row-group labels are descriptive text, even when they span from a
+    # numeric first column. User directives below retain last-writer priority.
+    grid: dict[tuple[int, int], dict] = {(i, 1): {"align": "l"} for i in group_positions}
     lines: list[dict] = []
 
     for d in table._style_directives:

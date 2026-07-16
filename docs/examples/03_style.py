@@ -1,4 +1,4 @@
-"""Styling example — typography, colour, alignment, and per-side borders."""
+"""Styling example — typography, colour, dtype-aware alignment, and per-side borders."""
 
 import polars as pl
 
@@ -17,7 +17,6 @@ df = pl.DataFrame(
     .fmt(j="Sales", digits=2)
     .fmt(j="Growth", digits=2)
     .style(i="header", bold=True, color="white", background="#2c3e50", line="b")
-    .style(j=["Sales", "Growth"], align="r")
     .style(i=2, bold=True, color="#27ae60")
     .style(i=1, color="#c0392b")
     .style(i=0, line="b", line_color="#bdc3c7")

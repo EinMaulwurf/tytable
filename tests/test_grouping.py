@@ -97,7 +97,8 @@ class TestColumnGroups:
 
     def test_single_column_group_no_colspan(self):
         out = tt(DF).group(j={"Only": [0]}).render("typst")
-        assert "align: center" not in out
+        assert "table.cell(align: center)[Only]" in out
+        assert "table.cell(colspan:" not in out
         assert "[Only]" in out
 
 

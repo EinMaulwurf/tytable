@@ -400,7 +400,10 @@ class TyTable:
         align
             Horizontal alignment: ``"l"`` / ``"c"`` / ``"r"``. When ``j``
             selects multiple columns, a multi-char string like ``"llr"``
-            sets per-column alignment (one char per selected column).
+            sets per-column alignment (one char per selected column). Without
+            an explicit style, columns with numeric Polars dtypes are
+            right-aligned and other columns are left-aligned; column-name
+            headers follow the same defaults.
         alignv
             Vertical alignment: ``"t"`` / ``"m"`` / ``"b"``. Per-column
             strings (e.g. ``"tmb"``) are supported like ``align``.
@@ -451,7 +454,7 @@ class TyTable:
         >>> df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
         >>> (tt(df)                           # doctest: +SKIP
         ...  .style(i="header", bold=True, background="#2c3e50", color="white")
-        ...  .style(j="b", align="r", background="#f0f0f0")
+        ...  .style(j="b", align="c", background="#f0f0f0")
         ...  .style(i=0, line="b", line_color="#bdc3c7"))
         """
         _validate_style(

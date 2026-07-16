@@ -37,6 +37,15 @@ def _build_cell_style(cell_props: dict[str, Any], border_css: str) -> str:
     return StyleMarkup.from_props(cell_props).html_cell_css(border_css)
 
 
+def _with_default_alignment(
+    props: dict[str, Any], alignment: str, *, row_group: bool = False
+) -> dict[str, Any]:
+    """Add an inferred alignment without overriding an explicit cell style."""
+    if "align" in props or row_group or alignment == "l":
+        return props
+    return {**props, "align": alignment}
+
+
 def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tuple[int, int], str]:
     """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
     border_map: dict[tuple[int, int], str] = {}
@@ -151,7 +160,9 @@ class HtmlRenderer(Renderer):
         ti = convert_row_to_typst(0, built.nhead)
         for j, colname in enumerate(built.colnames_display):
             j_internal = j + 1
-            cell_props = built.style_grid.get((0, j_internal), {})
+            cell_props = _with_default_alignment(
+                built.style_grid.get((0, j_internal), {}), built.column_alignments[j]
+            )
             border_css = border_map.get((ti, j), "")
             style = _build_cell_style(cell_props, border_css)
             cells.append(HtmlRenderer._cell("th", colname, style))
@@ -173,7 +184,11 @@ class HtmlRenderer(Renderer):
                 j_internal = c + 1
                 if (i_internal, j_internal) in covered:
                     continue
-                cell_props = built.style_grid.get((i_internal, j_internal), {})
+                cell_props = _with_default_alignment(
+                    built.style_grid.get((i_internal, j_internal), {}),
+                    built.column_alignments[c],
+                    row_group=i_internal in built.row_group_positions,
+                )
                 ti = convert_row_to_typst(i_internal, built.nhead)
                 style = _build_cell_style(cell_props, border_map.get((ti, c), ""))
                 if i_internal in built.row_group_positions and not style:

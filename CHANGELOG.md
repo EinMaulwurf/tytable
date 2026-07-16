@@ -9,6 +9,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Breaking
 
+- Right-align columns with Polars numeric dtypes, including their headers, by default.
+  Text and other non-numeric columns remain left-aligned, and explicit alignment styles
+  retain precedence.
 - Remove the `theme=` constructor option. Tables retain the implicit default
   booktab styling; apply built-ins through typed chainable methods such as
   `.theme_striped()`, `.theme_grid()`, `.theme_rotate()`, and `.theme_resize()`.

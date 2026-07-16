@@ -24,6 +24,7 @@ df = df.with_columns(
 
 (
     tt(df, caption="Regional revenue (formatted in polars)")
+    # Revenue is now a string column, so restore numeric-style alignment explicitly.
     .style(j="Revenue", align="r")
     .save("build/11_format_polars.typ")
 )

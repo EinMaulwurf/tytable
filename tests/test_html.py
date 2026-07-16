@@ -13,7 +13,7 @@ class TestBasicHtml:
         out = tt(df).theme_empty().render("html")
         assert out.startswith("<table")
         assert out.endswith("</table>")
-        assert "<td>1</td>" in out
+        assert '<td style="text-align:right">1</td>' in out
         assert_snapshot("html_basic_2x2", out)
 
     def test_basic_3x3(self):
@@ -155,13 +155,13 @@ class TestHtmlEscape:
     def test_column_name_escaped_once(self):
         df = pl.DataFrame({"X<Y&Z": [1]})
         out = tt(df).theme_empty().render("html")
-        assert "<th>X&lt;Y&amp;Z</th>" in out
+        assert '<th style="text-align:right">X&lt;Y&amp;Z</th>' in out
         assert "&amp;lt;" not in out
 
     def test_raw_column_name_when_escape_disabled(self):
         df = pl.DataFrame({"<em>A</em>": [1]})
         out = tt(df, escape=False).theme_empty().render("html")
-        assert "<th><em>A</em></th>" in out
+        assert '<th style="text-align:right"><em>A</em></th>' in out
 
     def test_user_image_markup_is_escaped(self):
         df = pl.DataFrame({"A": ['<img src=x onerror="alert(1)">']})

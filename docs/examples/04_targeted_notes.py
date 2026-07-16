@@ -33,7 +33,6 @@ df = pl.DataFrame(
     )
     .theme_striped()
     .style(i="header", bold=True)
-    .style(j=["Actual", "Forecast"], align="r")
     .style(i="notes", italic=True, color="#52606d")
     .save("build/04_targeted_notes.typ")
 )

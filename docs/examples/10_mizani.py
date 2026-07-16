@@ -34,6 +34,5 @@ data = pl.DataFrame(
     .fmt(j="Revenue", fn=format_currency)
     .fmt(j="Margin", fn=format_percent)
     .fmt(j=["Revenue", "Margin"], escape=True)
-    .style(j=["Revenue", "Margin"], align="r")
     .save("build/10_mizani.typ")
 )

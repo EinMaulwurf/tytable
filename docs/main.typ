@@ -296,7 +296,8 @@ Two calling modes:
 After renaming, subsequent `j` selectors use the _new_ display names; the old
 polars column name no longer matches. The example starts from
 `grp`, `val_1`, `val_2` and replaces them with `""`, `Revenue`, `Cost` — then
-formats and aligns the renamed columns by their new names:
+formats the renamed columns by their new names. Their alignment continues to
+follow the numeric dtypes of the underlying source columns:
 
 #tag("SOURCE")
 #source("examples/15_set_name.py")
@@ -321,6 +322,11 @@ delimiter, prepend a currency symbol, add thousands separators, and fill nulls �
 anything Polars can express, the table will render. Here revenue is rounded to
 two decimals, formatted as USD with thousands separators, and nulls filled with
 an em dash, all before `tt()` ever sees the data:
+
+Because that Polars expression converts `Revenue` to a string column, the
+example explicitly restores right alignment with `.style(align="r")`. In
+contrast, `.fmt()` preserves the source dtype and therefore needs no alignment
+style for numeric columns.
 
 #tag("SOURCE")
 #source("examples/11_format_polars.py")
@@ -389,6 +395,12 @@ example; it is not installed with tytable at runtime.
 Styling directives control the appearance of cells and table-adjacent text
 without changing the underlying values.
 
+By default, text columns and their headers are left-aligned, while columns with
+Polars numeric dtypes and their headers are right-aligned. Alignment is inferred
+from the source dtype before `.fmt()` changes the displayed text, so formatted
+numbers, replacement marks, currencies, and percentages stay aligned. An explicit
+`.style(align=...)` directive takes precedence. Column-group headers are centered.
+
 == Styling cells
 
 Apply per-cell styling through selectors `i` (rows) and `j` (columns).
@@ -399,7 +411,7 @@ in any combination, with `line_color` / `line_width`).
 
 Any number of these properties can be combined in a single `.style()` call when
 they share the same `i`/`j` selector — e.g.
-`style(j="Score", align="r", background="#eee", bold=True)` is one directive
+`style(j="Score", align="c", background="#eee", bold=True)` is one directive
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
 
@@ -713,8 +725,8 @@ require the `images` extra.
 
 A feature-rich table built without any image dependencies — combining explicit
 column groups, a row-group separator, numeric formatting, a full-width layout,
-and targeted styling. Note the list selectors: every numeric column is aligned
-and formatted in a single call.
+and targeted styling. A list selector formats all numeric columns in one call;
+their right alignment comes automatically from their Polars dtypes.
 
 #tag("SOURCE")
 #source("examples/08_full_report.py")
@@ -807,8 +819,9 @@ schema change from silently reshaping a report.
 A polished table usually needs less decoration than expected: one strong
 header colour, a quiet secondary band for column groups, restrained striping,
 right-aligned numbers, and a single highlight that communicates the decision.
-This model scorecard combines those choices with a targeted footnote and a
-Typst label for cross-referencing.
+The dtype-aware defaults supply that numeric alignment; the example only records
+styles that differ from those defaults. This model scorecard combines those
+choices with a targeted footnote and a Typst label for cross-referencing.
 
 #tag("SOURCE")
 #source("examples/17_showcase.py")

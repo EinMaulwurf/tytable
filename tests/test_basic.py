@@ -52,7 +52,7 @@ EXPECTED_BASIC_TYP = (
     "    rows: auto,\n"
     "    align: (x, y) => {\n"
     "      let style = get-style(x, y)\n"
-    '      if style != none and "align" in style { style.align } else { left }\n'
+    '      if style != none and "align" in style { style.align } else { (right, right).at(x) }\n'
     "    },\n"
     "    fill: (x, y) => {\n"
     "      let style = get-style(x, y)\n"
@@ -152,6 +152,75 @@ def test_build_rejects_unknown_output():
     table = tt(pl.DataFrame({"A": [1]})).theme_empty()
     with pytest.raises(NotImplementedError, match="output='markdown' not implemented"):
         build(table, "markdown")
+
+
+class TestDefaultAlignment:
+    def test_infers_alignment_from_source_dtypes(self):
+        df = pl.DataFrame(
+            schema={
+                "text": pl.String,
+                "integer": pl.Int64,
+                "unsigned": pl.UInt32,
+                "float": pl.Float64,
+                "decimal": pl.Decimal,
+                "boolean": pl.Boolean,
+                "date": pl.Date,
+                "duration": pl.Duration,
+            }
+        )
+
+        built = build(tt(df).theme_empty(), "typst")
+
+        assert built.column_alignments == ["l", "r", "r", "r", "r", "l", "l", "l"]
+
+    def test_typst_uses_column_defaults_for_header_and_body(self):
+        df = pl.DataFrame({"label": ["A"], "number": [123]})
+
+        out = tt(df).theme_empty().render("typst")
+
+        assert "else { (left, right).at(x) }" in out
+
+    def test_html_aligns_numeric_header_and_body(self):
+        df = pl.DataFrame({"label": ["A"], "number": [123]})
+
+        out = tt(df).theme_empty().render("html")
+
+        assert "<th>label</th>" in out
+        assert '<th style="text-align:right">number</th>' in out
+        assert "<td>A</td>" in out
+        assert '<td style="text-align:right">123</td>' in out
+
+    def test_ascii_aligns_numeric_header_and_body(self):
+        out = tt(pl.DataFrame({"n": [123]})).theme_empty().render("ascii")
+
+        assert "|   n |" in out
+        assert "| 123 |" in out
+
+    def test_fmt_does_not_change_numeric_alignment(self):
+        table = (
+            tt(pl.DataFrame({"number": [1.25]}))
+            .theme_empty()
+            .fmt(j="number", fn=lambda values: [f"${value}" for value in values])
+        )
+
+        assert build(table, "typst").column_alignments == ["r"]
+        assert "else { (right,).at(x) }" in table.render("typst")
+
+    def test_explicit_style_overrides_default(self):
+        table = tt(pl.DataFrame({"number": [123]})).theme_empty().style(j="number", align="l")
+        built = build(table, "typst")
+
+        assert built.style_grid[(0, 1)]["align"] == "l"
+        assert built.style_grid[(1, 1)]["align"] == "l"
+        assert '<td style="text-align:left">123</td>' in table.render("html")
+        assert "| 123    |" in table.render("ascii")
+
+    def test_numeric_row_group_label_stays_left_aligned(self):
+        table = tt(pl.DataFrame({"number": [1, 2]})).theme_empty().group(i={"Group": 0})
+        built = build(table, "typst")
+        group_row = next(iter(built.row_group_positions))
+
+        assert built.style_grid[(group_row, 1)]["align"] == "l"
 
 
 @pytest.mark.typst

@@ -48,7 +48,7 @@ block[
     rows: auto,
     align: (x, y) => {
       let style = get-style(x, y)
-      if style != none and "align" in style { style.align } else { left }
+      if style != none and "align" in style { style.align } else { (right, right, right).at(x) }
     },
     fill: (x, y) => {
       let style = get-style(x, y)

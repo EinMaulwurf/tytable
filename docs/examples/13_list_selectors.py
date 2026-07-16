@@ -6,10 +6,10 @@ formatting or styling to several columns or rows without repeating yourself.
 Unlike integer lists, string lists read as plain-language descriptions:
 ``j=["Revenue", "Cost"]`` instead of ``j=[0, 2]``.
 
-This example uses a list-of-strings ``j`` selector to align and format every
-numeric column in one ``.style()`` call and one ``.fmt()`` call, and a
-list-of-strings ``i`` selector to make both the column-header row and all data
-rows bold at once.
+This example uses list-of-strings ``j`` selectors to format several numeric
+columns in one call, and a list-of-strings ``i`` selector to make both the
+column-header row and all data rows bold at once. The numeric columns are
+right-aligned automatically from their Polars dtypes.
 """
 
 import polars as pl
@@ -28,7 +28,6 @@ df = pl.DataFrame(
 (
     tt(df, caption="List selectors — strings as row/column targets", width=1)
     .style(i=["header", "body"], bold=True)
-    .style(j=["Revenue", "Cost", "Growth %"], align="r")
     .fmt(j=["Revenue", "Cost"], digits=0)
     .fmt(j=["Growth %"], digits=1)
     .style(i="header", background="#2c3e50", color="white")

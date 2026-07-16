@@ -34,6 +34,7 @@ class BuiltTable:
     output: OutputFormat
     data_body: list[list[str]] = field(default_factory=list)
     colnames_display: list[str] = field(default_factory=list)
+    column_alignments: list[str] = field(default_factory=list)
     show_colnames: bool = True
     nhead: int = 0
     col_groups: list[list[str | None]] = field(default_factory=list)
@@ -207,6 +208,11 @@ def _extract_body(table: TyTable, output: OutputFormat) -> _BuildState:
     )
 
 
+def _column_alignments(table: TyTable) -> list[str]:
+    """Return dtype-based horizontal alignment defaults for source columns."""
+    return ["r" if dtype.is_numeric() else "l" for dtype in table._data.schema.values()]
+
+
 def _merge_groups(state: _BuildState) -> None:
     """Insert row-group rows into both display and typed cell matrices."""
     state.data_body, state.row_group_positions = merge_row_groups(
@@ -358,6 +364,7 @@ def build(table: TyTable, output: OutputFormat) -> BuiltTable:
         output=output,
         data_body=state.data_body,
         colnames_display=state.colnames_display,
+        column_alignments=_column_alignments(state.table),
         show_colnames=state.show_colnames,
         nhead=state.nhead,
         col_groups=state.col_groups,

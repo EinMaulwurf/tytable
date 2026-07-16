@@ -165,7 +165,19 @@ class TypstRenderer(Renderer):
         self._emit_table_options(L, built, ncol)
         L.append("    align: (x, y) => {")
         L.append("      let style = get-style(x, y)")
-        L.append('      if style != none and "align" in style { style.align } else { left }')
+        if "r" in built.column_alignments:
+            defaults = ", ".join(
+                {"l": "left", "c": "center", "r": "right"}[align]
+                for align in built.column_alignments
+            )
+            if len(built.column_alignments) == 1:
+                defaults += ","
+            fallback = f"({defaults}).at(x)"
+        else:
+            fallback = "left"
+        L.append(
+            f'      if style != none and "align" in style {{ style.align }} else {{ {fallback} }}'
+        )
         L.append("    },")
 
         L.append("    fill: (x, y) => {")
@@ -423,5 +435,5 @@ class TypstRenderer(Renderer):
             if span > 1:
                 parts.append(f"table.cell(colspan: {span}, align: center)[{escaped}]")
             else:
-                parts.append(f"[{escaped}]")
+                parts.append(f"table.cell(align: center)[{escaped}]")
         return parts

@@ -19,6 +19,5 @@ df = pl.DataFrame(
     .set_name(name=["", "Revenue", "Cost"])
     .fmt(j=["Revenue", "Cost"], digits=2)
     .style(i="header", bold=True, background="#2c3e50", color="white")
-    .style(j=["Revenue", "Cost"], align="r")
     .save("build/15_set_name.typ")
 )

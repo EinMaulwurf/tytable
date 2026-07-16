@@ -1,9 +1,9 @@
 <table style="border-collapse:collapse;font-family:sans-serif;font-size:1em">
 <caption>My Table</caption>
 <thead>
-<tr><th style="border-top:0.08em solid black;border-bottom:0.05em solid black;">A</th></tr>
+<tr><th style="border-top:0.08em solid black;border-bottom:0.05em solid black;; text-align:right">A</th></tr>
 </thead>
 <tbody>
-<tr><td style="border-bottom:0.08em solid black;">1</td></tr>
+<tr><td style="border-bottom:0.08em solid black;; text-align:right">1</td></tr>
 </tbody>
 </table>

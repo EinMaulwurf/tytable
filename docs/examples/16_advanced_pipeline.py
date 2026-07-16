@@ -48,7 +48,6 @@ class QuarterlyReportTable:
             )
             .group(j={"Actual": ["Revenue"], "Plan": ["Target", "Variance"]})
             .fmt(j=numeric, digits=0)
-            .style(j=numeric, align="r")
             .style(i=pl.col("Variance") < 0, j="Variance", bold=True, color=self.style.warning)
             .style(i=pl.col("Variance") >= 0, j="Variance", bold=True, color=self.style.accent)
         )

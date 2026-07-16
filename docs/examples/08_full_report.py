@@ -3,8 +3,7 @@ Full report example — combining groups, formatting, styling, and widths.
 
 A feature-rich table built without any image dependencies: explicit column
 groups (dict form), a row-group separator, numeric formatting, a full-width
-layout, and targeted styling — including a list column selector that aligns
-every numeric column in one call.
+layout, and targeted styling. Numeric alignment follows the source dtypes.
 """
 
 import polars as pl
@@ -29,7 +28,6 @@ df = pl.DataFrame(
     .style(i="header", bold=True, color="white", background="#2c3e50")
     .style(i="groupj", bold=True, background="#ecf0f1")
     .style(i="groupi", bold=True, background="#f0f0f0")
-    .style(j=["Q1 Rev", "Q1 Cost", "Q2 Rev", "Q2 Cost"], align="r")
     .style(j="Store", bold=True)
     .style(i=0, background="#fdf2e9")
     .save("build/08_full_report.typ")

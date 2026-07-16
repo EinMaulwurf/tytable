@@ -198,7 +198,7 @@ class TestSetNameHtml:
     def test_html_rename_header(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
         out = tt(df).theme_empty().set_name(j="x", name="Renamed").render("html")
-        assert "<th>Renamed</th>" in out
+        assert '<th style="text-align:right">Renamed</th>' in out
 
 
 @pytest.mark.typst

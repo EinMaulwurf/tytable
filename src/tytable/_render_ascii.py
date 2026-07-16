@@ -28,10 +28,14 @@ class AsciiRenderer(Renderer):
         def sep() -> str:
             return "+" + "+".join("-" * (w + 2) for w in max_widths) + "+"
 
-        def format_cell(val: str, width: int) -> str:
+        def format_cell(val: str, width: int, align: str) -> str:
             tv = _plain_text(str(val))
             if len(tv) > width:
                 tv = tv[: width - 1] + "…"
+            if align in ("r", "right"):
+                return tv.rjust(width)
+            if align in ("c", "center"):
+                return tv.center(width)
             return tv.ljust(width)
 
         lines: list[str] = []
@@ -41,17 +45,36 @@ class AsciiRenderer(Renderer):
             header = (
                 "| "
                 + " | ".join(
-                    format_cell(c, max_widths[i]) for i, c in enumerate(built.colnames_display)
+                    format_cell(
+                        c,
+                        max_widths[i],
+                        built.style_grid.get((0, i + 1), {}).get(
+                            "align", built.column_alignments[i]
+                        ),
+                    )
+                    for i, c in enumerate(built.colnames_display)
                 )
                 + " |"
             )
             lines.append(header)
             lines.append(sep())
 
-        for row in built.data_body:
+        for row_idx, row in enumerate(built.data_body, start=1):
             line = (
                 "| "
-                + " | ".join(format_cell(val, max_widths[i]) for i, val in enumerate(row))
+                + " | ".join(
+                    format_cell(
+                        val,
+                        max_widths[i],
+                        built.style_grid.get((row_idx, i + 1), {}).get(
+                            "align",
+                            "l"
+                            if row_idx in built.row_group_positions
+                            else built.column_alignments[i],
+                        ),
+                    )
+                    for i, val in enumerate(row)
+                )
                 + " |"
             )
             lines.append(line)

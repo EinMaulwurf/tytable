@@ -68,6 +68,9 @@ whole document.
   column by position.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()`
   methods all return `self`. `.render()` / `.save()` are terminal.
+- **Readable defaults**: text columns are left-aligned and numeric columns are
+  right-aligned, including their headers. Explicit `.style(align=...)` calls override
+  these dtype-based defaults.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
   as _intent_ and replayed in a fixed order at render time. Row indices always
   refer to the final, visible table.
