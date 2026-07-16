@@ -19,11 +19,11 @@ test-images:
 	pytest -m "images"
 
 docs:
-	uv run python docs/build_examples.py
+	MPLCONFIGDIR=$(CURDIR)/docs/build/.mplconfig uv run python docs/build_examples.py
 	typst compile docs/main.typ docs/tytable-docs.pdf
 
 docs-watch:
-	uv run python docs/build_examples.py
+	MPLCONFIGDIR=$(CURDIR)/docs/build/.mplconfig uv run python docs/build_examples.py
 	typst watch docs/main.typ docs/tytable-docs.pdf
 
 clean:

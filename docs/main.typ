@@ -104,7 +104,7 @@
 #text(weight: "bold")[tytable] is a small Python library that turns Polars
 DataFrames into Typst tables. It is inspired by R's
 #link("https://github.com/vincentarelbundock/tinytable")[tinytable] package and
-mirrors most of its styling power, while adding image and sparkline support plus
+mirrors most of its styling power, including image and sparkline support plus
 a Jupyter HTML preview.
 
 == What is Typst?
@@ -234,7 +234,7 @@ The rest of this guide grows that first table one concern at a time:
 3. add styling, groups, themes, and layout;
 4. embed plots and assemble a complete report table;
 5. turn the same chain into a reusable, typed Python component;
-6. use the API reference when you need an exact option.
+6. use the task-oriented API reference to find the method for a job.
 
 = Core concepts
 
@@ -287,8 +287,9 @@ Two calling modes:
 
 - *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`.
   `j` follows the same selector rules as `.style()` / `.fmt()` (name, integer
-  position, or a list (or regex with `regex=True`, see `.style()`). `name` is a single `str` (applied to every
-  matched column) or a `list[str]` with one entry per match.
+  position, a list, or a regex with `regex=True`; see `.style()`). `name` is a
+  single `str` (applied to every matched column) or a `list[str]` with one entry
+  per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
   header at once — the list length must equal the column count.
 
@@ -795,7 +796,7 @@ together*, the built-in variants in *Themes*, and the trend column in *Images &
 sparklines*. Together they cover a publication table, a dense report table,
 and a compact dashboard table without requiring a separate rendering system.
 
-= API reference
+= Task-oriented API reference
 
 Start here when you know the task but not the method. Methods marked
 *chainable* mutate the `TyTable` and return `self`; output methods are terminal.

@@ -25,7 +25,7 @@ For plots, sparklines, and embedded images, install the optional extra:
 uv add "tytable[images]"
 ```
 
-For development, clone the repo and run:
+From a cloned checkout, run:
 
 ```
 uv sync --all-extras
@@ -77,8 +77,9 @@ whole document.
 
 ## Documentation
 
-A practical guide with **rendered examples** (source + result) from easy to complex,
-**API reference**, and an R-tinytable comparison table live in the PDF built from [`docs/main.typ`](docs/main.typ):
+A practical guide with **rendered examples** (source followed by result) from easy to
+complex, a **task-oriented API reference**, and an R-tinytable comparison table live in
+the PDF built from [`docs/main.typ`](docs/main.typ):
 
 - **Always-current build (HEAD):** <https://einmaulwurf.github.io/tytable/>
 - **Versioned (latest release):**
