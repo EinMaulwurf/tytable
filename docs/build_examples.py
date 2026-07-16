@@ -113,7 +113,7 @@ def write_api_signatures(path: Path = BUILD / "api.json") -> None:
         for key, (display_name, callable_) in DOCUMENTED_API.items()
     }
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(signatures, indent=2) + "\n")
+    path.write_text(json.dumps(signatures, indent=2) + "\n", encoding="utf-8")
 
 
 def write_meta() -> None:
@@ -131,7 +131,8 @@ def write_meta() -> None:
     (BUILD / "meta.typ").write_text(
         f'#let version = "{__version__}"\n'
         f'#let commit = "{commit}"\n'
-        f'#let build_date = "{build_date}"\n'
+        f'#let build_date = "{build_date}"\n',
+        encoding="utf-8",
     )
 
 

@@ -14,8 +14,8 @@ def test_api_signature_file_covers_every_reference(tmp_path: Path) -> None:
     output = tmp_path / "api.json"
     write_api_signatures(output)
 
-    signatures = json.loads(output.read_text())
-    main_typ = Path("docs/main.typ").read_text()
+    signatures = json.loads(output.read_text(encoding="utf-8"))
+    main_typ = Path("docs/main.typ").read_text(encoding="utf-8")
     references = set(re.findall(r'api_signatures\.at\("([a-z_]+)"\)', main_typ))
 
     assert references == set(DOCUMENTED_API)
@@ -40,4 +40,4 @@ def test_meta_includes_package_version(monkeypatch, tmp_path: Path) -> None:
 
     write_meta()
 
-    assert '#let version = "1.2.3"' in output.read_text()
+    assert '#let version = "1.2.3"' in output.read_text(encoding="utf-8")
