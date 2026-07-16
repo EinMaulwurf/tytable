@@ -35,6 +35,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Docs / CI
 
+- Test on Python 3.14 and advertise support for Python 3.10 through 3.14.
 - Expose documentation, changelog, and issue-tracker links in the PyPI project metadata.
 - Build and attach the documentation PDF directly in the release workflow, and restrict release
   assets to distributions and the PDF.
