@@ -351,12 +351,16 @@ reaching back into polars:
   (`num_fmt="scientific"`)
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}`
   mapping
-- `linebreak` — replace a literal marker with a native line break (`\\ ` in
-  Typst and `<br>` in HTML)
+- `linebreak` — choose a literal input marker to replace with a native line
+  break. For example, `linebreak="\n"` translates newline characters to a
+  single `\` in Typst or `<br>` in HTML; use another marker such as `"|"` when
+  that is more convenient for the source data
 - `math` — typeset selected values as Typst equations
 - `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
 
-Formatting text and equations does not require disabling safe escaping:
+Formatting text and equations does not require disabling safe escaping. This
+example treats `Formula` as Typst math and uses `|` inside `Detail` to mark
+where a native line break should appear:
 
 ```python
 df = pl.DataFrame({
@@ -373,6 +377,10 @@ table = (
 
 Math mode is Typst-specific; HTML and ASCII retain the original value.
 Line-break replacement targets Typst and HTML, while ASCII retains the marker.
+
+The larger example below puts the built-ins side by side: decimal, significant,
+and scientific numbers, missing-value replacement, and Typst math. Each
+`.fmt()` call targets the column that needs that particular transformation.
 
 #tag("SOURCE")
 #source("examples/02_format.py")
