@@ -59,6 +59,24 @@ class TestDigits:
         out = tt(df).fmt(j="v").render("typst")
         assert "3.14159" in out
 
+    @pytest.mark.parametrize("digits", [True, 1.5, "2"])
+    def test_digits_rejects_non_integer(self, digits):
+        with pytest.raises(TypeError, match="digits must be a non-negative integer"):
+            tt(pl.DataFrame({"v": [1.0]})).fmt(digits=digits)
+
+    def test_digits_rejects_negative_integer(self):
+        with pytest.raises(ValueError, match="digits must be non-negative"):
+            tt(pl.DataFrame({"v": [1.0]})).fmt(digits=-1)
+
+    @pytest.mark.parametrize("num_fmt", ["currency", "", "Decimal"])
+    def test_num_fmt_rejects_unknown_value(self, num_fmt):
+        with pytest.raises(ValueError, match="num_fmt must be one of"):
+            tt(pl.DataFrame({"v": [1.0]})).fmt(num_fmt=num_fmt)
+
+    def test_num_fmt_rejects_non_string(self):
+        with pytest.raises(TypeError, match="num_fmt must be a string"):
+            tt(pl.DataFrame({"v": [1.0]})).fmt(num_fmt=None)  # type: ignore[arg-type]
+
 
 class TestCellSelectors:
     DF = pl.DataFrame(
@@ -333,6 +351,23 @@ class TestMath:
 
 @pytest.mark.typst
 class TestFn:
+    def test_fn_must_be_callable(self):
+        with pytest.raises(TypeError, match="fn must be callable"):
+            tt(pl.DataFrame({"x": [1]})).fmt(fn="upper")  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize(
+        ("result", "type_name"),
+        [
+            ("abc", "str"),
+            ((value for value in ["a", "b", "c"]), "generator"),
+        ],
+    )
+    def test_fn_must_return_non_string_sequence(self, result, type_name):
+        table = tt(pl.DataFrame({"x": [1, 2, 3]})).fmt(fn=lambda _values: result)
+
+        with pytest.raises(TypeError, match=rf"non-string sequence, got {type_name}"):
+            table.render("typst")
+
     def test_empty_row_selector_does_not_fall_back_to_body(self):
         df = pl.DataFrame({"value": [1, 2]})
         out = tt(df).theme_empty().fmt(i=[], fn=lambda vec: ["changed"] * len(vec)).render("typst")

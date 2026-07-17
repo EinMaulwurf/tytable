@@ -7,6 +7,7 @@ Applied during the render pipeline by :func:`tytable._resolve.build`.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
@@ -211,6 +212,8 @@ def _apply_fn(
         column_cells = [(row_idx, col_idx) for row_idx in sorted(rows)]
         values = [_cell_value(cell, data_body, colnames_display) for cell in column_cells]
         result = directive.fn(values)
+        if not isinstance(result, Sequence) or isinstance(result, (str, bytes)):
+            raise TypeError(f"fn() must return a non-string sequence, got {type(result).__name__}")
         if len(result) != len(values):
             raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
         for cell, value in zip(column_cells, result, strict=True):

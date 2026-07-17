@@ -572,7 +572,8 @@ class TyTable:
             supplied. Expressions are evaluated against the original typed
             DataFrame, before any formatting transforms run.
         digits
-            Number of decimal places. Combined with ``num_fmt``.
+            Non-negative number of decimal places or significant digits,
+            depending on ``num_fmt``.
         num_fmt
             Numeric style: ``"decimal"`` (fixed decimals, default),
             ``"significant"`` (significant figures), or ``"scientific"``
@@ -605,13 +606,16 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``linebreak`` or ``math`` has an unsupported type, or if a row
-            or column selector has an unsupported type. ``where`` must be a
-            Polars expression producing boolean columns. Selector errors are
-            raised when the table is rendered.
+            If ``digits`` is not an integer, ``fn`` is not callable,
+            ``linebreak`` or ``math`` has an unsupported type, or a selector
+            has an unsupported type. Callback return-type and selector errors
+            are raised when the table is rendered; option errors are raised
+            immediately.
         ValueError
-            If a selector is invalid or ``fn`` returns the wrong number of
-            values; raised when the table is rendered.
+            If ``digits`` is negative, ``num_fmt`` is unknown, a selector is
+            invalid, or ``fn`` returns the wrong number of values. Option
+            errors are raised immediately; selector and callback result errors
+            are raised when the table is rendered.
 
         Examples
         --------
@@ -631,6 +635,18 @@ class TyTable:
             raise ValueError("linebreak marker must not be empty")
         if not isinstance(math, bool):
             raise TypeError("math must be a bool")
+        if digits is not None and (isinstance(digits, bool) or not isinstance(digits, int)):
+            raise TypeError(f"digits must be a non-negative integer or None, got {digits!r}")
+        if digits is not None and digits < 0:
+            raise ValueError(f"digits must be non-negative, got {digits!r}")
+        if not isinstance(num_fmt, str):
+            raise TypeError(f"num_fmt must be a string, got {type(num_fmt).__name__}")
+        if num_fmt not in {"decimal", "significant", "scientific"}:
+            raise ValueError(
+                f"num_fmt must be one of 'decimal', 'significant', or 'scientific'; got {num_fmt!r}"
+            )
+        if fn is not None and not callable(fn):
+            raise TypeError(f"fn must be callable or None, got {type(fn).__name__}")
         self._format_directives.append(
             FormatDirective(
                 i=i,

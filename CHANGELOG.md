@@ -11,6 +11,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Require `.images(paths=...)` and explicit `.plot(data=...)` inputs to contain exactly one
   item per resolved media cell.
+- Validate `.fmt()` numeric options and callback contracts instead of silently accepting unknown
+  numeric formats or exposing incidental errors.
 
 ## [1.2.0] - 2026-07-17
 
