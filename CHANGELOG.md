@@ -17,6 +17,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   document `i="~groupi"` for selecting data rows without row-group separators.
 - Validate row- and column-group specifications instead of producing malformed spans or incidental
   indexing failures.
+- Reject caption and note styling properties that a selected backend cannot render instead of
+  silently ignoring them.
 
 ## [1.2.0] - 2026-07-17
 

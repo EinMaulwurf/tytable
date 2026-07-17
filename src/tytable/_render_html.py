@@ -116,9 +116,13 @@ class HtmlRenderer(Renderer):
         """Append the escaped and styled caption when present."""
         if built.caption is not None:
             escaped = escape_html(built.caption)
+            attrs = ""
             if built.style_caption:
                 escaped = _style_html_inline(built.style_caption, escaped)
-            parts.append(f"<caption>{escaped}</caption>")
+                align = _align_to_css(built.style_caption.get("align"), None)
+                if align:
+                    attrs = f' style="text-align:{align}"'
+            parts.append(f"<caption{attrs}>{escaped}</caption>")
 
     def _emit_header(
         self,
@@ -224,8 +228,11 @@ class HtmlRenderer(Renderer):
         if not built.notes:
             return
         note_style = built.style_notes
-        align = _align_to_css(note_style.get("align"), note_style.get("alignv")) or "left"
+        align = _align_to_css(note_style.get("align"), None) or "left"
         css = [f"text-align:{align}"]
+        alignv = _align_to_css(None, note_style.get("alignv"))
+        if alignv:
+            css.append(f"vertical-align:{alignv}")
         if note_style.get("background"):
             css.append(f"background-color:{note_style['background']}")
         if note_style.get("indent") and note_style["indent"] > 0:

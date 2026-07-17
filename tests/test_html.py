@@ -478,6 +478,16 @@ class TestCaptionNotesStyleHtml:
         assert "padding-left:1.5em" in out
         assert "<i>" in out
 
+    def test_caption_align(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, caption="Demo").style(i="caption", align="r").render("html")
+        assert '<caption style="text-align:right">Demo</caption>' in out
+
+    def test_notes_vertical_alignment(self):
+        df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+        out = tt(df, notes=["Note"]).style(i="notes", alignv="m").render("html")
+        assert "text-align:left;vertical-align:middle" in out
+
     def test_caption_unstyled_unchanged(self):
         df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
         out = tt(df, caption="Demo").render("html")

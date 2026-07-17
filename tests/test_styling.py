@@ -448,6 +448,112 @@ class TestCaptionNotesStyle:
         assert '"1_0": 0' in out
 
 
+META_PROPERTY_VALUES = {
+    "bold": True,
+    "italic": True,
+    "underline": True,
+    "strikeout": True,
+    "monospace": True,
+    "smallcaps": True,
+    "color": "red",
+    "background": "#eee",
+    "fontsize": 1.1,
+    "align": "c",
+    "alignv": "m",
+    "indent": 1.0,
+    "rotate": 15,
+}
+
+META_STYLE_SUPPORT = {
+    ("typst", "caption"): {
+        "bold",
+        "italic",
+        "underline",
+        "strikeout",
+        "smallcaps",
+        "color",
+        "fontsize",
+    },
+    ("typst", "notes"): {
+        "bold",
+        "italic",
+        "underline",
+        "strikeout",
+        "smallcaps",
+        "color",
+        "background",
+        "fontsize",
+        "align",
+        "alignv",
+        "indent",
+    },
+    ("html", "caption"): {
+        "bold",
+        "italic",
+        "underline",
+        "strikeout",
+        "monospace",
+        "smallcaps",
+        "color",
+        "background",
+        "fontsize",
+        "align",
+        "indent",
+    },
+    ("html", "notes"): {
+        "bold",
+        "italic",
+        "underline",
+        "strikeout",
+        "monospace",
+        "smallcaps",
+        "color",
+        "background",
+        "fontsize",
+        "align",
+        "alignv",
+        "indent",
+    },
+}
+
+
+class TestMetaStyleSupportMatrix:
+    @pytest.mark.parametrize("output,target", META_STYLE_SUPPORT)
+    @pytest.mark.parametrize("prop,value", META_PROPERTY_VALUES.items())
+    def test_backend_support_matrix(self, output, target, prop, value):
+        table = tt(DF, caption="Demo", notes=["Note"]).style(i=target, **{prop: value})
+        if prop in META_STYLE_SUPPORT[(output, target)]:
+            table.render(output)
+        else:
+            with pytest.raises(
+                ValueError,
+                match=rf"property '{prop}'.*'{target}'.*{output} output",
+            ):
+                table.render(output)
+
+    @pytest.mark.parametrize(
+        "kwargs,message",
+        [
+            ({"j": 0}, "j cannot"),
+            ({"regex": True}, "regex cannot"),
+            ({"line": "b"}, "line styling cannot"),
+            ({"line_color": "red"}, "line styling cannot"),
+            ({"line_trim": "start"}, "line styling cannot"),
+            ({"colspan": 2}, "spans cannot"),
+            ({"rowspan": 2}, "spans cannot"),
+        ],
+    )
+    @pytest.mark.parametrize("target", ["caption", "notes"])
+    def test_grid_only_options_are_rejected(self, target, kwargs, message):
+        with pytest.raises(ValueError, match=message):
+            tt(DF, caption="Demo", notes=["Note"]).style(i=target, **kwargs).render("typst")
+
+    def test_typst_note_background_and_indent_are_rendered(self):
+        out = tt(DF, notes=["Note"]).style(i="notes", background="#eee", indent=1.5).render("typst")
+        assert 'fill: rgb("#eeeeee")' in out
+        assert "pad(left: 1.5em, [Note])" in out
+
+
 @pytest.mark.typst
 class TestListSelectors:
     def test_column_style_by_list_of_names(self):

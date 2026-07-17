@@ -380,8 +380,9 @@ class TyTable:
             above the column-name header; increasingly negative values move
             upward). ``"groupi"`` selects row-group separators and
             ``"~groupi"`` selects only genuine data rows, excluding those
-            separators. ``"groupj"`` selects column-group header rows,
-            ``"all"`` selects headers and body, and lists may mix integer and
+            separators. ``"groupj"`` selects column-group header rows;
+            ``"caption"`` and ``"notes"`` select non-grid metadata;
+            ``"all"`` selects headers and body. Lists may mix integer and
             string selectors. Boolean lists/tuples with exactly one value per
             source row, Polars expressions, boolean series, and
             ``callable(row) -> bool`` predicates select data rows by value.
@@ -466,6 +467,8 @@ class TyTable:
         ``where``, only true body cells within that cross-product are styled.
         Value formatting such as ``digits`` lives in :meth:`fmt`, a separate
         pipeline, and so always needs its own call.
+        Caption and note properties are backend-specific; unsupported
+        properties raise a targeted error when that backend is rendered.
 
         Examples
         --------

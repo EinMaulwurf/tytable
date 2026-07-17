@@ -342,6 +342,8 @@ class TypstRenderer(Renderer):
                 note_text = "#" + _style_typst_content(note_style, note_text)
             marker = escape_typst(note.marker) if note.marker else None
             cell_args = [f"align: {align_val}" if align_val else "align: left"]
+            if note_style.get("background"):
+                cell_args.append(f"fill: {color_to_typst(note_style['background'])}")
             cell_args.append(f"colspan: {ncol}")
             args_str = ", ".join(cell_args)
             if marker:

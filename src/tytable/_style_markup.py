@@ -91,6 +91,8 @@ class StyleMarkup:
             out = f"strike({out})"
         if props.get("smallcaps"):
             out = f"smallcaps({out})"
+        if props.get("indent") and props["indent"] > 0:
+            out = f"pad(left: {props['indent']}em, {out})"
         return out
 
     def html_cell_css(self, border_css: str = "") -> str:

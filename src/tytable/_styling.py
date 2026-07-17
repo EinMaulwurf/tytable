@@ -40,6 +40,62 @@ OVERWRITE_PROPS = (
 # (everything in OVERWRITE_PROPS except the grid-only span controls).
 META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p not in ("colspan", "rowspan"))
 
+_META_STYLE_SUPPORT = {
+    "typst": {
+        "caption": {
+            "bold",
+            "italic",
+            "underline",
+            "strikeout",
+            "smallcaps",
+            "color",
+            "fontsize",
+        },
+        "notes": {
+            "bold",
+            "italic",
+            "underline",
+            "strikeout",
+            "smallcaps",
+            "color",
+            "background",
+            "fontsize",
+            "align",
+            "alignv",
+            "indent",
+        },
+    },
+    "html": {
+        "caption": {
+            "bold",
+            "italic",
+            "underline",
+            "strikeout",
+            "monospace",
+            "smallcaps",
+            "color",
+            "background",
+            "fontsize",
+            "align",
+            "indent",
+        },
+        "notes": {
+            "bold",
+            "italic",
+            "underline",
+            "strikeout",
+            "monospace",
+            "smallcaps",
+            "color",
+            "background",
+            "fontsize",
+            "align",
+            "alignv",
+            "indent",
+        },
+    },
+}
+
 # Selectors handled outside the row/column style grid (see ``build_meta_styles``).
 META_SELECTORS = ("caption", "notes")
 
@@ -283,6 +339,15 @@ def build_meta_styles(
             continue
         if d.where is not None:
             raise ValueError(f"where cannot be used with the {d.i!r} selector")
+        if d.j is not None:
+            raise ValueError(f"j cannot be used with the {d.i!r} selector")
+        if d.regex:
+            raise ValueError(f"regex cannot be used with the {d.i!r} selector")
+        if d.line is not None or d.line_color is not None or d.line_trim is not None:
+            raise ValueError(f"line styling cannot be used with the {d.i!r} selector")
+        if d.colspan is not None or d.rowspan is not None:
+            raise ValueError(f"spans cannot be used with the {d.i!r} selector")
+        supported = _META_STYLE_SUPPORT.get(output, {}).get(d.i)
         for prop in META_STYLE_PROPS:
             v = getattr(d, prop)
             if v is not None:
@@ -293,6 +358,10 @@ def build_meta_styles(
                 if prop == "alignv" and isinstance(v, str) and v not in _ALIGN_V:
                     raise ValueError(
                         f"per-column alignv spec {v!r} cannot be used with meta selector {d.i!r}"
+                    )
+                if supported is not None and prop not in supported:
+                    raise ValueError(
+                        f"style property {prop!r} is not supported for {d.i!r} in {output} output"
                     )
                 target[prop] = v
     return style_caption, style_notes
