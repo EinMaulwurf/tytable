@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Accept narrow and read-only collection types in public annotations, including `list[int]`
+  column groups, `list[str]` row groups, mixed column selectors, and integer plot limits.
 - Require `.images(paths=...)` and explicit `.plot(data=...)` inputs to contain exactly one
   item per resolved media cell.
 - Validate `.fmt()` numeric options and callback contracts instead of silently accepting unknown

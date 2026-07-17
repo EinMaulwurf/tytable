@@ -7,6 +7,7 @@ Called by :meth:`TyTable.group` to record groups, and by
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from ._directives import RowGroup
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from ._tytable import TyTable
 
 
-def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
+def _resolve_cols(col_spec: Sequence[str | int], colnames: list[str]) -> list[int]:
     """Translate a list of column names/positions into 0-based integer indices."""
     indices = []
     for c in col_spec:
@@ -38,7 +39,7 @@ def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
 
 
 def _build_col_group_row(
-    j_dict: dict[str, list[str | int]], colnames: list[str]
+    j_dict: Mapping[str, Sequence[str | int]], colnames: list[str]
 ) -> list[str | None]:
     """Build one column-group header row (label at span start, ``""`` under the span, ``None`` elsewhere)."""
     ncol = len(colnames)
@@ -47,9 +48,9 @@ def _build_col_group_row(
     for label, cols in j_dict.items():
         if label is None:
             raise ValueError("column group labels must not be None")
-        if not isinstance(cols, list):
+        if isinstance(cols, (str, bytes)) or not isinstance(cols, Sequence):
             raise TypeError(
-                f"columns for column group {label!r} must be a list, got {type(cols).__name__}"
+                f"columns for column group {label!r} must be a sequence, got {type(cols).__name__}"
             )
         indices = _resolve_cols(cols, colnames)
         if not indices:
@@ -123,9 +124,9 @@ def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]
     return spans
 
 
-def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTable:
-    """Record row-group separators from a ``{label: row}`` dict or a run-length list."""
-    if isinstance(i, dict):
+def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) -> TyTable:
+    """Record row-group separators from a mapping or a run-length sequence."""
+    if isinstance(i, Mapping):
         positions: set[int] = set()
         for label, pos in i.items():
             if label is None:
@@ -144,7 +145,7 @@ def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTabl
         pairs = sorted(i.items(), key=lambda x: x[1])
         for label, pos in pairs:
             table._row_groups.append(RowGroup(label=str(label), position=pos))
-    elif isinstance(i, list):
+    elif not isinstance(i, (str, bytes)) and isinstance(i, Sequence):
         if len(i) != table._data.height:
             raise ValueError(
                 f"row group list must contain exactly {table._data.height} entries, got {len(i)}"
@@ -161,21 +162,21 @@ def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTabl
         if pos < len(i):
             table._row_groups.append(RowGroup(label=str(prev), position=pos))
     else:
-        raise TypeError("group(i=...) must be a dict or list")
+        raise TypeError("group(i=...) must be a mapping or sequence")
     return table
 
 
 def register_col_groups(
-    table: TyTable, j: dict[str, list[str | int]], colnames: list[str]
+    table: TyTable, j: Mapping[str, Sequence[str | int]], colnames: list[str]
 ) -> TyTable:
-    """Record a column-group header row from a ``{label: [cols]}`` dict."""
-    if isinstance(j, dict):
+    """Record a column-group header row from a ``{label: [cols]}`` mapping."""
+    if isinstance(j, Mapping):
         if not j:
             return table
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
     else:
-        raise TypeError("group(j=...) must be a dict")
+        raise TypeError("group(j=...) must be a mapping")
     return table
 
 

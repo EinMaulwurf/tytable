@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pathlib
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from typing import Any, TypeAlias
 
@@ -33,7 +33,7 @@ from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style
 from ._types import NoteDict
 
-_ColumnSelector: TypeAlias = int | str | Sequence[int] | Sequence[str] | None
+_ColumnSelector: TypeAlias = int | str | Sequence[int | str] | None
 
 
 def tt(
@@ -47,7 +47,7 @@ def tt(
     height: float | None = None,
     gutter: float | str | None = 2,
     colnames: bool = True,
-    colnames_override: dict[str, str] | None = None,
+    colnames_override: Mapping[str, str] | None = None,
     rownames: bool = False,
     digits: int | None = None,
     escape: bool = True,
@@ -280,7 +280,7 @@ class TyTable:
         height: float | None = None,
         gutter: float | str | None = 2,
         colnames: bool = True,
-        colnames_override: dict[str, str] | None = None,
+        colnames_override: Mapping[str, str] | None = None,
         rownames: bool = False,
         digits: int | None = None,
         escape: bool = True,
@@ -691,12 +691,12 @@ class TyTable:
         *,
         regex: bool = False,
         fun: Callable | None = None,
-        data: list | None = None,
+        data: Sequence[Any] | None = None,
         height: float | str = 1.0,
         height_px: int = 400,
         width_px: int = 1200,
         color: str = "black",
-        xlim: list[float] | None = None,
+        xlim: Sequence[float] | None = None,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
         """
@@ -771,9 +771,9 @@ class TyTable:
             j=j,
             regex=regex,
             fun=fun,
-            data=data,
+            data=list(data) if data is not None else None,
             color=color,
-            xlim=xlim,
+            xlim=list(xlim) if xlim is not None else None,
             height=height,
             height_px=height_px,
             width_px=width_px,
@@ -795,7 +795,7 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         regex: bool = False,
-        paths: list[str] | None = None,
+        paths: Sequence[str] | None = None,
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
@@ -855,8 +855,8 @@ class TyTable:
 
     def group(
         self,
-        i: dict[str, int] | list[object] | None = None,
-        j: dict[str, list[str | int]] | None = None,
+        i: Mapping[str, int] | Sequence[object] | None = None,
+        j: Mapping[str, Sequence[str | int]] | None = None,
         *,
         delimiter: str | None = None,
     ) -> TyTable:
@@ -867,11 +867,11 @@ class TyTable:
         ----------
         i
             Row groups. A ``{label: row}`` dict inserts a labelled separator
-            row before the given 0-based data row. A ``list`` (one entry per
+            row before the given 0-based data row. A sequence (one entry per
             data row) inserts a separator whenever the value changes.
         j
             Column groups. A ``{label: [cols]}`` dict adds a spanning header
-            row where each value maps a label to a list of column names or
+            row where each value maps a label to a sequence of column names or
             positions.
         delimiter
             Split every column name on this literal string and turn the shared
