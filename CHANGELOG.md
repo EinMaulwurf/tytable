@@ -15,6 +15,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   numeric formats or exposing incidental errors.
 - Reject out-of-range and malformed row and column selectors consistently across public methods;
   document `i="~groupi"` for selecting data rows without row-group separators.
+- Validate row- and column-group specifications instead of producing malformed spans or incidental
+  indexing failures.
 
 ## [1.2.0] - 2026-07-17
 

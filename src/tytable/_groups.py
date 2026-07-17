@@ -24,7 +24,13 @@ def _resolve_cols(col_spec: list[str | int], colnames: list[str]) -> list[int]:
                 indices.append(colnames.index(c))
             except ValueError:
                 raise ValueError(f"column {c!r} not found") from None
+        elif isinstance(c, bool):
+            raise TypeError("column spec must be str or int, got bool")
         elif isinstance(c, int):
+            if c < 0 or c >= len(colnames):
+                raise IndexError(
+                    f"column group position {c} is out of range for {len(colnames)} columns"
+                )
             indices.append(c)
         else:
             raise TypeError(f"column spec must be str or int, got {type(c).__name__}")
@@ -37,15 +43,32 @@ def _build_col_group_row(
     """Build one column-group header row (label at span start, ``""`` under the span, ``None`` elsewhere)."""
     ncol = len(colnames)
     row: list[str | None] = [None] * ncol
+    claimed: set[int] = set()
     for label, cols in j_dict.items():
+        if label is None:
+            raise ValueError("column group labels must not be None")
+        if not isinstance(cols, list):
+            raise TypeError(
+                f"columns for column group {label!r} must be a list, got {type(cols).__name__}"
+            )
         indices = _resolve_cols(cols, colnames)
         if not indices:
-            continue
+            raise ValueError(f"column group {label!r} must select at least one column")
+        if len(indices) != len(set(indices)):
+            raise ValueError(f"column group {label!r} contains duplicate columns")
+        expected = list(range(indices[0], indices[0] + len(indices)))
+        if indices != expected:
+            raise ValueError(f"column group {label!r} must select a contiguous span in order")
+        overlap = claimed.intersection(indices)
+        if overlap:
+            raise ValueError(
+                f"column group {label!r} overlaps another group at column {min(overlap)}"
+            )
+        claimed.update(indices)
         start = indices[0]
-        row[start] = label
+        row[start] = str(label)
         for ci in indices[1:]:
-            if 0 <= ci < ncol:
-                row[ci] = ""
+            row[ci] = ""
     return row
 
 
@@ -103,10 +126,31 @@ def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]
 def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTable:
     """Record row-group separators from a ``{label: row}`` dict or a run-length list."""
     if isinstance(i, dict):
+        positions: set[int] = set()
+        for label, pos in i.items():
+            if label is None:
+                raise ValueError("row group labels must not be None")
+            if isinstance(pos, bool) or not isinstance(pos, int):
+                raise TypeError(
+                    f"row group position for {label!r} must be an integer, got {type(pos).__name__}"
+                )
+            if pos < 0 or pos > table._data.height:
+                raise IndexError(
+                    f"row group position {pos} is out of range for {table._data.height} rows"
+                )
+            if pos in positions:
+                raise ValueError(f"multiple row groups cannot use position {pos}")
+            positions.add(pos)
         pairs = sorted(i.items(), key=lambda x: x[1])
         for label, pos in pairs:
-            table._row_groups.append(RowGroup(label=str(label), position=int(pos)))
+            table._row_groups.append(RowGroup(label=str(label), position=pos))
     elif isinstance(i, list):
+        if len(i) != table._data.height:
+            raise ValueError(
+                f"row group list must contain exactly {table._data.height} entries, got {len(i)}"
+            )
+        if any(label is None for label in i):
+            raise ValueError("row group labels must not be None")
         prev = None
         pos = 0
         for idx, val in enumerate(i):
@@ -114,7 +158,7 @@ def register_row_groups(table: TyTable, i: dict[str, int] | list[Any]) -> TyTabl
                 table._row_groups.append(RowGroup(label=str(prev), position=pos))
                 pos = idx
             prev = val
-        if pos < len(i) and prev is not None:
+        if pos < len(i):
             table._row_groups.append(RowGroup(label=str(prev), position=pos))
     else:
         raise TypeError("group(i=...) must be a dict or list")
@@ -126,6 +170,8 @@ def register_col_groups(
 ) -> TyTable:
     """Record a column-group header row from a ``{label: [cols]}`` dict."""
     if isinstance(j, dict):
+        if not j:
+            return table
         row = _build_col_group_row(j, colnames)
         table._col_group_rows.insert(0, row)
     else:

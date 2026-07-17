@@ -865,7 +865,9 @@ class TyTable:
             type.
         ValueError
             If both ``j`` and ``delimiter`` are provided, a column is missing,
-            or a delimiter cannot split every column name consistently.
+            groups overlap or are noncontiguous, a row-group list has the
+            wrong length, a label is ``None``, or a delimiter cannot split
+            every column name consistently. Empty specifications are no-ops.
 
         Examples
         --------

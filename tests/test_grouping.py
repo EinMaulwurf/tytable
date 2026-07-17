@@ -186,6 +186,69 @@ class TestGroupValidation:
         with pytest.raises(ValueError, match="either j or delimiter"):
             tt(DF4).group(j={"Q1": [0, 1]}, delimiter="_")
 
+    @pytest.mark.parametrize("groups", [["A"], ["A", "A", "B"]])
+    def test_row_group_list_must_match_data_rows(self, groups):
+        with pytest.raises(ValueError, match="exactly 2 entries"):
+            tt(DF).group(i=groups)
+
+    @pytest.mark.parametrize("groups", [{"Low": -1}, {"High": 3}])
+    def test_row_group_position_must_be_in_range(self, groups):
+        with pytest.raises(IndexError, match="out of range for 2 rows"):
+            tt(DF).group(i=groups)
+
+    @pytest.mark.parametrize("position", [True, 1.5, "1"])
+    def test_row_group_position_must_be_an_integer(self, position):
+        with pytest.raises(TypeError, match="must be an integer"):
+            tt(DF).group(i={"Group": position})
+
+    def test_row_groups_cannot_share_a_position(self):
+        with pytest.raises(ValueError, match="multiple row groups"):
+            tt(DF).group(i={"First": 1, "Second": 1})
+
+    @pytest.mark.parametrize("groups", [{None: 0}, ["A", None]])
+    def test_row_group_labels_must_not_be_none(self, groups):
+        with pytest.raises(ValueError, match="labels must not be None"):
+            tt(DF).group(i=groups)
+
+    def test_empty_row_group_specs_are_noops(self):
+        table = tt(pl.DataFrame({"A": []})).group(i=[]).group(i={})
+        assert table._row_groups == []
+
+    @pytest.mark.parametrize("position", [-1, 4])
+    def test_column_group_position_must_be_in_range(self, position):
+        with pytest.raises(IndexError, match="out of range for 4 columns"):
+            tt(DF3).group(j={"Group": [position]})
+
+    def test_boolean_is_not_a_column_position(self):
+        with pytest.raises(TypeError, match="got bool"):
+            tt(DF3).group(j={"Group": [True]})
+
+    @pytest.mark.parametrize("columns", [[0, 0], [0, 2], [2, 1]])
+    def test_column_group_columns_must_be_unique_contiguous_and_ordered(self, columns):
+        with pytest.raises(ValueError, match="duplicate|contiguous"):
+            tt(DF3).group(j={"Group": columns})
+
+    def test_column_groups_must_not_overlap(self):
+        with pytest.raises(ValueError, match="overlaps another group"):
+            tt(DF3).group(j={"First": [0, 1], "Second": [1, 2]})
+
+    def test_column_group_must_not_be_empty(self):
+        with pytest.raises(ValueError, match="at least one column"):
+            tt(DF3).group(j={"Group": []})
+
+    def test_column_group_columns_must_be_a_list(self):
+        with pytest.raises(TypeError, match="must be a list"):
+            tt(DF3).group(j={"Group": (0, 1)})
+
+    def test_column_group_label_must_not_be_none(self):
+        with pytest.raises(ValueError, match="labels must not be None"):
+            tt(DF3).group(j={None: [0, 1]})
+
+    def test_empty_column_group_spec_is_a_noop(self):
+        built = build(tt(DF).group(j={}), "typst")
+        assert built.col_groups == []
+        assert built.nhead == 1
+
 
 @pytest.mark.typst
 class TestDelimiterGrouping:
