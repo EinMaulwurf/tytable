@@ -152,7 +152,7 @@ class TestCellSelectors:
         built = build(
             tt(self.DF)
             .set_name(j="Price", name="Unit price")
-            .fmt(j="Unit price", where=pl.col("Price") > 100, digits=0),
+            .fmt(j="Price", where=pl.col("Price") > 100, digits=0),
             "typst",
         )
 

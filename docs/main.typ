@@ -300,11 +300,12 @@ Two calling modes:
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
   header at once — the list length must equal the column count.
 
-After renaming, subsequent `j` selectors use the _new_ display names; the old
-polars column name no longer matches. The example starts from
-`grp`, `val_1`, `val_2` and replaces them with `""`, `Revenue`, `Cost` — then
-formats the renamed columns by their new names. Their alignment continues to
-follow the numeric dtypes of the underlying source columns:
+Every `j` selector continues to use the original Polars column names, whether
+the directive was recorded before or after the rename. Display labels are
+presentation only and never become selectors. This keeps duplicate and empty
+labels unambiguous: the example displays `""`, `Revenue`, and `Cost`, then
+formats those columns using the source names `val_1` and `val_2`. Their
+alignment continues to follow the source-column numeric dtypes:
 
 #tag("SOURCE")
 #source("examples/15_set_name.py")
@@ -697,8 +698,8 @@ table = tt(df).fmt(
 
 Conditions always see the original typed values, not strings produced by an
 earlier formatting directive. `where` expressions also use original source
-column names after `.set_name()` changes displayed headers; `j` continues to
-use the new display names. False and null mask values select nothing. A mask
+column names after `.set_name()` changes displayed headers; `j` uses those same
+stable source names. False and null mask values select nothing. A mask
 must have one boolean value per source row, and each output column name must
 match a source column.
 
@@ -1286,17 +1287,27 @@ names and the source row count. Its true cells are intersected with `i` and
 `j`, and it cannot target synthetic headers, group rows, captions, or notes.
 
 Integer `j` values range from zero through the column count minus one. Exact
-string names are case-sensitive and select the first matching display name.
-This matters because `.set_name()` permits duplicates: use an integer to select
-a later duplicate, or `regex=True` to match all duplicates. Column selectors
-are resolved lazily against the table's current display names, so a rename also
-affects directives recorded earlier; `where` expressions continue to use the
-original DataFrame names. A list preserves its requested order and may repeat
-an exact selector.
+string names are case-sensitive and always refer to original DataFrame column
+names. Names assigned by `.set_name()` or `colnames_override` are display-only
+and never match a selector unless the same string is independently an original
+column name. This makes duplicate and empty display labels legal and
+unambiguous. Directives recorded before and after a rename therefore select the
+same columns. A list preserves its requested order and may repeat an exact
+selector.
 
-With `regex=True`, every string element of `j` is a Python `re.search` pattern,
-not a full match. Each pattern is limited to 500 characters and must match at
-least one column; invalid patterns and no-match patterns raise `ValueError`.
+If friendly names should become the actual selector names, rename the Polars
+DataFrame before constructing the table. The renamed schema then supplies both
+the source identities and the initial display labels:
+
+```python
+df = df.rename({"annual_revenue_usd": "Revenue"})
+table = tt(df).fmt(j="Revenue", digits=0)
+```
+
+With `regex=True`, every string element of `j` is a Python `re.search` pattern
+over original DataFrame column names, not display labels or a full match. Each
+pattern is limited to 500 characters and must match at least one column;
+invalid patterns and no-match patterns raise `ValueError`.
 Matches from a regex list are de-duplicated in first-match order. Integer
 elements keep their normal meaning. Regex applies only to `j`, not `i` or
 `where`.
@@ -1392,7 +1403,7 @@ mutually exclusive.
 
 With `j`, `name` is one display name or a list matching the selected columns.
 Without `j`, pass the complete list of display names. The DataFrame remains
-unchanged; later `j` selectors use the new display names.
+unchanged, and all `j` selectors continue to use its original column names.
 
 #api("Custom theme", api_signatures.at("theme"))
 

@@ -143,15 +143,6 @@ def _resolve_i_internal(
     )
 
 
-def _resolve_j_internal(
-    j_selector: int | str | Sequence[int | str] | None, colnames: list[str]
-) -> list[int]:
-    """Thin wrapper around :func:`resolve_j` re-exported for footnote insertion."""
-    from ._indices import resolve_j
-
-    return resolve_j(j_selector, colnames)
-
-
 def _insert_footnote_markers(
     data_body: list[list[str]],
     colnames_display: list[str],
@@ -160,9 +151,8 @@ def _insert_footnote_markers(
     n_merged_body: int,
     group_positions: set[int],
     has_header: bool,
-    colnames: list[str],
     output: OutputFormat,
-    data: pl.DataFrame | None = None,
+    table: TyTable,
 ) -> None:
     """Append superscript markers to cells targeted by a note (mutates in place)."""
     if not notes:
@@ -189,9 +179,9 @@ def _insert_footnote_markers(
             has_header,
             n_merged_body,
             group_positions,
-            data=data,
+            data=table._data,
         )
-        j_vals = _resolve_j_internal(j_selector, colnames)
+        j_vals = table._resolve_j(j_selector)
 
         if i_vals is None:
             continue
@@ -249,7 +239,7 @@ def _extract_body(table: TyTable, output: OutputFormat) -> _BuildState:
         ncols=ncols,
         data_body=data_body,
         typed_body=typed_body,
-        colnames_display=[str(colname) for colname in table._colnames],
+        colnames_display=list(table._colnames_display),
         show_colnames=table._show_colnames,
     )
 
@@ -307,7 +297,6 @@ def _apply_formatting(state: _BuildState) -> None:
         n_merged_body=state.n_merged_body,
         group_positions=state.group_positions,
         output=state.output,
-        colnames=state.table._colnames,
     )
 
 
@@ -356,9 +345,8 @@ def _insert_footnotes(state: _BuildState) -> None:
         state.n_merged_body,
         state.group_positions,
         state.show_colnames,
-        state.table._colnames,
         state.output,
-        data=state.table._data,
+        state.table,
     )
 
 

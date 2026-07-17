@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking
+
+- Resolve every `j` selector against the original DataFrame column names. Display labels assigned
+  by `.set_name()` or `colnames_override` are now presentation-only, so renaming headers cannot
+  change which columns later directives select and duplicate or empty display labels remain
+  unambiguous.
+
 ### Fixes
 
 - Require `.images(paths=...)` and explicit `.plot(data=...)` inputs to contain exactly one

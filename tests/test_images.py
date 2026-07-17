@@ -96,6 +96,18 @@ class TestPlotCallbackKeywords:
 
 @pytest.mark.images
 class TestPlotSparkline:
+    def test_plot_uses_source_name_after_duplicate_display_rename(self, tmp_path):
+        df = pl.DataFrame({"revenue": [[1, 2, 3]], "cost": [2]})
+        table = (
+            tt(df).theme_empty().set_name(name=["Value", "Value"]).plot(j="revenue", fun=_sparkline)
+        )
+
+        table.save(str(tmp_path / "out.typ"))
+        result = (tmp_path / "out.typ").read_text()
+
+        assert result.count("#image(") == 1
+        assert "[2]," in result
+
     def test_matplotlib_uses_requested_pixel_dimensions(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         tt(df).theme_empty().plot(j="Trend", fun=_sparkline, width_px=320, height_px=96).save(

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
-from ._indices import resolve_i, resolve_j, resolve_where
+from ._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
     from ._directives import FormatDirective
@@ -323,7 +323,6 @@ def apply_formats(
     n_merged_body: int,
     group_positions: set[int],
     output: str,
-    colnames: list[str],
 ) -> set[tuple[int, int]]:
     """Apply every ``FormatDirective``, returning cells that were explicitly escaped.
 
@@ -354,7 +353,7 @@ def apply_formats(
             )
         if i_vals is None:
             raise RuntimeError("i_vals unexpectedly None in apply_formats")
-        j_vals = resolve_j(d.j, colnames, regex=d.regex)
+        j_vals = table._resolve_j(d.j, regex=d.regex)
 
         target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)
         if d.where is not None:
@@ -375,12 +374,12 @@ def apply_formats(
             data_body,
             typed_body,
             colnames_display,
-            table._colnames,
+            table._source_colnames,
             output,
         )
         _apply_fn(target_cells, d, data_body, colnames_display)
         _apply_replacements(
-            target_cells, d, data_body, typed_body, colnames_display, table._colnames
+            target_cells, d, data_body, typed_body, colnames_display, table._source_colnames
         )
         generated_markup.update(
             _apply_linebreaks(

@@ -715,7 +715,7 @@ class TestCellSelectors:
             tt(self.DF)
             .theme_empty()
             .set_name(j="Price", name="Unit price")
-            .style(j="Unit price", where=pl.col("Price") > 100, bold=True),
+            .style(j="Price", where=pl.col("Price") > 100, bold=True),
             "typst",
         )
 

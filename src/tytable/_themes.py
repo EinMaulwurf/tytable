@@ -80,7 +80,7 @@ def theme_rotate(
     table: TyTable,
     angle: float = 90,
     i: int | str | Sequence[int | str] | None = None,
-    j: int | str | Sequence[int] | Sequence[str] | None = None,
+    j: int | str | Sequence[int | str] | None = None,
 ) -> TyTable:
     """Rotate the whole table (``i``/``j`` both ``None``) or just selected cells."""
     if i is None and j is None:

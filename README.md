@@ -68,8 +68,8 @@ whole document.
   column-name header). Use `i="header"` for the column-name row, negative ints
   for column-group header rows (`-1` is the innermost row, immediately above
   the column-name header; increasingly negative values move upward).
-- **Column selection by name**: `j="Score"` (preferred); `j=0` selects the first
-  column by position.
+- **Column selection**: use original DataFrame names (`j="Score"`) or 0-based
+  positions (`j=0`); display names are presentation-only.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()`
   methods all return `self`. `.render()` / `.save()` are terminal.
 - **Readable defaults**: text columns are left-aligned and numeric columns are

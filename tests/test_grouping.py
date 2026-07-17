@@ -256,6 +256,14 @@ class TestDelimiterGrouping:
         out = tt(DF4).group(delimiter="_").render("typst")
         assert_snapshot("group_delim", out)
 
+    def test_delimiter_uses_source_names_after_display_rename(self):
+        built = build(
+            tt(DF4).set_name(name=["One", "Two", "Three", "Four"]).group(delimiter="_"),
+            "typst",
+        )
+        assert built.col_groups[0][0] == "Q1"
+        assert built.colnames_display == ["One", "Two", "Three", "Four"]
+
     def test_delimiter_mismatched_parts(self):
         df = pl.DataFrame({"A_b": [1], "C": [2]})
         with pytest.raises(ValueError):

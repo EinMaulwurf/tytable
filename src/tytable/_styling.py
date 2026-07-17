@@ -15,7 +15,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from ._colors import _is_color_function, _validate_color_string
-from ._indices import resolve_i, resolve_j, resolve_where
+from ._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
@@ -282,7 +282,7 @@ def build_style_grid(
                 n_merged_body=n_merged_body,
                 has_header=has_header,
             )
-        j_vals = resolve_j(d.j, table._colnames, regex=d.regex)
+        j_vals = table._resolve_j(d.j, regex=d.regex)
         where_cells = (
             resolve_where(d.where, data=table._data, group_positions=group_positions)
             if d.where is not None

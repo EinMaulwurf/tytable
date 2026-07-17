@@ -33,7 +33,7 @@ from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style
 from ._types import NoteDict
 
-_ColumnSelector: TypeAlias = int | str | Sequence[int] | Sequence[str] | None
+_ColumnSelector: TypeAlias = int | str | Sequence[int | str] | None
 
 
 def tt(
@@ -298,7 +298,8 @@ class TyTable:
         """
         _validate_figure_options(figure, caption, label)
         self._data = data.clone()
-        self._colnames: list[str] = (
+        self._source_colnames: list[str] = list(data.columns)
+        self._colnames_display: list[str] = (
             [colnames_override.get(c, c) for c in data.columns]
             if colnames_override
             else list(data.columns)
@@ -334,6 +335,10 @@ class TyTable:
         self._base_typst_opts = replace(self._typst_opts)
 
         _themes.theme_default(self)
+
+    def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:
+        """Resolve a column selector against stable source-column names."""
+        return resolve_j(j, self._source_colnames, regex=regex)
 
     def style(
         self,
@@ -389,10 +394,13 @@ class TyTable:
             ``callable(row) -> bool`` predicates select data rows by value.
             ``None`` means *all* rows.
         j
-            Column selector: a name (``"Score"``), an integer position (``0``),
-            or a ``list`` of any of these. ``None`` means *all* columns.
+            Column selector: an original DataFrame name (``"Score"``), an
+            integer position (``0``), or a ``list`` of any of these. Display
+            labels assigned by :meth:`set_name` or ``colnames_override`` are
+            presentation-only and never become selectors. ``None`` means *all*
+            columns.
             Set ``regex=True`` to interpret string selectors as regular
-            expression patterns matched against column names via
+            expression patterns matched against original DataFrame names via
             :func:`re.search`.
         where
             Polars expression selecting individual body cells. Each boolean
@@ -874,10 +882,11 @@ class TyTable:
             row where each value maps a label to a list of column names or
             positions.
         delimiter
-            Split every column name on this literal string and turn the shared
-            parts into hierarchical group labels. For example, ``"_"`` on
-            ``"Q1_rev"`` yields a ``"Q1"`` group. The delimiter must be
-            non-empty and occur equally often in every column name.
+            Split every original DataFrame column name on this literal string
+            and turn the shared parts into hierarchical group labels. For
+            example, ``"_"`` on ``"Q1_rev"`` yields a ``"Q1"`` group. The
+            delimiter must be non-empty and occur equally often in every
+            source name.
 
         Returns
         -------
@@ -910,9 +919,9 @@ class TyTable:
         if i is not None:
             register_row_groups(self, i)
         if j is not None:
-            register_col_groups(self, j, self._colnames)
+            register_col_groups(self, j, self._source_colnames)
         if delimiter is not None:
-            register_delimiter_groups(self, delimiter, self._colnames)
+            register_delimiter_groups(self, delimiter, self._source_colnames)
         return self
 
     def set_name(
@@ -926,9 +935,10 @@ class TyTable:
         Rename column(s) for display without touching the underlying DataFrame.
 
         Unlike renaming columns in Polars, this only affects the rendered
-        header and subsequent ``j`` selectors — the original frame is
-        untouched, and arbitrary display names are allowed (including ``""``,
-        duplicates, or names that would be awkward as Polars column names).
+        header. The original frame and the stable source names used by every
+        ``j`` selector are untouched, and arbitrary display names are allowed
+        (including ``""``, duplicates, or names that would be awkward as
+        Polars column names).
 
         Two calling modes:
 
@@ -943,8 +953,9 @@ class TyTable:
           replaces every column display name; ``name`` must be a list whose
           length equals the number of columns.
 
-        After renaming, subsequent ``j`` selectors use the **new** display
-        names — the old Polars column name no longer matches.
+        Selectors always use the original Polars column names, regardless of
+        whether they were recorded before or after a display rename. A display
+        name is not selectable unless it is also an original column name.
 
         Parameters
         ----------
@@ -976,14 +987,14 @@ class TyTable:
         >>> (tt(df)                              # doctest: +SKIP
         ...  .set_name(j="x", name="Variable")
         ...  .set_name(j="y", name="")
-        ...  .style(j="Variable", bold=True))
+        ...  .style(j="x", bold=True))
 
         Replace all headers at once:
 
         >>> (tt(df)                              # doctest: +SKIP
         ...  .set_name(name=["Alpha", "Beta"]))
         """
-        ncol = len(self._colnames)
+        ncol = len(self._source_colnames)
 
         if isinstance(name, str):
             if j is None:
@@ -991,9 +1002,9 @@ class TyTable:
                     "set_name(name=str) requires a column selector j; "
                     "pass a list to replace all column names."
                 )
-            idxs = resolve_j(j, self._colnames, regex=regex)
+            idxs = self._resolve_j(j, regex=regex)
             for k in idxs:
-                self._colnames[k - 1] = name
+                self._colnames_display[k - 1] = name
             return self
 
         if not isinstance(name, Sequence):
@@ -1010,16 +1021,16 @@ class TyTable:
                     f"set_name() full-list replace got {len(names)} name(s) "
                     f"for a {ncol}-column table"
                 )
-            self._colnames = names
+            self._colnames_display = names
             return self
 
-        idxs = resolve_j(j, self._colnames, regex=regex)
+        idxs = self._resolve_j(j, regex=regex)
         if len(names) != len(idxs):
             raise ValueError(
                 f"set_name() got {len(names)} name(s) for {len(idxs)} selected column(s)"
             )
         for k, nm in zip(idxs, names, strict=True):
-            self._colnames[k - 1] = nm
+            self._colnames_display[k - 1] = nm
         return self
 
     def theme(self, fn: Callable[[TyTable], TyTable | None]) -> TyTable:

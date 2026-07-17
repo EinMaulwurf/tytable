@@ -3,7 +3,7 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
-from tytable._indices import resolve_j
+from tytable._resolve import build
 
 
 @pytest.mark.typst
@@ -13,34 +13,35 @@ class TestSetNamePerColumn:
     def test_rename_by_name_updates_colnames(self):
         t = tt(self.DF).theme_empty()
         assert t.set_name(j="x", name="X") is t
-        assert t._colnames == ["X", "y"]
+        assert t._colnames_display == ["X", "y"]
+        assert t._source_colnames == ["x", "y"]
 
     def test_rename_by_int_position(self):
         t = tt(self.DF).theme_empty()
         t.set_name(j=0, name="Alpha")
-        assert t._colnames == ["Alpha", "y"]
+        assert t._colnames_display == ["Alpha", "y"]
 
     def test_rename_by_list_of_names(self):
         t = tt(self.DF).theme_empty()
         t.set_name(j=["x", "y"], name=["X", "Y"])
-        assert t._colnames == ["X", "Y"]
+        assert t._colnames_display == ["X", "Y"]
 
     def test_rename_by_list_of_ints(self):
         t = tt(self.DF).theme_empty()
         t.set_name(j=[0, 1], name=["X", "Y"])
-        assert t._colnames == ["X", "Y"]
+        assert t._colnames_display == ["X", "Y"]
 
     def test_rename_by_regex(self):
         df = pl.DataFrame({"col_a": [1], "col_b": [2], "other": [3]})
         t = tt(df).theme_empty()
         t.set_name(j="col_", regex=True, name="matched")
-        assert t._colnames == ["matched", "matched", "other"]
+        assert t._colnames_display == ["matched", "matched", "other"]
 
     def test_single_str_applies_to_all_matched(self):
         df = pl.DataFrame({"a": [1], "b": [2]})
         t = tt(df).theme_empty()
         t.set_name(j=["a", "b"], name="")
-        assert t._colnames == ["", ""]
+        assert t._colnames_display == ["", ""]
 
     def test_render_shows_new_header(self):
         out = tt(self.DF).theme_empty().set_name(j="x", name="X").render("typst")
@@ -59,7 +60,7 @@ class TestSetNameFullList:
     def test_replace_all_names(self):
         t = tt(self.DF).theme_empty()
         assert t.set_name(name=["Alpha", "Beta"]) is t
-        assert t._colnames == ["Alpha", "Beta"]
+        assert t._colnames_display == ["Alpha", "Beta"]
 
     def test_replace_all_renders_new_headers(self):
         out = tt(self.DF).theme_empty().set_name(name=["Alpha", "Beta"]).render("typst")
@@ -105,7 +106,7 @@ class TestSetNameEdgeCases:
         t = tt(df).theme_empty().set_name(j="x", name="X")
         assert df.columns == ["x", "y"]
         assert t._data.columns == ["x", "y"]
-        assert t._colnames == ["X", "y"]
+        assert t._colnames_display == ["X", "y"]
 
     def test_per_column_list_length_mismatch_raises(self):
         t = tt(self.DF).theme_empty()
@@ -120,58 +121,109 @@ class TestSetNameEdgeCases:
     def test_duplicate_display_names_allowed(self):
         df = pl.DataFrame({"a": [1], "b": [2], "c": [3]})
         t = tt(df).theme_empty().set_name(name=["", "", ""])
-        assert t._colnames == ["", "", ""]
+        assert t._colnames_display == ["", "", ""]
         out = t.render("typst")
         assert out.count("[],") >= 3
 
 
 @pytest.mark.typst
 class TestSetNameSelectorSemantics:
-    """After renaming, subsequent j selectors use the NEW display name."""
+    """Display renames never alter stable source-name selectors."""
 
     DF = pl.DataFrame({"x": [1, 3], "y": [2, 4]})
 
-    def test_style_uses_new_name(self):
-        out = (
-            tt(self.DF)
-            .theme_empty()
-            .set_name(j="x", name="X")
-            .style(j="X", bold=True)
-            .render("typst")
+    def test_style_is_order_independent(self):
+        before = build(
+            tt(self.DF).theme_empty().style(j="x", bold=True).set_name(j="x", name="X"),
+            "typst",
         )
-        assert_snapshot("set_name_style_new_name", out)
+        after = build(
+            tt(self.DF).theme_empty().set_name(j="x", name="X").style(j="x", bold=True),
+            "typst",
+        )
+        assert before.style_grid == after.style_grid
+        assert before.style_grid[(1, 1)]["bold"] is True
+        assert (1, 2) not in before.style_grid
 
-    def test_old_name_no_longer_matches(self):
-        t = tt(self.DF).theme_empty().set_name(j="x", name="X")
-        with pytest.raises(ValueError, match="column not found"):
-            resolve_j("x", t._colnames)
-        assert resolve_j("X", t._colnames) == [1]
-
-    def test_old_name_in_style_raises(self):
-        """j='x' after rename raises ValueError at render time (no silent no-op)."""
-        t = tt(self.DF).theme_empty().set_name(j="x", name="X")
-        t.style(j="x", bold=True)
-        with pytest.raises(ValueError, match="column not found"):
+    def test_display_name_is_not_a_selector(self):
+        t = tt(self.DF).theme_empty().set_name(j="x", name="X").style(j="X", bold=True)
+        with pytest.raises(ValueError, match="column not found: 'X'"):
             t.render("typst")
 
-    def test_rename_then_group_uses_new_name(self):
+    def test_rename_then_group_uses_source_name(self):
         df = pl.DataFrame({"Q1_rev": [1], "Q1_cost": [2]})
         t = tt(df).theme_empty().set_name(name=["rev", "cost"])
-        t.group(j={"Q1": ["rev", "cost"]})
+        t.group(j={"Q1": ["Q1_rev", "Q1_cost"]})
         out = t.render("typst")
         assert_snapshot("set_name_then_group", out)
 
-    def test_rename_then_fmt_uses_new_name(self):
-        df = pl.DataFrame({"x": [1.5, 2.5]})
-        out = (
+    def test_duplicate_display_names_do_not_make_fmt_ambiguous(self):
+        df = pl.DataFrame({"revenue": [1.5], "cost": [2.5]})
+        built = build(
             tt(df)
             .theme_empty()
-            .set_name(j="x", name="Value")
-            .fmt(j="Value", digits=2)
-            .render("typst")
+            .set_name(j="revenue", name="Value")
+            .set_name(j="cost", name="Value")
+            .fmt(j="revenue", digits=2),
+            "typst",
         )
-        assert "[1.50]" in out
-        assert "[2.50]" in out
+        assert built.colnames_display == ["Value", "Value"]
+        assert built.data_body == [["1.50", "2.5"]]
+
+    def test_regex_searches_source_names_after_rename(self):
+        df = pl.DataFrame({"revenue_q1": [1], "cost_q1": [2]})
+        built = build(
+            tt(df).theme_empty().set_name(name=["", ""]).style(j="^revenue", regex=True, bold=True),
+            "typst",
+        )
+        assert built.style_grid[(1, 1)]["bold"] is True
+        assert (1, 2) not in built.style_grid
+
+    def test_notes_use_source_names_with_duplicate_labels(self):
+        df = pl.DataFrame({"revenue": [1], "cost": [2]})
+        built = build(
+            tt(
+                df,
+                notes=[{"text": "Revenue note", "i": [0], "j": ["revenue"]}],
+            )
+            .theme_empty()
+            .set_name(name=["Value", "Value"]),
+            "typst",
+        )
+        assert "#super[1]" in built.data_body[0][0]
+        assert "#super[1]" not in built.data_body[0][1]
+
+    def test_set_name_selector_remains_a_source_name(self):
+        t = tt(self.DF).set_name(j="x", name="X").set_name(j="x", name="Again")
+        assert t._colnames_display == ["Again", "y"]
+        with pytest.raises(ValueError, match="column not found: 'Again'"):
+            t.set_name(j="Again", name="Nope")
+
+    def test_display_label_collision_selects_the_source_column(self):
+        df = pl.DataFrame({"a": [1], "Value": [2]})
+        t = tt(df).set_name(j="a", name="Value").set_name(j="Value", name="Second")
+
+        assert t._colnames_display == ["Value", "Second"]
+
+    def test_static_images_use_source_names_after_rename(self):
+        df = pl.DataFrame({"revenue": [1], "cost": [2]})
+        built = build(
+            tt(df)
+            .theme_empty()
+            .set_name(name=["Value", "Value"])
+            .images(j="revenue", paths=["revenue.png"]),
+            "typst",
+        )
+        assert "revenue.png" in built.data_body[0][0]
+        assert built.data_body[0][1] == "2"
+
+    def test_integer_selector_still_uses_source_position(self):
+        built = build(
+            tt(self.DF).theme_empty().set_name(name=["", ""]).style(j=1, bold=True),
+            "typst",
+        )
+        assert built.style_grid[(1, 2)]["bold"] is True
+        assert (1, 1) not in built.style_grid
 
 
 @pytest.mark.typst
@@ -206,12 +258,18 @@ class TestSetNameColnamesOverrideInterplay:
     def test_set_name_after_override_renames_further(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
         t = tt(df, colnames_override={"x": "X1", "y": "Y1"}).theme_empty()
-        assert t._colnames == ["X1", "Y1"]
-        t.set_name(j="X1", name="X2")
-        assert t._colnames == ["X2", "Y1"]
+        assert t._colnames_display == ["X1", "Y1"]
+        t.set_name(j="x", name="X2")
+        assert t._colnames_display == ["X2", "Y1"]
 
     def test_set_name_full_list_overrides_override(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
         t = tt(df, colnames_override={"x": "X1", "y": "Y1"}).theme_empty()
         t.set_name(name=["A", "B"])
-        assert t._colnames == ["A", "B"]
+        assert t._colnames_display == ["A", "B"]
+
+    def test_override_names_are_not_selectors(self):
+        df = pl.DataFrame({"x": [1], "y": [2]})
+        t = tt(df, colnames_override={"x": "X1"}).theme_empty().style(j="X1", bold=True)
+        with pytest.raises(ValueError, match="column not found: 'X1'"):
+            t.render("typst")

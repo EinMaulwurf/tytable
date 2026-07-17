@@ -10,7 +10,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from ._directives import ImageDirective
-from ._indices import resolve_i, resolve_j
+from ._indices import resolve_i
 from ._utils import _new_image_id, format_markup_num
 
 if TYPE_CHECKING:
@@ -173,8 +173,6 @@ def execute_plots(
         return image_cells
 
     portable = table._typst_opts.portable
-    colnames = table._colnames
-
     for rank, d in enumerate(table._media_directives):
         if d.output is not None and output not in d.output:
             continue
@@ -199,7 +197,7 @@ def execute_plots(
             i_vals = []
 
         body_rows = [i for i in i_vals if i > 0]
-        j_vals = resolve_j(d.j, colnames, regex=d.regex)
+        j_vals = table._resolve_j(d.j, regex=d.regex)
 
         target_cells = [
             (i - 1, j - 1)
