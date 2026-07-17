@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 import tempfile
@@ -62,6 +63,12 @@ def _sparkline(values, *, color="black", xlim=None, **kw):
     return fig
 
 
+def _only_plot(directory):
+    plots = list(directory.glob("plot_*.png"))
+    assert len(plots) == 1
+    return plots[0]
+
+
 class TestPlotCallbackKeywords:
     def test_forwards_color_without_xlim(self):
         def color_only(value, *, color):
@@ -96,6 +103,59 @@ class TestPlotCallbackKeywords:
 
 @pytest.mark.images
 class TestPlotSparkline:
+    def test_direct_render_is_side_effect_free_and_repeatable(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        table = (
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_empty().plot(j="Trend", fun=_sparkline)
+        )
+
+        before = set(tmp_path.iterdir())
+        first = table.render("typst")
+        second = table.render("typst")
+
+        assert first == second
+        assert "#image(bytes(" in first
+        assert set(tmp_path.iterdir()) == before
+
+    def test_direct_html_render_embeds_data_uri(self):
+        result = (
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
+            .theme_empty()
+            .plot(j="Trend", fun=_sparkline)
+            .render("html")
+        )
+
+        assert '<img src="data:image/png;base64,' in result
+
+    def test_save_and_render_destinations_are_independent(self, tmp_path):
+        table = (
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_empty().plot(j="Trend", fun=_sparkline)
+        )
+
+        table.save(str(tmp_path / "one" / "sales.typ"))
+        direct = table.render("typst")
+        table.save(str(tmp_path / "two" / "report.typ"), assets="media")
+
+        first = (tmp_path / "one" / "sales.typ").read_text()
+        second = (tmp_path / "two" / "report.typ").read_text()
+        assert 'image("sales_assets/' in first
+        assert 'image("media/' in second
+        assert "#image(bytes(" in direct
+        assert (tmp_path / "one" / "sales_assets").is_dir()
+        assert (tmp_path / "two" / "media").is_dir()
+        assert not hasattr(table, "_assets_dir")
+        assert not hasattr(table, "_assets_relpath")
+
+    def test_ascii_plot_is_a_placeholder_without_calling_callback(self):
+        def fail(_value):
+            raise AssertionError("ASCII must not generate plot assets")
+
+        result = (
+            tt(pl.DataFrame({"Trend": [1]})).theme_empty().plot(j="Trend", fun=fail).render("ascii")
+        )
+
+        assert "[plot]" in result
+
     def test_plot_uses_source_name_after_duplicate_display_rename(self, tmp_path):
         df = pl.DataFrame({"revenue": [[1, 2, 3]], "cost": [2]})
         table = (
@@ -116,15 +176,15 @@ class TestPlotSparkline:
 
         import matplotlib.image as mpimg
 
-        image = mpimg.imread(tmp_path / "tytable_assets" / "plot_0000_testid0001.png")
+        image = mpimg.imread(_only_plot(tmp_path / "out_assets"))
         assert image.shape[:2] == (96, 320)
 
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
         tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
-        assert (tmp_path / "tytable_assets" / "plot_0000_testid0001.png").exists()
+        assert '#image("out_assets/plot_0000_0000_' in result
+        assert len(list((tmp_path / "out_assets").glob("plot_*.png"))) == 2
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
@@ -132,13 +192,14 @@ class TestPlotSparkline:
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert '#image("out_assets/plot_0000_0000_' in result
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
         tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
-        assert_snapshot("images_sparkline", result)
+        normalized = re.sub(r"(?<=_)\w{12}(?=\.png)", "<content-hash>", result)
+        assert_snapshot("images_sparkline", normalized)
 
     def test_sparkline_height_str(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
@@ -154,13 +215,13 @@ class TestPlotSparkline:
             str(tmp_path / "sub/out.typ"), assets="../assets/myplots"
         )
         result = (tmp_path / "sub" / "out.typ").read_text()
-        assert '#image("../assets/myplots/plot_0000_testid0001.png", height: 1em)' in result
-        assert (tmp_path / "assets" / "myplots" / "plot_0000_testid0001.png").exists()
+        assert '#image("../assets/myplots/plot_0000_0000_' in result
+        assert _only_plot(tmp_path / "assets" / "myplots").exists()
 
-    def test_sparkline_render_default_assets(self):
+    def test_sparkline_render_embeds_plot(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
-        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert "#image(bytes(" in result
 
 
 @pytest.mark.images
@@ -209,20 +270,21 @@ class TestPlotnine:
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
-        assert '#image("tytable_assets/plot_0000_testid0001.png", height: 1em)' in result
+        assert '#image("out_assets/plot_0000_0000_' in result
 
         import matplotlib.image as mpimg
 
-        image = mpimg.imread(tmp_path / "tytable_assets" / "plot_0000_testid0001.png")
-        assert image.shape[:2] == (96, 320)
+        plots = list((tmp_path / "out_assets").glob("plot_*.png"))
+        assert len(plots) == 2
+        assert all(mpimg.imread(plot).shape[:2] == (96, 320) for plot in plots)
 
 
 @pytest.mark.images
 class TestPortable:
-    def test_portable_mode_inline_svg(self):
+    def test_direct_typst_render_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
-        assert '#image("tytable_assets/plot_0000_testid0001.png"' in result
+        assert "#image(bytes(" in result
 
     def test_portable_theme_typst_inline_svg(self):
         from tytable._themes import theme_typst
@@ -323,13 +385,12 @@ class TestValidation:
         occupied = tmp_path / "occupied"
         occupied.write_text("not a directory")
         table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(j="Trend", fun=_sparkline)
-        table._assets_dir = str(occupied / "assets")
 
         with pytest.raises(
             OSError,
             match=r"\.plot\(\) directive 1: could not create asset directory .*assets",
         ):
-            table.render("typst")
+            table.save(str(tmp_path / "out.typ"), assets=str(occupied / "assets"))
 
     def test_invalid_callback_return_includes_directive_and_cell(self, tmp_path):
         table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(

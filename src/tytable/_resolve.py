@@ -24,6 +24,7 @@ from ._utils import format_markup_num
 if TYPE_CHECKING:
     import polars as pl
 
+    from ._images import MediaContext
     from ._tytable import TyTable
 
 
@@ -52,8 +53,7 @@ class BuiltTable:
     ``"l"``/``"r"`` entry per source column. ``width`` is a table fraction,
     Typst length, or per-column sequence; ``height`` is the constructor's
     row-height value in em. ``has_background`` lets the Typst renderer avoid a
-    conflicting grouped-table gutter. ``assets_relpath`` is reserved metadata;
-    generated media paths are currently materialized directly into cells.
+    conflicting grouped-table gutter.
     """
 
     output: OutputFormat
@@ -74,7 +74,6 @@ class BuiltTable:
     width: float | Sequence[float | str | None] | str | None = None
     height: float | None = None
     has_background: bool = False
-    assets_relpath: str | None = None
 
 
 @dataclass
@@ -97,7 +96,9 @@ class _BuildState:
     ``(row, column)`` coordinates (with ``(-1, column)`` for a formatted column
     name). They identify trusted markup owned by formatting/media phases, so
     the later global escape pass leaves it intact while escaping every ordinary
-    display string.
+    display string. ``media_context`` is ``None`` for self-contained direct
+    renders or holds the invocation-local asset destination supplied by
+    :meth:`TyTable.save`; it is never stored on the source table.
     """
 
     table: TyTable
@@ -114,6 +115,7 @@ class _BuildState:
     group_positions: set[int] = field(default_factory=set)
     escaped_cells: set[tuple[int, int]] = field(default_factory=set)
     image_cells: set[tuple[int, int]] = field(default_factory=set)
+    media_context: MediaContext | None = None
 
 
 def _resolve_i_internal(
@@ -214,7 +216,9 @@ def _copy_for_build(table: TyTable) -> TyTable:
     return working
 
 
-def _extract_body(table: TyTable, output: OutputFormat) -> _BuildState:
+def _extract_body(
+    table: TyTable, output: OutputFormat, media_context: MediaContext | None = None
+) -> _BuildState:
     """Extract display and typed cell matrices from the source dataframe."""
     nrows = table._data.height
     ncols = table._data.width
@@ -241,6 +245,7 @@ def _extract_body(table: TyTable, output: OutputFormat) -> _BuildState:
         typed_body=typed_body,
         colnames_display=list(table._colnames_display),
         show_colnames=table._show_colnames,
+        media_context=media_context,
     )
 
 
@@ -309,6 +314,7 @@ def _execute_plots(state: _BuildState) -> None:
         state.data_body,
         state.typed_body,
         state.output,
+        media_context=state.media_context,
         nhead=state.nhead,
         has_header=state.show_colnames,
         n_merged_body=state.n_merged_body,
@@ -375,7 +381,9 @@ def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _B
         style_grid.setdefault((position, 1), {})["colspan"] = state.ncols
 
 
-def build(table: TyTable, output: OutputFormat) -> BuiltTable:
+def build(
+    table: TyTable, output: OutputFormat, *, media_context: MediaContext | None = None
+) -> BuiltTable:
     """
     Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
 
@@ -385,7 +393,7 @@ def build(table: TyTable, output: OutputFormat) -> BuiltTable:
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
 
-    state = _extract_body(_copy_for_build(table), output)
+    state = _extract_body(_copy_for_build(table), output, media_context)
     _merge_groups(state)
     _run_prepare_hooks(state)
     _reorder_directives(state)

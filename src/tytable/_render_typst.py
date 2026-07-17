@@ -53,8 +53,7 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
 class TypstRenderOptions:
     """Internal options for Typst rendering and Typst plot materialization.
 
-    All fields are Typst-only except that ``portable`` is read while generated
-    plot cells are built. ``figure`` controls the outer figure; captions and
+    All fields are Typst-only. ``figure`` controls the outer figure; captions and
     labels require it. ``multipage`` sets figure/block breakability when not
     ``None``, and ``repeat_headers`` controls Typst's table-header repetition.
     ``align_figure`` is ``"l"``, ``"c"``, or ``"r"``. ``rotate_angle`` is in
@@ -66,8 +65,8 @@ class TypstRenderOptions:
     ``grid_stroke`` is a trusted Typst stroke expression. ``row_height_em`` is
     a row height in em. A numeric ``column_gutter`` is in points; a string is a
     Typst length. The gutter is emitted only for grouped tables without cell
-    backgrounds. ``portable=True`` embeds generated plots in Typst markup
-    instead of retaining PNG assets.
+    backgrounds. ``portable`` is retained as a compatibility option; direct
+    renders now always embed generated plots and saves always materialize them.
 
     The constructor seeds ``figure``, ``multipage``, row height, and gutter.
     Theme functions then mutate this object in chain order, so later themes

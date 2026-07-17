@@ -25,6 +25,7 @@ from ._directives import (
     StyleDirective,
 )
 from ._groups import register_col_groups, register_delimiter_groups, register_row_groups
+from ._images import MediaContext
 from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
@@ -325,9 +326,6 @@ class TyTable:
         self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._nhead: int = 0
         self._n_merged_body_rows: int = 0
-        self._assets_dir: str | None = None
-        self._assets_relpath: str | None = None
-
         self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
@@ -1197,15 +1195,11 @@ class TyTable:
 
         Resolves all recorded directives (style, format, group, plot) and
         produces output for the requested backend, then runs any registered
-        ``.finalize()`` callbacks. A non-portable ``.plot()`` writes generated
-        PNGs while rendering. Before any call to :meth:`save`, they go in
-        ``tytable_assets/`` under the current working directory and the string
-        contains ``tytable_assets/<filename>`` references. A returned string
-        has no inherent base path, so writing it elsewhere does not relocate
-        those assets. A prior :meth:`save` retains its generated-asset directory
-        and emitted relative path on the table, and later renders continue to
-        use them. Static :meth:`images` paths are never checked, copied, or
-        written. Typst portable mode embeds generated plots instead.
+        ``.finalize()`` callbacks. Generated :meth:`plot` images are embedded
+        in Typst and HTML strings; ASCII uses a textual placeholder. Rendering
+        does not create persistent files or directories and does not retain
+        media state between calls. Static :meth:`images` paths are emitted as
+        authored and are never checked, copied, or written.
 
         Parameters
         ----------
@@ -1239,9 +1233,13 @@ class TyTable:
         OSError
             If a generated plot asset cannot be created or written.
         """
+        return self._render(output)
+
+    def _render(self, output: OutputFormat, *, media_context: MediaContext | None = None) -> str:
+        """Render with an optional invocation-local generated-media destination."""
         from ._resolve import build
 
-        built = build(self, output)
+        built = build(self, output, media_context=media_context)
         renderers: dict[str, Renderer] = {
             "html": HtmlRenderer(),
             "ascii": AsciiRenderer(),
@@ -1269,14 +1267,12 @@ class TyTable:
             Where generated ``.plot()`` files are written. A relative value is
             resolved from the output file's directory and emitted in the
             rendered fragment. ``None`` (default) uses a
-            ``tytable_assets/`` folder next to the output. This argument does
+            table-specific ``<path.stem>_assets/`` folder next to the output.
+            This argument does
             not check, copy, or rewrite static :meth:`images` paths.
 
-        Notes
-        -----
-        The selected generated-asset directory and relative path are retained
-        on this table. A later direct :meth:`render` continues to use them; a
-        subsequent ``save()`` replaces them with its own destination.
+        Each call uses an independent media destination. It does not mutate
+        the table or affect later :meth:`render` or :meth:`save` calls.
 
         Raises
         ------
@@ -1310,16 +1306,19 @@ class TyTable:
         except OSError as e:
             raise OSError(f"could not create table directory {str(p.parent)!r}: {e}") from e
 
-        if assets is None:
-            self._assets_dir = str(p.parent / "tytable_assets")
-            self._assets_relpath = "tytable_assets"
-        else:
-            self._assets_dir = str(p.parent / assets)
-            self._assets_relpath = assets.replace("\\", "/")
-
         suffix = p.suffix.lower()
         out: OutputFormat = "html" if suffix in (".html", ".htm") else "typst"
-        rendered = self.render(out)
+        assets_path = (
+            pathlib.Path(assets) if assets is not None else pathlib.Path(f"{p.stem}_assets")
+        )
+        assets_dir = assets_path if assets_path.is_absolute() else p.parent / assets_path
+        rendered = self._render(
+            out,
+            media_context=MediaContext(
+                assets_dir=assets_dir,
+                assets_relpath=assets_path.as_posix(),
+            ),
+        )
         try:
             p.write_text(rendered, encoding="utf-8")
         except OSError as e:

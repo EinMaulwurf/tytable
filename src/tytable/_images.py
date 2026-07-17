@@ -3,18 +3,28 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import inspect
 import pathlib
 import tempfile
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ._directives import ImageDirective
 from ._indices import resolve_i
-from ._utils import _new_image_id, format_markup_num
+from ._utils import format_markup_num
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
+
+
+@dataclass(frozen=True)
+class MediaContext:
+    """Invocation-local destination and reference prefix for generated plots."""
+
+    assets_dir: pathlib.Path
+    assets_relpath: str
 
 
 def _require_plotting() -> None:
@@ -126,7 +136,7 @@ def _build_image_cell_string(
     relpath: str,
     height: float,
     output: str,
-    portable: bool,
+    embed: bool,
     png_path: str | None,
     width_px: int = 0,
     height_px: int = 0,
@@ -134,7 +144,7 @@ def _build_image_cell_string(
     """Build the markup string for one image cell, backend- and portability-specific."""
     h = format_markup_num(height)
     if output == "typst":
-        if portable and png_path is not None:
+        if embed and png_path is not None:
             with open(png_path, "rb") as f:
                 png_bytes = f.read()
             svg = _make_svg_wrapper(png_bytes, width_px, height_px)
@@ -146,6 +156,10 @@ def _build_image_cell_string(
     elif output == "html":
         from html import escape
 
+        if embed and png_path is not None:
+            with open(png_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("ascii")
+            return f'<img src="data:image/png;base64,{encoded}" style="height: {h}em;">'
         path = relpath.replace("\\", "/")
         return f'<img src="{escape(path, quote=True)}" style="height: {h}em;">'
     else:
@@ -158,6 +172,7 @@ def execute_plots(
     typed_body: list[list[Any]],
     output: str,
     *,
+    media_context: MediaContext | None,
     nhead: int,
     has_header: bool,
     n_merged_body: int,
@@ -172,7 +187,6 @@ def execute_plots(
     if not table._media_directives:
         return image_cells
 
-    portable = table._typst_opts.portable
     for rank, d in enumerate(table._media_directives):
         if d.output is not None and output not in d.output:
             continue
@@ -214,7 +228,7 @@ def execute_plots(
                 f"selection contains {len(target_cells)} cell(s)"
             )
 
-        if not isinstance(d, ImageDirective):
+        if not isinstance(d, ImageDirective) and output != "ascii":
             try:
                 _require_plotting()
             except ImportError as e:
@@ -225,19 +239,17 @@ def execute_plots(
         for total_idx, (body_row, col_idx) in enumerate(target_cells):
             if isinstance(d, ImageDirective):
                 img_path = d.images[total_idx].replace("\\", "/")
-                cell_str = _build_image_cell_string(img_path, height, output, portable, None)
+                cell_str = _build_image_cell_string(img_path, height, output, False, None)
                 data_body[body_row][col_idx] = cell_str
                 image_cells.add((body_row, col_idx))
             else:
                 entry = d.data[total_idx] if d.data is not None else typed_body[body_row][col_idx]
 
-                image_id = _new_image_id()
-                name = "plot"
-                filename = f"{name}_{rank:04d}_{image_id}.png"
-
-                if portable:
+                if output == "ascii":
+                    cell_str = "[plot]"
+                elif media_context is None:
                     with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
-                        png_path = pathlib.Path(td) / filename
+                        png_path = pathlib.Path(td) / f"plot_{rank:04d}_{total_idx:04d}.png"
                         _save_plot_image(
                             d.fun,
                             entry,
@@ -252,20 +264,16 @@ def execute_plots(
                             ),
                         )
                         cell_str = _build_image_cell_string(
-                            filename,
+                            "",
                             height,
                             output,
-                            portable,
+                            True,
                             str(png_path),
                             d.width_px,
                             d.height_px,
                         )
                 else:
-                    raw = table._assets_dir
-                    # ``save()`` retains an output-relative destination on the
-                    # table; a direct first render has no output file to anchor
-                    # paths to, so it deliberately falls back to the cwd.
-                    assets_dir = pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
+                    assets_dir = media_context.assets_dir
                     try:
                         assets_dir.mkdir(parents=True, exist_ok=True)
                     except OSError as e:
@@ -273,30 +281,38 @@ def execute_plots(
                             f".plot() directive {rank + 1}: could not create asset directory "
                             f"{str(assets_dir)!r}: {e}"
                         ) from e
+                    with tempfile.TemporaryDirectory(prefix="tytable_plot_") as td:
+                        temporary = pathlib.Path(td) / "plot.png"
+                        _save_plot_image(
+                            d.fun,
+                            entry,
+                            temporary,
+                            width_px=d.width_px,
+                            height_px=d.height_px,
+                            color=d.color,
+                            xlim=d.xlim,
+                            context=(
+                                f".plot() directive {rank + 1}, selected cell "
+                                f"(row={body_row}, column={col_idx})"
+                            ),
+                        )
+                        png_bytes = temporary.read_bytes()
+                    digest = hashlib.sha256(png_bytes).hexdigest()[:12]
+                    filename = f"plot_{rank:04d}_{total_idx:04d}_{digest}.png"
                     png_path = assets_dir / filename
-                    _save_plot_image(
-                        d.fun,
-                        entry,
-                        png_path,
-                        width_px=d.width_px,
-                        height_px=d.height_px,
-                        color=d.color,
-                        xlim=d.xlim,
-                        context=(
-                            f".plot() directive {rank + 1}, selected cell "
-                            f"(row={body_row}, column={col_idx})"
-                        ),
-                    )
-                    assets_relpath = table._assets_relpath
-                    if assets_relpath:
-                        relpath = f"{assets_relpath}/{filename}"
-                    else:
-                        relpath = f"tytable_assets/{filename}"
+                    try:
+                        png_path.write_bytes(png_bytes)
+                    except OSError as e:
+                        raise OSError(
+                            f".plot() directive {rank + 1}: could not write plot asset "
+                            f"{str(png_path)!r}: {e}"
+                        ) from e
+                    relpath = f"{media_context.assets_relpath.rstrip('/')}/{filename}"
                     cell_str = _build_image_cell_string(
                         relpath,
                         height,
                         output,
-                        portable,
+                        False,
                         str(png_path),
                         d.width_px,
                         d.height_px,

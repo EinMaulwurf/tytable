@@ -52,8 +52,8 @@ block[
       repeat: true,
       [Trend],
     ),
-    [#image("tytable_assets/plot_0000_testid0001.png", height: 1em)],
-    [#image("tytable_assets/plot_0000_testid0002.png", height: 1em)],
+    [#image("out_assets/plot_0000_0000_<content-hash>.png", height: 1em)],
+    [#image("out_assets/plot_0000_0001_<content-hash>.png", height: 1em)],
   )
 ]
 )

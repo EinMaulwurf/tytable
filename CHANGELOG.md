@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   by `.set_name()` or `colnames_override` are now presentation-only, so renaming headers cannot
   change which columns later directives select and duplicate or empty display labels remain
   unambiguous.
+- Make `.render()` filesystem-side-effect-free by embedding generated plots, and make `.save()`
+  independently materialize them in a table-specific `<stem>_assets/` directory by default.
 
 ### Fixes
 

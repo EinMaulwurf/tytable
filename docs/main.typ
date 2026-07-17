@@ -1457,9 +1457,9 @@ dimensions control PNG generation for both backends and override a returned
 Matplotlib figure's canvas size; `height` independently controls the displayed
 cell size. `color` and `xlim` are inspected independently: each keyword is
 forwarded only if the callback declares it or accepts `**kwargs`. Plot callbacks
-and PNG generation run during `.render()` / `.save()`; non-portable rendering
-writes an asset for every selected cell, while Typst portable mode creates a
-temporary PNG and embeds it in the returned fragment.
+and PNG generation run during `.render()` / `.save()`. Direct Typst and HTML
+renders embed the generated image bytes in the returned fragment; ASCII uses a
+text placeholder. `.save()` instead writes external PNG assets.
 
 #api("Embed files", api_signatures.at("images"))
 
@@ -1482,12 +1482,12 @@ order after any renderer and are useful for narrowly scoped integration markup.
 `output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
 intent and runs finalizers. The same table can be rendered more than once. See
 #link(<alternative-backends>)[Alternative backends] for HTML and ASCII usage,
-including terminal previews with `print(table)`. By default, a direct render of a
-table with `.plot()` writes generated PNGs to `tytable_assets/` under the current
-working directory and emits `tytable_assets/<filename>`. Because a returned string
-has no file location, saving it elsewhere yourself also requires moving the assets or
-adjusting the references. Rendering static `.images()` references does not touch the
-referenced files. Typst portable mode embeds generated plots instead of retaining PNGs.
+including terminal previews with `print(table)`. A direct render of a table with
+`.plot()` is self-contained: Typst embeds image bytes and HTML uses data URIs.
+Rendering leaves no persistent files or directories, and repeated calls do not
+retain a destination from an earlier `.save()`. Embedded plots can make these
+strings large; use `.save()` when external plot files are preferable. Rendering
+static `.images()` references does not touch the referenced files.
 
 An unsupported `output` raises `NotImplementedError`. Most selectors are
 recorded first, so invalid selector types, positions, mask lengths, regexes, and
@@ -1506,15 +1506,43 @@ from finalizer callbacks propagate unchanged.
 Creates parent directories and infers HTML from `.html` / `.htm`; other
 suffixes produce Typst. `assets` controls generated `.plot()` PNGs only. A relative
 value is resolved from the output file's directory and is also emitted in the
-fragment; the default is a sibling `tytable_assets/` directory. `.save()` stores
-this destination on the table. Later direct `.render()` calls on the same object
-continue to write there and emit the retained relative path; another `.save()`
-replaces it. Use a fresh table when independent render destinations are required.
+fragment; the default is a table-specific sibling `<path.stem>_assets/` directory.
+Each save has an independent destination and does not mutate the table or affect a
+later `.render()` or `.save()` call. Generated names include stable directive/cell
+coordinates and a content hash to avoid collisions.
 `save()` can additionally raise `OSError` while creating the destination directory
 or writing the table file. Render-time selector, formatter, plot, and asset errors
 otherwise have the same contracts described for `.render()` above.
 
-= Using a generated table in Typst
+= Saving and using a table in Typst
+
+There are two ways to get Typst output, depending on what you want to do next:
+
+- `table.render("typst")` returns the generated Typst source as a Python string.
+  This is useful for inspecting it, changing it in Python, combining several
+  fragments, or passing it to another tool. Generated `.plot()` images are packed
+  into that string, so there is no separate plot folder to keep track of. The
+  trade-off is that a table with several plots can produce a large string.
+- `table.save("catalog.typ")` writes the Typst source to a file. This is the easy
+  choice for a report. Generated plots are kept as ordinary PNG files next to it,
+  which keeps the `.typ` file small.
+
+For example, saving a table containing generated plots creates a pair like this:
+
+```text
+catalog.typ
+catalog_assets/
+  plot_....png
+```
+
+Keep the `.typ` file and its `_assets` folder together when moving or sharing the
+table. Calling `.save()` does not compile a PDF; it prepares the table fragment and
+its plot files for Typst.
+
+This is separate from Jupyter's automatic preview. When `table` is the last value
+in a notebook cell, Jupyter asks tytable for HTML and displays that result. You only
+need `render("typst")` when your Python code specifically needs the Typst source as
+a string.
 
 `.save()` writes a Typst content fragment, so place it in the document with
 `#include` (not `#import`, which is for importing named definitions):
@@ -1552,10 +1580,15 @@ make the assets location explicit in Python:
 Generated PNGs then land in `build/assets/products/` and the `.typ` references
 `../assets/products/...`, which resolves correctly from `build/tables/` when
 compiled as part of the parent. Without an explicit `assets=`, generated PNGs land
-in a `tytable_assets/` folder next to the output file. In contrast, `.images()`
+in a `<path.stem>_assets/` folder next to the output file. In contrast, `.images()`
 paths are never checked, copied, or rewritten by `assets=`. For HTML, relative
 `src` paths likewise resolve from the saved HTML file (or its served URL), but
 there is no Typst project-root restriction.
+
+Generated `.plot()` images and existing files passed to `.images()` behave
+differently. Tytable creates the former, so it can pack them into a direct render or
+place them in a save-specific asset folder. An `.images()` path points to a file you
+already manage; tytable leaves that reference unchanged.
 
 = Troubleshooting
 
@@ -1581,9 +1614,9 @@ there is no Typst project-root restriction.
   [Markup prints literally or breaks output],
   [Escaping is enabled for raw markup, or disabled for untrusted plain text.],
   [Keep the default `escape=True` for ordinary values. Use `escape=False` only for trusted target-native markup; formatting-generated markup is tracked separately.],
-  [Generated plots are missing or appear in an old directory],
-  [Direct `.render()` uses `./tytable_assets/`, while a previous `.save()` retains its asset destination on the table.],
-  [Prefer `.save(path, assets=...)` for explicit placement. Use a fresh table for independent destinations, or move assets and update references when persisting a rendered string yourself.],
+  [Generated plots are missing from a saved table],
+  [The saved fragment moved without its sibling asset directory, or a custom `assets=` path no longer resolves from it.],
+  [Keep the fragment and its asset directory together, or use `.save(path, assets=...)` for an explicit placement. Direct `.render()` output embeds plots and needs no generated asset directory.],
   [A static image is missing],
   [`.images()` preserves the supplied path and does not verify or copy the file.],
   [Make the path relative to the saved fragment (or served HTML URL), and ensure the file is inside the Typst project root. `assets=` affects generated plots only.],
