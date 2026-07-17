@@ -270,3 +270,37 @@ class TestValidation:
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match="images.*extra"):
             build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")
+
+
+class TestMediaCardinality:
+    DF = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
+
+    def test_images_assign_multiple_rows_and_columns_row_major(self):
+        built = build(
+            tt(self.DF).theme_empty().images(j=["A", "B"], paths=["a", "b", "c", "d"]),
+            "typst",
+        )
+
+        assert 'image("a"' in built.data_body[0][0]
+        assert 'image("b"' in built.data_body[0][1]
+        assert 'image("c"' in built.data_body[1][0]
+        assert 'image("d"' in built.data_body[1][1]
+
+    @pytest.mark.parametrize("paths", [["a", "b", "c"], ["a", "b", "c", "d", "e"]])
+    def test_images_reject_wrong_cardinality(self, paths):
+        with pytest.raises(ValueError, match=rf"paths has {len(paths)} item.*contains 4 cell"):
+            build(tt(self.DF).images(j=["A", "B"], paths=paths), "typst")
+
+    def test_images_accept_empty_input_for_empty_selection(self):
+        built = build(tt(self.DF).images(i=[], j=["A", "B"], paths=[]), "typst")
+
+        assert built.data_body == [["1", "3"], ["2", "4"]]
+
+    def test_images_reject_input_for_empty_selection(self):
+        with pytest.raises(ValueError, match="paths has 1 item.*contains 0 cell"):
+            build(tt(self.DF).images(i=[], j="A", paths=["a"]), "typst")
+
+    @pytest.mark.parametrize("data", [[1, 2, 3], [1, 2, 3, 4, 5]])
+    def test_plot_rejects_wrong_data_cardinality_before_loading_dependencies(self, data):
+        with pytest.raises(ValueError, match=rf"data has {len(data)} item.*contains 4 cell"):
+            build(tt(self.DF).plot(j=["A", "B"], fun=lambda value: value, data=data), "typst")

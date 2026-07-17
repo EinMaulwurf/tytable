@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixes
+
+- Require `.images(paths=...)` and explicit `.plot(data=...)` inputs to contain exactly one
+  item per resolved media cell.
+
 ## [1.2.0] - 2026-07-17
 
 ### Features

@@ -686,8 +686,8 @@ class TyTable:
             ``color`` / ``xlim`` keyword arguments. Must return a matplotlib
             ``Figure`` or a plotnine ``ggplot``.
         data
-            Optional per-cell data overriding the cell's own value. Indexed
-            row-major across the selected cells.
+            Optional per-cell data overriding the cell's own value. Supply
+            exactly one item per selected cell, indexed row-major.
         height
             Plot height in ``em`` (default ``1.0``).
         height_px, width_px
@@ -772,8 +772,8 @@ class TyTable:
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
             defaults to *all body rows*.
         paths
-            List of image file paths, indexed row-major across the selected
-            cells.
+            Image file paths, with exactly one path per selected cell, indexed
+            row-major.
         height
             Image height in ``em`` (default ``1.0``).
         output

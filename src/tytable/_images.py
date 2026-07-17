@@ -166,9 +166,6 @@ def execute_plots(
         if d.output is not None and output not in d.output:
             continue
 
-        if not isinstance(d, ImageDirective):
-            _require_plotting()
-
         i_vals = resolve_i(
             d.i,
             nhead=nhead,
@@ -191,66 +188,42 @@ def execute_plots(
         body_rows = [i for i in i_vals if i > 0]
         j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
+        target_cells = [
+            (i - 1, j - 1)
+            for i in body_rows
+            for j in j_vals
+            if i <= len(data_body) and j <= len(data_body[i - 1])
+        ]
+        supplied = d.images if isinstance(d, ImageDirective) else d.data
+        if supplied is not None and len(supplied) != len(target_cells):
+            argument = "paths" if isinstance(d, ImageDirective) else "data"
+            method = ".images()" if isinstance(d, ImageDirective) else ".plot()"
+            raise ValueError(
+                f"{method} {argument} has {len(supplied)} item(s), but the resolved "
+                f"selection contains {len(target_cells)} cell(s)"
+            )
+
+        if not isinstance(d, ImageDirective):
+            _require_plotting()
+
         height = _height_to_float(d.height)
 
-        for ri, i in enumerate(body_rows):
-            body_row = i - 1
-            if body_row < 0 or body_row >= len(data_body):
-                continue
+        for total_idx, (body_row, col_idx) in enumerate(target_cells):
+            if isinstance(d, ImageDirective):
+                img_path = d.images[total_idx].replace("\\", "/")
+                cell_str = _build_image_cell_string(img_path, height, output, portable, None)
+                data_body[body_row][col_idx] = cell_str
+                image_cells.add((body_row, col_idx))
+            else:
+                entry = d.data[total_idx] if d.data is not None else typed_body[body_row][col_idx]
 
-            for rj, j in enumerate(j_vals):
-                col_idx = j - 1
-                if col_idx < 0 or col_idx >= len(data_body[body_row]):
-                    continue
+                image_id = _new_image_id()
+                name = "plot"
+                filename = f"{name}_{rank:04d}_{image_id}.png"
 
-                if isinstance(d, ImageDirective):
-                    total_idx = ri * len(j_vals) + rj
-                    if total_idx < len(d.images):
-                        img_path = d.images[total_idx].replace("\\", "/")
-                        cell_str = _build_image_cell_string(
-                            img_path, height, output, portable, None
-                        )
-                        data_body[body_row][col_idx] = cell_str
-                        image_cells.add((body_row, col_idx))
-                else:
-                    if d.data is not None:
-                        total_idx = ri * len(j_vals) + rj
-                        entry = d.data[total_idx]
-                    else:
-                        entry = typed_body[body_row][col_idx]
-
-                    image_id = _new_image_id()
-                    name = "plot"
-                    filename = f"{name}_{rank:04d}_{image_id}.png"
-
-                    if portable:
-                        with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
-                            png_path = pathlib.Path(td) / filename
-                            _save_plot_image(
-                                d.fun,
-                                entry,
-                                png_path,
-                                width_px=d.width_px,
-                                height_px=d.height_px,
-                                color=d.color,
-                                xlim=d.xlim,
-                            )
-                            cell_str = _build_image_cell_string(
-                                filename,
-                                height,
-                                output,
-                                portable,
-                                str(png_path),
-                                d.width_px,
-                                d.height_px,
-                            )
-                    else:
-                        raw = table._assets_dir
-                        assets_dir = (
-                            pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
-                        )
-                        assets_dir.mkdir(parents=True, exist_ok=True)
-                        png_path = assets_dir / filename
+                if portable:
+                    with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
+                        png_path = pathlib.Path(td) / filename
                         _save_plot_image(
                             d.fun,
                             entry,
@@ -260,13 +233,8 @@ def execute_plots(
                             color=d.color,
                             xlim=d.xlim,
                         )
-                        assets_relpath = table._assets_relpath
-                        if assets_relpath:
-                            relpath = f"{assets_relpath}/{filename}"
-                        else:
-                            relpath = f"tytable_assets/{filename}"
                         cell_str = _build_image_cell_string(
-                            relpath,
+                            filename,
                             height,
                             output,
                             portable,
@@ -274,7 +242,35 @@ def execute_plots(
                             d.width_px,
                             d.height_px,
                         )
-                    data_body[body_row][col_idx] = cell_str
-                    image_cells.add((body_row, col_idx))
+                else:
+                    raw = table._assets_dir
+                    assets_dir = pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
+                    assets_dir.mkdir(parents=True, exist_ok=True)
+                    png_path = assets_dir / filename
+                    _save_plot_image(
+                        d.fun,
+                        entry,
+                        png_path,
+                        width_px=d.width_px,
+                        height_px=d.height_px,
+                        color=d.color,
+                        xlim=d.xlim,
+                    )
+                    assets_relpath = table._assets_relpath
+                    if assets_relpath:
+                        relpath = f"{assets_relpath}/{filename}"
+                    else:
+                        relpath = f"tytable_assets/{filename}"
+                    cell_str = _build_image_cell_string(
+                        relpath,
+                        height,
+                        output,
+                        portable,
+                        str(png_path),
+                        d.width_px,
+                        d.height_px,
+                    )
+                data_body[body_row][col_idx] = cell_str
+                image_cells.add((body_row, col_idx))
 
     return image_cells
