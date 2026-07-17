@@ -29,7 +29,32 @@ if TYPE_CHECKING:
 
 @dataclass
 class BuiltTable:
-    """Backend-agnostic snapshot of a fully-resolved table, consumed by renderers."""
+    """Backend-specific snapshot of a fully resolved table.
+
+    Renderers consume this object without consulting the source dataframe.
+    ``data_body`` is rectangular and includes inserted row-group separator
+    rows. Its ordinary strings and ``colnames_display`` have already been
+    escaped for ``output``; cells produced by formatters, notes, or media may
+    instead contain trusted backend markup. ``caption`` and ``notes`` remain
+    raw text for the renderer to escape. ``col_groups`` also contains raw
+    labels: each row is outermost-to-innermost, ``None`` is an independent
+    blank cell, and ``""`` continues the preceding labelled span.
+
+    Coordinates in ``style_grid``, ``style_lines``, and
+    ``row_group_positions`` use the internal convention: columns and merged
+    body rows are 1-based, the column-name row is 0, and column-group rows are
+    negative with -1 nearest the column names. A grid value contains the final
+    last-writer-wins cell properties. Line entries are an ordered list because
+    border directives append rather than overwrite.
+
+    ``nhead`` equals the number of emitted header rows: the column-name row
+    when enabled plus every column-group row. ``column_alignments`` has one
+    ``"l"``/``"r"`` entry per source column. ``width`` is a table fraction,
+    Typst length, or per-column sequence; ``height`` is the constructor's
+    row-height value in em. ``has_background`` lets the Typst renderer avoid a
+    conflicting grouped-table gutter. ``assets_relpath`` is reserved metadata;
+    generated media paths are currently materialized directly into cells.
+    """
 
     output: OutputFormat
     data_body: list[list[str]] = field(default_factory=list)
@@ -54,7 +79,26 @@ class BuiltTable:
 
 @dataclass
 class _BuildState:
-    """Mutable state passed between the phases of the render pipeline."""
+    """Mutable, phase-local data contract for :func:`build`.
+
+    ``table`` is an isolated shallow working copy whose mutable directive
+    lists can be reordered without changing the user's table. ``ncols`` and
+    ``colnames_display`` retain source-column order. ``data_body`` is the
+    mutable display matrix; ``typed_body`` is a coordinate-identical matrix of
+    original Python values used by formatters and plot callbacks. Row-group
+    insertion adds identical separator rows to both matrices before selectors
+    resolve.
+
+    After grouping, ``n_merged_body`` includes separator rows, ``nhead`` counts
+    the visible column-group and column-name rows, and
+    ``row_group_positions``/``group_positions`` contain 1-based merged-body
+    coordinates. ``col_groups`` is ordered outermost-to-innermost.
+    ``escaped_cells`` and ``image_cells`` instead use zero-based matrix
+    ``(row, column)`` coordinates (with ``(-1, column)`` for a formatted column
+    name). They identify trusted markup owned by formatting/media phases, so
+    the later global escape pass leaves it intact while escaping every ordinary
+    display string.
+    """
 
     table: TyTable
     output: OutputFormat

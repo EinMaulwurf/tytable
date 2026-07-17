@@ -51,7 +51,30 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
 
 @dataclass
 class TypstRenderOptions:
-    """Knobs controlling the Typst output (figure wrapping, gutter, rotation, …)."""
+    """Internal options for Typst rendering and Typst plot materialization.
+
+    All fields are Typst-only except that ``portable`` is read while generated
+    plot cells are built. ``figure`` controls the outer figure; captions and
+    labels require it. ``multipage`` sets figure/block breakability when not
+    ``None``, and ``repeat_headers`` controls Typst's table-header repetition.
+    ``align_figure`` is ``"l"``, ``"c"``, or ``"r"``. ``rotate_angle`` is in
+    degrees.
+
+    Resizing is active only when ``resize_direction`` is ``"down"``, ``"up"``,
+    or ``"both"``. Positive ``resize_height`` takes precedence over
+    ``resize_width``; otherwise a positive width fraction is used.
+    ``grid_stroke`` is a trusted Typst stroke expression. ``row_height_em`` is
+    a row height in em. A numeric ``column_gutter`` is in points; a string is a
+    Typst length. The gutter is emitted only for grouped tables without cell
+    backgrounds. ``portable=True`` embeds generated plots in Typst markup
+    instead of retaining PNG assets.
+
+    The constructor seeds ``figure``, ``multipage``, row height, and gutter.
+    Theme functions then mutate this object in chain order, so later themes
+    win. ``theme_empty`` restores the constructor snapshot before subsequent
+    themes apply. Per-cell border directives remain separate from
+    ``grid_stroke`` and are emitted as explicit lines over that table default.
+    """
 
     figure: bool = True
     multipage: bool | None = None

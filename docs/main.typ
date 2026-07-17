@@ -467,6 +467,42 @@ e.g. `align="llr"` left-aligns the first two and right-aligns the third.
 #v(0.12em)
 #include "build/03_style.typ"
 
+== Color values and backend scope
+
+`color`, `background`, and `line_color` accept case-insensitive bundled CSS
+color names, with both `gray` and `grey` spellings where CSS defines them. The
+bundled set is:
+
+#text(size: 8pt)[aliceblue, antiquewhite, aqua, aquamarine, azure, beige,
+bisque, blanchedalmond, black, blue, blueviolet, brown, burlywood, cadetblue,
+chartreuse, chocolate, coral, cornflowerblue, cornsilk, crimson, cyan, darkblue,
+darkcyan, darkgoldenrod, darkgray, darkgreen, darkgrey, darkkhaki, darkmagenta,
+darkolivegreen, darkorange, darkorchid, darkred, darksalmon, darkseagreen,
+darkslateblue, darkslategray, darkslategrey, darkturquoise, darkviolet,
+deeppink, deepskyblue, dimgray, dimgrey, dodgerblue, firebrick, floralwhite,
+forestgreen, fuchsia, gainsboro, ghostwhite, gold, goldenrod, gray, green,
+greenyellow, grey, honeydew, hotpink, indianred, indigo, ivory, khaki,
+lavender, lavenderblush, lawngreen, lemonchiffon, lightblue, lightcoral,
+lightcyan, lightgoldenrodyellow, lightgray, lightgreen, lightgrey, lightpink,
+lightsalmon, lightseagreen, lightskyblue, lightslategray, lightslategrey,
+lightsteelblue, lightyellow, lime, limegreen, linen, magenta, maroon,
+mediumaquamarine, mediumblue, mediumorchid, mediumpurple, mediumseagreen,
+mediumslateblue, mediumspringgreen, mediumturquoise, mediumvioletred,
+midnightblue, mintcream, mistyrose, moccasin, navajowhite, navy, oldlace,
+olive, olivedrab, orange, orangered, orchid, palegoldenrod, palegreen,
+paleturquoise, palevioletred, papayawhip, peachpuff, peru, pink, plum,
+powderblue, purple, rebeccapurple, red, rosybrown, royalblue, saddlebrown,
+salmon, sandybrown, seagreen, seashell, sienna, silver, skyblue, slateblue,
+slategray, slategrey, snow, springgreen, steelblue, tan, teal, thistle, tomato,
+turquoise, violet, wheat, white, whitesmoke, yellow, and yellowgreen.]
+
+Hex forms may include or omit `#` and contain 3, 4, 6, or 8 hexadecimal
+digits; four- and eight-digit forms include alpha. These names and hex forms
+are portable to Typst and HTML. Safe Typst constructors `rgb(...)`,
+`luma(...)`, `oklab(...)`, `oklch(...)`, `hsl(...)`, and `hsv(...)` are
+also accepted, but HTML cannot translate them. Restrict a directive using one
+of those constructors with `output=("typst",)`. ASCII ignores color styling.
+
 == Rotated headers for compact columns
 
 Long labels can make otherwise small numeric columns unnecessarily wide.
@@ -710,6 +746,20 @@ each label to its column positions, e.g.
 rows are then addressable through the special selector `i="groupj"`, for
 example to style every column-group label in one call.
 
+Each explicit group must select at least one column. Its list must be a
+left-to-right contiguous span with no duplicate columns, and spans within the
+same dictionary may not overlap; different groups may leave ungrouped columns
+between their spans. Column names and positions may be mixed. An empty `j={}`
+is a no-op, while a `None` label is rejected (other labels are converted to
+text).
+
+The delimiter is a literal, non-empty string which must occur in every display
+column name and split every name into the same number of parts. Adjacent equal
+parts form spans; an empty part produces a blank label. The first part is the
+outermost header row and the final part is the innermost. Each later
+`.group(j=...)` or `.group(delimiter=...)` call adds its header row(s) outside
+the existing ones, so calls stack from newest/outermost to oldest/innermost.
+
 == Row groups
 
 Row groups insert a #emph[labelled separator row] before a given data row,
@@ -719,6 +769,15 @@ calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of
 the second data row. That separator row is then addressable through the special
 selector `i="groupi"` — used here to render its label bold on a light grey
 background.
+
+A row-group dictionary position may range from `0` (before the first source
+row) through the source row count (after the last source row); two labels in
+one dictionary cannot use the same position. A run-length list must contain
+exactly one non-`None` value per source row. It inserts a label before the
+first row and whenever the value changes, so repeated non-adjacent values form
+separate runs. The empty list is valid only for an empty table and creates no
+groups. An empty dictionary is also a no-op. Group labels may otherwise be any
+value and are converted to text.
 
 #tag("SOURCE")
 #source("examples/04_group.py")
@@ -753,6 +812,17 @@ Use `.theme(custom_theme)` for a custom callable accepting the table and
 returning it (or `None`). The public `THEMES` registry remains available for
 discovery and advanced composition, but normal application code should prefer
 the typed methods.
+
+`THEMES` is a dictionary with the keys `"default"`, `"striped"`, `"grid"`,
+`"empty"`, `"rotate"`, `"resize"`, and `"multipage"`. Every value is a
+callable whose first argument is a `TyTable`; it mutates that table and returns
+the same object. `default`, `striped`, `grid`, and `empty` have the shape
+`fn(table)`. `rotate` adds `angle=90, i=None, j=None`; `resize` adds
+`width=1, height=None, direction="both"`; and `multipage` adds the keyword-only
+`repeat_headers=True`. Registry functions are useful for discovery or custom
+composition, for example `THEMES["grid"](table)`, but `.theme_grid()`,
+`.theme_resize(...)`, and the other typed methods are the recommended,
+IDE-friendly interface.
 
 The gallery compares the default, stacked striped and grid treatments, and the
 unstyled result:
@@ -1125,12 +1195,15 @@ Start here when you know the task but not the method. Methods marked
   [Write a file], [`.save(...)`], [`None` (terminal)],
 )
 
-== Selector cheat sheet
+== Authoritative selector reference
 
-`.style()`, `.fmt()`, `.plot()`, and `.images()` share the `i` and `j`
-selectors; `.style()` and `.fmt()` additionally accept the cell-level `where`
-selector. `.set_name()` shares the column selector. Names are exact matches by
-default.
+`.style()`, `.fmt()`, `.plot()`, and `.images()` share `i` and `j`;
+`.style()` and `.fmt()` additionally accept the cell-level `where` selector.
+`.set_name()` shares `j`. With `i=None`, `.style()` targets every grid row
+(column-group headers, the column-name header when shown, and the complete
+visible body), while `.fmt()`, `.plot()`, and `.images()` target the body only.
+With `j=None`, every column is selected (`.plot()` and `.images()` require an
+explicit `j`; `.set_name()` instead enters full-list replacement mode).
 
 #table(
   columns: (0.8fr, 1.45fr, 2.75fr),
@@ -1138,8 +1211,9 @@ default.
   inset: 6pt,
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
-  [`i`], [`0`, `2`, `[0, 2]`], [0-based data row(s)],
+  [`i`], [`0`, `2`, `[0, 2]`], [0-based final visible body row(s)],
   [`i`], [`"header"`, `"body"`], [column names or all table-body rows],
+  [`i`], [`"all"`], [all header rows and the complete visible body],
   [`i`], [`"groupi"`, `"~groupi"`], [row-group rows or genuine data rows only],
   [`i`], [`"groupj"`], [column-group header rows],
   [`i`], [`-1`, `-2`], [column-group rows, from innermost upward],
@@ -1151,10 +1225,43 @@ default.
   [`where`], [`cs.numeric() > 100`], [true body cells in `.style()` / `.fmt()`],
 )
 
-Set `regex=True` on an individual method call to treat its string `j`
-selectors as `re.search` patterns. `.style()` also accepts `i="caption"` and
-`i="notes"`; those targets support text-oriented properties rather than cell
-spans or borders.
+Non-negative integer `i` values range from zero through the final visible body
+length minus one. Row-group separators count as visible body rows, so an
+integer recorded before or after `.group()` addresses the same final
+coordinate. Negative integers address only column-group headers: `-1` is the
+innermost, and the most negative valid value is the outermost. `"header"` is
+empty when column names are hidden; `"groupj"` and negative selectors are
+empty or invalid when no column-group rows exist. Lists/tuples may mix integer
+and string row selectors. `.style()` also accepts `i="caption"` and
+`i="notes"`; these non-grid targets allow only their documented text-oriented
+properties.
+
+Data-driven `i` forms have a different coordinate system: a Polars expression,
+boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is
+evaluated against the original DataFrame. Masks must be Boolean and have
+exactly one entry per source row; a boolean mask cannot mix booleans with
+integer selectors. Matching source rows are mapped around inserted row-group
+separators. Thus use an integer for a final visible row, or a predicate/mask
+when the target is an original data row. `where` is also evaluated against the
+original DataFrame; it must return Boolean columns with original source-column
+names and the source row count. Its true cells are intersected with `i` and
+`j`, and it cannot target synthetic headers, group rows, captions, or notes.
+
+Integer `j` values range from zero through the column count minus one. Exact
+string names are case-sensitive and select the first matching display name.
+This matters because `.set_name()` permits duplicates: use an integer to select
+a later duplicate, or `regex=True` to match all duplicates. Column selectors
+are resolved lazily against the table's current display names, so a rename also
+affects directives recorded earlier; `where` expressions continue to use the
+original DataFrame names. A list preserves its requested order and may repeat
+an exact selector.
+
+With `regex=True`, every string element of `j` is a Python `re.search` pattern,
+not a full match. Each pattern is limited to 500 characters and must match at
+least one column; invalid patterns and no-match patterns raise `ValueError`.
+Matches from a regex list are de-duplicated in first-match order. Integer
+elements keep their normal meaning. Regex applies only to `j`, not `i` or
+`where`.
 
 == Creating a table
 
