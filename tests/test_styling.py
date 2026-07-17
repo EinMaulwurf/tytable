@@ -343,7 +343,8 @@ class TestBordersLines:
         assert_snapshot("line_width", out)
 
     def test_chunking_non_consecutive_columns(self):
-        out = tt(DF).style(i=0, j=[0, 2], line="t").render("typst")
+        df = pl.DataFrame({"A": [1, 4], "B": [2, 5], "C": [3, 6]})
+        out = tt(df).style(i=0, j=[0, 2], line="t").render("typst")
         assert_snapshot("line_chunking", out)
 
     def test_dedupe_duplicate_line_directives(self):

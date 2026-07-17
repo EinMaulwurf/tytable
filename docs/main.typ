@@ -253,6 +253,7 @@ The explicit `"body"` selector is useful when you want to leave headers
 unchanged. Negative integers select column-group header rows (`-1` is the
 innermost row, immediately above the column-name header; increasingly negative
 values move upward). Row-group separator rows are addressed with `i="groupi"`,
+genuine data rows excluding those separators with `i="~groupi"`, and
 column-group rows with `i="groupj"`.
 
 == Select columns by name
@@ -1138,8 +1139,9 @@ default.
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
   [`i`], [`0`, `2`, `[0, 2]`], [0-based data row(s)],
-  [`i`], [`"header"`, `"body"`], [column names or all data rows],
-  [`i`], [`"groupi"`, `"groupj"`], [row- or column-group header rows],
+  [`i`], [`"header"`, `"body"`], [column names or all table-body rows],
+  [`i`], [`"groupi"`, `"~groupi"`], [row-group rows or genuine data rows only],
+  [`i`], [`"groupj"`], [column-group header rows],
   [`i`], [`-1`, `-2`], [column-group rows, from innermost upward],
   [`i`], [`pl.col("Score") > 80`], [Polars expression evaluated on source data],
   [`i`], [`pl.Series(...)`], [boolean mask with one value per source row],

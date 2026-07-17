@@ -62,6 +62,37 @@ class TestResolveI:
             [0, 1, 2], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
         ) == [1, 2, 3]
 
+    @pytest.mark.parametrize("selector", [3, 10])
+    def test_nonnegative_out_of_range_raises(self, selector):
+        with pytest.raises(ValueError, match=rf"row selector position {selector} out of range"):
+            resolve_i(
+                selector,
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=3,
+                has_header=True,
+            )
+
+    def test_out_of_range_in_mixed_list_uses_same_error(self):
+        with pytest.raises(ValueError, match="row selector position 3 out of range"):
+            resolve_i(
+                ["header", 3],
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=3,
+                has_header=True,
+            )
+
+    def test_scalar_bool_is_not_an_integer_position(self):
+        with pytest.raises(TypeError, match="bad row selector type: bool"):
+            resolve_i(
+                True,
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=3,
+                has_header=True,
+            )
+
     def test_negative_out_of_range_raises(self):
         with pytest.raises(ValueError):
             resolve_i(-1, nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
@@ -120,6 +151,23 @@ class TestResolveJ:
 
     def test_list_of_ints(self):
         assert resolve_j([0, 2], self.COLS) == [1, 3]
+
+    def test_mixed_name_and_position_list(self):
+        assert resolve_j(["A", 2], self.COLS) == [1, 3]
+
+    @pytest.mark.parametrize("selector", [-1, 4, 10])
+    def test_integer_position_out_of_range(self, selector):
+        with pytest.raises(ValueError, match=rf"column selector position {selector} out of range"):
+            resolve_j(selector, self.COLS)
+
+    def test_out_of_range_in_mixed_list_uses_same_error(self):
+        with pytest.raises(ValueError, match="column selector position 4 out of range"):
+            resolve_j(["A", 4], self.COLS)
+
+    @pytest.mark.parametrize("selector", [True, ["A", True], ["A", 1.5], [object()]])
+    def test_invalid_elements_are_rejected(self, selector):
+        with pytest.raises(TypeError, match="column selector elements must be integers or strings"):
+            resolve_j(selector, self.COLS)
 
     def test_list_name_not_found_raises(self):
         with pytest.raises(ValueError):

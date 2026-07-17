@@ -13,6 +13,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   item per resolved media cell.
 - Validate `.fmt()` numeric options and callback contracts instead of silently accepting unknown
   numeric formats or exposing incidental errors.
+- Reject out-of-range and malformed row and column selectors consistently across public methods;
+  document `i="~groupi"` for selecting data rows without row-group separators.
 
 ## [1.2.0] - 2026-07-17
 

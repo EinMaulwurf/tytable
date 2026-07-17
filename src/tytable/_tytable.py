@@ -378,10 +378,12 @@ class TyTable:
             row, ``"body"`` = all table-body rows, and negative ints =
             column-group header rows (``-1`` is the innermost row, immediately
             above the column-name header; increasingly negative values move
-            upward). ``"groupi"`` / ``"groupj"`` select row/column group
-            separators, ``"all"`` selects headers and body, and lists may mix
-            integer and string selectors. Boolean lists/tuples with exactly
-            one value per source row, Polars expressions, boolean series, and
+            upward). ``"groupi"`` selects row-group separators and
+            ``"~groupi"`` selects only genuine data rows, excluding those
+            separators. ``"groupj"`` selects column-group header rows,
+            ``"all"`` selects headers and body, and lists may mix integer and
+            string selectors. Boolean lists/tuples with exactly one value per
+            source row, Polars expressions, boolean series, and
             ``callable(row) -> bool`` predicates select data rows by value.
             ``None`` means *all* rows.
         j

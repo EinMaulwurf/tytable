@@ -166,21 +166,36 @@ def resolve_i(
                 )
                 out.extend(resolved)
             elif isinstance(n, int):
+                if isinstance(n, bool):
+                    raise TypeError(
+                        "boolean row masks cannot mix booleans with other selector types"
+                    )
                 if n < 0:
                     if abs(n) > nhead - (1 if has_header else 0):
                         raise ValueError(f"row selector {n} out of header range")
                     out.append(n)
                 else:
+                    if n >= n_merged_body:
+                        raise ValueError(
+                            f"row selector position {n} out of range for "
+                            f"{n_merged_body} body row(s)"
+                        )
                     out.append(n + 1)
             else:
                 raise TypeError(f"unsupported element type in row list: {type(n).__name__}")
         return out
 
     if isinstance(i, int):
+        if isinstance(i, bool):
+            raise TypeError("bad row selector type: bool")
         if i < 0:
             if abs(i) > nhead - (1 if has_header else 0):
                 raise ValueError(f"row selector {i} out of header range")
             return [i]
+        if i >= n_merged_body:
+            raise ValueError(
+                f"row selector position {i} out of range for {n_merged_body} body row(s)"
+            )
         return [i + 1]
 
     raise TypeError(f"bad row selector type: {type(i).__name__}")
@@ -196,23 +211,39 @@ def resolve_j(
     if j is None:
         return list(range(1, len(colnames) + 1))
     if isinstance(j, (list, tuple)):
-        if all(isinstance(x, str) for x in j):
-            if regex:
-                return _resolve_regex_list(j, colnames)
-            try:
-                return [colnames.index(x) + 1 for x in j]
-            except ValueError as e:
-                raise ValueError(f"column name not found: {e}") from e
-        return [int(x) + 1 for x in j]
+        result: list[int] = []
+        for value in j:
+            resolved = _resolve_single_j(value, colnames, regex=regex)
+            for idx in resolved:
+                if not regex or idx not in result:
+                    result.append(idx)
+        return result
     if isinstance(j, int):
-        return [j + 1]
+        return _resolve_single_j(j, colnames, regex=regex)
     if isinstance(j, str):
-        if regex:
-            return _resolve_regex(j, colnames)
-        if j in colnames:
-            return [colnames.index(j) + 1]
-        raise ValueError(f"column not found: {j!r}")
+        return _resolve_single_j(j, colnames, regex=regex)
     raise TypeError(f"bad column selector: {j!r}")
+
+
+def _resolve_single_j(value: object, colnames: list[str], *, regex: bool) -> list[int]:
+    """Resolve and validate one element of a column selector."""
+    if isinstance(value, bool):
+        raise TypeError("column selector elements must be integers or strings, got bool")
+    if isinstance(value, int):
+        if value < 0 or value >= len(colnames):
+            raise ValueError(
+                f"column selector position {value} out of range for {len(colnames)} column(s)"
+            )
+        return [value + 1]
+    if isinstance(value, str):
+        if regex:
+            return _resolve_regex(value, colnames)
+        if value in colnames:
+            return [colnames.index(value) + 1]
+        raise ValueError(f"column not found: {value!r}")
+    raise TypeError(
+        f"column selector elements must be integers or strings, got {type(value).__name__}"
+    )
 
 
 def resolve_where(
@@ -274,17 +305,4 @@ def _resolve_regex(pattern: str, colnames: list[str]) -> list[int]:
     result = [k + 1 for k, c in enumerate(colnames) if compiled.search(c)]
     if not result:
         raise ValueError(f"regex matched no columns: {pattern!r}")
-    return result
-
-
-def _resolve_regex_list(patterns: Sequence[str], colnames: list[str]) -> list[int]:
-    seen: set[int] = set()
-    result: list[int] = []
-    for pat in patterns:
-        for idx in _resolve_regex(pat, colnames):
-            if idx not in seen:
-                seen.add(idx)
-                result.append(idx)
-    if not result:
-        raise ValueError(f"regex patterns matched no columns: {patterns!r}")
     return result
