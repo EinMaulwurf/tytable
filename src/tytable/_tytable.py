@@ -345,6 +345,7 @@ class TyTable:
         | None = None,
         j: _ColumnSelector = None,
         *,
+        where: pl.Expr | None = None,
         regex: bool = False,
         bold: bool | None = None,
         italic: bool | None = None,
@@ -388,6 +389,14 @@ class TyTable:
             Set ``regex=True`` to interpret string selectors as regular
             expression patterns matched against column names via
             :func:`re.search`.
+        where
+            Polars expression selecting individual body cells. Each boolean
+            output column is matched to the source column with the same name;
+            only true cells are styled. The result is intersected with ``i``
+            and ``j`` when either is supplied. ``None`` preserves the normal
+            row/column cross-product behavior. Expressions are evaluated
+            against the original DataFrame and cannot target headers, group
+            labels, captions, or notes.
         regex
             When ``True``, string ``j`` selectors (including elements of a
             list) are treated as :func:`re.search` patterns instead of exact
@@ -440,17 +449,20 @@ class TyTable:
         Raises
         ------
         TypeError
-            If a color or numeric style property has an unsupported type.
+            If a color or numeric style property has an unsupported type, or
+            ``where`` is not a Polars expression producing boolean columns.
         ValueError
             If a style property is invalid. Invalid row or column selectors
-            raise when the table is rendered.
+            and invalid ``where`` results raise when the table is rendered.
 
         Notes
         -----
         Any number of properties may be combined in a single call when they
-        share the same ``i``/``j`` selector — one directive, not several. Value
-        formatting such as ``digits`` lives in :meth:`fmt`, a separate pipeline,
-        and so always needs its own call.
+        share the same selectors — one directive, not several. Without
+        ``where``, selected rows and columns form a cross-product. With
+        ``where``, only true body cells within that cross-product are styled.
+        Value formatting such as ``digits`` lives in :meth:`fmt`, a separate
+        pipeline, and so always needs its own call.
 
         Examples
         --------
@@ -459,6 +471,11 @@ class TyTable:
         ...  .style(i="header", bold=True, background="#2c3e50", color="white")
         ...  .style(j="b", align="c", background="#f0f0f0")
         ...  .style(i=0, line="b", line_color="#bdc3c7"))
+
+        Style each numeric cell greater than 100:
+
+        >>> import polars.selectors as cs
+        >>> tt(df).style(where=cs.numeric() > 100, bold=True)  # doctest: +SKIP
         """
         _validate_style(
             align=align,
@@ -478,6 +495,7 @@ class TyTable:
             StyleDirective(
                 i=i,
                 j=j,
+                where=where,
                 regex=regex,
                 bold=bold,
                 italic=italic,

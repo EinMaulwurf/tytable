@@ -197,6 +197,52 @@ def resolve_j(
     raise TypeError(f"bad column selector: {j!r}")
 
 
+def resolve_where(
+    where: pl.Expr,
+    *,
+    data: pl.DataFrame,
+    group_positions: set[int],
+) -> set[tuple[int, int]]:
+    """Resolve a Polars expression to internal body-cell coordinates.
+
+    Each boolean output column is matched to the source column with the same
+    name. True values select individual cells; false and null values do not.
+    """
+    if not isinstance(where, pl.Expr):
+        raise TypeError(f"where must be a Polars expression, got {type(where).__name__}")
+
+    mask = data.select(where)
+    if mask.width == 0:
+        return set()
+    if mask.height != data.height:
+        raise ValueError(
+            f"where expression returned {mask.height} row(s) for a {data.height}-row table"
+        )
+
+    source_positions = {name: j + 1 for j, name in enumerate(data.columns)}
+    unknown = [name for name in mask.columns if name not in source_positions]
+    if unknown:
+        raise ValueError(
+            "where expression output column(s) do not match source columns: "
+            + ", ".join(repr(name) for name in unknown)
+        )
+
+    non_boolean = [name for name, dtype in mask.schema.items() if dtype != pl.Boolean]
+    if non_boolean:
+        raise TypeError(
+            "where expression must produce boolean columns; got non-boolean column(s): "
+            + ", ".join(repr(name) for name in non_boolean)
+        )
+
+    cells: set[tuple[int, int]] = set()
+    for name in mask.columns:
+        selected_rows = [i for i, value in enumerate(mask[name]) if value is True]
+        internal_rows = _map_original_to_internal(selected_rows, group_positions)
+        j = source_positions[name]
+        cells.update((i, j) for i in internal_rows)
+    return cells
+
+
 def _resolve_regex(pattern: str, colnames: list[str]) -> list[int]:
     if len(pattern) > _MAX_REGEX_PATTERN_LENGTH:
         raise ValueError(

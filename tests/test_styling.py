@@ -1,4 +1,5 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
@@ -531,6 +532,149 @@ class TestDataDrivenRowSelectors:
     def test_match_all_works(self):
         out = tt(self.DF).style(i=pl.col("Score") > 0, italic=True).render("typst")
         assert out.count("(italic: true,)") >= 1
+
+
+class TestCellSelectors:
+    DF = pl.DataFrame(
+        {
+            "Product": ["A", "B"],
+            "Price": [150, 80],
+            "Stock": [20, 200],
+        }
+    )
+
+    def test_where_styles_individual_numeric_cells(self):
+        built = build(
+            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            "typst",
+        )
+
+        assert built.style_grid == {
+            (1, 2): {"bold": True},
+            (2, 3): {"bold": True},
+        }
+
+    def test_without_where_keeps_row_column_cross_product(self):
+        built = build(
+            tt(self.DF)
+            .theme_empty()
+            .style(i=pl.col("Price") > 100, j=["Price", "Stock"], bold=True),
+            "typst",
+        )
+
+        assert built.style_grid == {
+            (1, 2): {"bold": True},
+            (1, 3): {"bold": True},
+        }
+
+    def test_where_intersects_i_and_j(self):
+        df = self.DF.with_columns(active=pl.Series([False, True]))
+        built = build(
+            tt(df)
+            .theme_empty()
+            .style(
+                i=pl.col("active"),
+                j=["Price", "Stock"],
+                where=cs.numeric() > 100,
+                bold=True,
+            ),
+            "typst",
+        )
+
+        assert built.style_grid == {(2, 3): {"bold": True}}
+
+    def test_where_does_not_select_headers(self):
+        built = build(
+            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, italic=True),
+            "typst",
+        )
+
+        assert all(i > 0 for i, _ in built.style_grid)
+
+    def test_where_uses_source_names_after_display_rename(self):
+        built = build(
+            tt(self.DF)
+            .theme_empty()
+            .set_name(j="Price", name="Unit price")
+            .style(j="Unit price", where=pl.col("Price") > 100, bold=True),
+            "typst",
+        )
+
+        assert built.style_grid == {(1, 2): {"bold": True}}
+
+    def test_where_maps_rows_past_row_groups(self):
+        built = build(
+            tt(self.DF)
+            .theme_empty()
+            .group(i={"Second": 1})
+            .style(where=cs.numeric() > 100, bold=True),
+            "typst",
+        )
+
+        assert built.style_grid[(1, 2)] == {"bold": True}
+        assert built.style_grid[(3, 3)] == {"bold": True}
+        assert (2, 3) not in built.style_grid
+
+    def test_where_filters_line_directives(self):
+        built = build(
+            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, line="b"),
+            "typst",
+        )
+
+        assert [(line["i"], line["j"]) for line in built.style_lines] == [(1, 2), (2, 3)]
+
+    def test_where_null_and_no_matches_are_ignored(self):
+        df = pl.DataFrame({"x": [None, 50, 100], "label": ["a", "b", "c"]})
+        built = build(
+            tt(df).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            "typst",
+        )
+
+        assert built.style_grid == {}
+
+    def test_where_with_no_output_columns_is_a_noop(self):
+        df = pl.DataFrame({"label": ["a", "b"]})
+        built = build(
+            tt(df).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            "typst",
+        )
+
+        assert built.style_grid == {}
+
+    def test_where_requires_one_value_per_source_row(self):
+        table = tt(self.DF).style(where=pl.lit(True).alias("Price"), bold=True)
+
+        with pytest.raises(ValueError, match="returned 1 row.*2-row table"):
+            table.render("typst")
+
+    def test_where_requires_boolean_output(self):
+        table = tt(self.DF).style(where=pl.col("Price"), bold=True)
+
+        with pytest.raises(TypeError, match="must produce boolean columns"):
+            table.render("typst")
+
+    def test_where_requires_source_column_names(self):
+        table = tt(self.DF).style(where=(pl.col("Price") > 100).alias("expensive"), bold=True)
+
+        with pytest.raises(ValueError, match="do not match source columns"):
+            table.render("typst")
+
+    def test_where_rejects_non_expression(self):
+        table = tt(self.DF).style(where=True, bold=True)  # type: ignore[arg-type]
+
+        with pytest.raises(TypeError, match="where must be a Polars expression"):
+            table.render("typst")
+
+    @pytest.mark.parametrize("selector", ["caption", "notes"])
+    def test_where_rejects_meta_selectors(self, selector):
+        table = tt(self.DF, caption="Demo", notes=["Note"]).style(
+            i=selector,
+            where=cs.numeric() > 100,
+            bold=True,
+        )
+
+        with pytest.raises(ValueError, match="where cannot be used"):
+            table.render("typst")
 
 
 @pytest.mark.typst

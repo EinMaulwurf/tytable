@@ -13,7 +13,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from ._colors import _validate_color_string
-from ._indices import resolve_i, resolve_j
+from ._indices import resolve_i, resolve_j, resolve_where
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
@@ -216,6 +216,11 @@ def build_style_grid(
                 has_header=has_header,
             )
         j_vals = resolve_j(d.j, table._colnames, regex=d.regex)
+        where_cells = (
+            resolve_where(d.where, data=table._data, group_positions=group_positions)
+            if d.where is not None
+            else None
+        )
         has_line = d.line is not None
         if i_vals is None:
             continue
@@ -228,6 +233,8 @@ def build_style_grid(
 
         for i in i_vals:
             for idx, j in enumerate(j_vals):
+                if where_cells is not None and (i, j) not in where_cells:
+                    continue
                 cell = grid.setdefault((i, j), {})
                 cell.update(active_props)
                 if align_vals is not None:
@@ -274,6 +281,8 @@ def build_meta_styles(
             target = style_notes
         else:
             continue
+        if d.where is not None:
+            raise ValueError(f"where cannot be used with the {d.i!r} selector")
         for prop in META_STYLE_PROPS:
             v = getattr(d, prop)
             if v is not None:
