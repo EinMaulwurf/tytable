@@ -446,7 +446,7 @@ Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
 in any combination, with `line_color` / `line_width`).
 
 Any number of these properties can be combined in a single `.style()` call when
-they share the same `i`/`j` selector — e.g.
+they share the same selectors — e.g.
 `style(j="Score", align="c", background="#eee", bold=True)` is one directive
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
@@ -578,6 +578,114 @@ loss (`-44`), demonstrating why both sides of the expression matter.
 #tag("RESULT")
 #v(0.12em)
 #include "build/14_data_driven.typ"
+
+== Cell-level conditional styling and formatting
+
+The selectors answer different questions:
+
+- `i` asks #emph[which rows?] and resolves to one boolean value per source row.
+- `j` asks #emph[which columns?] and resolves names, positions, lists, or regex patterns.
+- `where` asks #emph[which individual body cells?] and preserves one boolean
+  output column per selected source column.
+
+Without `where`, `i` and `j` are independent. tytable applies the directive to
+every intersection of the selected rows and columns — their cross-product. For
+this data:
+
+#table(
+  columns: 3,
+  inset: 5pt,
+  table.header([Product], [Price], [Stock]),
+  [A], [150], [20],
+  [B], [80], [200],
+)
+
+the following row mask selects both rows because each contains at least one
+numeric value over 100:
+
+```python
+numeric = ["Price", "Stock"]
+
+table.style(
+    i=pl.any_horizontal(pl.col(numeric) > 100),
+    j=numeric,
+    bold=True,
+)
+```
+
+`pl.any_horizontal(...)` is necessary here because `i` needs a single boolean
+per row. Once both rows are selected, `j` selects both numeric columns, so all
+four numeric cells become bold — including `20` and `80`. It means “style these
+columns in rows where #emph[anything] matched,” not “style each value that
+matched.”
+
+Passing `i=pl.col(numeric) > 100` directly does not fix this: that expression
+has two output columns rather than one row mask. Multi-output `i` expressions
+are not supported; the current resolver takes only their first output column.
+Use `pl.any_horizontal` / `pl.all_horizontal` for intentional row selection, or
+use `where` for cell selection.
+
+=== A mask for each numeric cell
+
+`where` evaluates its Polars expression once against the original DataFrame.
+`cs.numeric() > 100` returns boolean columns named `Price` and `Stock`, and each
+true value maps back to that exact source cell. Thus `150` and `200` are styled,
+while `20` and `80` are not:
+
+#tag("SOURCE")
+#source("examples/18_cell_where.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/18_cell_where.typ"
+
+When `where` is present, the final target is:
+
+```text
+(rows selected by i × columns selected by j) ∩ true cells selected by where
+```
+
+Omit `i` and `j` when the `where` expression already identifies everything you
+need. Add either selector when it provides a useful additional restriction.
+
+=== Restrict the mask with a boolean row column
+
+The next example has an `Active` boolean column. `i=pl.col("Active")` removes
+inactive rows, `j` limits the candidate display columns to `Price` and `Stock`,
+and `where` tests each remaining cell. The inactive row B is not highlighted
+even though both of its numeric values exceed 100; in active row C, only Stock
+matches.
+
+#tag("SOURCE")
+#source("examples/19_cell_where_active.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/19_cell_where_active.typ"
+
+=== Formatting selected cells
+
+`.fmt()` accepts the same cell mask. Every transform recorded in that one
+directive — `digits`, `fn`, `replace`, `linebreak`, `math`, and `escape` — runs
+only on matching cells:
+
+```python
+table = tt(df).fmt(
+    where=cs.numeric() > 100,
+    digits=0,
+)
+```
+
+Conditions always see the original typed values, not strings produced by an
+earlier formatting directive. `where` expressions also use original source
+column names after `.set_name()` changes displayed headers; `j` continues to
+use the new display names. False and null mask values select nothing. A mask
+must have one boolean value per source row, and each output column name must
+match a source column.
+
+Because `where` maps source data cells, it never selects column headers, group
+labels, captions, or notes. Continue to use `i="header"`, `i="groupi"`,
+`i="groupj"`, `i="caption"`, or `i="notes"` for those synthetic targets.
 
 = Grouping
 
@@ -1015,8 +1123,10 @@ Start here when you know the task but not the method. Methods marked
 
 == Selector cheat sheet
 
-`.style()`, `.fmt()`, `.plot()`, and `.images()` share the same selectors;
-`.set_name()` shares the column selector. Names are exact matches by default.
+`.style()`, `.fmt()`, `.plot()`, and `.images()` share the `i` and `j`
+selectors; `.style()` and `.fmt()` additionally accept the cell-level `where`
+selector. `.set_name()` shares the column selector. Names are exact matches by
+default.
 
 #table(
   columns: (0.8fr, 1.45fr, 2.75fr),
@@ -1033,6 +1143,7 @@ Start here when you know the task but not the method. Methods marked
   [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],
   [`j`], [`"Score"`, `0`], [column name (preferred) or position],
   [`j`], [`["Revenue", "Cost"]`], [several columns in one directive],
+  [`where`], [`cs.numeric() > 100`], [true body cells in `.style()` / `.fmt()`],
 )
 
 Set `regex=True` on an individual method call to treat its string `j`
@@ -1072,7 +1183,8 @@ normally construct with `tt(...)` and use `TyTable` for annotations.
 
 #api("Style", api_signatures.at("style"))
 
-Combines any properties sharing one selector. `align` uses `l`/`c`/`r`,
+Combines any properties sharing the same selectors. `where` accepts a Polars
+expression for cell-level selection. `align` uses `l`/`c`/`r`,
 `alignv` uses `t`/`m`/`b`, `rotate` is degrees, and `line` is any combination
 of `t`/`b`/`l`/`r`. With several columns, `align="llr"` assigns one alignment
 per column. `fontsize`, `indent`, and `line_width` are in `em`. `output` can
@@ -1082,6 +1194,7 @@ restrict a directive to a tuple such as `("typst",)`.
 
 Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`,
 `math`, then `escape`.
+`where` restricts all transforms in the directive to individual true body cells.
 `num_fmt` is `"decimal"`, `"significant"`, or `"scientific"`; `replace` may blank missing
 values, supply a replacement string, or map old values to new ones. `linebreak`
 is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst
