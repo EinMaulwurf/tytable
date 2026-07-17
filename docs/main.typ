@@ -1250,8 +1250,9 @@ page unless `repeat_headers=False`.
 
 == Plots and images
 
-Install the `images` extra for both methods. Media is materialized when the
-table renders or saves, not when the directive is recorded.
+Only generated plots require the optional `images` extra. `.images()` only emits
+references to existing files and has no optional Python dependencies. Media is
+materialized when the table renders or saves, not when the directive is recorded.
 
 #api("Generate plots", api_signatures.at("plot"))
 
@@ -1264,7 +1265,9 @@ cell size.
 #api("Embed files", api_signatures.at("images"))
 
 `j` and `paths` are required. Paths are assigned row-major across selected
-cells. Use `.save(..., assets=...)` to control where referenced files live.
+cells. Tytable neither checks nor copies these files; paths are emitted as supplied
+(with path separators normalized). A relative path resolves from the saved `.typ`
+or `.html` fragment. The `assets=` argument does not change static image paths.
 
 == Rendering and output
 
@@ -1278,13 +1281,22 @@ order after any renderer and are useful for narrowly scoped integration markup.
 `output` is `"typst"`, `"html"`, or `"ascii"`. Rendering resolves all recorded
 intent and runs finalizers. The same table can be rendered more than once. See
 #link(<alternative-backends>)[Alternative backends] for HTML and ASCII usage,
-including terminal previews with `print(table)`.
+including terminal previews with `print(table)`. By default, a direct render of a
+table with `.plot()` writes generated PNGs to `tytable_assets/` under the current
+working directory and emits `tytable_assets/<filename>`. Because a returned string
+has no file location, saving it elsewhere yourself also requires moving the assets or
+adjusting the references. Rendering static `.images()` references does not touch the
+referenced files. Typst portable mode embeds generated plots instead of retaining PNGs.
 
 #api("Save file", api_signatures.at("save"))
 
 Creates parent directories and infers HTML from `.html` / `.htm`; other
-suffixes produce Typst. `assets` is relative to the output file and defaults to
-a sibling `tytable_assets/` directory.
+suffixes produce Typst. `assets` controls generated `.plot()` PNGs only. A relative
+value is resolved from the output file's directory and is also emitted in the
+fragment; the default is a sibling `tytable_assets/` directory. `.save()` stores
+this destination on the table. Later direct `.render()` calls on the same object
+continue to write there and emit the retained relative path; another `.save()`
+replaces it. Use a fresh table when independent render destinations are required.
 
 = Using a generated table in Typst
 
@@ -1311,18 +1323,23 @@ typst compile report.typ report.pdf
 ```
 
 The include path is relative to the `.typ` file containing the `#include`.
-Generated image references need a little more care: they must resolve within
-the _Typst project root_ (the directory tree available to `typst compile`). Make
-the assets location explicit in Python:
+Image paths inside a generated fragment resolve from that fragment, whether they
+came from `.images()` or `.plot()`. Typst also requires resolved files to be inside
+the _Typst project root_ (the directory tree available to `typst compile`; pass
+`--root` when the intended root differs from Typst's default). For generated plots,
+make the assets location explicit in Python:
 
 ```python
 .save("build/tables/products.typ", assets="../assets/products")
 ```
 
-Images then land in `build/assets/products/` and the `.typ` references
+Generated PNGs then land in `build/assets/products/` and the `.typ` references
 `../assets/products/...`, which resolves correctly from `build/tables/` when
-compiled as part of the parent. Without an explicit `assets=`, images land in a
-`tytable_assets/` folder next to the output file.
+compiled as part of the parent. Without an explicit `assets=`, generated PNGs land
+in a `tytable_assets/` folder next to the output file. In contrast, `.images()`
+paths are never checked, copied, or rewritten by `assets=`. For HTML, relative
+`src` paths likewise resolve from the saved HTML file (or its served URL), but
+there is no Typst project-root restriction.
 
 = Coming from R tinytable
 

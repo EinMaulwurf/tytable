@@ -1,7 +1,8 @@
 """
 Images & sparklines example — embedding existing files and generated plots.
 
-Requires the `images` extra:  pip install tytable[images]
+Only the generated `.plot()` sparklines require the `images` extra:
+pip install tytable[images]
 """
 
 import matplotlib.pyplot as plt

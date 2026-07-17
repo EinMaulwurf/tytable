@@ -791,6 +791,13 @@ class TyTable:
         """
         Embed existing image files into the selected cells.
 
+        This method does not require the optional ``images`` dependencies.
+        Paths are not checked or copied; they are emitted as supplied (with
+        path separators normalized). Relative paths resolve from a saved Typst
+        or HTML file. Typst additionally requires the resolved file to be
+        within its project root. The ``assets`` argument to :meth:`save` does
+        not affect these static paths.
+
         Parameters
         ----------
         i, j
@@ -1165,7 +1172,15 @@ class TyTable:
 
         Resolves all recorded directives (style, format, group, plot) and
         produces output for the requested backend, then runs any registered
-        ``.finalize()`` callbacks.
+        ``.finalize()`` callbacks. A non-portable ``.plot()`` writes generated
+        PNGs while rendering. Before any call to :meth:`save`, they go in
+        ``tytable_assets/`` under the current working directory and the string
+        contains ``tytable_assets/<filename>`` references. A returned string
+        has no inherent base path, so writing it elsewhere does not relocate
+        those assets. A prior :meth:`save` retains its generated-asset directory
+        and emitted relative path on the table, and later renders continue to
+        use them. Static :meth:`images` paths are never checked, copied, or
+        written. Typst portable mode embeds generated plots instead.
 
         Parameters
         ----------
@@ -1223,9 +1238,17 @@ class TyTable:
         path
             Destination file path.
         assets
-            Where generated image files are written, relative to the output
-            file. ``None`` (default) uses a ``tytable_assets/`` folder next to
-            the output.
+            Where generated ``.plot()`` files are written. A relative value is
+            resolved from the output file's directory and emitted in the
+            rendered fragment. ``None`` (default) uses a
+            ``tytable_assets/`` folder next to the output. This argument does
+            not check, copy, or rewrite static :meth:`images` paths.
+
+        Notes
+        -----
+        The selected generated-asset directory and relative path are retained
+        on this table. A later direct :meth:`render` continues to use them; a
+        subsequent ``save()`` replaces them with its own destination.
 
         Raises
         ------
