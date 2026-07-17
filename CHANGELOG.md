@@ -7,6 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-17
+
+### Features
+
+- Export `NoteDict` so note dictionary keys and selectors are discoverable to type checkers and
+  IDEs.
+
 ### Fixes
 
 - Accept narrow and read-only collection types in public annotations, including `list[int]`
@@ -28,8 +35,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Documentation
 
 - Add troubleshooting and backend styling-support references.
-- Export `NoteDict` so note dictionary keys and selectors are discoverable to type checkers and
-  IDEs.
 - Reorganize the PDF guide into a sequential tutorial, independent advanced recipes, and a
   task-oriented reference, with deeper navigation and a complete Typst inclusion example.
 
@@ -240,7 +245,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/EinMaulwurf/tytable/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/EinMaulwurf/tytable/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/EinMaulwurf/tytable/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...v1.0.0
