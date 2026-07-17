@@ -7,6 +7,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-17
+
+### Features
+
+- Add `.style(where=...)` and `.fmt(where=...)` for cell-level conditional operations with
+  multi-column Polars expressions, while preserving the existing row/column cross-product when
+  omitted.
+
 ### Docs / CI
 
 - Support Typst 0.11.0 or newer, compile generated tables against Typst 0.11.0, 0.14.2,
@@ -200,7 +208,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/EinMaulwurf/tytable/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/EinMaulwurf/tytable/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/EinMaulwurf/tytable/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/EinMaulwurf/tytable/compare/v0.4.0...v0.5.0
