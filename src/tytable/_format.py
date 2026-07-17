@@ -184,9 +184,7 @@ def _apply_digits(
     generated_markup: dict[Cell, str] = {}
     for cell in cells:
         typed_val = _typed_value(cell, typed_body, colnames)
-        if _is_numeric_typed(typed_val) and (
-            not isinstance(typed_val, int) or directive.num_fmt == "scientific"
-        ):
+        if _is_numeric_typed(typed_val):
             if directive.num_fmt == "scientific":
                 formatted = _fmt_numeric_scientific(typed_val, directive.digits, output)
                 generated_markup[cell] = formatted

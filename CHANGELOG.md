@@ -21,6 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   silently ignoring them.
 - Forward `color` and `xlim` to plot callbacks independently and identify the resolved cell when a
   callback returns an unsupported object.
+- Apply `.fmt(digits=...)` to integer values as well as floating-point values.
 
 ## [1.2.0] - 2026-07-17
 

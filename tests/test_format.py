@@ -47,12 +47,19 @@ class TestDigits:
         out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("ascii")
         assert "3.14 * 10^3" in out
 
-    def test_integer_ignores_digits(self):
+    def test_decimal_formats_integers(self):
         df = pl.DataFrame({"x": [10, 20, 30]})
         out = tt(df).fmt(j="x", digits=2).render("typst")
-        assert "10" in out
-        assert "20" in out
-        assert "30" in out
+        assert "10.00" in out
+        assert "20.00" in out
+        assert "30.00" in out
+
+    def test_significant_formats_integers(self):
+        df = pl.DataFrame({"x": [1234, 5678]})
+        out = tt(df).fmt(j="x", digits=2, num_fmt="significant").render("typst")
+
+        assert "1.2e\\+03" in out
+        assert "5.7e\\+03" in out
 
     def test_digits_none_no_effect(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
