@@ -7,6 +7,7 @@ replayed in a fixed order when ``.render()`` / ``.save()`` is called.
 
 from __future__ import annotations
 
+import os
 import pathlib
 import re
 from collections.abc import Callable, Sequence
@@ -25,7 +26,7 @@ from ._directives import (
     StyleDirective,
 )
 from ._groups import register_col_groups, register_delimiter_groups, register_row_groups
-from ._images import MediaContext
+from ._images import MediaContext, StaticImagePolicy, validate_static_image_policy
 from ._indices import resolve_j
 from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
@@ -809,11 +810,10 @@ class TyTable:
         Embed existing image files into the selected cells.
 
         This method does not require the optional ``images`` dependencies.
-        Paths are not checked or copied; they are emitted as supplied (with
-        path separators normalized). Relative paths resolve from a saved Typst
-        or HTML file. Typst additionally requires the resolved file to be
-        within its project root. The ``assets`` argument to :meth:`save` does
-        not affect these static paths.
+        :meth:`save` copies local files into its asset directory by default;
+        :meth:`render` emits authored references by default. Both terminal
+        methods accept ``static_images="reference"`` or ``"embed"`` to retain
+        paths/URLs or include supported local image bytes instead.
 
         Parameters
         ----------
@@ -1189,7 +1189,12 @@ class TyTable:
         self._finalize_hooks.append(fn)
         return self
 
-    def render(self, output: OutputFormat = "typst") -> str:
+    def render(
+        self,
+        output: OutputFormat = "typst",
+        *,
+        static_images: StaticImagePolicy = "reference",
+    ) -> str:
         """
         Render the table to a string.
 
@@ -1199,12 +1204,18 @@ class TyTable:
         in Typst and HTML strings; ASCII uses a textual placeholder. Rendering
         does not create persistent files or directories and does not retain
         media state between calls. Static :meth:`images` paths are emitted as
-        authored and are never checked, copied, or written.
+        authored by default or can be embedded explicitly.
 
         Parameters
         ----------
         output
             ``"typst"`` (default), ``"html"``, or ``"ascii"``.
+        static_images
+            How existing files supplied to :meth:`images` are handled.
+            ``"reference"`` (default) emits paths unchanged. ``"embed"``
+            reads local PNG, JPEG, GIF, or SVG files and includes their bytes
+            in Typst/HTML output. ``"copy"`` is unavailable because direct
+            rendering has no asset destination; use :meth:`save` instead.
 
         Returns
         -------
@@ -1231,12 +1242,15 @@ class TyTable:
         RuntimeError
             If a plot callback raises an exception.
         OSError
-            If a generated plot asset cannot be created or written.
+            If an embedded static image cannot be read.
         """
-        return self._render(output)
+        policy = validate_static_image_policy(static_images)
+        if policy == "copy":
+            raise ValueError("static_images='copy' requires .save() with an output location")
+        return self._render(output, media_context=MediaContext(static_images=policy))
 
     def _render(self, output: OutputFormat, *, media_context: MediaContext | None = None) -> str:
-        """Render with an optional invocation-local generated-media destination."""
+        """Render with an optional invocation-local media policy and destination."""
         from ._resolve import build
 
         built = build(self, output, media_context=media_context)
@@ -1251,7 +1265,13 @@ class TyTable:
             result = fn(result, output)
         return result
 
-    def save(self, path: str, assets: str | None = None) -> None:
+    def save(
+        self,
+        path: str,
+        assets: str | None = None,
+        *,
+        static_images: StaticImagePolicy = "copy",
+    ) -> None:
         """
         Render the table and write it to ``path``.
 
@@ -1264,12 +1284,17 @@ class TyTable:
         path
             Destination file path.
         assets
-            Where generated ``.plot()`` files are written. A relative value is
-            resolved from the output file's directory and emitted in the
-            rendered fragment. ``None`` (default) uses a
-            table-specific ``<path.stem>_assets/`` folder next to the output.
-            This argument does
-            not check, copy, or rewrite static :meth:`images` paths.
+            Where generated ``.plot()`` files and copied static images are
+            written. A relative value is resolved from the output file's
+            directory. ``None`` uses a table-specific
+            ``<path.stem>_assets/`` sibling folder.
+        static_images
+            How existing files supplied to :meth:`images` are handled.
+            ``"copy"`` (default) reads local files relative to the current
+            working directory, copies content-hashed assets under ``assets``,
+            and rewrites their references. ``"reference"`` emits paths or
+            URLs unchanged without checking them. ``"embed"`` reads supported
+            local files and includes their bytes in the saved fragment.
 
         Each call uses an independent media destination. It does not mutate
         the table or affect later :meth:`render` or :meth:`save` calls.
@@ -1277,8 +1302,8 @@ class TyTable:
         Raises
         ------
         OSError
-            If the destination directory, table file, or generated image
-            assets cannot be written.
+            If the destination directory or table file cannot be written, or
+            if a static or generated image cannot be read or materialized.
         TypeError
             If a recorded selector has an unsupported type, a formatter
             returns an unsupported object, or a plot callback returns an
@@ -1301,6 +1326,7 @@ class TyTable:
         ...            assets="../assets/x")
         """
         p = pathlib.Path(path)
+        policy = validate_static_image_policy(static_images)
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
@@ -1312,11 +1338,17 @@ class TyTable:
             pathlib.Path(assets) if assets is not None else pathlib.Path(f"{p.stem}_assets")
         )
         assets_dir = assets_path if assets_path.is_absolute() else p.parent / assets_path
+        assets_relpath = (
+            pathlib.Path(os.path.relpath(assets_dir, start=p.parent.resolve())).as_posix()
+            if assets_path.is_absolute()
+            else assets_path.as_posix()
+        )
         rendered = self._render(
             out,
             media_context=MediaContext(
+                static_images=policy,
                 assets_dir=assets_dir,
-                assets_relpath=assets_path.as_posix(),
+                assets_relpath=assets_relpath,
             ),
         )
         try:

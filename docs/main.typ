@@ -911,9 +911,9 @@ label column stays fixed:
 = Images & sparklines
 
 Use `.images()` to embed existing files without Matplotlib or the optional
-`images` extra. This standalone example references three committed SVG country
-flags. Its paths start with `../assets` because they resolve from the saved
-`build/07_static_images.typ` fragment, not from the Python script:
+`images` extra. This standalone example copies three committed SVG country flags
+into the default `build/07_static_images_assets/` directory, making the generated
+fragment and its sibling assets portable together:
 
 #tag("SOURCE — STATIC FILES ONLY")
 #source("examples/07_static_images.py")
@@ -1436,9 +1436,9 @@ page unless `repeat_headers=False`.
 
 == Plots and images
 
-Only generated plots require the optional `images` extra. `.images()` only emits
-references to existing files and has no optional Python dependencies. Media is
-materialized when the table renders or saves, not when the directive is recorded.
+Only generated plots require the optional `images` extra. `.images()` handles
+existing files using only the Python standard library. Media is materialized when
+the table renders or saves, not when the directive is recorded.
 
 For both methods, tytable resolves `i` and `j` at render time and walks the
 selection row-major: each resolved row in order, then each resolved column in
@@ -1464,11 +1464,22 @@ text placeholder. `.save()` instead writes external PNG assets.
 #api("Embed files", api_signatures.at("images"))
 
 `j` and `paths` are required. Paths are assigned row-major across selected
-cells. Tytable neither checks nor copies these files; paths are emitted as supplied
-(with path separators normalized). A relative path resolves from the saved `.typ`
-or `.html` fragment. The `assets=` argument does not change static image paths.
-Rendering only materializes backend image markup; it does not open or verify the
-referenced file.
+cells. The terminal operation's `static_images` policy determines what happens to
+them:
+
+- `"copy"` reads local files relative to the Python process's current working
+  directory, gives each unique file a content-hashed name, and copies it under
+  `assets`. This is the `.save()` default.
+- `"reference"` emits each path or URL as authored, apart from markup escaping,
+  without checking it. This is the `.render()` default and the compatibility mode
+  for externally managed report assets and remote HTML images.
+- `"embed"` reads local PNG, JPEG, GIF, or SVG files and includes their bytes in
+  the Typst or HTML fragment. It creates no static-image asset, but can make the
+  fragment substantially larger.
+
+Copy and embed reject URLs, missing files, and unreadable inputs with the directive,
+selected cell, and path in the error. Neither mode needs Matplotlib or the optional
+`images` extra. ASCII output uses a text placeholder without reading the input.
 
 == Rendering and output
 
@@ -1487,7 +1498,9 @@ including terminal previews with `print(table)`. A direct render of a table with
 Rendering leaves no persistent files or directories, and repeated calls do not
 retain a destination from an earlier `.save()`. Embedded plots can make these
 strings large; use `.save()` when external plot files are preferable. Rendering
-static `.images()` references does not touch the referenced files.
+uses `static_images="reference"` by default. Pass `"embed"` for a self-contained
+Typst or HTML string. `"copy"` raises `ValueError` because rendering has no output
+location into which files could be copied.
 
 An unsupported `output` raises `NotImplementedError`. Most selectors are
 recorded first, so invalid selector types, positions, mask lengths, regexes, and
@@ -1503,16 +1516,21 @@ from finalizer callbacks propagate unchanged.
 
 #api("Save file", api_signatures.at("save"))
 
-Creates parent directories and infers HTML from `.html` / `.htm`; other
-suffixes produce Typst. `assets` controls generated `.plot()` PNGs only. A relative
-value is resolved from the output file's directory and is also emitted in the
-fragment; the default is a table-specific sibling `<path.stem>_assets/` directory.
-Each save has an independent destination and does not mutate the table or affect a
-later `.render()` or `.save()` call. Generated names include stable directive/cell
-coordinates and a content hash to avoid collisions.
+Creates parent directories and infers HTML from `.html` / `.htm`; other suffixes
+produce Typst. `assets` controls all externalized media: generated `.plot()` PNGs
+and `.images()` inputs copied by the default `static_images="copy"` policy. A
+relative value is resolved from the output file's directory and is also emitted in
+the fragment; the default is a table-specific sibling `<path.stem>_assets/`
+directory. Use `static_images="reference"` to retain authored paths without checks,
+or `"embed"` to include supported static files in the fragment while generated
+plots remain external. Each save has an independent destination and does not mutate
+the table or affect a later `.render()` or `.save()` call. Generated plot names and
+copied static names contain content hashes to avoid collisions; repeated static
+content is copied once per save.
 `save()` can additionally raise `OSError` while creating the destination directory
-or writing the table file. Render-time selector, formatter, plot, and asset errors
-otherwise have the same contracts described for `.render()` above.
+or writing the table or an asset. Static copy/embed can raise contextual `OSError`
+for unreadable files and `ValueError` for URLs or unsupported embedded formats.
+Other render-time contracts are the same as for `.render()` above.
 
 = Saving and using a table in Typst
 
@@ -1567,28 +1585,30 @@ typst compile report.typ report.pdf
 ```
 
 The include path is relative to the `.typ` file containing the `#include`.
-Image paths inside a generated fragment resolve from that fragment, whether they
-came from `.images()` or `.plot()`. Typst also requires resolved files to be inside
-the _Typst project root_ (the directory tree available to `typst compile`; pass
-`--root` when the intended root differs from Typst's default). For generated plots,
-make the assets location explicit in Python:
+Image paths inside a generated fragment resolve from that fragment. Typst also
+requires resolved files to be inside the _Typst project root_ (the directory tree
+available to `typst compile`; pass `--root` when the intended root differs from
+Typst's default). By default, `.save()` copies local `.images()` files and writes
+generated `.plot()` files into the same asset destination. Make that destination
+explicit in Python when needed:
 
 ```python
 .save("build/tables/products.typ", assets="../assets/products")
 ```
 
-Generated PNGs then land in `build/assets/products/` and the `.typ` references
-`../assets/products/...`, which resolves correctly from `build/tables/` when
-compiled as part of the parent. Without an explicit `assets=`, generated PNGs land
-in a `<path.stem>_assets/` folder next to the output file. In contrast, `.images()`
-paths are never checked, copied, or rewritten by `assets=`. For HTML, relative
-`src` paths likewise resolve from the saved HTML file (or its served URL), but
-there is no Typst project-root restriction.
+Generated PNGs and copied static images then land in `build/assets/products/`, and
+the `.typ` references `../assets/products/...`, which resolves correctly from
+`build/tables/` when compiled as part of the parent. Without an explicit `assets=`,
+media lands in a `<path.stem>_assets/` sibling. Keeping that sibling with the saved
+fragment makes the pair relocatable and normally keeps images inside the same Typst
+project tree. For HTML there is no Typst project-root restriction.
 
-Generated `.plot()` images and existing files passed to `.images()` behave
-differently. Tytable creates the former, so it can pack them into a direct render or
-place them in a save-specific asset folder. An `.images()` path points to a file you
-already manage; tytable leaves that reference unchanged.
+There are two deliberately different bases for relative static paths. The default
+`static_images="copy"` and the `"embed"` policy open inputs relative to the Python
+process's current working directory. `static_images="reference"` does not resolve
+the authored value at all; after saving, a relative reference is interpreted from
+the `.typ` or `.html` fragment (or its served URL). Use reference mode for remote
+HTML resources or assets already managed by a surrounding report project.
 
 = Troubleshooting
 
@@ -1618,8 +1638,8 @@ already manage; tytable leaves that reference unchanged.
   [The saved fragment moved without its sibling asset directory, or a custom `assets=` path no longer resolves from it.],
   [Keep the fragment and its asset directory together, or use `.save(path, assets=...)` for an explicit placement. Direct `.render()` output embeds plots and needs no generated asset directory.],
   [A static image is missing],
-  [`.images()` preserves the supplied path and does not verify or copy the file.],
-  [Make the path relative to the saved fragment (or served HTML URL), and ensure the file is inside the Typst project root. `assets=` affects generated plots only.],
+  [Copy/embed resolves local inputs from Python's current working directory; reference mode resolves later from the saved fragment or served URL.],
+  [Check `static_images`, the working directory used during `.save()`, and the emitted `assets=` location. For Typst, keep referenced files inside the compiler project root.],
   [HTML looks different from the compiled document],
   [HTML is a separate CSS/browser rendering, not a preview of Typst's paged layout.],
   [Use HTML for quick content and style checks; compile the Typst fragment for final widths, pagination, repeated headers, figure placement, and exact typography.],

@@ -16,11 +16,11 @@ flags = pl.DataFrame(
     tt(flags, caption="Existing SVG files embedded without plotting dependencies")
     .images(
         j="Flag",
-        # Paths resolve from build/07_static_images.typ, not this Python file.
+        # Copy-mode inputs resolve from the docs/ working directory.
         paths=[
-            "../assets/flags/de.svg",
-            "../assets/flags/fr.svg",
-            "../assets/flags/it.svg",
+            "assets/flags/de.svg",
+            "assets/flags/fr.svg",
+            "assets/flags/it.svg",
         ],
         height=1.2,
     )

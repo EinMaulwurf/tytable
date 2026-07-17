@@ -223,13 +223,41 @@ class TestPlotSparkline:
         result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
         assert "#image(bytes(" in result
 
+    @pytest.mark.parametrize("policy", ["copy", "reference", "embed"])
+    def test_save_combines_generated_plots_with_every_static_policy(
+        self, tmp_path, monkeypatch, policy
+    ):
+        svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'
+        (tmp_path / "logo.svg").write_bytes(svg)
+        monkeypatch.chdir(tmp_path)
+        output = tmp_path / f"{policy}.typ"
+        table = (
+            tt(pl.DataFrame({"Logo": [1], "Trend": [[1, 2, 3]]}))
+            .theme_empty()
+            .images(j="Logo", paths=["logo.svg"])
+            .plot(j="Trend", fun=_sparkline)
+        )
+
+        table.save(str(output), static_images=policy)
+
+        rendered = output.read_text()
+        assets = tmp_path / f"{policy}_assets"
+        assert len(list(assets.glob("plot_*.png"))) == 1
+        if policy == "copy":
+            assert len(list(assets.glob("image_logo_*.svg"))) == 1
+        elif policy == "reference":
+            assert '#image("logo.svg"' in rendered
+        else:
+            assert 'format: "svg"' in rendered
+            assert not list(assets.glob("image_*"))
+
 
 @pytest.mark.images
 class TestImages:
     def test_images_existing_files(self, tmp_path):
         df = pl.DataFrame({"Logo": ["a.png", "b.png"]})
         tt(df).theme_empty().images(j="Logo", paths=["img/a.png", "img/b.png"]).save(
-            str(tmp_path / "out.typ")
+            str(tmp_path / "out.typ"), static_images="reference"
         )
         result = (tmp_path / "out.typ").read_text()
         assert '#image("img/a.png", height: 1em)' in result
@@ -249,6 +277,157 @@ class TestImages:
             .render("typst")
         )
         assert '#image("x\\"), pagebreak(), image(\\"", height: 1em)' in typst
+
+
+class TestStaticImagePolicies:
+    SVG = b'<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>'
+
+    def test_save_copies_static_images_by_default(self, tmp_path, monkeypatch):
+        source = tmp_path / "source"
+        source.mkdir()
+        (source / "logo.svg").write_bytes(self.SVG)
+        monkeypatch.chdir(source)
+
+        table_path = tmp_path / "build" / "report.typ"
+        tt(pl.DataFrame({"Logo": ["x"]})).theme_empty().images(j="Logo", paths=["logo.svg"]).save(
+            str(table_path)
+        )
+
+        assets = list((tmp_path / "build" / "report_assets").iterdir())
+        assert len(assets) == 1
+        assert assets[0].name.startswith("image_logo_")
+        assert assets[0].suffix == ".svg"
+        assert assets[0].read_bytes() == self.SVG
+        assert f'#image("report_assets/{assets[0].name}"' in table_path.read_text()
+
+    def test_copy_deduplicates_repeated_content_and_avoids_basename_collisions(
+        self, tmp_path, monkeypatch
+    ):
+        source = tmp_path / "source"
+        (source / "one").mkdir(parents=True)
+        (source / "two").mkdir()
+        (source / "one" / "logo.svg").write_bytes(self.SVG)
+        (source / "two" / "logo.svg").write_bytes(self.SVG + b"\n")
+        monkeypatch.chdir(source)
+
+        table_path = tmp_path / "out.typ"
+        tt(pl.DataFrame({"Logo": [1, 2, 3]})).theme_empty().images(
+            j="Logo",
+            paths=["one/logo.svg", "one/logo.svg", "two/logo.svg"],
+        ).save(str(table_path))
+
+        assets = list((tmp_path / "out_assets").glob("image_logo_*.svg"))
+        assert len(assets) == 2
+        rendered = table_path.read_text()
+        references = re.findall(r'#image\("(out_assets/image_logo_[^"]+)', rendered)
+        assert references[0] == references[1]
+        assert references[2] != references[0]
+
+    def test_reference_preserves_authored_path_and_url(self, tmp_path):
+        paths = [r"managed\logo.svg", "https://example.test/logo.svg?a=1&b=2"]
+        table = tt(pl.DataFrame({"Logo": [1, 2]})).theme_empty().images(j="Logo", paths=paths)
+
+        typst_path = tmp_path / "out.typ"
+        table.save(str(typst_path), static_images="reference")
+        assert '#image("managed\\\\logo.svg"' in typst_path.read_text()
+
+        html = table.render("html", static_images="reference")
+        assert 'src="https://example.test/logo.svg?a=1&amp;b=2"' in html
+        assert not (tmp_path / "out_assets").exists()
+
+    def test_render_embeds_static_svg_without_writing_files(self, tmp_path, monkeypatch):
+        (tmp_path / "logo.svg").write_bytes(self.SVG)
+        monkeypatch.chdir(tmp_path)
+        table = tt(pl.DataFrame({"Logo": [1]})).theme_empty().images(j="Logo", paths=["logo.svg"])
+        before = set(tmp_path.iterdir())
+
+        typst = table.render("typst", static_images="embed")
+        html = table.render("html", static_images="embed")
+
+        assert "#image(bytes((" in typst
+        assert 'format: "svg"' in typst
+        assert '<img src="data:image/svg+xml;base64,' in html
+        assert set(tmp_path.iterdir()) == before
+
+    def test_save_embed_does_not_create_static_asset_directory(self, tmp_path, monkeypatch):
+        (tmp_path / "logo.svg").write_bytes(self.SVG)
+        monkeypatch.chdir(tmp_path)
+
+        tt(pl.DataFrame({"Logo": [1]})).theme_empty().images(j="Logo", paths=["logo.svg"]).save(
+            "out.html", static_images="embed"
+        )
+
+        assert "data:image/svg+xml;base64," in (tmp_path / "out.html").read_text()
+        assert not (tmp_path / "out_assets").exists()
+
+    def test_custom_nested_asset_directory_covers_static_images(self, tmp_path, monkeypatch):
+        (tmp_path / "logo.svg").write_bytes(self.SVG)
+        monkeypatch.chdir(tmp_path)
+
+        output = tmp_path / "build" / "tables" / "out.typ"
+        tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=["logo.svg"]).save(
+            str(output), assets="../media"
+        )
+
+        copied = list((tmp_path / "build" / "media").glob("image_logo_*.svg"))
+        assert len(copied) == 1
+        assert f'#image("../media/{copied[0].name}"' in output.read_text()
+
+    def test_copy_accepts_absolute_input_and_emits_relative_asset_path(self, tmp_path):
+        source = tmp_path / "source" / "logo.svg"
+        source.parent.mkdir()
+        source.write_bytes(self.SVG)
+        output = tmp_path / "build" / "out.typ"
+
+        tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=[str(source)]).save(
+            str(output), assets=str(tmp_path / "shared" / "media")
+        )
+
+        copied = list((tmp_path / "shared" / "media").glob("image_logo_*.svg"))
+        assert len(copied) == 1
+        assert f'#image("../shared/media/{copied[0].name}"' in output.read_text()
+
+    @pytest.mark.parametrize("method", ["render", "save"])
+    def test_invalid_policy_is_rejected(self, method, tmp_path):
+        table = tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=["logo.svg"])
+
+        with pytest.raises(ValueError, match="static_images must be"):
+            if method == "render":
+                table.render("typst", static_images="invalid")
+            else:
+                table.save(str(tmp_path / "out.typ"), static_images="invalid")
+
+    def test_direct_render_rejects_copy(self):
+        table = tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=["logo.svg"])
+
+        with pytest.raises(ValueError, match=r"requires \.save\(\)"):
+            table.render("typst", static_images="copy")
+
+    @pytest.mark.parametrize("path", ["missing.svg", "https://example.test/logo.svg"])
+    def test_copy_rejects_unavailable_local_input_with_context(self, tmp_path, path):
+        table = tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=[path])
+
+        expected = "requires a local file" if path.startswith("http") else "could not read"
+        with pytest.raises((OSError, ValueError), match=rf"directive 1.*row=0.*{expected}"):
+            table.save(str(tmp_path / "out.typ"))
+
+    def test_embed_rejects_unsupported_format_with_context(self, tmp_path, monkeypatch):
+        (tmp_path / "logo.bmp").write_bytes(b"not a supported image")
+        monkeypatch.chdir(tmp_path)
+        table = tt(pl.DataFrame({"Logo": [1]})).images(j="Logo", paths=["logo.bmp"])
+
+        with pytest.raises(ValueError, match=r"directive 1.*row=0.*unsupported.*logo\.bmp"):
+            table.render("html", static_images="embed")
+
+    def test_ascii_does_not_read_static_image(self):
+        result = (
+            tt(pl.DataFrame({"Logo": [1]}))
+            .theme_empty()
+            .images(j="Logo", paths=["missing.svg"])
+            .render("ascii", static_images="embed")
+        )
+
+        assert "[image]" in result
 
 
 @pytest.mark.images

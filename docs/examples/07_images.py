@@ -33,13 +33,13 @@ df = pl.DataFrame(
     tt(df, caption="Country scores with flags and trend sparklines")
     .theme_striped()
     .fmt(j="Score", digits=2)
-    # Existing image paths are relative to the saved build/07_images.typ fragment.
+    # Static inputs resolve from docs/ and are copied beside generated plots.
     .images(
         j="Flag",
         paths=[
-            "../assets/flags/de.svg",
-            "../assets/flags/fr.svg",
-            "../assets/flags/it.svg",
+            "assets/flags/de.svg",
+            "assets/flags/fr.svg",
+            "assets/flags/it.svg",
         ],
         height=1.2,
     )

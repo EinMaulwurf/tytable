@@ -118,3 +118,19 @@ def test_compile_alpha_hex(tmp_path):
         .render("typst")
     )
     _compile(typ, tmp_path)
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_embedded_static_svg(tmp_path):
+    image = tmp_path / "logo.svg"
+    image.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">'
+        '<rect width="10" height="10" fill="red"/></svg>',
+        encoding="utf-8",
+    )
+    typ = (
+        tt(pl.DataFrame({"Logo": [1]}))
+        .images(j="Logo", paths=[str(image)])
+        .render("typst", static_images="embed")
+    )
+    _compile(typ, tmp_path)

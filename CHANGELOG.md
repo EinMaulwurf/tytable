@@ -15,6 +15,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   unambiguous.
 - Make `.render()` filesystem-side-effect-free by embedding generated plots, and make `.save()`
   independently materialize them in a table-specific `<stem>_assets/` directory by default.
+- Make `.save()` copy static `.images()` inputs into its asset directory by default. Add explicit
+  `copy`, `reference`, and `embed` policies so saved tables can be packaged, externally managed,
+  or self-contained, and make `assets=` cover all externalized media.
 
 ### Fixes
 

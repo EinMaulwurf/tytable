@@ -96,9 +96,10 @@ class _BuildState:
     ``(row, column)`` coordinates (with ``(-1, column)`` for a formatted column
     name). They identify trusted markup owned by formatting/media phases, so
     the later global escape pass leaves it intact while escaping every ordinary
-    display string. ``media_context`` is ``None`` for self-contained direct
-    renders or holds the invocation-local asset destination supplied by
-    :meth:`TyTable.save`; it is never stored on the source table.
+    display string. ``media_context`` holds the invocation-local static-image
+    policy and, for :meth:`TyTable.save`, its external-media destination. A
+    ``None`` value uses reference-mode static images and embedded generated
+    plots. The context is never stored on the source table.
     """
 
     table: TyTable
