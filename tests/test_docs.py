@@ -16,8 +16,10 @@ def test_api_signature_file_covers_every_reference(tmp_path: Path) -> None:
     write_api_signatures(output)
 
     signatures = json.loads(output.read_text(encoding="utf-8"))
-    main_typ = Path("docs/main.typ").read_text(encoding="utf-8")
-    references = set(re.findall(r'api_signatures\.at\("([a-z_]+)"\)', main_typ))
+    docs_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(Path("docs").glob("*.typ"))
+    )
+    references = set(re.findall(r'api_signatures\.at\("([a-z_]+)"\)', docs_source))
 
     assert references == set(DOCUMENTED_API)
     assert signatures == {
