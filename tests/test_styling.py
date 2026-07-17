@@ -498,6 +498,13 @@ class TestDataDrivenRowSelectors:
         assert '"4_0": 0' in out
         assert '"1_0": 0' not in out
 
+    def test_boolean_list_style(self):
+        out = tt(self.DF).style(i=[True, False, True, False], bold=True).render("typst")
+        assert '"1_0": 0' in out
+        assert '"3_0": 0' in out
+        assert '"2_0": 0' not in out
+        assert '"4_0": 0' not in out
+
     def test_callable_style(self):
         out = (
             tt(self.DF)

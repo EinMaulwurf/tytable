@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Accept strictly validated Python boolean lists and tuples as data-row masks for `i` selectors.
+
 ## [1.1.0] - 2026-07-17
 
 ### Features

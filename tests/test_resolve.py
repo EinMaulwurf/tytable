@@ -209,6 +209,73 @@ class TestResolveIDataDriven:
         )
         assert result == [1, 3]
 
+    def test_boolean_list(self):
+        result = resolve_i(
+            [True, False, True, False],
+            nhead=1,
+            group_positions=set(),
+            n_merged_body=4,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [1, 3]
+
+    def test_boolean_tuple(self):
+        result = resolve_i(
+            (False, True, False, True),
+            nhead=1,
+            group_positions={2, 5},
+            n_merged_body=6,
+            has_header=True,
+            data=self.DF,
+        )
+        assert result == [3, 6]
+
+    @pytest.mark.parametrize("mask", [[True, 1, False, 2], [True, "header", False, 2]])
+    def test_boolean_mask_rejects_mixed_selector_types(self, mask):
+        with pytest.raises(TypeError, match="cannot mix"):
+            resolve_i(
+                mask,
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=4,
+                has_header=True,
+                data=self.DF,
+            )
+
+    def test_boolean_list_rejects_wrong_length(self):
+        with pytest.raises(ValueError, match="length 3, expected 4"):
+            resolve_i(
+                [True, False, True],
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=4,
+                has_header=True,
+                data=self.DF,
+            )
+
+    def test_polars_series_rejects_non_boolean_dtype(self):
+        with pytest.raises(TypeError, match="must have Boolean dtype"):
+            resolve_i(
+                pl.Series([1, 0, 1, 0]),
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=4,
+                has_header=True,
+                data=self.DF,
+            )
+
+    def test_polars_series_rejects_wrong_length(self):
+        with pytest.raises(ValueError, match="length 3, expected 4"):
+            resolve_i(
+                pl.Series([True, False, True]),
+                nhead=1,
+                group_positions=set(),
+                n_merged_body=4,
+                has_header=True,
+                data=self.DF,
+            )
+
     def test_callable(self):
         result = resolve_i(
             lambda row: row["Grade"] == "D",

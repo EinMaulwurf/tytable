@@ -380,8 +380,9 @@ class TyTable:
             above the column-name header; increasingly negative values move
             upward). ``"groupi"`` / ``"groupj"`` select row/column group
             separators, ``"all"`` selects headers and body, and lists may mix
-            integer and string selectors. Polars expressions, boolean series,
-            and ``callable(row) -> bool`` predicates select data rows by value.
+            integer and string selectors. Boolean lists/tuples with exactly
+            one value per source row, Polars expressions, boolean series, and
+            ``callable(row) -> bool`` predicates select data rows by value.
             ``None`` means *all* rows.
         j
             Column selector: a name (``"Score"``), an integer position (``0``),

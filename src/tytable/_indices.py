@@ -107,12 +107,24 @@ def resolve_i(
     Internal convention: 0 = colnames, -k = col-group header (−1 innermost),
     1,2,... = data rows in the MERGED body.
 
-    Data-driven selectors (``pl.Expr``, boolean ``pl.Series``, or
+    Data-driven selectors (``pl.Expr``, boolean sequences/``pl.Series``, or
     ``callable(row) -> bool``) are evaluated against *data* and mapped
     through row-group positions.
     """
     if i is None:
         return None
+
+    if isinstance(i, (list, tuple)) and i and any(isinstance(value, bool) for value in i):
+        if not all(isinstance(value, bool) for value in i):
+            raise TypeError("boolean row masks cannot mix booleans with other selector types")
+        if data is None:
+            raise TypeError("boolean row masks require source data")
+        if len(i) != data.height:
+            raise ValueError(
+                f"boolean row mask has length {len(i)}, expected {data.height} source rows"
+            )
+        orig_indices = [j for j, value in enumerate(i) if value]
+        return _map_original_to_internal(orig_indices, group_positions)
 
     if data is not None:
         if isinstance(i, pl.Expr):
@@ -120,6 +132,12 @@ def resolve_i(
             orig_indices = [j for j, v in enumerate(mask) if v]
             return _map_original_to_internal(orig_indices, group_positions)
         if isinstance(i, pl.Series):
+            if i.dtype != pl.Boolean:
+                raise TypeError(f"row mask Series must have Boolean dtype, got {i.dtype}")
+            if len(i) != data.height:
+                raise ValueError(
+                    f"boolean row mask has length {len(i)}, expected {data.height} source rows"
+                )
             orig_indices = [j for j, v in enumerate(i) if v]
             return _map_original_to_internal(orig_indices, group_positions)
         if callable(i) and not isinstance(i, (int, str)):

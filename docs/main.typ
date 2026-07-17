@@ -556,14 +556,17 @@ and every data row in a single directive.
 
 == Data-driven row selectors
 
-Instead of hard-coding row numbers, select rows by value. `i` accepts three
+Instead of hard-coding row numbers, select rows by value. `i` accepts four
 dynamic forms evaluated against the original DataFrame at render time:
 
 - A #emph[Polars expression]: `i=(pl.col("Growth %") > 0) & (pl.col("Profit") > 0)`
+- A Python boolean mask: `i=[False, True, False, True]`
 - A boolean `pl.Series`: `i=pl.Series("review", [False, True, False, True])`
 - A Python callable: `i=lambda row: row["Profit"] < 0`
 
-All three work with `.style()`, `.fmt()`, `.plot()`, and `.images()`.
+Boolean lists, tuples, and Series must have exactly one value per source row;
+mixed boolean/index lists are rejected. All four forms work with `.style()`,
+`.fmt()`, `.plot()`, and `.images()`.
 The expression or callable runs against the #emph[original] `DataFrame` (before
 row-group insertion), so the column names you use are always the original ones.
 Polars expressions may combine any number of columns: the example marks a row
