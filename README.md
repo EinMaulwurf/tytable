@@ -62,6 +62,19 @@ tab
 The `.typ` file can be `#include`d in a Typst report and compiled as part of the
 whole document.
 
+## Images and generated plots
+
+`.images(paths=...)` emits references to existing files without checking or copying
+them and needs no optional dependency. `.plot()` requires `tytable[images]` and
+materializes generated PNGs during `.render()` or `.save()`. Media values are assigned
+to the resolved selection in row-major order: `paths`, and `data` when supplied to
+`.plot()`, must contain exactly one item per selected cell.
+
+Plot callbacks receive the typed cell value or matching `data` item and must return a
+Matplotlib `Figure` or plotnine plot. `color` and `xlim` are forwarded independently
+only when accepted by the callback. See the guide for static-path resolution, generated
+asset destinations, portable rendering, and the complete error contract.
+
 ## Conventions
 
 - **0-based row indexing**: `i=0` is the first data row (the row _after_ the

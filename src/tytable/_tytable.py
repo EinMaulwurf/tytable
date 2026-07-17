@@ -104,8 +104,8 @@ def tt(
     rownames
         Reserved — not yet implemented; kept for API parity with R tinytable.
     digits
-        Global default number of decimal places applied to every numeric
-        column. Per-column overrides are set with ``.fmt(digits=...)``.
+        Reserved for compatibility. Configure numeric formatting explicitly
+        with ``.fmt(digits=...)``.
     escape
         Escape cell text for the target backend (default ``True``). Typst and
         HTML metacharacters are escaped automatically; set ``False`` to pass
@@ -579,8 +579,13 @@ class TyTable:
             supplied. Expressions are evaluated against the original typed
             DataFrame, before any formatting transforms run.
         digits
-            Non-negative number of decimal places or significant digits,
-            depending on ``num_fmt``.
+            A non-negative integer. For ``"decimal"`` this is the number of
+            digits after the decimal point; for ``"significant"`` it is the
+            number of significant figures; for ``"scientific"`` it is the
+            number of digits after the mantissa's decimal point. Integer and
+            floating-point values are formatted; booleans, nulls, and
+            non-numeric values are unchanged. ``None`` disables numeric
+            formatting for this directive.
         num_fmt
             Numeric style: ``"decimal"`` (fixed decimals, default),
             ``"significant"`` (significant figures), or ``"scientific"``
@@ -704,8 +709,8 @@ class TyTable:
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
             defaults to *all body rows*.
         fun
-            Plotting callable. Called once per selected row with either the
-            typed cell value (or the ``data`` list entry). ``color`` and
+            Plotting callable. Called once per selected cell with either the
+            typed cell value (or the matching ``data`` list entry). ``color`` and
             ``xlim`` are each forwarded only when the callable declares that
             keyword or accepts ``**kwargs``. Must return a matplotlib Figure
             or a plotnine ``ggplot``.
@@ -738,11 +743,16 @@ class TyTable:
             returns an unsupported object when the table is rendered.
         ValueError
             If ``j`` or ``fun`` is missing, a pixel dimension is not positive,
-            ``height`` cannot be parsed, or a selector is invalid. Selector
-            errors are raised at render time.
+            ``height`` cannot be parsed, the length of ``data`` differs from
+            the resolved cell count, or a selector is invalid. Cardinality and
+            selector errors are raised at render time.
         ImportError
             If the table is rendered without the optional ``images``
             dependencies installed.
+        RuntimeError
+            If ``fun`` raises an exception when the table is rendered.
+        OSError
+            If the generated plot directory or PNG cannot be written.
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
@@ -821,7 +831,8 @@ class TyTable:
         ------
         ValueError
             If ``j`` or ``paths`` is missing, ``height`` cannot be parsed, or
-            a selector is invalid. Selector errors are raised at render time.
+            a selector is invalid. A mismatch between the number of paths and
+            resolved cells, and selector errors, are raised at render time.
         """
         if j is None:
             raise ValueError(".images() requires j (column selector)")
@@ -882,6 +893,8 @@ class TyTable:
             groups overlap or are noncontiguous, a row-group list has the
             wrong length, a label is ``None``, or a delimiter cannot split
             every column name consistently. Empty specifications are no-ops.
+        IndexError
+            If a row- or column-group integer position is out of range.
 
         Examples
         --------
@@ -1198,10 +1211,13 @@ class TyTable:
         NotImplementedError
             If ``output`` is not one of the supported output formats.
         TypeError
-            If a recorded selector has an unsupported type or a plot callback
-            returns an unsupported object.
+            If a recorded selector has an unsupported type, a formatter
+            returns an unsupported object, or a plot callback returns an
+            unsupported object.
         ValueError
-            If a recorded selector, formatting transform, or style is invalid.
+            If a recorded selector, formatting transform, media cardinality,
+            or style is invalid. Group specifications are validated earlier,
+            when :meth:`group` is called.
         ImportError
             If a ``.plot()`` directive is present but the optional ``images``
             dependencies are not installed. Static ``.images()`` directives
@@ -1256,9 +1272,13 @@ class TyTable:
             If the destination directory, table file, or generated image
             assets cannot be written.
         TypeError
-            If a recorded selector has an unsupported type.
+            If a recorded selector has an unsupported type, a formatter
+            returns an unsupported object, or a plot callback returns an
+            unsupported object.
         ValueError
-            If a recorded selector, formatting transform, or style is invalid.
+            If a recorded selector, formatting transform, media cardinality,
+            or style is invalid. Group specifications are validated earlier,
+            when :meth:`group` is called.
         ImportError
             If a ``.plot()`` directive is present but the optional ``images``
             dependencies are not installed.

@@ -1171,15 +1171,17 @@ options fall into four groups:
   [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
   [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
   [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
-  [Values], [`digits`, `escape`], [global numeric precision and safe markup],
+  [Values], [`escape`], [global safe-markup policy],
   [Behaviour], [`finalize`], [initial output callback],
   [Reserved], [`rownames`], [present for parity; not implemented],
 )
 
 `width` accepts a fraction, a Typst length string, or one entry per column
 (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
-`gutter` accepts points as a number, a unit string, or `None`. A note is a
-string or a dictionary with `text`, `marker`, `i`, and `j` keys.
+`gutter` accepts points as a number, a unit string, or `None`. The constructor's
+`digits` parameter is retained for compatibility; use `.fmt(digits=...)` to
+configure numeric formatting. A note is a string or a dictionary with `text`,
+`marker`, `i`, and `j` keys.
 
 `TyTable(...)` has the same constructor options, but application code should
 normally construct with `tt(...)` and use `TyTable` for annotations.
@@ -1200,11 +1202,22 @@ restrict a directive to a tuple such as `("typst",)`.
 Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`,
 `math`, then `escape`.
 `where` restricts all transforms in the directive to individual true body cells.
-`num_fmt` is `"decimal"`, `"significant"`, or `"scientific"`; `replace` may blank missing
-values, supply a replacement string, or map old values to new ones. `linebreak`
-is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst
-values in math delimiters without changing HTML or ASCII. `fn` receives one
-column as `list[str]` and must return a list of the same length.
+`digits` is either `None` (no numeric formatting) or a non-negative integer;
+booleans are rejected even though Python treats them as integers. `num_fmt` is
+`"decimal"`, `"significant"`, or `"scientific"`. Decimal formatting uses
+`digits` places after the decimal point, significant formatting uses that many
+significant figures, and scientific formatting uses that many places after the
+mantissa's decimal point. Both integer and floating-point values are formatted;
+booleans, nulls, and non-numeric values are left unchanged. Scientific notation
+uses target-native Typst/HTML markup and a plain-text form in ASCII.
+
+`digits`, `num_fmt`, and whether `fn` is callable are validated immediately when
+`.fmt()` is called. Selectors are resolved and `fn` results are validated during
+rendering. `fn` receives each selected column as `list[str]` after numeric
+formatting and must return a non-string sequence of the same length. `replace`
+then may blank missing values, supply a replacement string, or map old values to
+new ones. `linebreak` is a literal marker replaced for Typst and HTML output.
+`math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
 #api("Group", api_signatures.at("group"))
 
@@ -1254,13 +1267,26 @@ Only generated plots require the optional `images` extra. `.images()` only emits
 references to existing files and has no optional Python dependencies. Media is
 materialized when the table renders or saves, not when the directive is recorded.
 
+For both methods, tytable resolves `i` and `j` at render time and walks the
+selection row-major: each resolved row in order, then each resolved column in
+order. `.images(paths=...)` always requires exactly one path per selected cell.
+When `.plot(data=...)` is supplied, it likewise requires exactly one item per
+selected cell; without `data`, the callback receives each selected cell's typed
+DataFrame value. Empty selections therefore require an empty supplied list.
+Too few or too many items raise `ValueError` before plotting dependencies are
+loaded or callbacks run.
+
 #api("Generate plots", api_signatures.at("plot"))
 
 `j` and `fun` are required. The callable receives the typed cell value (or the
 matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Pixel
 dimensions control PNG generation for both backends and override a returned
 Matplotlib figure's canvas size; `height` independently controls the displayed
-cell size.
+cell size. `color` and `xlim` are inspected independently: each keyword is
+forwarded only if the callback declares it or accepts `**kwargs`. Plot callbacks
+and PNG generation run during `.render()` / `.save()`; non-portable rendering
+writes an asset for every selected cell, while Typst portable mode creates a
+temporary PNG and embeds it in the returned fragment.
 
 #api("Embed files", api_signatures.at("images"))
 
@@ -1268,6 +1294,8 @@ cell size.
 cells. Tytable neither checks nor copies these files; paths are emitted as supplied
 (with path separators normalized). A relative path resolves from the saved `.typ`
 or `.html` fragment. The `assets=` argument does not change static image paths.
+Rendering only materializes backend image markup; it does not open or verify the
+referenced file.
 
 == Rendering and output
 
@@ -1288,6 +1316,18 @@ has no file location, saving it elsewhere yourself also requires moving the asse
 adjusting the references. Rendering static `.images()` references does not touch the
 referenced files. Typst portable mode embeds generated plots instead of retaining PNGs.
 
+An unsupported `output` raises `NotImplementedError`. Most selectors are
+recorded first, so invalid selector types, positions, mask lengths, regexes, and
+missing columns raise `TypeError` or `ValueError` during `.render()`; grouping
+specifications and the selectors used by `.set_name()` are validated when those
+methods are called. Formatter option errors are raised by `.fmt()`, while an
+invalid formatter result raises `TypeError` or `ValueError` during rendering.
+Only a `.plot()` directive can raise the optional-dependency `ImportError`.
+A plot callback exception is wrapped in `RuntimeError` with directive and cell
+context; an unsupported callback return is `TypeError`; and failures to create
+or write generated assets raise `OSError` with their destination. Exceptions
+from finalizer callbacks propagate unchanged.
+
 #api("Save file", api_signatures.at("save"))
 
 Creates parent directories and infers HTML from `.html` / `.htm`; other
@@ -1297,6 +1337,9 @@ fragment; the default is a sibling `tytable_assets/` directory. `.save()` stores
 this destination on the table. Later direct `.render()` calls on the same object
 continue to write there and emit the retained relative path; another `.save()`
 replaces it. Use a fresh table when independent render destinations are required.
+`save()` can additionally raise `OSError` while creating the destination directory
+or writing the table file. Render-time selector, formatter, plot, and asset errors
+otherwise have the same contracts described for `.render()` above.
 
 = Using a generated table in Typst
 
