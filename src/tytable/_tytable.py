@@ -408,7 +408,8 @@ class TyTable:
         bold, italic, underline, strikeout, monospace, smallcaps
             Boolean text decorations.
         color
-            Foreground text color (hex, named, or Typst expression).
+            Foreground text color (hex or named). Typst color expressions are
+            accepted only when ``output=("typst",)``.
         background
             Cell background color.
         fontsize
@@ -496,6 +497,7 @@ class TyTable:
             fontsize=fontsize,
             indent=indent,
             rotate=rotate,
+            output=output,
         )
         self._style_directives.append(
             StyleDirective(

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ._colors import color_to_css
 from ._escape import escape_html
 from ._groups import _resolve_col_group_spans
 from ._indices import convert_col_to_typst, convert_row_to_typst
@@ -53,7 +54,7 @@ def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tup
         ti = convert_row_to_typst(entry["i"], nhead)
         tj = convert_col_to_typst(entry["j"])
         width = entry.get("line_width", 0.1)
-        line_color = entry.get("line_color", "black")
+        line_color = color_to_css(entry.get("line_color", "black"))
         line = entry["line"]
 
         borders = border_map.setdefault((ti, tj), "")
@@ -234,7 +235,7 @@ class HtmlRenderer(Renderer):
         if alignv:
             css.append(f"vertical-align:{alignv}")
         if note_style.get("background"):
-            css.append(f"background-color:{note_style['background']}")
+            css.append(f"background-color:{color_to_css(note_style['background'])}")
         if note_style.get("indent") and note_style["indent"] > 0:
             css.append(f"padding-left:{note_style['indent']}em")
         td_style = ";".join(css)

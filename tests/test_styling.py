@@ -159,8 +159,13 @@ class TestStyleProps:
         assert "rgb" not in out
 
     def test_typst_color_function(self):
-        out = tt(DF).style(i=0, j=0, color="luma(50%)").render("typst")
+        out = tt(DF).style(i=0, j=0, color="luma(50%)", output=("typst",)).render("typst")
         assert "color: luma(50%)" in out
+
+    @pytest.mark.parametrize("prop", ["color", "background", "line_color"])
+    def test_typst_color_function_requires_typst_output_scope(self, prop):
+        with pytest.raises(ValueError, match=r"Typst color expression.*output=\(\"typst\","):
+            tt(DF).style(i=0, j=0, **{prop: "luma(50%)"})
 
     @pytest.mark.parametrize("prop", ["color", "background", "line_color"])
     @pytest.mark.parametrize(

@@ -12,7 +12,7 @@ import re
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from ._colors import _validate_color_string
+from ._colors import _is_color_function, _validate_color_string
 from ._indices import resolve_i, resolve_j, resolve_where
 
 if TYPE_CHECKING:
@@ -226,11 +226,20 @@ def _validate_style(
     fontsize: int | float | None,
     indent: int | float | None,
     rotate: int | float | None,
+    output: tuple[str, ...] | None,
 ) -> None:
     """Fail-fast validation at .style() call time. guide 06 §7."""
     values = locals()
     for name, validator in _STYLE_VALIDATORS.items():
         validator(name, values[name])
+    if output is None or "html" in output:
+        for name in ("color", "background", "line_color"):
+            value = values[name]
+            if value is not None and _is_color_function(value):
+                raise ValueError(
+                    f"{name}={value!r} is a Typst color expression; restrict the style "
+                    'directive with output=("typst",)'
+                )
 
 
 def build_style_grid(

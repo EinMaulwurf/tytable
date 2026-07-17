@@ -67,6 +67,23 @@ class TestHtmlStyle:
         assert "background-color:#ffffcc" in out
         assert_snapshot("html_style_color", out)
 
+    @pytest.mark.parametrize(
+        ("color", "expected"),
+        [
+            ("#f00", "#ff0000"),
+            ("#F008", "#ff000088"),
+            ("#12ABef", "#12abef"),
+            ("#12ABef80", "#12abef80"),
+            ("rebeccapurple", "#663399"),
+            ("black", "#000000"),
+            ("white", "#ffffff"),
+        ],
+    )
+    def test_all_portable_color_forms_are_normalized_for_css(self, color, expected):
+        out = tt(pl.DataFrame({"A": [1]})).style(i=0, color=color).render("html")
+
+        assert f"color:{expected}" in out
+
     def test_align(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).style(i=0, j=0, align="c").render("html")
@@ -443,7 +460,7 @@ class TestCaptionNotesStyleHtml:
             .render("html")
         )
         assert "<i>" in out
-        assert "color:blue" in out
+        assert "color:#0000ff" in out
         assert "Source: data" in out
         assert_snapshot("html_notes_italic_color", out)
 
@@ -465,7 +482,7 @@ class TestCaptionNotesStyleHtml:
             .style(i="notes", background="#eee", align="c", bold=True)
             .render("html")
         )
-        assert "background-color:#eee" in out
+        assert "background-color:#eeeeee" in out
         assert "text-align:center" in out
         assert "<b>" in out
         assert_snapshot("html_notes_bg_align", out)

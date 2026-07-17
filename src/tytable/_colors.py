@@ -1,4 +1,4 @@
-"""Color parsing → Typst color expressions. See guide 05 §8."""
+"""Validation and backend projections for user-facing color values."""
 
 from __future__ import annotations
 
@@ -195,6 +195,34 @@ def color_to_typst(color: str) -> str:
         return f'rgb("#{digits.lower()}")'
     _validate_color_string(c)
     return c
+
+
+@lru_cache(maxsize=256)
+def color_to_css(color: str) -> str:
+    """Map a portable user color spec to a canonical CSS hex color."""
+    c = color.strip()
+    low = c.lower()
+    if low == "black":
+        return "#000000"
+    if low == "white":
+        return "#ffffff"
+    if low in _NAMED_COLORS:
+        return _NAMED_COLORS[low]
+    match = _HEX_RE.fullmatch(c)
+    if match:
+        digits = match.group(1)
+        if len(digits) in (3, 4):
+            digits = "".join(character * 2 for character in digits)
+        return f"#{digits.lower()}"
+    raise ValueError(
+        f"color value {color!r} is a Typst expression; restrict the style directive "
+        'with output=("typst",)'
+    )
+
+
+def _is_color_function(color: str) -> bool:
+    """Return whether ``color`` is one of the accepted Typst color constructors."""
+    return _COLOR_FUNCTION_RE.fullmatch(color.strip()) is not None
 
 
 def _validate_color_string(color: str) -> None:

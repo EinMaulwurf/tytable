@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from tytable._colors import color_to_typst
+from tytable._colors import color_to_css, color_to_typst
 from tytable._styling import align_to_typst
 
 _UNSAFE_TYPST_SIGNATURE_CHARS = frozenset("#();[]")
@@ -131,7 +131,7 @@ class StyleMarkup:
         if props.get("monospace"):
             parts.append("font-family:monospace")
         if props.get("background"):
-            parts.append(f"background-color:{props['background']}")
+            parts.append(f"background-color:{color_to_css(props['background'])}")
         if props.get("indent") and props["indent"] > 0:
             parts.append(f"padding-left:{props['indent']}em")
         out = f'<span style="{";".join(parts)}">{content}</span>' if parts else content
@@ -145,6 +145,8 @@ class StyleMarkup:
     ) -> None:
         value = self.props.get(prop, _MISSING)
         if value is not _MISSING:
+            if prop in ("color", "background"):
+                value = color_to_css(value)
             parts.append(f"{css_name}:{value}{suffix}")
 
     def _validate_typst_signature_values(self) -> None:
