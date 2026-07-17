@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from tytable import TyTable, __version__, tt
+from tytable._colors import _NAMED_COLORS
 
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "examples"
@@ -116,6 +117,35 @@ def write_api_signatures(path: Path = BUILD / "api.json") -> None:
     path.write_text(json.dumps(signatures, indent=2) + "\n", encoding="utf-8")
 
 
+def _contrast_text_color(hex_color: str) -> str:
+    """Return the higher-contrast black/white label color for an RGB background."""
+    channels = [int(hex_color.lstrip("#")[offset : offset + 2], 16) / 255 for offset in (0, 2, 4)]
+    linear = [
+        value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    return "black" if luminance > 0.179 else "white"
+
+
+def write_color_reference(path: Path | None = None) -> None:
+    """Write a flowing highlighted-name list from the bundled color registry."""
+    output = BUILD / "colors.typ" if path is None else path
+    colors = {**_NAMED_COLORS, "black": "#000000", "white": "#ffffff"}
+    entries = []
+    for name, hex_color in sorted(colors.items()):
+        text_color = _contrast_text_color(hex_color)
+        entries.append(
+            f'#box(fill: rgb("{hex_color}"), inset: (x: 2pt, y: 1.25pt))'
+            f"[#text(fill: {text_color})[{name}]]"
+        )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        "#text(size: 8pt)[\n  " + ",\n  ".join(entries) + ".\n]\n",
+        encoding="utf-8",
+    )
+
+
 def write_meta() -> None:
     try:
         commit = subprocess.run(
@@ -146,6 +176,7 @@ def main() -> None:
         print(f"running {script.relative_to(ROOT)} ...")
         runpy.run_path(str(script), run_name="__main__")
     write_api_signatures()
+    write_color_reference()
     write_meta()
     print(f"done: {len(scripts)} examples built")
 

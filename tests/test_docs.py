@@ -6,6 +6,7 @@ from docs.build_examples import (
     DOCUMENTED_API,
     format_api_signature,
     write_api_signatures,
+    write_color_reference,
     write_meta,
 )
 
@@ -41,3 +42,15 @@ def test_meta_includes_package_version(monkeypatch, tmp_path: Path) -> None:
     write_meta()
 
     assert '#let version = "1.2.3"' in output.read_text(encoding="utf-8")
+
+
+def test_color_reference_uses_the_bundled_color_values(tmp_path: Path) -> None:
+    output = tmp_path / "colors.typ"
+
+    write_color_reference(output)
+
+    rendered = output.read_text(encoding="utf-8")
+    assert 'box(fill: rgb("#808080")' in rendered
+    assert "text(fill: black)[gray]" in rendered
+    assert 'box(fill: rgb("#000080")' in rendered
+    assert "text(fill: white)[navy]" in rendered
