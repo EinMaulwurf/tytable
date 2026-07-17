@@ -541,6 +541,7 @@ class TyTable:
         | None = None,
         j: _ColumnSelector = None,
         *,
+        where: pl.Expr | None = None,
         regex: bool = False,
         digits: int | None = None,
         num_fmt: str = "decimal",
@@ -563,6 +564,12 @@ class TyTable:
         i, j
             Row/column selectors — see :meth:`style`. ``i`` defaults to *all
             body rows*, ``j`` to *all columns*.
+        where
+            Polars expression selecting individual body cells. Each boolean
+            output column is matched to the source column with the same name.
+            The result is intersected with ``i`` and ``j`` when either is
+            supplied. Expressions are evaluated against the original typed
+            DataFrame, before any formatting transforms run.
         digits
             Number of decimal places. Combined with ``num_fmt``.
         num_fmt
@@ -598,7 +605,8 @@ class TyTable:
         ------
         TypeError
             If ``linebreak`` or ``math`` has an unsupported type, or if a row
-            or column selector has an unsupported type. Selector errors are
+            or column selector has an unsupported type. ``where`` must be a
+            Polars expression producing boolean columns. Selector errors are
             raised when the table is rendered.
         ValueError
             If a selector is invalid or ``fn`` returns the wrong number of
@@ -610,6 +618,11 @@ class TyTable:
         >>> (tt(df)                                # doctest: +SKIP
         ...  .fmt(j="rev", digits=2)
         ...  .fmt(j="rev", replace={"null": "—"}))
+
+        Format only numeric cells greater than 100:
+
+        >>> import polars.selectors as cs
+        >>> tt(df).fmt(where=cs.numeric() > 100, digits=0)  # doctest: +SKIP
         """
         if linebreak is not None and not isinstance(linebreak, str):
             raise TypeError("linebreak marker must be a string or None")
@@ -621,6 +634,7 @@ class TyTable:
             FormatDirective(
                 i=i,
                 j=j,
+                where=where,
                 regex=regex,
                 digits=digits,
                 num_fmt=num_fmt,

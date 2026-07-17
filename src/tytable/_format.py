@@ -10,7 +10,7 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
-from ._indices import resolve_i, resolve_j
+from ._indices import resolve_i, resolve_j, resolve_where
 
 if TYPE_CHECKING:
     from ._directives import FormatDirective
@@ -356,6 +356,15 @@ def apply_formats(
         j_vals = resolve_j(d.j, colnames, regex=d.regex)
 
         target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)
+        if d.where is not None:
+            where_cells = resolve_where(
+                d.where,
+                data=table._data,
+                group_positions=group_positions,
+            )
+            target_cells = [
+                cell for cell in target_cells if (cell[0] + 1, cell[1] + 1) in where_cells
+            ]
         values_before = {
             cell: _cell_value(cell, data_body, colnames_display) for cell in target_cells
         }

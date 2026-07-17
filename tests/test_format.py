@@ -1,9 +1,11 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._format import _apply_escape, _apply_replace, _matches
+from tytable._resolve import build
 
 
 @pytest.mark.typst
@@ -56,6 +58,94 @@ class TestDigits:
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
         out = tt(df).fmt(j="v").render("typst")
         assert "3.14159" in out
+
+
+class TestCellSelectors:
+    DF = pl.DataFrame(
+        {
+            "Product": ["A", "B"],
+            "Price": [150.25, 80.75],
+            "Stock": [20.5, 200.75],
+        }
+    )
+
+    def test_where_formats_individual_numeric_cells(self):
+        built = build(tt(self.DF).fmt(where=cs.numeric() > 100, digits=0), "typst")
+
+        assert built.data_body == [
+            ["A", "150", "20.5"],
+            ["B", "80.75", "201"],
+        ]
+
+    def test_without_where_keeps_row_column_cross_product(self):
+        built = build(
+            tt(self.DF).fmt(
+                i=pl.col("Price") > 100,
+                j=["Price", "Stock"],
+                digits=0,
+            ),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["A", "150", "20"],
+            ["B", "80.75", "200.75"],
+        ]
+
+    def test_where_intersects_i_and_j(self):
+        df = self.DF.with_columns(active=pl.Series([False, True]))
+        built = build(
+            tt(df).fmt(
+                i=pl.col("active"),
+                j=["Price", "Stock"],
+                where=cs.numeric() > 100,
+                digits=0,
+            ),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["A", "150.25", "20.5", "false"],
+            ["B", "80.75", "201", "true"],
+        ]
+
+    def test_where_filters_fn_inputs_per_column(self):
+        built = build(
+            tt(self.DF).fmt(
+                where=cs.numeric() > 100,
+                fn=lambda values: [f"selected:{value}" for value in values],
+            ),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["A", "selected:150.25", "20.5"],
+            ["B", "80.75", "selected:200.75"],
+        ]
+
+    def test_where_uses_source_names_after_display_rename(self):
+        built = build(
+            tt(self.DF)
+            .set_name(j="Price", name="Unit price")
+            .fmt(j="Unit price", where=pl.col("Price") > 100, digits=0),
+            "typst",
+        )
+
+        assert built.colnames_display == ["Product", "Unit price", "Stock"]
+        assert built.data_body[0] == ["A", "150", "20.5"]
+        assert built.data_body[1] == ["B", "80.75", "200.75"]
+
+    def test_where_maps_rows_past_row_groups(self):
+        built = build(
+            tt(self.DF).group(i={"Second": 1}).fmt(where=cs.numeric() > 100, digits=0),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["A", "150", "20.5"],
+            ["Second", "", ""],
+            ["B", "80.75", "201"],
+        ]
 
 
 @pytest.mark.typst

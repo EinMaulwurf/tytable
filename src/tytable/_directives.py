@@ -51,6 +51,7 @@ class FormatDirective:
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None
+    where: pl.Expr | None = None
     regex: bool = False
     digits: int | None = None
     num_fmt: str | None = "decimal"
