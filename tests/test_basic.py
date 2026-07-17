@@ -154,6 +154,20 @@ def test_build_rejects_unknown_output():
         build(table, "markdown")
 
 
+def test_render_rejects_unknown_output():
+    table = tt(pl.DataFrame({"A": [1]})).theme_empty()
+    with pytest.raises(NotImplementedError, match="output='markdown' not implemented"):
+        table.render("markdown")
+
+
+def test_save_adds_context_to_table_write_failure(tmp_path):
+    destination = tmp_path / "output.typ"
+    destination.mkdir()
+
+    with pytest.raises(OSError, match=r"could not write table file .*output\.typ"):
+        tt(pl.DataFrame({"A": [1]})).save(str(destination))
+
+
 class TestDefaultAlignment:
     def test_infers_alignment_from_source_dtypes(self):
         df = pl.DataFrame(

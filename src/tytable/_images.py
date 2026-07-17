@@ -68,18 +68,21 @@ def _save_plot_image(
     import matplotlib.pyplot as plt
 
     dpi = 100
-    obj = fun(entry, **_callback_kwargs(fun, color=color, xlim=xlim))
+    try:
+        obj = fun(entry, **_callback_kwargs(fun, color=color, xlim=xlim))
+    except Exception as e:
+        raise RuntimeError(f"{context}: plot callback failed: {e}") from e
 
-    if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
-        obj.save(
-            filename=str(path),
-            width=width_px / dpi,
-            height=height_px / dpi,
-            dpi=dpi,
-            verbose=False,
-        )
-    elif isinstance(obj, plt.Figure):
-        try:
+    try:
+        if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
+            obj.save(
+                filename=str(path),
+                width=width_px / dpi,
+                height=height_px / dpi,
+                dpi=dpi,
+                verbose=False,
+            )
+        elif isinstance(obj, plt.Figure):
             obj.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
             obj.savefig(
                 str(path),
@@ -88,13 +91,16 @@ def _save_plot_image(
                 bbox_inches=obj.bbox_inches,
                 pad_inches=0,
             )
-        finally:
+        else:
+            raise TypeError(
+                f"{context}: fun must return a matplotlib Figure or a plotnine ggplot; "
+                f"got {type(obj).__name__}"
+            )
+    except OSError as e:
+        raise OSError(f"{context}: could not write plot asset {str(path)!r}: {e}") from e
+    finally:
+        if isinstance(obj, plt.Figure):
             plt.close(obj)
-    else:
-        raise TypeError(
-            f"{context}: fun must return a matplotlib Figure or a plotnine ggplot; "
-            f"got {type(obj).__name__}"
-        )
 
 
 def _make_svg_wrapper(png_bytes: bytes, width_px: int, height_px: int) -> str:
@@ -211,7 +217,10 @@ def execute_plots(
             )
 
         if not isinstance(d, ImageDirective):
-            _require_plotting()
+            try:
+                _require_plotting()
+            except ImportError as e:
+                raise ImportError(f".plot() directive {rank + 1}: {e}") from e
 
         height = _height_to_float(d.height)
 
@@ -256,7 +265,13 @@ def execute_plots(
                 else:
                     raw = table._assets_dir
                     assets_dir = pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
-                    assets_dir.mkdir(parents=True, exist_ok=True)
+                    try:
+                        assets_dir.mkdir(parents=True, exist_ok=True)
+                    except OSError as e:
+                        raise OSError(
+                            f".plot() directive {rank + 1}: could not create asset directory "
+                            f"{str(assets_dir)!r}: {e}"
+                        ) from e
                     png_path = assets_dir / filename
                     _save_plot_image(
                         d.fun,

@@ -256,7 +256,10 @@ class TestPortable:
             .theme(lambda t: theme_typst(t, portable=True))
         )
 
-        with pytest.raises(RuntimeError, match="plot failed"):
+        with pytest.raises(
+            RuntimeError,
+            match=r"directive 1, selected cell \(row=0, column=0\): plot callback failed: plot failed",
+        ):
             table.render("typst")
 
         assert list(tmp_path.iterdir()) == []
@@ -301,8 +304,20 @@ class TestValidation:
 
         monkeypatch.setattr("tytable._images._require_plotting", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        with pytest.raises(ImportError, match="images.*extra"):
+        with pytest.raises(ImportError, match=r"\.plot\(\) directive 1:.*images.*extra"):
             build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")
+
+    def test_asset_directory_failure_includes_directive_and_path(self, tmp_path):
+        occupied = tmp_path / "occupied"
+        occupied.write_text("not a directory")
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(j="Trend", fun=_sparkline)
+        table._assets_dir = str(occupied / "assets")
+
+        with pytest.raises(
+            OSError,
+            match=r"\.plot\(\) directive 1: could not create asset directory .*assets",
+        ):
+            table.render("typst")
 
     def test_invalid_callback_return_includes_directive_and_cell(self, tmp_path):
         table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(

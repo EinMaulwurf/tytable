@@ -1178,13 +1178,21 @@ class TyTable:
 
         Raises
         ------
+        NotImplementedError
+            If ``output`` is not one of the supported output formats.
         TypeError
-            If a recorded selector has an unsupported type.
+            If a recorded selector has an unsupported type or a plot callback
+            returns an unsupported object.
         ValueError
             If a recorded selector, formatting transform, or style is invalid.
         ImportError
-            If image directives are present but the optional ``images``
-            dependencies are not installed.
+            If a ``.plot()`` directive is present but the optional ``images``
+            dependencies are not installed. Static ``.images()`` directives
+            do not require optional dependencies.
+        RuntimeError
+            If a plot callback raises an exception.
+        OSError
+            If a generated plot asset cannot be created or written.
         """
         from ._resolve import build
 
@@ -1226,6 +1234,11 @@ class TyTable:
             If a recorded selector has an unsupported type.
         ValueError
             If a recorded selector, formatting transform, or style is invalid.
+        ImportError
+            If a ``.plot()`` directive is present but the optional ``images``
+            dependencies are not installed.
+        RuntimeError
+            If a plot callback raises an exception.
 
         Examples
         --------
@@ -1235,7 +1248,10 @@ class TyTable:
         ...            assets="../assets/x")
         """
         p = pathlib.Path(path)
-        p.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            raise OSError(f"could not create table directory {str(p.parent)!r}: {e}") from e
 
         if assets is None:
             self._assets_dir = str(p.parent / "tytable_assets")
@@ -1246,7 +1262,11 @@ class TyTable:
 
         suffix = p.suffix.lower()
         out: OutputFormat = "html" if suffix in (".html", ".htm") else "typst"
-        p.write_text(self.render(out), encoding="utf-8")
+        rendered = self.render(out)
+        try:
+            p.write_text(rendered, encoding="utf-8")
+        except OSError as e:
+            raise OSError(f"could not write table file {str(p)!r}: {e}") from e
 
     def _repr_html_(self) -> str:
         """Jupyter HTML preview — renders the table as HTML inline."""
