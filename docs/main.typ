@@ -1140,6 +1140,54 @@ layout matters. `.save()` infers only HTML or Typst from the destination suffix;
 write the string returned by `.render("ascii")` yourself when a text artifact is
 needed.
 
+== Backend styling support
+
+The renderers share recorded style intent, but only apply properties their
+output medium can represent. In the matrix below, “yes” means the property is
+rendered, “plain” means the content is retained without that styling, and “—”
+means it has no meaningful representation.
+
+#table(
+  columns: (1.65fr, 1.1fr, 1.1fr, 1.1fr),
+  align: (left, center, center, center),
+  inset: 5pt,
+  fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
+  table.header(
+    text(weight: "bold")[Target and property],
+    text(weight: "bold")[Typst],
+    text(weight: "bold")[HTML],
+    text(weight: "bold")[ASCII],
+  ),
+  [Cell: font styles, color, size], [yes], [yes], [plain],
+  [Cell: background], [yes], [yes], [—],
+  [Cell: horizontal alignment], [yes], [yes], [yes],
+  [Cell: vertical alignment], [yes], [yes], [—],
+  [Cell: indent and rotation], [yes], [yes], [—],
+  [Cell: row/column spans], [yes], [yes], [—],
+  [Cell: border side/color/width], [yes], [yes], [—],
+  [Cell: border trim], [yes], [—], [—],
+  [Caption: font styles, color, size], [yes #super[1]], [yes], [plain],
+  [Caption: background, align, indent], [—], [yes], [—],
+  [Notes: font styles, color, size], [yes #super[1]], [yes], [plain],
+  [Notes: background, align, indent], [yes], [yes], [—],
+)
+
+#text(size: 8.5pt)[
+  #super[1] Typst caption and note text supports bold, italic, underline,
+  strikeout, small caps, color, and size; HTML additionally supports monospace.
+  Typst notes, unlike captions, also support background and horizontal/vertical
+  alignment. Cell font styles include bold, italic, underline, strikeout,
+  monospace, and small caps in both visual backends.
+]
+
+Caption and note styling is validated when that backend renders. If a directive
+contains a property the selected Typst or HTML backend cannot apply, rendering
+raises a targeted `ValueError`; use `output=("typst",)` or `output=("html",)`
+for intentionally backend-specific styling. ASCII always emits captions and
+notes as plain text and ignores their style properties. Typst-only color
+constructors likewise require `output=("typst",)`; portable named and hex
+colors work in both visual backends.
+
 = Table showcase
 
 A polished table usually needs less decoration than expected: one strong
@@ -1277,8 +1325,25 @@ options fall into four groups:
 (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
 `gutter` accepts points as a number, a unit string, or `None`. The constructor's
 `digits` parameter is retained for compatibility; use `.fmt(digits=...)` to
-configure numeric formatting. A note is a string or a dictionary with `text`,
-`marker`, `i`, and `j` keys.
+configure numeric formatting. A note is a string or a `NoteDict`, exported from
+`tytable`. Its optional keys are `text` (footer text), `marker` (an explicit
+string or `None`), `i` (row selector), and `j` (column selector):
+
+```python
+from tytable import NoteDict, tt
+
+significance: NoteDict = {
+    "text": "Statistically significant",
+    "marker": "*",
+    "i": [0, 2],
+    "j": "Estimate",
+}
+table = tt(df, notes=[significance, "Source: model output"])
+```
+
+The annotation makes these keys and selector types discoverable to type checkers
+and IDEs. When `marker` is absent, a note with `i` or `j` is numbered
+automatically; an untargeted note remains unmarked.
 
 `TyTable(...)` has the same constructor options, but application code should
 normally construct with `tt(...)` and use `TyTable` for annotations.
@@ -1480,6 +1545,46 @@ in a `tytable_assets/` folder next to the output file. In contrast, `.images()`
 paths are never checked, copied, or rewritten by `assets=`. For HTML, relative
 `src` paths likewise resolve from the saved HTML file (or its served URL), but
 there is no Typst project-root restriction.
+
+= Troubleshooting
+
+#table(
+  columns: (1.35fr, 1.65fr, 2fr),
+  align: (left, left, left),
+  inset: 5pt,
+  fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
+  table.header(
+    text(weight: "bold")[Symptom],
+    text(weight: "bold")[Likely cause],
+    text(weight: "bold")[What to check],
+  ),
+  [Typst reports “file not found” or “access denied”],
+  [The fragment-relative path is wrong, or the image lies outside the Typst project root.],
+  [Resolve the path from the generated `.typ` file, not the parent document. Compile from the intended tree or pass `typst compile --root <dir> …`.],
+  [`.plot()` raises `ImportError`],
+  [The optional plotting dependencies are absent.],
+  [Install the project with its `images` extra. `.images()` does not need that extra; an `ImportError` there has another source.],
+  [A selector raises `TypeError` or `ValueError` during rendering],
+  [Selectors are deferred and no longer match the final names, rows, or source-mask length.],
+  [Check 0-based final visible row positions, exact display column names, regex matches, and one Boolean mask value per source row. Use the authoritative selector reference above.],
+  [Markup prints literally or breaks output],
+  [Escaping is enabled for raw markup, or disabled for untrusted plain text.],
+  [Keep the default `escape=True` for ordinary values. Use `escape=False` only for trusted target-native markup; formatting-generated markup is tracked separately.],
+  [Generated plots are missing or appear in an old directory],
+  [Direct `.render()` uses `./tytable_assets/`, while a previous `.save()` retains its asset destination on the table.],
+  [Prefer `.save(path, assets=...)` for explicit placement. Use a fresh table for independent destinations, or move assets and update references when persisting a rendered string yourself.],
+  [A static image is missing],
+  [`.images()` preserves the supplied path and does not verify or copy the file.],
+  [Make the path relative to the saved fragment (or served HTML URL), and ensure the file is inside the Typst project root. `assets=` affects generated plots only.],
+  [HTML looks different from the compiled document],
+  [HTML is a separate CSS/browser rendering, not a preview of Typst's paged layout.],
+  [Use HTML for quick content and style checks; compile the Typst fragment for final widths, pagination, repeated headers, figure placement, and exact typography.],
+)
+
+When an error remains unclear, first render the smallest relevant backend
+directly (`table.render("typst")`, `"html"`, or `"ascii"`). This separates
+tytable's generated fragment from include paths, the browser/server base URL,
+and the surrounding Typst document.
 
 = Coming from R tinytable
 

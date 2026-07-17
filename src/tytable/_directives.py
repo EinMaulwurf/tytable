@@ -114,5 +114,5 @@ class Note:
 
     text: str
     marker: str | None = None
-    i: list[int] | None = None
-    j: list[int] | None = None
+    i: int | str | Sequence[int | str] | None = None
+    j: int | str | Sequence[int | str] | None = None

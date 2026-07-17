@@ -31,6 +31,7 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style
+from ._types import NoteDict
 
 _ColumnSelector: TypeAlias = int | str | Sequence[int] | Sequence[str] | None
 
@@ -41,7 +42,7 @@ def tt(
     figure: bool = True,
     caption: str | None = None,
     label: str | None = None,
-    notes: list | None = None,
+    notes: Sequence[str | NoteDict] | None = None,
     width: float | Sequence[float | str | None] | str | None = None,
     height: float | None = None,
     gutter: float | str | None = 2,
@@ -79,10 +80,10 @@ def tt(
         cross-references such as ``@product-scores``. Requires
         ``figure=True``. Ignored by non-Typst renderers.
     notes
-        List of footnotes. Each entry may be a plain ``str`` (untargeted note),
-        a :class:`dict` with keys ``text``, ``marker``, ``i``, ``j``, or a
-        :class:`~tytable._directives.Note`. Notes attached to cells via ``i`` /
-        ``j`` get auto-numbered superscript markers.
+        Sequence of footnotes. Each entry may be a plain ``str`` (untargeted
+        note) or a :class:`~tytable.NoteDict` with ``text``, ``marker``, ``i``,
+        and ``j`` keys. Notes attached to cells via ``i`` / ``j`` get
+        auto-numbered superscript markers.
     width
         Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
         half), a per-column list of fractions/strings/``None`` (``None`` =
@@ -166,7 +167,7 @@ def tt(
     return t
 
 
-def _normalize_notes(raw: list[Any]) -> list[Note]:
+def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
     """Coerce a heterogeneous ``notes`` list into ``Note`` dataclass instances."""
     if not raw:
         return []
@@ -274,7 +275,7 @@ class TyTable:
         figure: bool = True,
         caption: str | None = None,
         label: str | None = None,
-        notes: list | None = None,
+        notes: Sequence[str | NoteDict] | None = None,
         width: float | Sequence[float | str | None] | str | None = None,
         height: float | None = None,
         gutter: float | str | None = 2,

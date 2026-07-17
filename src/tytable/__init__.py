@@ -6,6 +6,7 @@ through the chainable ``TyTable.theme_*()`` methods.
 """
 
 from ._themes import THEMES
+from ._types import NoteDict
 from ._tytable import TyTable, tt
 
 #: Built-in theme registry mapping names to ``theme(table)`` callables.
@@ -21,4 +22,4 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "0.0.0"
 
-__all__ = ["tt", "TyTable", "THEMES"]
+__all__ = ["tt", "TyTable", "THEMES", "NoteDict"]

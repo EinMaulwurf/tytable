@@ -23,6 +23,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   callback returns an unsupported object.
 - Apply `.fmt(digits=...)` to integer values as well as floating-point values.
 
+### Documentation
+
+- Add troubleshooting and backend styling-support references.
+- Export `NoteDict` so note dictionary keys and selectors are discoverable to type checkers and
+  IDEs.
+
 ## [1.2.0] - 2026-07-17
 
 ### Features

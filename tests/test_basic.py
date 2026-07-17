@@ -3,7 +3,7 @@ import pytest
 
 import tytable
 from tests.helpers import assert_snapshot
-from tytable import TyTable, tt
+from tytable import NoteDict, TyTable, tt
 from tytable._escape import escape_typst
 from tytable._resolve import build
 
@@ -77,6 +77,14 @@ def test_public_table_class_is_tytable():
     assert "TyTable" in tytable.__all__
     assert "TinyTable" not in tytable.__all__
     assert not hasattr(tytable, "TinyTable")
+
+
+def test_note_dict_is_public_and_describes_note_keys():
+    note: NoteDict = {"text": "Source", "marker": "*", "i": 0, "j": "A"}
+
+    assert "NoteDict" in tytable.__all__
+    assert set(NoteDict.__annotations__) == {"text", "marker", "i", "j"}
+    assert note["text"] == "Source"
 
 
 @pytest.mark.typst
