@@ -703,9 +703,10 @@ class TyTable:
             defaults to *all body rows*.
         fun
             Plotting callable. Called once per selected row with either the
-            typed cell value (or the ``data`` list entry) plus optional
-            ``color`` / ``xlim`` keyword arguments. Must return a matplotlib
-            ``Figure`` or a plotnine ``ggplot``.
+            typed cell value (or the ``data`` list entry). ``color`` and
+            ``xlim`` are each forwarded only when the callable declares that
+            keyword or accepts ``**kwargs``. Must return a matplotlib Figure
+            or a plotnine ``ggplot``.
         data
             Optional per-cell data overriding the cell's own value. Supply
             exactly one item per selected cell, indexed row-major.
@@ -731,7 +732,8 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``height_px`` or ``width_px`` is not an integer.
+            If ``height_px`` or ``width_px`` is not an integer, or if ``fun``
+            returns an unsupported object when the table is rendered.
         ValueError
             If ``j`` or ``fun`` is missing, a pixel dimension is not positive,
             ``height`` cannot be parsed, or a selector is invalid. Selector

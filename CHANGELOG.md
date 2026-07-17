@@ -19,6 +19,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   indexing failures.
 - Reject caption and note styling properties that a selected backend cannot render instead of
   silently ignoring them.
+- Forward `color` and `xlim` to plot callbacks independently and identify the resolved cell when a
+  callback returns an unsupported object.
 
 ## [1.2.0] - 2026-07-17
 

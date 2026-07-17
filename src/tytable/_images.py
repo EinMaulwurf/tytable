@@ -36,15 +36,21 @@ def _height_to_float(h: str | float) -> float:
     return float(h)
 
 
-def _accepts_kwargs(fun: Callable) -> bool:
-    """True if ``fun`` declares a ``color`` parameter or accepts ``**kwargs``."""
+def _callback_kwargs(fun: Callable, *, color: str, xlim: object) -> dict[str, object]:
+    """Return only the optional plot keywords that ``fun`` can accept."""
     try:
         sig = inspect.signature(fun)
-        return "color" in sig.parameters or any(
-            p.kind == p.VAR_KEYWORD for p in sig.parameters.values()
-        )
     except (ValueError, TypeError):
-        return False
+        return {}
+
+    parameters = sig.parameters
+    if any(p.kind == p.VAR_KEYWORD for p in parameters.values()):
+        return {"color": color, "xlim": xlim}
+
+    keyword_kinds = (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    available = {name for name, parameter in parameters.items() if parameter.kind in keyword_kinds}
+    values: dict[str, object] = {"color": color, "xlim": xlim}
+    return {name: value for name, value in values.items() if name in available}
 
 
 def _save_plot_image(
@@ -56,12 +62,13 @@ def _save_plot_image(
     height_px: int,
     color: str,
     xlim: object,
+    context: str,
 ) -> None:
     """Call ``fun(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
     import matplotlib.pyplot as plt
 
     dpi = 100
-    obj = fun(entry, color=color, xlim=xlim) if _accepts_kwargs(fun) else fun(entry)
+    obj = fun(entry, **_callback_kwargs(fun, color=color, xlim=xlim))
 
     if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
         obj.save(
@@ -85,7 +92,7 @@ def _save_plot_image(
             plt.close(obj)
     else:
         raise TypeError(
-            f".plot() fun must return a matplotlib Figure or a plotnine ggplot; "
+            f"{context}: fun must return a matplotlib Figure or a plotnine ggplot; "
             f"got {type(obj).__name__}"
         )
 
@@ -232,6 +239,10 @@ def execute_plots(
                             height_px=d.height_px,
                             color=d.color,
                             xlim=d.xlim,
+                            context=(
+                                f".plot() directive {rank + 1}, selected cell "
+                                f"(row={body_row}, column={col_idx})"
+                            ),
                         )
                         cell_str = _build_image_cell_string(
                             filename,
@@ -255,6 +266,10 @@ def execute_plots(
                         height_px=d.height_px,
                         color=d.color,
                         xlim=d.xlim,
+                        context=(
+                            f".plot() directive {rank + 1}, selected cell "
+                            f"(row={body_row}, column={col_idx})"
+                        ),
                     )
                     assets_relpath = table._assets_relpath
                     if assets_relpath:

@@ -8,6 +8,7 @@ import pytest
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._directives import ImageDirective, PlotDirective
+from tytable._images import _callback_kwargs
 from tytable._resolve import build
 
 
@@ -59,6 +60,38 @@ def _sparkline(values, *, color="black", xlim=None, **kw):
     ax.plot(range(len(values)), values, color=color, lw=2)
     ax.set_axis_off()
     return fig
+
+
+class TestPlotCallbackKeywords:
+    def test_forwards_color_without_xlim(self):
+        def color_only(value, *, color):
+            return value, color
+
+        assert _callback_kwargs(color_only, color="red", xlim=[0, 1]) == {"color": "red"}
+
+    def test_forwards_xlim_without_color(self):
+        def xlim_only(value, *, xlim):
+            return value, xlim
+
+        assert _callback_kwargs(xlim_only, color="red", xlim=[0, 1]) == {"xlim": [0, 1]}
+
+    def test_forwards_both_to_var_kwargs(self):
+        def variadic(value, **kwargs):
+            return value, kwargs
+
+        assert _callback_kwargs(variadic, color="red", xlim=[0, 1]) == {
+            "color": "red",
+            "xlim": [0, 1],
+        }
+
+    def test_forwards_neither_to_plain_callback(self):
+        assert _callback_kwargs(lambda value: value, color="red", xlim=[0, 1]) == {}
+
+    def test_does_not_forward_positional_only_parameter(self):
+        def positional_only(value, color, /):
+            return value, color
+
+        assert _callback_kwargs(positional_only, color="red", xlim=[0, 1]) == {}
 
 
 @pytest.mark.images
@@ -270,6 +303,17 @@ class TestValidation:
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match="images.*extra"):
             build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")
+
+    def test_invalid_callback_return_includes_directive_and_cell(self, tmp_path):
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fun=lambda _value: "not a plot"
+        )
+
+        with pytest.raises(
+            TypeError,
+            match=r"directive 1, selected cell \(row=0, column=0\).*got str",
+        ):
+            table.save(str(tmp_path / "out.typ"))
 
 
 class TestMediaCardinality:
