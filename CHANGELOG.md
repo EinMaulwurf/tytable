@@ -30,6 +30,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add troubleshooting and backend styling-support references.
 - Export `NoteDict` so note dictionary keys and selectors are discoverable to type checkers and
   IDEs.
+- Reorganize the PDF guide into a sequential tutorial, independent advanced recipes, and a
+  task-oriented reference, with deeper navigation and a complete Typst inclusion example.
 
 ## [1.2.0] - 2026-07-17
 
