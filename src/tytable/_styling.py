@@ -1,9 +1,11 @@
 """
 The styling engine: selector resolution → batched style grid + line list.
 
-Design rules (guide 06, 15): one batched pass over directives writing into a
-single (i, j) -> props dict; overwrite non-line props (per-property
-last-writer-wins), append line props. Never scan the grid per directive.
+Style directives are resolved in one batched pass into a single
+``(i, j) -> props`` mapping. Cell properties use per-property
+last-writer-wins semantics, while border instructions remain ordered so that
+multiple edges and strokes can coexist. The pass never scans the grid per
+directive.
 """
 
 from __future__ import annotations
@@ -228,7 +230,7 @@ def _validate_style(
     rotate: int | float | None,
     output: tuple[str, ...] | None,
 ) -> None:
-    """Fail-fast validation at .style() call time. guide 06 §7."""
+    """Fail fast on invalid style values when ``.style()`` is called."""
     values = locals()
     for name, validator in _STYLE_VALIDATORS.items():
         validator(name, values[name])
@@ -251,7 +253,7 @@ def build_style_grid(
     group_positions: set[int],
     output: str,
 ) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
-    """Resolve all style directives into one grid + a line list. guide 06 §3, 15 §2."""
+    """Resolve all style directives into one grid and an ordered line list."""
     # Row-group labels are descriptive text, even when they span from a
     # numeric first column. User directives below retain last-writer priority.
     grid: dict[tuple[int, int], dict] = {(i, 1): {"align": "l"} for i in group_positions}
@@ -301,6 +303,9 @@ def build_style_grid(
                 if where_cells is not None and (i, j) not in where_cells:
                     continue
                 cell = grid.setdefault((i, j), {})
+                # A cell can have only one final value for properties such as
+                # color, but borders are drawing commands: retaining every
+                # matching line directive allows independent/overlaid edges.
                 cell.update(active_props)
                 if align_vals is not None:
                     cell["align"] = align_vals[idx]

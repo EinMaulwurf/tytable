@@ -59,6 +59,9 @@ def _map_original_to_internal(orig_indices: list[int], group_positions: set[int]
     result: list[int] = []
     for orig in sorted(orig_indices):
         internal = orig + 1
+        # Selectors address source rows, but styles/renderers address the
+        # merged matrix. Each separator at or before a row shifts that row one
+        # additional position; later separators must not affect it.
         for gp in groups:
             if gp <= internal:
                 internal += 1
@@ -101,7 +104,7 @@ def resolve_i(
     data: pl.DataFrame | None = None,
 ) -> list[int] | None:
     """
-    Resolve user row selector to internal row indices. guide 06 §1.
+    Resolve a public row selector to the merged table's internal row indices.
 
     Returns list[int], or None when i is None (caller decides the default).
     Internal convention: 0 = colnames, -k = col-group header (−1 innermost),
@@ -207,7 +210,7 @@ def resolve_j(
     *,
     regex: bool = False,
 ) -> list[int]:
-    """Resolve user column selector to 1-based internal column indices. guide 06 §1."""
+    """Resolve a public column selector to 1-based internal column indices."""
     if j is None:
         return list(range(1, len(colnames) + 1))
     if isinstance(j, (list, tuple)):

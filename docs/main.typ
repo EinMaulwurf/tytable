@@ -909,14 +909,25 @@ label column stays fixed:
 
 = Images & sparklines
 
-Use `.images()` to embed existing files and `.plot()` to generate graphics from
-cell values. This example adds three committed SVG country flags, then supplies
-a plotting function `fun(values) -> matplotlib.figure.Figure` for the sparkline
-column. Tytable handles generated PNG saving and path management. Only `.plot()`
-requires the `images` extra; `.images()` embeds existing files without additional
-Python dependencies.
+Use `.images()` to embed existing files without Matplotlib or the optional
+`images` extra. This standalone example references three committed SVG country
+flags. Its paths start with `../assets` because they resolve from the saved
+`build/07_static_images.typ` fragment, not from the Python script:
 
-#tag("SOURCE")
+#tag("SOURCE — STATIC FILES ONLY")
+#source("examples/07_static_images.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/07_static_images.typ"
+
+Use `.plot()` when graphics must be generated from cell values. The next
+example combines those same static flags with a plotting function
+`fun(values) -> matplotlib.figure.Figure` for the sparkline column. Tytable
+handles generated PNG saving and path management; this plotting half requires
+the `images` extra.
+
+#tag("SOURCE — STATIC FILES + GENERATED PLOTS")
 #source("examples/07_images.py")
 
 #tag("RESULT")

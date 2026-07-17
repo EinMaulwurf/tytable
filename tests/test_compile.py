@@ -1,9 +1,9 @@
 """
 Typst-compilation validation — compiles rendered tables with the `typst` CLI.
 
-Optional (per tytable_python_guide/13_testing.md §6): if the `typst` binary is
-on PATH, compile each snapshot-worthy table and assert exit 0. Skipped locally
-when typst is absent so it never blocks dev.
+When the optional `typst` binary is on PATH, compile each snapshot-worthy
+table and assert exit 0. Skip locally when Typst is absent so the core Python
+test suite does not require a system typesetter.
 """
 
 import shutil

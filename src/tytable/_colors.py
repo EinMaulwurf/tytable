@@ -164,7 +164,7 @@ _NAMED_COLORS: dict[str, str] = {
 @lru_cache(maxsize=256)
 def color_to_typst(color: str) -> str:
     """
-    Map a user color spec to a Typst color expression (guide 05 §8).
+    Map a validated user color specification to a Typst color expression.
 
     - "#RGB"/"#RRGGBB" -> rgb("#rrggbb") (normalize #RGB → #RRGGBB, lowercase)
     - "#RGBA"/"#RRGGBBAA" -> rgb("#rrggbbaa") (normalize #RGBA → #RRGGBBAA, lowercase)

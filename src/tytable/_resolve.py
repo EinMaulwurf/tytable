@@ -294,6 +294,9 @@ def _reorder_directives(state: _BuildState) -> None:
 
 def _apply_formatting(state: _BuildState) -> None:
     """Apply format directives and record cells containing trusted markup."""
+    # Formatting owns any markup it creates (math, line breaks, or explicit
+    # escaping) and reports those coordinates. The later table-wide escape
+    # pass can then protect generated markup without trusting ordinary values.
     state.escaped_cells = apply_formats(
         state.data_body,
         state.typed_body,

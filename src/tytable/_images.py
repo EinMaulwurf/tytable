@@ -1,4 +1,4 @@
-"""Plot/image directive execution. guide 09."""
+"""Execute static-image and generated-plot directives at render time."""
 
 from __future__ import annotations
 
@@ -264,6 +264,9 @@ def execute_plots(
                         )
                 else:
                     raw = table._assets_dir
+                    # ``save()`` retains an output-relative destination on the
+                    # table; a direct first render has no output file to anchor
+                    # paths to, so it deliberately falls back to the cwd.
                     assets_dir = pathlib.Path(raw) if raw else pathlib.Path.cwd() / "tytable_assets"
                     try:
                         assets_dir.mkdir(parents=True, exist_ok=True)

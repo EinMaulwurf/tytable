@@ -1,10 +1,10 @@
 """
 Performance gate — asserts a heavily-styled 120x30 table renders under budget.
 
-See tytable_python_guide/15_performance.md §4. The package's design avoids
-tinytable R's three hotspots (per-style-entry full-grid scans, marker insertion
-re-splitting the output string, rbind-in-loop O(n^2) growth). This test guards
-against regressions.
+The package's design avoids three common hotspots: per-style-entry full-grid
+scans, marker insertion that repeatedly splits rendered output, and
+row-binding in a loop with quadratic growth. This test guards against those
+regressions.
 
 Marked `typst` so it slices with the suite; not slow-skippable by default, but
 the gate is generous (0.3 s) to absorb CI noise.
@@ -40,5 +40,5 @@ def test_heavy_table_under_budget():
 
     assert out.startswith("#")
     assert len(out) > 0
-    # Target < 100 ms (15 §4); gate at 0.3 s for CI noise tolerance.
+    # Typical local target is < 100 ms; gate at 0.3 s for CI noise tolerance.
     assert dt < 0.3, f"render of {N_ROWS}x{N_COLS} table took {dt:.3f}s (budget 0.3s)"
