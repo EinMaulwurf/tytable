@@ -1113,7 +1113,7 @@ class TyTable:
 
         Notes
         -----
-        Typst figures are unbreakable by default. This theme makes only
+        Typst figures are unbreakable by default. This operation makes only
         figures with tytable's custom figure kind breakable, so other figures
         in the surrounding document are unaffected.
         """
