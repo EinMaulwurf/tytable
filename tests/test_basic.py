@@ -1,3 +1,5 @@
+import inspect
+
 import polars as pl
 import pytest
 
@@ -77,6 +79,13 @@ def test_public_table_class_is_tytable():
     assert "TyTable" in tytable.__all__
     assert "TinyTable" not in tytable.__all__
     assert not hasattr(tytable, "TinyTable")
+
+
+def test_construction_api_excludes_inert_parameters():
+    assert "rownames" not in inspect.signature(tt).parameters
+    assert "digits" not in inspect.signature(tt).parameters
+    assert "rownames" not in inspect.signature(TyTable).parameters
+    assert "digits" not in inspect.signature(TyTable).parameters
 
 
 def test_note_dict_is_public_and_describes_note_keys():

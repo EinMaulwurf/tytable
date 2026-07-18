@@ -1303,7 +1303,7 @@ elements keep their normal meaning. Regex applies only to `j`, not `i` or
 #api("Create", api_signatures.at("tt"))
 
 `data` is a Polars `DataFrame` and is cloned on construction. The constructor
-options fall into four groups:
+options fall into these groups:
 
 #table(
   columns: (1.05fr, 1.9fr, 2.05fr),
@@ -1315,16 +1315,14 @@ options fall into four groups:
   [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
   [Values], [`escape`], [global safe-markup policy],
   [Behaviour], [`finalize`], [initial output callback],
-  [Reserved], [`rownames`], [present for parity; not implemented],
 )
 
 `width` accepts a fraction, a Typst length string, or one entry per column
 (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
-`gutter` accepts points as a number, a unit string, or `None`. The constructor's
-`digits` parameter is retained for compatibility; use `.fmt(digits=...)` to
-configure numeric formatting. A note is a string or a `NoteDict`, exported from
-`tytable`. Its optional keys are `text` (footer text), `marker` (an explicit
-string or `None`), `i` (row selector), and `j` (column selector):
+`gutter` accepts points as a number, a unit string, or `None`. Numeric formatting
+is configured separately with `.fmt()`. A note is a string or a `NoteDict`,
+exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an
+explicit string or `None`), `i` (row selector), and `j` (column selector):
 
 ```python
 from tytable import NoteDict, tt

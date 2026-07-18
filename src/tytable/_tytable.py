@@ -50,8 +50,6 @@ def tt(
     gutter: float | str | None = 2,
     colnames: bool = True,
     colnames_override: dict[str, str] | None = None,
-    rownames: bool = False,
-    digits: int | None = None,
     escape: bool = True,
     finalize: Callable[[str, str], str] | None = None,
 ) -> TyTable:
@@ -105,11 +103,6 @@ def tt(
     colnames_override
         Mapping ``{original_name: display_name}`` renaming columns for display
         only (the dataframe itself is untouched).
-    rownames
-        Reserved — not yet implemented; kept for API parity with R tinytable.
-    digits
-        Reserved for compatibility. Configure numeric formatting explicitly
-        with ``.fmt(digits=...)``.
     escape
         Escape cell text for the target backend (default ``True``). Typst and
         HTML metacharacters are escaped automatically; set ``False`` to pass
@@ -161,8 +154,6 @@ def tt(
         gutter=gutter,
         colnames=colnames,
         colnames_override=colnames_override,
-        rownames=rownames,
-        digits=digits,
         escape=escape,
     )
     if finalize is not None:
@@ -284,8 +275,6 @@ class TyTable:
         gutter: float | str | None = 2,
         colnames: bool = True,
         colnames_override: dict[str, str] | None = None,
-        rownames: bool = False,
-        digits: int | None = None,
         escape: bool = True,
     ) -> None:
         """Direct constructor — prefer the :func:`tt` factory.
@@ -313,8 +302,6 @@ class TyTable:
         self._width = _normalize_width(width, data.width)
         self._height = height
         self._escape = escape
-        self._rownames = rownames
-        self._digits = digits
         self._style_directives: list[StyleDirective] = []
         self._format_directives: list[FormatDirective] = []
         self._plot_directives: list[PlotDirective] = []

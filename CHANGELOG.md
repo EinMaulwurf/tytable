@@ -30,6 +30,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Make `.save()` copy static `.images()` inputs into its asset directory by default. Add explicit
   `copy`, `reference`, and `embed` policies so saved tables can be packaged, externally managed,
   or self-contained, and make `assets=` cover all externalized media.
+- Remove the inert `rownames` and constructor-level `digits` parameters from `tt()` and
+  `TyTable`; configure numeric formatting with `.fmt(digits=...)`.
 
 ### Fixes
 
