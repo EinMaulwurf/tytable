@@ -122,7 +122,7 @@ class TestHtmlStyle:
     def test_column_style(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         out = tt(df).style(j="A", italic=True).render("html")
-        assert out.count("font-style:italic") == 3
+        assert out.count("font-style:italic") == 2
 
 
 @pytest.mark.html

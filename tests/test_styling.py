@@ -216,7 +216,7 @@ class TestTargeting:
 
     def test_column_targeting_by_name(self):
         out = tt(DF).style(j="B", italic=True).render("typst")
-        assert '"0_1": 0' in out
+        assert '"0_1"' not in out
         assert '"1_1": 0' in out
         assert '"2_1": 0' in out
 
@@ -581,7 +581,7 @@ class TestListSelectors:
 
     def test_i_list_of_strings(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
-        out = tt(df).style(i=["header", "body"], italic=True).render("typst")
+        out = tt(df).style(i=["header", "data"], italic=True).render("typst")
         assert "(italic: true,)" in out
         assert '"0_0": 0' in out
         assert '"1_0": 0' in out
@@ -812,10 +812,11 @@ class TestPerColumnAlign:
     def test_align_all_rows(self):
         t = tt(self.DF3).theme_empty().style(j=[0, 1, 2], align="lcr")
         built = build(t, "typst")
-        for i in (0, 1, 2):
+        for i in (1, 2):
             assert built.style_grid[(i, 1)]["align"] == "l"
             assert built.style_grid[(i, 2)]["align"] == "c"
             assert built.style_grid[(i, 3)]["align"] == "r"
+        assert (0, 1) not in built.style_grid
 
     def test_alignv_j_list(self):
         t = tt(self.DF3).theme_empty().style(i=0, j=[0, 1, 2], alignv="tmb")

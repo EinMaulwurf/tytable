@@ -5,11 +5,12 @@ from tytable._indices import _map_original_to_internal, resolve_i, resolve_j
 
 
 class TestResolveI:
-    def test_none_returns_none(self):
-        assert (
-            resolve_i(None, nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
-            is None
-        )
+    def test_none_selects_data(self):
+        assert resolve_i(None, nhead=1, group_positions={2}, n_merged_body=4, has_header=True) == [
+            1,
+            3,
+            4,
+        ]
 
     def test_header(self):
         assert resolve_i(
@@ -20,9 +21,9 @@ class TestResolveI:
             == []
         )
 
-    def test_body(self):
+    def test_data(self):
         assert resolve_i(
-            "body", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
+            "data", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
         ) == [1, 2, 3]
 
     def test_all(self):
@@ -35,9 +36,6 @@ class TestResolveI:
             resolve_i("groupi", nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
             == []
         )
-        assert resolve_i(
-            "~groupi", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [1, 2, 3]
 
     def test_groupj_empty(self):
         assert (
@@ -50,7 +48,7 @@ class TestResolveI:
             "groupi", nhead=1, group_positions={2, 5}, n_merged_body=6, has_header=True
         ) == [2, 5]
         assert resolve_i(
-            "~groupi", nhead=1, group_positions={2}, n_merged_body=4, has_header=True
+            "data", nhead=1, group_positions={2}, n_merged_body=4, has_header=True
         ) == [1, 3, 4]
 
     def test_numeric(self):
@@ -61,6 +59,15 @@ class TestResolveI:
         assert resolve_i(
             [0, 1, 2], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
         ) == [1, 2, 3]
+
+    def test_numeric_maps_source_rows_past_groups(self):
+        assert resolve_i(
+            [2, 0, 2],
+            nhead=1,
+            group_positions={1, 3, 6},
+            n_merged_body=6,
+            has_header=True,
+        ) == [2, 5]
 
     @pytest.mark.parametrize("selector", [3, 10])
     def test_nonnegative_out_of_range_raises(self, selector):
@@ -93,8 +100,8 @@ class TestResolveI:
                 has_header=True,
             )
 
-    def test_negative_out_of_range_raises(self):
-        with pytest.raises(ValueError):
+    def test_negative_is_not_public(self):
+        with pytest.raises(ValueError, match="negative row selectors are not supported"):
             resolve_i(-1, nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
 
     def test_unknown_string_raises(self):
@@ -182,19 +189,19 @@ class TestResolveIListOfStrings:
 
     def test_mixed_strings(self):
         result = resolve_i(
-            ["header", "body"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
+            ["header", "data"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
         )
         assert result == [0, 1, 2, 3]
 
-    def test_groupi_and_tilde_groupi(self):
+    def test_groupi_and_data_are_canonical_and_deduplicated(self):
         result = resolve_i(
-            ["groupi", "~groupi"],
+            ["groupi", "data", "groupi"],
             nhead=1,
             group_positions={2},
             n_merged_body=4,
             has_header=True,
         )
-        assert result == [2, 1, 3, 4]
+        assert result == [1, 2, 3, 4]
 
     def test_empty_string_list(self):
         assert resolve_i([], nhead=1, group_positions=set(), n_merged_body=3, has_header=True) == []

@@ -232,7 +232,7 @@ class TestDefaultAlignment:
         table = tt(pl.DataFrame({"number": [123]})).theme_empty().style(j="number", align="l")
         built = build(table, "typst")
 
-        assert built.style_grid[(0, 1)]["align"] == "l"
+        assert (0, 1) not in built.style_grid
         assert built.style_grid[(1, 1)]["align"] == "l"
         assert '<td style="text-align:left">123</td>' in table.render("html")
         assert "| 123    |" in table.render("ascii")

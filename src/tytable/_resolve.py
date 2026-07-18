@@ -132,7 +132,7 @@ def _resolve_i_internal(
     n_merged_body: int,
     group_positions: set[int],
     data: pl.DataFrame | None = None,
-) -> list[int] | None:
+) -> list[int]:
     """Thin wrapper around :func:`resolve_i` re-exported for footnote insertion."""
     from ._indices import resolve_i
 
@@ -186,8 +186,6 @@ def _insert_footnote_markers(
         )
         j_vals = table._resolve_j(j_selector)
 
-        if i_vals is None:
-            continue
         for i in i_vals:
             if i == 0:
                 for j in j_vals:

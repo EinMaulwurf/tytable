@@ -27,7 +27,7 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="List selectors — strings as row/column targets", width=1)
-    .style(i=["header", "body"], bold=True)
+    .style(i=["header", "data"], bold=True)
     .fmt(j=["Revenue", "Cost"], digits=0)
     .fmt(j=["Growth %"], digits=1)
     .style(i="header", background="#2c3e50", color="white")

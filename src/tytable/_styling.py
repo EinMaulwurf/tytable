@@ -274,14 +274,6 @@ def build_style_grid(
             has_header=has_header,
             data=table._data,
         )
-        if i_vals is None:
-            i_vals = resolve_i(
-                "all",
-                nhead=nhead,
-                group_positions=group_positions,
-                n_merged_body=n_merged_body,
-                has_header=has_header,
-            )
         j_vals = table._resolve_j(d.j, regex=d.regex)
         where_cells = (
             resolve_where(d.where, data=table._data, group_positions=group_positions)
@@ -289,9 +281,6 @@ def build_style_grid(
             else None
         )
         has_line = d.line is not None
-        if i_vals is None:
-            continue
-
         active_props = {
             prop: value for prop in OVERWRITE_PROPS if (value := getattr(d, prop)) is not None
         }

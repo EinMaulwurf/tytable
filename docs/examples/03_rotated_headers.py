@@ -26,6 +26,6 @@ compact_columns = ["Accuracy", "Precision", "Recall", "F1 score", "Parameters (M
     .fmt(j=compact_columns, digits=2)
     .style(i="header", bold=True, align="l", alignv="b", line="b")
     .style(i="header", j=compact_columns, rotate=-55)
-    .style(i="body", j=compact_columns, align="c")
+    .style(i="data", j=compact_columns, align="c")
     .save("build/03_rotated_headers.typ")
 )

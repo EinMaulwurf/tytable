@@ -9,6 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Breaking
 
+- Make omitted row selectors target genuine source-data rows, add `i="data"`, and reserve
+  `i="all"` for the complete grid. Non-negative integers now always address stable 0-based source
+  DataFrame rows; remove negative indices and the ambiguous `i="body"` / `i="~groupi"` names.
+  Resolved row and column selections are deduplicated into canonical displayed row-major order,
+  including targeted notes and media cardinality.
 - Resolve every `j` selector against the original DataFrame column names. Display labels assigned
   by `.set_name()` or `colnames_override` are now presentation-only, so renaming headers cannot
   change which columns later directives select and duplicate or empty display labels remain
@@ -25,8 +30,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   item per resolved media cell.
 - Validate `.fmt()` numeric options and callback contracts instead of silently accepting unknown
   numeric formats or exposing incidental errors.
-- Reject out-of-range and malformed row and column selectors consistently across public methods;
-  document `i="~groupi"` for selecting data rows without row-group separators.
+- Reject out-of-range and malformed row and column selectors consistently across public methods.
 - Validate row- and column-group specifications instead of producing malformed spans or incidental
   indexing failures.
 - Reject caption and note styling properties that a selected backend cannot render instead of

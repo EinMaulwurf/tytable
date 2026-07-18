@@ -124,13 +124,17 @@ class TestNhead:
         built = build(tt(DF, colnames=False), "typst")
         assert built.nhead == 0
 
-    def test_style_i_neg1_hits_innermost(self):
+    def test_groupj_hits_every_column_group_level(self):
         built = build(
-            tt(DF).group(j={"Bottom": [0, 1]}).group(j={"Top": [0, 1]}).style(i=-1, bold=True),
+            tt(DF)
+            .group(j={"Bottom": [0, 1]})
+            .group(j={"Top": [0, 1]})
+            .style(i="groupj", bold=True),
             "typst",
         )
         assert (-1, 1) in built.style_grid
         assert built.style_grid[(-1, 1)].get("bold") is True
+        assert built.style_grid[(-2, 1)].get("bold") is True
 
 
 @pytest.mark.typst

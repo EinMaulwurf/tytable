@@ -114,5 +114,5 @@ class Note:
 
     text: str
     marker: str | None = None
-    i: int | str | Sequence[int | str] | None = None
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None
     j: int | str | Sequence[int | str] | None = None

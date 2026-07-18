@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TypedDict
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    import polars as pl
 
 
 class NoteDict(TypedDict, total=False):
@@ -16,5 +19,5 @@ class NoteDict(TypedDict, total=False):
 
     text: str
     marker: str | None
-    i: int | str | Sequence[int | str] | None
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
     j: int | str | Sequence[int | str] | None

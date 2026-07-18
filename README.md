@@ -64,10 +64,10 @@ whole document.
 
 ## Conventions
 
-- **0-based row indexing**: `i=0` is the first data row (the row _after_ the
-  column-name header). Use `i="header"` for the column-name row, negative ints
-  for column-group header rows (`-1` is the innermost row, immediately above
-  the column-name header; increasingly negative values move upward).
+- **Semantic row selection**: non-negative `i` values are stable 0-based source
+  DataFrame positions, even after row groups are inserted. Omitting `i` (or
+  using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`,
+  `i="groupj"`, or `i="all"` for explicit structural selections.
 - **Column selection**: use original DataFrame names (`j="Score"`) or 0-based
   positions (`j=0`); display names are presentation-only.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()`
@@ -76,8 +76,7 @@ whole document.
   right-aligned, including their headers. Explicit `.style(align=...)` calls override
   these dtype-based defaults.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded
-  as _intent_ and replayed in a fixed order at render time. Row indices always
-  refer to the final, visible table.
+  as _intent_ and replayed in a fixed order at render time.
 - **Figure wrapping**: Typst tables are figures by default, enabling captions,
   numbering, and labels such as `label="product-scores"`. Use `figure=False`
   for an unnumbered table; captions and labels cannot be combined with it.

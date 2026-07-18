@@ -1,10 +1,8 @@
 """
 Internal row/column index conventions and Typst conversion.
 
-Convention (documented once, referenced everywhere):
-- Data rows: 0-based (first data row is i=0)
-- Column names header: i="header" maps to internal i=0
-- Column-group headers: negative ints, i=-1 is innermost (nearest colnames)
+Public row selectors describe semantic table rows. Integer positions always
+refer to 0-based source DataFrame rows; structural rows have explicit names.
 - Columns: 0-based positions
 
 Internal (1-based for Typst compatibility with nhead):
@@ -20,10 +18,18 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 
 import polars as pl
 
 _MAX_REGEX_PATTERN_LENGTH = 500
+
+
+@dataclass(frozen=True)
+class _BoundaryRow:
+    """Private semantic selector for a theme's outer grid boundary."""
+
+    edge: str
 
 
 def convert_row_to_typst(i: int, nhead: int) -> int:
@@ -82,31 +88,40 @@ def _resolve_str_i(
         return [0] if has_header else []
     if i == "groupi":
         return sorted(group_positions)
-    if i == "~groupi":
-        return [r for r in range(1, n_merged_body + 1) if r not in group_positions]
+    if i == "data":
+        return _map_original_to_internal(
+            list(range(n_merged_body - len(group_positions))), group_positions
+        )
     if i == "groupj":
-        return list(range(-(nhead - 1), 0)) if nhead else []
-    if i == "body":
-        return list(range(1, n_merged_body + 1))
+        count = nhead - (1 if has_header else 0)
+        return list(range(-count, 0))
     if i == "all":
-        hdr = ([0] if has_header else []) + (list(range(-(nhead - 1), 0)) if nhead > 1 else [])
+        hdr = (list(range(-(nhead - (1 if has_header else 0)), 0))) + ([0] if has_header else [])
         return hdr + list(range(1, n_merged_body + 1))
     raise ValueError(f"unknown row selector: {i!r}")
 
 
 def resolve_i(
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None,
+    i: int
+    | str
+    | Sequence[int | str]
+    | pl.Expr
+    | pl.Series
+    | Callable[[dict], bool]
+    | _BoundaryRow
+    | None,
     *,
     nhead: int,
     group_positions: set[int],
     n_merged_body: int,
     has_header: bool,
     data: pl.DataFrame | None = None,
-) -> list[int] | None:
+) -> list[int]:
     """
     Resolve a public row selector to the merged table's internal row indices.
 
-    Returns list[int], or None when i is None (caller decides the default).
+    An omitted selector means all genuine source-data rows. Results are
+    deduplicated and returned in canonical displayed row order.
     Internal convention: 0 = colnames, -k = col-group header (−1 innermost),
     1,2,... = data rows in the MERGED body.
 
@@ -114,8 +129,29 @@ def resolve_i(
     ``callable(row) -> bool``) are evaluated against *data* and mapped
     through row-group positions.
     """
+    source_rows = data.height if data is not None else n_merged_body - len(group_positions)
+
+    def canonical(rows: list[int]) -> list[int]:
+        return sorted(set(rows), key=lambda row: (0 if row < 0 else 1 if row == 0 else 2, row))
+
     if i is None:
-        return None
+        return _map_original_to_internal(list(range(source_rows)), group_positions)
+
+    if isinstance(i, _BoundaryRow):
+        if i.edge == "first":
+            group_count = nhead - (1 if has_header else 0)
+            if group_count:
+                return [-group_count]
+            if has_header:
+                return [0]
+            return [1] if n_merged_body else []
+        if i.edge == "last":
+            if n_merged_body:
+                return [n_merged_body]
+            if has_header:
+                return [0]
+            return [-1] if nhead else []
+        raise ValueError(f"unknown internal boundary edge: {i.edge!r}")
 
     if isinstance(i, (list, tuple)) and i and any(isinstance(value, bool) for value in i):
         if not all(isinstance(value, bool) for value in i):
@@ -127,13 +163,27 @@ def resolve_i(
                 f"boolean row mask has length {len(i)}, expected {data.height} source rows"
             )
         orig_indices = [j for j, value in enumerate(i) if value]
-        return _map_original_to_internal(orig_indices, group_positions)
+        return canonical(_map_original_to_internal(orig_indices, group_positions))
 
     if data is not None:
         if isinstance(i, pl.Expr):
-            mask = data.select(i).to_series()
+            selected = data.select(i)
+            if selected.width != 1:
+                raise ValueError(
+                    f"row selector expression must produce one column, got {selected.width}"
+                )
+            mask = selected.to_series()
+            if mask.dtype != pl.Boolean:
+                raise TypeError(
+                    f"row selector expression must produce Boolean values, got {mask.dtype}"
+                )
+            if len(mask) != data.height:
+                raise ValueError(
+                    f"row selector expression returned {len(mask)} value(s), expected "
+                    f"{data.height} source rows"
+                )
             orig_indices = [j for j, v in enumerate(mask) if v]
-            return _map_original_to_internal(orig_indices, group_positions)
+            return canonical(_map_original_to_internal(orig_indices, group_positions))
         if isinstance(i, pl.Series):
             if i.dtype != pl.Boolean:
                 raise TypeError(f"row mask Series must have Boolean dtype, got {i.dtype}")
@@ -142,18 +192,20 @@ def resolve_i(
                     f"boolean row mask has length {len(i)}, expected {data.height} source rows"
                 )
             orig_indices = [j for j, v in enumerate(i) if v]
-            return _map_original_to_internal(orig_indices, group_positions)
+            return canonical(_map_original_to_internal(orig_indices, group_positions))
         if callable(i) and not isinstance(i, (int, str)):
             orig_indices = [j for j, row in enumerate(data.iter_rows(named=True)) if i(row)]
-            return _map_original_to_internal(orig_indices, group_positions)
+            return canonical(_map_original_to_internal(orig_indices, group_positions))
 
     if isinstance(i, str):
-        return _resolve_str_i(
-            i,
-            nhead=nhead,
-            group_positions=group_positions,
-            n_merged_body=n_merged_body,
-            has_header=has_header,
+        return canonical(
+            _resolve_str_i(
+                i,
+                nhead=nhead,
+                group_positions=group_positions,
+                n_merged_body=n_merged_body,
+                has_header=has_header,
+            )
         )
 
     if isinstance(i, (list, tuple)):
@@ -174,32 +226,26 @@ def resolve_i(
                         "boolean row masks cannot mix booleans with other selector types"
                     )
                 if n < 0:
-                    if abs(n) > nhead - (1 if has_header else 0):
-                        raise ValueError(f"row selector {n} out of header range")
-                    out.append(n)
-                else:
-                    if n >= n_merged_body:
-                        raise ValueError(
-                            f"row selector position {n} out of range for "
-                            f"{n_merged_body} body row(s)"
-                        )
-                    out.append(n + 1)
+                    raise ValueError("negative row selectors are not supported")
+                if n >= source_rows:
+                    raise ValueError(
+                        f"row selector position {n} out of range for {source_rows} source row(s)"
+                    )
+                out.extend(_map_original_to_internal([n], group_positions))
             else:
                 raise TypeError(f"unsupported element type in row list: {type(n).__name__}")
-        return out
+        return canonical(out)
 
     if isinstance(i, int):
         if isinstance(i, bool):
             raise TypeError("bad row selector type: bool")
         if i < 0:
-            if abs(i) > nhead - (1 if has_header else 0):
-                raise ValueError(f"row selector {i} out of header range")
-            return [i]
-        if i >= n_merged_body:
+            raise ValueError("negative row selectors are not supported")
+        if i >= source_rows:
             raise ValueError(
-                f"row selector position {i} out of range for {n_merged_body} body row(s)"
+                f"row selector position {i} out of range for {source_rows} source row(s)"
             )
-        return [i + 1]
+        return _map_original_to_internal([i], group_positions)
 
     raise TypeError(f"bad row selector type: {type(i).__name__}")
 
@@ -218,9 +264,9 @@ def resolve_j(
         for value in j:
             resolved = _resolve_single_j(value, colnames, regex=regex)
             for idx in resolved:
-                if not regex or idx not in result:
+                if idx not in result:
                     result.append(idx)
-        return result
+        return sorted(result)
     if isinstance(j, int):
         return _resolve_single_j(j, colnames, regex=regex)
     if isinstance(j, str):

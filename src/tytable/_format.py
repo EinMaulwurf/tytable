@@ -343,16 +343,6 @@ def apply_formats(
             has_header=has_header,
             data=table._data,
         )
-        if i_vals is None:
-            i_vals = resolve_i(
-                "body",
-                nhead=nhead,
-                group_positions=group_positions,
-                n_merged_body=n_merged_body,
-                has_header=has_header,
-            )
-        if i_vals is None:
-            raise RuntimeError("i_vals unexpectedly None in apply_formats")
         j_vals = table._resolve_j(d.j, regex=d.regex)
 
         target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)

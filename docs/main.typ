@@ -245,22 +245,20 @@ The rest of this guide grows that first table one concern at a time:
 Four conventions make tytable chains predictable before you begin combining
 formatting, styling, and grouping directives.
 
-== Row indexing is 0-based
+== Row selectors are semantic
 
-`i=0` is the first _data_ row (the row *after* the column-name header). Use
-`i="header"` for the column-name row and `i="body"` for every table-body row.
-The explicit `"body"` selector is useful when you want to leave headers
-unchanged. Negative integers select column-group header rows (`-1` is the
-innermost row, immediately above the column-name header; increasingly negative
-values move upward). Row-group separator rows are addressed with `i="groupi"`,
-genuine data rows excluding those separators with `i="~groupi"`, and
-column-group rows with `i="groupj"`.
+`i=0` is the first source DataFrame row. Non-negative integers keep that
+meaning even when row-group separators are inserted before them. Omitting `i`,
+or writing `i="data"` explicitly, selects every genuine source-data row. Use
+`i="header"` for the column-name row, `i="groupi"` for row-group separators,
+`i="groupj"` for all column-group rows, and `i="all"` for the complete grid.
+Negative public row indices are not supported.
 
 == Select columns by name
 
 `j="Score"` is the preferred form; `j=0` selects the first column by position.
 Both `i` and `j` also accept a #emph[list] of strings or integers to target several rows or columns in
-one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "body"]`. `i` additionally
+one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "data"]`. `i` additionally
 accepts Polars expressions, boolean series, and callables for data-driven
 selection (see the *Styling* section).
 
@@ -453,8 +451,8 @@ they share the same selectors — e.g.
 rather than three separate calls. (Value formatting such as `digits` belongs to
 `.fmt()`, a separate pipeline, and so always needs its own call.)
 
-Use `i="body"` when a style should apply to every table-body row while leaving
-the header rows alone. The example below uses it to draw the left and right
+Omit `i` (or use `i="data"`) when a style should apply to every source-data row
+while leaving structural rows alone. The example below uses it to draw the left and right
 borders around the body; its header has a separate style.
 
 When `j` selects several columns, `align` and `alignv` also accept a
@@ -561,7 +559,7 @@ several rows or columns in one call without repeating yourself. A list-of-string
 `j` selector like `j=["Revenue", "Cost", "Growth %"]` is self-documenting
 and resilient to column reordering — no need to track integer positions.
 
-The same works for `i`: `i=["header", "body"]` styles the column-name row
+The same works for `i`: `i=["header", "data"]` styles the column-name row
 and every data row in a single directive.
 
 #tag("SOURCE")
@@ -1238,9 +1236,8 @@ Start here when you know the task but not the method. Methods marked
 
 `.style()`, `.fmt()`, `.plot()`, and `.images()` share `i` and `j`;
 `.style()` and `.fmt()` additionally accept the cell-level `where` selector.
-`.set_name()` shares `j`. With `i=None`, `.style()` targets every grid row
-(column-group headers, the column-name header when shown, and the complete
-visible body), while `.fmt()`, `.plot()`, and `.images()` target the body only.
+`.set_name()` shares `j`. Omitting `i` selects every genuine source-data row
+for `.style()`, `.fmt()`, `.plot()`, and `.images()`.
 With `j=None`, every column is selected (`.plot()` and `.images()` require an
 explicit `j`; `.set_name()` instead enters full-list replacement mode).
 
@@ -1250,12 +1247,11 @@ explicit `j`; `.set_name()` instead enters full-list replacement mode).
   inset: 6pt,
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
-  [`i`], [`0`, `2`, `[0, 2]`], [0-based final visible body row(s)],
-  [`i`], [`"header"`, `"body"`], [column names or all table-body rows],
-  [`i`], [`"all"`], [all header rows and the complete visible body],
-  [`i`], [`"groupi"`, `"~groupi"`], [row-group rows or genuine data rows only],
+  [`i`], [`0`, `2`, `[0, 2]`], [0-based source DataFrame row(s)],
+  [`i`], [`"header"`, `"data"`], [column names or genuine source rows],
+  [`i`], [`"all"`], [the complete displayed grid],
+  [`i`], [`"groupi"`], [row-group separator rows],
   [`i`], [`"groupj"`], [column-group header rows],
-  [`i`], [`-1`, `-2`], [column-group rows, from innermost upward],
   [`i`], [`pl.col("Score") > 80`], [Polars expression evaluated on source data],
   [`i`], [`pl.Series(...)`], [boolean mask with one value per source row],
   [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],
@@ -1264,13 +1260,10 @@ explicit `j`; `.set_name()` instead enters full-list replacement mode).
   [`where`], [`cs.numeric() > 100`], [true body cells in `.style()` / `.fmt()`],
 )
 
-Non-negative integer `i` values range from zero through the final visible body
-length minus one. Row-group separators count as visible body rows, so an
-integer recorded before or after `.group()` addresses the same final
-coordinate. Negative integers address only column-group headers: `-1` is the
-innermost, and the most negative valid value is the outermost. `"header"` is
-empty when column names are hidden; `"groupj"` and negative selectors are
-empty or invalid when no column-group rows exist. Lists/tuples may mix integer
+Non-negative integer `i` values range from zero through the source DataFrame
+height minus one. Row-group separators never change what an integer selects.
+`"header"` is empty when column names are hidden, and `"groupj"` is empty when
+no column-group rows exist. Lists/tuples may mix integer
 and string row selectors. `.style()` also accepts `i="caption"` and
 `i="notes"`; these non-grid targets allow only their documented text-oriented
 properties.

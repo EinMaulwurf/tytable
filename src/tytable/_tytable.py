@@ -262,8 +262,8 @@ class TyTable:
     Instances are normally created with the :func:`tt` factory rather than
     constructed directly. The class records styling, formatting, grouping, and
     plotting as *intent*; nothing is rendered until ``.render()`` or
-    ``.save()`` is called, so row indices always refer to the final, visible
-    table.
+    ``.save()`` is called. Integer row selectors always refer to stable,
+    0-based source DataFrame positions, even when grouping inserts rows.
 
     Every mutator method (``.style()``, ``.fmt()``, ``.group()``, the theme
     methods, ``.plot()``, ``.images()``, ``.finalize()``) returns ``self`` to
@@ -379,19 +379,18 @@ class TyTable:
         Parameters
         ----------
         i
-            Row selector: ``0`` = first data row, ``"header"`` = column-name
-            row, ``"body"`` = all table-body rows, and negative ints =
-            column-group header rows (``-1`` is the innermost row, immediately
-            above the column-name header; increasingly negative values move
-            upward). ``"groupi"`` selects row-group separators and
-            ``"~groupi"`` selects only genuine data rows, excluding those
-            separators. ``"groupj"`` selects column-group header rows;
+            Row selector: non-negative integers are 0-based source DataFrame
+            positions and ``"data"`` selects every genuine source row.
+            ``"header"`` selects the column-name row, ``"groupi"`` selects
+            row-group separators, and ``"groupj"`` selects column-group rows;
             ``"caption"`` and ``"notes"`` select non-grid metadata;
-            ``"all"`` selects headers and body. Lists may mix integer and
+            ``"all"`` selects the complete displayed grid. Lists may mix integer and
             string selectors. Boolean lists/tuples with exactly one value per
             source row, Polars expressions, boolean series, and
             ``callable(row) -> bool`` predicates select data rows by value.
-            ``None`` means *all* rows.
+            Omitting ``i`` selects all genuine source-data rows. Negative
+            integers and the former ``"body"`` / ``"~groupi"`` names are not
+            supported.
         j
             Column selector: an original DataFrame name (``"Score"``), an
             integer position (``0``), or a ``list`` of any of these. Display
@@ -715,7 +714,7 @@ class TyTable:
         ----------
         i, j
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
-            defaults to *all body rows*.
+            defaults to every source-data row.
         fun
             Plotting callable. Called once per selected cell with either the
             typed cell value (or the matching ``data`` list entry). ``color`` and
@@ -819,7 +818,7 @@ class TyTable:
         ----------
         i, j
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
-            defaults to *all body rows*.
+            defaults to every source-data row.
         paths
             Image file paths, with exactly one path per selected cell, indexed
             row-major.
