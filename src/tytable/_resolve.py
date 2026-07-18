@@ -8,7 +8,7 @@ The render pipeline: resolve recorded directives into a :class:`BuiltTable`.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from copy import copy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -17,13 +17,12 @@ from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
+from ._indices import RowLayout, resolve_i
 from ._renderer import OutputFormat
 from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
-    import polars as pl
-
     from ._images import MediaContext
     from ._render_typst import TypstRenderOptions
     from ._tytable import TyTable
@@ -42,15 +41,11 @@ class BuiltTable:
     labels: each row is outermost-to-innermost, ``None`` is an independent
     blank cell, and ``""`` continues the preceding labelled span.
 
-    Coordinates in ``style_grid``, ``style_lines``, and
-    ``row_group_positions`` use the internal convention: columns and merged
-    body rows are 1-based, the column-name row is 0, and column-group rows are
-    negative with -1 nearest the column names. A grid value contains the final
-    last-writer-wins cell properties. Line entries are an ordered list because
-    border directives append rather than overwrite.
+    Coordinates in ``style_grid`` and ``style_lines`` are final zero-based
+    display coordinates. A grid value contains the final last-writer-wins cell
+    properties. Line entries are ordered because border directives append.
 
-    ``nhead`` equals the number of emitted header rows: the column-name row
-    when enabled plus every column-group row. ``column_alignments`` has one
+    ``column_alignments`` has one
     ``"l"``/``"r"`` entry per source column. ``width`` is a table fraction,
     Typst length, or per-column sequence; ``height`` is the constructor's
     row-height value in em. ``has_background`` lets the Typst renderer avoid a
@@ -60,13 +55,12 @@ class BuiltTable:
     """
 
     output: OutputFormat
+    layout: RowLayout
     data_body: list[list[str]] = field(default_factory=list)
     colnames_display: list[str] = field(default_factory=list)
     column_alignments: list[str] = field(default_factory=list)
     show_colnames: bool = True
-    nhead: int = 0
     col_groups: list[list[str | None]] = field(default_factory=list)
-    row_group_positions: dict[int, str] = field(default_factory=dict)
     style_grid: dict[tuple[int, int], dict[str, Any]] = field(default_factory=dict)
     style_lines: list[dict[str, Any]] = field(default_factory=list)
     style_caption: dict[str, Any] = field(default_factory=dict)
@@ -92,13 +86,10 @@ class _BuildState:
     insertion adds identical separator rows to both matrices before selectors
     resolve.
 
-    After grouping, ``n_merged_body`` includes separator rows, ``nhead`` counts
-    the visible column-group and column-name rows, and
-    ``row_group_positions``/``group_positions`` contain 1-based merged-body
-    coordinates. ``col_groups`` is ordered outermost-to-innermost.
-    ``escaped_cells`` and ``image_cells`` instead use zero-based matrix
-    ``(row, column)`` coordinates (with ``(-1, column)`` for a formatted column
-    name). They identify trusted markup owned by formatting/media phases, so
+    After grouping, ``layout`` owns every source/body/display row mapping and
+    ``col_groups`` is ordered outermost-to-innermost. ``escaped_cells`` and
+    ``image_cells`` use final zero-based display coordinates. They identify
+    trusted markup owned by formatting/media phases, so
     the later global escape pass leaves it intact while escaping every ordinary
     display string. ``media_context`` holds the invocation-local static-image
     policy and, for :meth:`TyTable.save`, its external-media destination. A
@@ -113,51 +104,25 @@ class _BuildState:
     typed_body: list[list[Any]]
     colnames_display: list[str]
     show_colnames: bool
-    row_group_positions: dict[int, str] = field(default_factory=dict)
     col_groups: list[list[str | None]] = field(default_factory=list)
-    nhead: int = 0
-    n_merged_body: int = 0
-    group_positions: set[int] = field(default_factory=set)
+    layout: RowLayout | None = None
     escaped_cells: set[tuple[int, int]] = field(default_factory=set)
     image_cells: set[tuple[int, int]] = field(default_factory=set)
     media_context: MediaContext | None = None
 
 
-def _resolve_i_internal(
-    i_selector: int
-    | str
-    | Sequence[int | str]
-    | pl.Expr
-    | pl.Series
-    | Callable[[dict], bool]
-    | None,
-    nhead: int,
-    has_header: bool,
-    n_merged_body: int,
-    group_positions: set[int],
-    data: pl.DataFrame | None = None,
-) -> list[int]:
-    """Thin wrapper around :func:`resolve_i` re-exported for footnote insertion."""
-    from ._indices import resolve_i
-
-    return resolve_i(
-        i_selector,
-        nhead=nhead,
-        group_positions=group_positions,
-        n_merged_body=n_merged_body,
-        has_header=has_header,
-        data=data,
-    )
+def _layout(state: _BuildState) -> RowLayout:
+    """Return the layout after the grouping phase."""
+    if state.layout is None:
+        raise RuntimeError("row layout has not been resolved")
+    return state.layout
 
 
 def _insert_footnote_markers(
     data_body: list[list[str]],
     colnames_display: list[str],
     notes: list[Note],
-    nhead: int,
-    n_merged_body: int,
-    group_positions: set[int],
-    has_header: bool,
+    layout: RowLayout,
     output: OutputFormat,
     table: TyTable,
 ) -> None:
@@ -180,35 +145,32 @@ def _insert_footnote_markers(
             marker_text = f"#super[{escape_typst(marker)}]"
 
         j_selector = note.j
-        i_vals = _resolve_i_internal(
+        i_vals = resolve_i(
             note.i,
-            nhead,
-            has_header,
-            n_merged_body,
-            group_positions,
+            layout=layout,
             data=table._data,
+        )
+        layout.require_supported(
+            i_vals,
+            allowed={"header", "groupi", "data"},
+            method="targeted notes",
         )
         j_vals = table._resolve_j(j_selector)
 
         for i in i_vals:
-            if i == 0:
+            if i == layout.header_row:
                 for j in j_vals:
-                    ci = j - 1
-                    if 0 <= ci < len(colnames_display):
-                        colnames_display[ci] += marker_text
-            elif i >= 1:
-                ri = i - 1
+                    colnames_display[j] += marker_text
+            else:
+                ri = layout.body_index(i)
                 for j in j_vals:
-                    ci = j - 1
-                    if ri < len(data_body) and ci < len(data_body[ri]):
-                        data_body[ri][ci] += marker_text
+                    data_body[ri][j] += marker_text
 
 
 def _copy_for_build(table: TyTable) -> TyTable:
     """Return a working copy whose mutable directive collections are isolated."""
     working = copy(table)
     working._style_directives = list(table._style_directives)
-    working._deferred_style_directives = []
     working._format_directives = list(table._format_directives)
     working._plot_directives = list(table._plot_directives)
     working._image_directives = list(table._image_directives)
@@ -260,7 +222,7 @@ def _column_alignments(table: TyTable) -> list[str]:
 
 def _merge_groups(state: _BuildState) -> None:
     """Insert row-group rows into both display and typed cell matrices."""
-    state.data_body, state.row_group_positions = merge_row_groups(
+    state.data_body, row_group_positions = merge_row_groups(
         state.data_body,
         state.table._row_groups,
         state.ncols,
@@ -270,25 +232,12 @@ def _merge_groups(state: _BuildState) -> None:
         state.table._row_groups,
         state.ncols,
     )
-    state.n_merged_body = len(state.data_body)
     state.col_groups = list(state.table._col_group_rows)
-    state.nhead = (1 if state.show_colnames else 0) + len(state.col_groups)
-    state.group_positions = set(state.row_group_positions)
-
-
-def _apply_base_appearance(state: _BuildState) -> None:
-    """Apply the base appearance after semantic table dimensions are known."""
-    from ._themes import apply_base_theme
-
-    state.table._nhead = state.nhead
-    state.table._n_merged_body_rows = state.n_merged_body
-    apply_base_theme(state.table)
-
-
-def _reorder_directives(state: _BuildState) -> None:
-    """Place render-time style intent before user-recorded style directives."""
-    state.table._style_directives = (
-        state.table._deferred_style_directives + state.table._style_directives
+    state.layout = RowLayout.create(
+        source_rows=state.table._data.height,
+        column_group_rows=len(state.col_groups),
+        has_header=state.show_colnames,
+        group_body_rows=set(row_group_positions),
     )
 
 
@@ -302,10 +251,7 @@ def _apply_formatting(state: _BuildState) -> None:
         state.typed_body,
         state.colnames_display,
         state.table,
-        nhead=state.nhead,
-        has_header=state.show_colnames,
-        n_merged_body=state.n_merged_body,
-        group_positions=state.group_positions,
+        layout=_layout(state),
         output=state.output,
     )
 
@@ -320,10 +266,7 @@ def _execute_plots(state: _BuildState) -> None:
         state.typed_body,
         state.output,
         media_context=state.media_context,
-        nhead=state.nhead,
-        has_header=state.show_colnames,
-        n_merged_body=state.n_merged_body,
-        group_positions=state.group_positions,
+        layout=_layout(state),
     )
 
 
@@ -335,14 +278,17 @@ def _apply_global_escape(state: _BuildState) -> None:
     if state.output == "ascii":
         return
     escape = escape_html if state.output == "html" else escape_typst
+    layout = _layout(state)
     for col_idx, val in enumerate(state.colnames_display):
-        if (-1, col_idx) not in state.escaped_cells:
+        header_cell = (layout.header_row, col_idx)
+        if layout.header_row is None or header_cell not in state.escaped_cells:
             state.colnames_display[col_idx] = escape(val)
 
     trusted_cells = state.escaped_cells | state.image_cells
     for row_idx, row in enumerate(state.data_body):
+        display_row = layout.header_rows + row_idx
         for col_idx, val in enumerate(row):
-            if (row_idx, col_idx) not in trusted_cells:
+            if (display_row, col_idx) not in trusted_cells:
                 row[col_idx] = escape(val)
 
 
@@ -352,10 +298,7 @@ def _insert_footnotes(state: _BuildState) -> None:
         state.data_body,
         state.colnames_display,
         state.table._notes,
-        state.nhead,
-        state.n_merged_body,
-        state.group_positions,
-        state.show_colnames,
+        _layout(state),
         state.output,
         state.table,
     )
@@ -367,10 +310,7 @@ def _build_style_grid(
     """Resolve cell and line style directives."""
     return build_style_grid(
         state.table,
-        nhead=state.nhead,
-        has_header=state.show_colnames,
-        n_merged_body=state.n_merged_body,
-        group_positions=state.group_positions,
+        layout=_layout(state),
         output=state.output,
     )
 
@@ -382,8 +322,8 @@ def _apply_meta_styles(state: _BuildState) -> tuple[dict[str, Any], dict[str, An
 
 def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _BuildState) -> None:
     """Span each row-group label across the full table width."""
-    for position in state.row_group_positions:
-        style_grid.setdefault((position, 1), {})["colspan"] = state.ncols
+    for position in _layout(state).groupi_rows:
+        style_grid.setdefault((position, 0), {})["colspan"] = state.ncols
 
 
 def build(
@@ -401,8 +341,6 @@ def build(
 
     state = _extract_body(_copy_for_build(table), output, media_context)
     _merge_groups(state)
-    _apply_base_appearance(state)
-    _reorder_directives(state)
     _apply_formatting(state)
     _execute_plots(state)
     _apply_global_escape(state)
@@ -415,13 +353,12 @@ def build(
 
     return BuiltTable(
         output=output,
+        layout=_layout(state),
         data_body=state.data_body,
         colnames_display=state.colnames_display,
         column_alignments=_column_alignments(state.table),
         show_colnames=state.show_colnames,
-        nhead=state.nhead,
         col_groups=state.col_groups,
-        row_group_positions=state.row_group_positions,
         style_grid=style_grid,
         style_lines=style_lines,
         style_caption=style_caption,

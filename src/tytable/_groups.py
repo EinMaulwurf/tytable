@@ -192,20 +192,20 @@ def register_delimiter_groups(table: TyTable, delimiter: str, colnames: list[str
 def merge_row_groups(
     data_body: list[list[str]], row_groups: list[RowGroup], ncols: int
 ) -> tuple[list[list[str]], dict[int, str]]:
-    """Interleave row-group separator rows into the body; returns the merged body and ``{row: label}``."""
+    """Interleave row-group rows; return zero-based body positions and labels."""
     if not row_groups:
         return data_body, {}
     nrows = len(data_body)
     ngroups = len(row_groups)
     n_merged = nrows + ngroups
     p = sorted(rg.position for rg in row_groups)
-    group_positions_1 = [p[k] + k + 1 for k in range(ngroups)]
-    group_positions_set = set(group_positions_1)
+    group_positions = [p[k] + k for k in range(ngroups)]
+    group_positions_set = set(group_positions)
     sorted_rg = sorted(row_groups, key=lambda rg: rg.position)
-    pos_to_label = dict(zip(group_positions_1, (rg.label for rg in sorted_rg), strict=True))
+    pos_to_label = dict(zip(group_positions, (rg.label for rg in sorted_rg), strict=True))
     merged = []
     data_row_idx = 0
-    for r in range(1, n_merged + 1):
+    for r in range(n_merged):
         if r in group_positions_set:
             merged.append([pos_to_label[r]] + [""] * (ncols - 1))
         else:

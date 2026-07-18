@@ -18,6 +18,7 @@ from ._colors import _is_color_function, _validate_color_string
 from ._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
+    from ._indices import RowLayout
     from ._tytable import TyTable
 
 OVERWRITE_PROPS = (
@@ -247,17 +248,17 @@ def _validate_style(
 def build_style_grid(
     table: TyTable,
     *,
-    nhead: int,
-    has_header: bool,
-    n_merged_body: int,
-    group_positions: set[int],
+    layout: RowLayout,
     output: str,
 ) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
     """Resolve all style directives into one grid and an ordered line list."""
     # Row-group labels are descriptive text, even when they span from a
     # numeric first column. User directives below retain last-writer priority.
-    grid: dict[tuple[int, int], dict] = {(i, 1): {"align": "l"} for i in group_positions}
+    grid: dict[tuple[int, int], dict] = {(i, 0): {"align": "l"} for i in layout.groupi_rows}
     lines: list[dict] = []
+    from ._themes import apply_base_theme
+
+    apply_base_theme(table, layout, table._data.width, grid, lines)
 
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
@@ -268,17 +269,12 @@ def build_style_grid(
             continue
         i_vals = resolve_i(
             d.i,
-            nhead=nhead,
-            group_positions=group_positions,
-            n_merged_body=n_merged_body,
-            has_header=has_header,
+            layout=layout,
             data=table._data,
         )
         j_vals = table._resolve_j(d.j, regex=d.regex)
         where_cells = (
-            resolve_where(d.where, data=table._data, group_positions=group_positions)
-            if d.where is not None
-            else None
+            resolve_where(d.where, data=table._data, layout=layout) if d.where is not None else None
         )
         has_line = d.line is not None
         active_props = {

@@ -1,157 +1,136 @@
-"""
-Internal row/column index conventions and Typst conversion.
-
-Public row selectors describe semantic table rows. Integer positions always
-refer to 0-based source DataFrame rows; structural rows have explicit names.
-- Columns: 0-based positions
-
-Internal (1-based for Typst compatibility with nhead):
-- nhead = (1 if show_colnames else 0) + len(col_groups)
-- Data rows: 1-based positive (i=1 = first data row)
-- Colnames: i=0
-- Column-group headers: i<0 (i=-1 innermost; decreasing values move upward)
-
-Typst rows are 0-based for Typst's table model.
-"""
+"""Resolve public selectors to final zero-based displayed cell coordinates."""
 
 from __future__ import annotations
 
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 import polars as pl
 
 _MAX_REGEX_PATTERN_LENGTH = 500
+RowKind = Literal["groupj", "header", "groupi", "data"]
 
 
 @dataclass(frozen=True)
-class _BoundaryRow:
-    """Private semantic selector for a theme's outer grid boundary."""
+class RowLayout:
+    """The table's resolved rows, expressed only in final display coordinates."""
 
-    edge: str
+    source_rows: int
+    column_group_rows: int
+    has_header: bool
+    group_body_rows: frozenset[int]
+    source_body_rows: tuple[int, ...]
 
-
-def convert_row_to_typst(i: int, nhead: int) -> int:
-    """
-    Convert an internal row index to a 0-based Typst row index.
-
-    Internal convention: i=0 is colnames, i>=1 are data rows (1-based),
-    i<0 are column-group header rows (i=-1 innermost). See module docstring.
-
-    nhead=3 examples: -2->0, -1->1, 0->2, 1->3, 2->4.
-    nhead=1 examples: 0->0, 1->1, 2->2.
-    nhead=0 examples: 1->0.
-    """
-    if nhead > 0:
-        if i < 0:
-            return nhead + i - 1
-        return i + nhead - 1
-    if i <= 0:
-        raise ValueError(f"row index {i} invalid when nhead == 0")
-    return i - 1
-
-
-def convert_col_to_typst(j: int) -> int:
-    """Convert a 1-based internal column index to a 0-based Typst column index."""
-    return j - 1
-
-
-def _map_original_to_internal(orig_indices: list[int], group_positions: set[int]) -> list[int]:
-    """Map 0-based original row indices to 1-based internal indices accounting for row groups."""
-    if not group_positions:
-        return [i + 1 for i in orig_indices]
-    groups = sorted(group_positions)
-    result: list[int] = []
-    for orig in sorted(orig_indices):
-        internal = orig + 1
-        # Selectors address source rows, but styles/renderers address the
-        # merged matrix. Each separator at or before a row shifts that row one
-        # additional position; later separators must not affect it.
-        for gp in groups:
-            if gp <= internal:
-                internal += 1
-        result.append(internal)
-    return result
-
-
-def _resolve_str_i(
-    i: str,
-    *,
-    nhead: int,
-    group_positions: set[int],
-    n_merged_body: int,
-    has_header: bool,
-) -> list[int]:
-    """Resolve a single string row selector."""
-    if i == "header":
-        return [0] if has_header else []
-    if i == "groupi":
-        return sorted(group_positions)
-    if i == "data":
-        return _map_original_to_internal(
-            list(range(n_merged_body - len(group_positions))), group_positions
+    @classmethod
+    def create(
+        cls,
+        *,
+        source_rows: int,
+        column_group_rows: int,
+        has_header: bool,
+        group_body_rows: set[int],
+    ) -> RowLayout:
+        body_rows = source_rows + len(group_body_rows)
+        source_body_rows = tuple(r for r in range(body_rows) if r not in group_body_rows)
+        if len(source_body_rows) != source_rows:
+            raise ValueError("row-group positions do not describe a valid body layout")
+        return cls(
+            source_rows=source_rows,
+            column_group_rows=column_group_rows,
+            has_header=has_header,
+            group_body_rows=frozenset(group_body_rows),
+            source_body_rows=source_body_rows,
         )
-    if i == "groupj":
-        count = nhead - (1 if has_header else 0)
-        return list(range(-count, 0))
-    if i == "all":
-        hdr = (list(range(-(nhead - (1 if has_header else 0)), 0))) + ([0] if has_header else [])
-        return hdr + list(range(1, n_merged_body + 1))
-    raise ValueError(f"unknown row selector: {i!r}")
+
+    @property
+    def header_rows(self) -> int:
+        return self.column_group_rows + int(self.has_header)
+
+    @property
+    def body_rows(self) -> int:
+        return self.source_rows + len(self.group_body_rows)
+
+    @property
+    def total_rows(self) -> int:
+        return self.header_rows + self.body_rows
+
+    @property
+    def groupj_rows(self) -> tuple[int, ...]:
+        return tuple(range(self.column_group_rows))
+
+    @property
+    def header_row(self) -> int | None:
+        return self.column_group_rows if self.has_header else None
+
+    @property
+    def groupi_rows(self) -> tuple[int, ...]:
+        return tuple(self.header_rows + r for r in sorted(self.group_body_rows))
+
+    @property
+    def data_rows(self) -> tuple[int, ...]:
+        return tuple(self.header_rows + r for r in self.source_body_rows)
+
+    @property
+    def first_row(self) -> int | None:
+        return 0 if self.total_rows else None
+
+    @property
+    def last_row(self) -> int | None:
+        return self.total_rows - 1 if self.total_rows else None
+
+    def source_to_display(self, row: int) -> int:
+        return self.header_rows + self.source_body_rows[row]
+
+    def body_index(self, display_row: int) -> int:
+        body_row = display_row - self.header_rows
+        if body_row < 0 or body_row >= self.body_rows:
+            raise ValueError(f"display row {display_row} is not a body row")
+        return body_row
+
+    def kind(self, display_row: int) -> RowKind:
+        if display_row < 0 or display_row >= self.total_rows:
+            raise ValueError(f"display row {display_row} is outside the table")
+        if display_row < self.column_group_rows:
+            return "groupj"
+        if self.has_header and display_row == self.column_group_rows:
+            return "header"
+        return "groupi" if self.body_index(display_row) in self.group_body_rows else "data"
+
+    def require_supported(self, rows: Sequence[int], *, allowed: set[RowKind], method: str) -> None:
+        unsupported = sorted({self.kind(row) for row in rows} - allowed)
+        if unsupported:
+            kinds = ", ".join(repr(kind) for kind in unsupported)
+            raise ValueError(f"{method} cannot target row kind(s): {kinds}")
+
+    def resolve_string(self, selector: str) -> list[int]:
+        if selector == "header":
+            return [] if self.header_row is None else [self.header_row]
+        if selector == "groupi":
+            return list(self.groupi_rows)
+        if selector == "data":
+            return list(self.data_rows)
+        if selector == "groupj":
+            return list(self.groupj_rows)
+        if selector == "all":
+            return list(range(self.total_rows))
+        raise ValueError(f"unknown row selector: {selector!r}")
 
 
 def resolve_i(
-    i: int
-    | str
-    | Sequence[int | str]
-    | pl.Expr
-    | pl.Series
-    | Callable[[dict], bool]
-    | _BoundaryRow
-    | None,
+    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None,
     *,
-    nhead: int,
-    group_positions: set[int],
-    n_merged_body: int,
-    has_header: bool,
+    layout: RowLayout,
     data: pl.DataFrame | None = None,
 ) -> list[int]:
-    """
-    Resolve a public row selector to the merged table's internal row indices.
+    """Resolve a public row selector to canonical final display rows."""
 
-    An omitted selector means all genuine source-data rows. Results are
-    deduplicated and returned in canonical displayed row order.
-    Internal convention: 0 = colnames, -k = col-group header (−1 innermost),
-    1,2,... = data rows in the MERGED body.
-
-    Data-driven selectors (``pl.Expr``, boolean sequences/``pl.Series``, or
-    ``callable(row) -> bool``) are evaluated against *data* and mapped
-    through row-group positions.
-    """
-    source_rows = data.height if data is not None else n_merged_body - len(group_positions)
-
-    def canonical(rows: list[int]) -> list[int]:
-        return sorted(set(rows), key=lambda row: (0 if row < 0 else 1 if row == 0 else 2, row))
+    def source_to_display(rows: list[int]) -> list[int]:
+        return [layout.source_to_display(row) for row in rows]
 
     if i is None:
-        return _map_original_to_internal(list(range(source_rows)), group_positions)
-
-    if isinstance(i, _BoundaryRow):
-        if i.edge == "first":
-            group_count = nhead - (1 if has_header else 0)
-            if group_count:
-                return [-group_count]
-            if has_header:
-                return [0]
-            return [1] if n_merged_body else []
-        if i.edge == "last":
-            if n_merged_body:
-                return [n_merged_body]
-            if has_header:
-                return [0]
-            return [-1] if nhead else []
-        raise ValueError(f"unknown internal boundary edge: {i.edge!r}")
+        return list(layout.data_rows)
 
     if isinstance(i, (list, tuple)) and i and any(isinstance(value, bool) for value in i):
         if not all(isinstance(value, bool) for value in i):
@@ -162,8 +141,7 @@ def resolve_i(
             raise ValueError(
                 f"boolean row mask has length {len(i)}, expected {data.height} source rows"
             )
-        orig_indices = [j for j, value in enumerate(i) if value]
-        return canonical(_map_original_to_internal(orig_indices, group_positions))
+        return source_to_display([j for j, value in enumerate(i) if value])
 
     if data is not None:
         if isinstance(i, pl.Expr):
@@ -182,8 +160,7 @@ def resolve_i(
                     f"row selector expression returned {len(mask)} value(s), expected "
                     f"{data.height} source rows"
                 )
-            orig_indices = [j for j, v in enumerate(mask) if v]
-            return canonical(_map_original_to_internal(orig_indices, group_positions))
+            return source_to_display([j for j, value in enumerate(mask) if value])
         if isinstance(i, pl.Series):
             if i.dtype != pl.Boolean:
                 raise TypeError(f"row mask Series must have Boolean dtype, got {i.dtype}")
@@ -191,63 +168,47 @@ def resolve_i(
                 raise ValueError(
                     f"boolean row mask has length {len(i)}, expected {data.height} source rows"
                 )
-            orig_indices = [j for j, v in enumerate(i) if v]
-            return canonical(_map_original_to_internal(orig_indices, group_positions))
+            return source_to_display([j for j, value in enumerate(i) if value])
         if callable(i) and not isinstance(i, (int, str)):
-            orig_indices = [j for j, row in enumerate(data.iter_rows(named=True)) if i(row)]
-            return canonical(_map_original_to_internal(orig_indices, group_positions))
+            return source_to_display(
+                [j for j, row in enumerate(data.iter_rows(named=True)) if i(row)]
+            )
 
     if isinstance(i, str):
-        return canonical(
-            _resolve_str_i(
-                i,
-                nhead=nhead,
-                group_positions=group_positions,
-                n_merged_body=n_merged_body,
-                has_header=has_header,
-            )
-        )
+        return layout.resolve_string(i)
 
     if isinstance(i, (list, tuple)):
-        out: list[int] = []
-        for n in i:
-            if isinstance(n, str):
-                resolved = _resolve_str_i(
-                    n,
-                    nhead=nhead,
-                    group_positions=group_positions,
-                    n_merged_body=n_merged_body,
-                    has_header=has_header,
-                )
-                out.extend(resolved)
-            elif isinstance(n, int):
-                if isinstance(n, bool):
+        rows: list[int] = []
+        for value in i:
+            if isinstance(value, str):
+                rows.extend(layout.resolve_string(value))
+            elif isinstance(value, int):
+                if isinstance(value, bool):
                     raise TypeError(
                         "boolean row masks cannot mix booleans with other selector types"
                     )
-                if n < 0:
-                    raise ValueError("negative row selectors are not supported")
-                if n >= source_rows:
-                    raise ValueError(
-                        f"row selector position {n} out of range for {source_rows} source row(s)"
-                    )
-                out.extend(_map_original_to_internal([n], group_positions))
+                _validate_source_row(value, layout.source_rows)
+                rows.append(layout.source_to_display(value))
             else:
-                raise TypeError(f"unsupported element type in row list: {type(n).__name__}")
-        return canonical(out)
+                raise TypeError(f"unsupported element type in row list: {type(value).__name__}")
+        return sorted(set(rows))
 
     if isinstance(i, int):
         if isinstance(i, bool):
             raise TypeError("bad row selector type: bool")
-        if i < 0:
-            raise ValueError("negative row selectors are not supported")
-        if i >= source_rows:
-            raise ValueError(
-                f"row selector position {i} out of range for {source_rows} source row(s)"
-            )
-        return _map_original_to_internal([i], group_positions)
+        _validate_source_row(i, layout.source_rows)
+        return [layout.source_to_display(i)]
 
     raise TypeError(f"bad row selector type: {type(i).__name__}")
+
+
+def _validate_source_row(row: int, source_rows: int) -> None:
+    if row < 0:
+        raise ValueError("negative row selectors are not supported")
+    if row >= source_rows:
+        raise ValueError(
+            f"row selector position {row} out of range for {source_rows} source row(s)"
+        )
 
 
 def resolve_j(
@@ -256,9 +217,9 @@ def resolve_j(
     *,
     regex: bool = False,
 ) -> list[int]:
-    """Resolve a public column selector to 1-based internal column indices."""
+    """Resolve a public column selector to zero-based column indices."""
     if j is None:
-        return list(range(1, len(colnames) + 1))
+        return list(range(len(colnames)))
     if isinstance(j, (list, tuple)):
         result: list[int] = []
         for value in j:
@@ -267,15 +228,12 @@ def resolve_j(
                 if idx not in result:
                     result.append(idx)
         return sorted(result)
-    if isinstance(j, int):
-        return _resolve_single_j(j, colnames, regex=regex)
-    if isinstance(j, str):
+    if isinstance(j, (int, str)):
         return _resolve_single_j(j, colnames, regex=regex)
     raise TypeError(f"bad column selector: {j!r}")
 
 
 def _resolve_single_j(value: object, colnames: list[str], *, regex: bool) -> list[int]:
-    """Resolve and validate one element of a column selector."""
     if isinstance(value, bool):
         raise TypeError("column selector elements must be integers or strings, got bool")
     if isinstance(value, int):
@@ -283,12 +241,12 @@ def _resolve_single_j(value: object, colnames: list[str], *, regex: bool) -> lis
             raise ValueError(
                 f"column selector position {value} out of range for {len(colnames)} column(s)"
             )
-        return [value + 1]
+        return [value]
     if isinstance(value, str):
         if regex:
             return _resolve_regex(value, colnames)
         if value in colnames:
-            return [colnames.index(value) + 1]
+            return [colnames.index(value)]
         raise ValueError(f"column not found: {value!r}")
     raise TypeError(
         f"column selector elements must be integers or strings, got {type(value).__name__}"
@@ -299,13 +257,9 @@ def resolve_where(
     where: pl.Expr,
     *,
     data: pl.DataFrame,
-    group_positions: set[int],
+    layout: RowLayout,
 ) -> set[tuple[int, int]]:
-    """Resolve a Polars expression to internal body-cell coordinates.
-
-    Each boolean output column is matched to the source column with the same
-    name. True values select individual cells; false and null values do not.
-    """
+    """Resolve a Polars expression to final displayed cell coordinates."""
     if not isinstance(where, pl.Expr):
         raise TypeError(f"where must be a Polars expression, got {type(where).__name__}")
 
@@ -317,7 +271,7 @@ def resolve_where(
             f"where expression returned {mask.height} row(s) for a {data.height}-row table"
         )
 
-    source_positions = {name: j + 1 for j, name in enumerate(data.columns)}
+    source_positions = {name: j for j, name in enumerate(data.columns)}
     unknown = [name for name in mask.columns if name not in source_positions]
     if unknown:
         raise ValueError(
@@ -335,9 +289,8 @@ def resolve_where(
     cells: set[tuple[int, int]] = set()
     for name in mask.columns:
         selected_rows = [i for i, value in enumerate(mask[name]) if value is True]
-        internal_rows = _map_original_to_internal(selected_rows, group_positions)
-        j = source_positions[name]
-        cells.update((i, j) for i in internal_rows)
+        display_rows = [layout.source_to_display(row) for row in selected_rows]
+        cells.update((row, source_positions[name]) for row in display_rows)
     return cells
 
 
@@ -351,7 +304,7 @@ def _resolve_regex(pattern: str, colnames: list[str]) -> list[int]:
         compiled = re.compile(pattern)
     except re.error as e:
         raise ValueError(f"invalid regex pattern: {pattern!r} ({e})") from e
-    result = [k + 1 for k, c in enumerate(colnames) if compiled.search(c)]
+    result = [k for k, c in enumerate(colnames) if compiled.search(c)]
     if not result:
         raise ValueError(f"regex matched no columns: {pattern!r}")
     return result

@@ -74,13 +74,16 @@ class AsciiRenderer(Renderer):
         lines.append(sep())
 
         if built.show_colnames:
+            header_row = built.layout.header_row
+            if header_row is None:
+                raise RuntimeError("visible column names require a header row")
             header = (
                 "| "
                 + " | ".join(
                     format_cell(
                         c,
                         max_widths[i],
-                        built.style_grid.get((0, i + 1), {}).get(
+                        built.style_grid.get((header_row, i), {}).get(
                             "align", built.column_alignments[i]
                         ),
                     )
@@ -91,17 +94,18 @@ class AsciiRenderer(Renderer):
             lines.append(header)
             lines.append(sep())
 
-        for row_idx, row in enumerate(body, start=1):
+        for body_idx, row in enumerate(body):
+            display_row = built.layout.header_rows + body_idx
             line = (
                 "| "
                 + " | ".join(
                     format_cell(
                         val,
                         max_widths[i],
-                        built.style_grid.get((row_idx, i + 1), {}).get(
+                        built.style_grid.get((display_row, i), {}).get(
                             "align",
                             "l"
-                            if row_idx in built.row_group_positions
+                            if display_row in built.layout.groupi_rows
                             else built.column_alignments[i],
                         ),
                     )

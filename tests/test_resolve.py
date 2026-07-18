@@ -1,402 +1,208 @@
 import polars as pl
 import pytest
 
-from tytable._indices import _map_original_to_internal, resolve_i, resolve_j
+from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
+
+
+@pytest.fixture
+def layout():
+    return RowLayout.create(
+        source_rows=3,
+        column_group_rows=1,
+        has_header=True,
+        group_body_rows={1},
+    )
+
+
+class TestRowLayout:
+    def test_resolved_structure(self, layout):
+        assert layout.header_rows == 2
+        assert layout.body_rows == 4
+        assert layout.total_rows == 6
+        assert layout.groupj_rows == (0,)
+        assert layout.header_row == 1
+        assert layout.groupi_rows == (3,)
+        assert layout.data_rows == (2, 4, 5)
+        assert layout.first_row == 0
+        assert layout.last_row == 5
+        assert [layout.kind(row) for row in range(6)] == [
+            "groupj",
+            "header",
+            "data",
+            "groupi",
+            "data",
+            "data",
+        ]
+
+    def test_body_mapping(self, layout):
+        assert [layout.source_to_display(row) for row in range(3)] == [2, 4, 5]
+        assert [layout.body_index(row) for row in range(2, 6)] == [0, 1, 2, 3]
+
+    def test_empty_table_has_no_boundaries(self):
+        empty = RowLayout.create(
+            source_rows=0,
+            column_group_rows=0,
+            has_header=False,
+            group_body_rows=set(),
+        )
+        assert empty.first_row is None
+        assert empty.last_row is None
+        assert empty.total_rows == 0
+
+    def test_header_only_table(self):
+        header = RowLayout.create(
+            source_rows=0,
+            column_group_rows=0,
+            has_header=True,
+            group_body_rows=set(),
+        )
+        assert header.header_row == 0
+        assert header.first_row == header.last_row == 0
+
+    def test_invalid_group_layout(self):
+        with pytest.raises(ValueError, match="valid body layout"):
+            RowLayout.create(
+                source_rows=1,
+                column_group_rows=0,
+                has_header=False,
+                group_body_rows={3},
+            )
+
+    def test_invalid_display_rows(self, layout):
+        with pytest.raises(ValueError, match="not a body row"):
+            layout.body_index(0)
+        with pytest.raises(ValueError, match="outside the table"):
+            layout.kind(10)
+
+    def test_supported_row_kinds(self, layout):
+        layout.require_supported([1, 2, 3], allowed={"header", "groupi", "data"}, method="x")
+        with pytest.raises(ValueError, match=r"x cannot target.*'groupj'"):
+            layout.require_supported([0, 2], allowed={"data"}, method="x")
 
 
 class TestResolveI:
-    def test_none_selects_data(self):
-        assert resolve_i(None, nhead=1, group_positions={2}, n_merged_body=4, has_header=True) == [
-            1,
-            3,
-            4,
-        ]
+    def test_default_and_named_selectors(self, layout):
+        assert resolve_i(None, layout=layout) == [2, 4, 5]
+        assert resolve_i("data", layout=layout) == [2, 4, 5]
+        assert resolve_i("header", layout=layout) == [1]
+        assert resolve_i("groupi", layout=layout) == [3]
+        assert resolve_i("groupj", layout=layout) == [0]
+        assert resolve_i("all", layout=layout) == [0, 1, 2, 3, 4, 5]
 
-    def test_header(self):
-        assert resolve_i(
-            "header", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [0]
-        assert (
-            resolve_i("header", nhead=0, group_positions=set(), n_merged_body=3, has_header=False)
-            == []
+    def test_absent_structural_rows_are_empty(self):
+        plain = RowLayout.create(
+            source_rows=2,
+            column_group_rows=0,
+            has_header=False,
+            group_body_rows=set(),
         )
+        assert resolve_i("header", layout=plain) == []
+        assert resolve_i("groupi", layout=plain) == []
+        assert resolve_i("groupj", layout=plain) == []
 
-    def test_data(self):
-        assert resolve_i(
-            "data", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [1, 2, 3]
+    def test_source_positions_and_mixed_lists(self, layout):
+        assert resolve_i(0, layout=layout) == [2]
+        assert resolve_i(2, layout=layout) == [5]
+        assert resolve_i([2, "header", 0, 2], layout=layout) == [1, 2, 5]
+        assert resolve_i([], layout=layout) == []
 
-    def test_all(self):
-        assert resolve_i(
-            "all", nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [0, 1, 2, 3]
-
-    def test_groupi_empty(self):
-        assert (
-            resolve_i("groupi", nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
-            == []
-        )
-
-    def test_groupj_empty(self):
-        assert (
-            resolve_i("groupj", nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
-            == []
-        )
-
-    def test_groupi_with_positions(self):
-        assert resolve_i(
-            "groupi", nhead=1, group_positions={2, 5}, n_merged_body=6, has_header=True
-        ) == [2, 5]
-        assert resolve_i(
-            "data", nhead=1, group_positions={2}, n_merged_body=4, has_header=True
-        ) == [1, 3, 4]
-
-    def test_numeric(self):
-        assert resolve_i(0, nhead=1, group_positions=set(), n_merged_body=3, has_header=True) == [1]
-        assert resolve_i(2, nhead=1, group_positions=set(), n_merged_body=3, has_header=True) == [3]
-
-    def test_numeric_list(self):
-        assert resolve_i(
-            [0, 1, 2], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [1, 2, 3]
-
-    def test_numeric_maps_source_rows_past_groups(self):
-        assert resolve_i(
-            [2, 0, 2],
-            nhead=1,
-            group_positions={1, 3, 6},
-            n_merged_body=6,
-            has_header=True,
-        ) == [2, 5]
-
-    @pytest.mark.parametrize("selector", [3, 10])
-    def test_nonnegative_out_of_range_raises(self, selector):
-        with pytest.raises(ValueError, match=rf"row selector position {selector} out of range"):
-            resolve_i(
-                selector,
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=3,
-                has_header=True,
-            )
-
-    def test_out_of_range_in_mixed_list_uses_same_error(self):
-        with pytest.raises(ValueError, match="row selector position 3 out of range"):
-            resolve_i(
-                ["header", 3],
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=3,
-                has_header=True,
-            )
-
-    def test_scalar_bool_is_not_an_integer_position(self):
-        with pytest.raises(TypeError, match="bad row selector type: bool"):
-            resolve_i(
-                True,
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=3,
-                has_header=True,
-            )
-
-    def test_negative_is_not_public(self):
-        with pytest.raises(ValueError, match="negative row selectors are not supported"):
-            resolve_i(-1, nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
-
-    def test_unknown_string_raises(self):
+    @pytest.mark.parametrize("selector", [-1, 3, 10])
+    def test_bad_source_position(self, layout, selector):
         with pytest.raises(ValueError):
-            resolve_i("bogus", nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
+            resolve_i(selector, layout=layout)
+
+    @pytest.mark.parametrize("selector", [True, [0, True], "bogus", ["bogus"]])
+    def test_bad_selector(self, layout, selector):
+        with pytest.raises((TypeError, ValueError)):
+            resolve_i(selector, layout=layout)
+
+
+class TestDataDrivenRows:
+    DF = pl.DataFrame({"Score": [95, 72, 88], "Grade": ["A", "C", "B"]})
+
+    def test_expression(self, layout):
+        assert resolve_i(pl.col("Score") > 80, layout=layout, data=self.DF) == [2, 5]
+
+    def test_boolean_series(self, layout):
+        mask = pl.Series([False, True, True])
+        assert resolve_i(mask, layout=layout, data=self.DF) == [4, 5]
+
+    def test_boolean_sequence(self, layout):
+        assert resolve_i([True, False, True], layout=layout, data=self.DF) == [2, 5]
+        assert resolve_i((False, True, False), layout=layout, data=self.DF) == [4]
+
+    def test_callable(self, layout):
+        assert resolve_i(lambda row: row["Grade"] == "C", layout=layout, data=self.DF) == [4]
+
+    def test_expression_contracts(self, layout):
+        with pytest.raises(ValueError, match="one column"):
+            resolve_i(pl.all(), layout=layout, data=self.DF)
+        with pytest.raises(TypeError, match="Boolean"):
+            resolve_i(pl.col("Score"), layout=layout, data=self.DF)
+
+    def test_series_contracts(self, layout):
+        with pytest.raises(TypeError, match="Boolean dtype"):
+            resolve_i(pl.Series([1, 2, 3]), layout=layout, data=self.DF)
+        with pytest.raises(ValueError, match="length 2"):
+            resolve_i(pl.Series([True, False]), layout=layout, data=self.DF)
+
+    def test_boolean_list_contracts(self, layout):
+        with pytest.raises(ValueError, match="length 2"):
+            resolve_i([True, False], layout=layout, data=self.DF)
+        with pytest.raises(TypeError, match="cannot mix"):
+            resolve_i([True, 1, False], layout=layout, data=self.DF)
+        with pytest.raises(TypeError, match="require source data"):
+            resolve_i([True, False, True], layout=layout)
 
 
 class TestResolveJ:
     COLS = ["A", "B", "name", "value"]
 
-    def test_none(self):
-        assert resolve_j(None, self.COLS) == [1, 2, 3, 4]
+    def test_positions_names_and_lists(self):
+        assert resolve_j(None, self.COLS) == [0, 1, 2, 3]
+        assert resolve_j(2, self.COLS) == [2]
+        assert resolve_j("value", self.COLS) == [3]
+        assert resolve_j(["B", 0, "B"], self.COLS) == [0, 1]
 
-    def test_str_exact_name(self):
-        assert resolve_j("A", self.COLS) == [1]
-        assert resolve_j("value", self.COLS) == [4]
+    def test_regex(self):
+        assert resolve_j("a", self.COLS, regex=True) == [2, 3]
+        assert resolve_j(["A", "am"], self.COLS, regex=True) == [0, 2]
 
-    def test_str_regex_single(self):
-        assert resolve_j("am", self.COLS, regex=True) == [3]
+    @pytest.mark.parametrize("selector", [-1, 4, True, ["A", True], [object()]])
+    def test_invalid_selector(self, selector):
+        with pytest.raises((TypeError, ValueError)):
+            resolve_j(selector, self.COLS)
 
-    def test_str_regex_multi(self):
-        assert resolve_j("a", self.COLS, regex=True) == [3, 4]
-
-    def test_str_exact_miss_raises(self):
+    def test_missing_or_invalid_regex(self):
         with pytest.raises(ValueError, match="column not found"):
-            resolve_j("zzz", self.COLS)
-
-    def test_str_regex_no_match_raises(self):
-        with pytest.raises(ValueError, match="regex matched no columns"):
-            resolve_j("zzz", self.COLS, regex=True)
-
-    def test_str_regex_invalid_raises(self):
-        with pytest.raises(ValueError, match="invalid regex pattern"):
+            resolve_j("missing", self.COLS)
+        with pytest.raises(ValueError, match="matched no columns"):
+            resolve_j("missing", self.COLS, regex=True)
+        with pytest.raises(ValueError, match="invalid regex"):
             resolve_j("[", self.COLS, regex=True)
-
-    def test_str_regex_too_long_raises(self):
-        with pytest.raises(ValueError, match=r"501 characters \(maximum 500\)"):
+        with pytest.raises(ValueError, match="maximum 500"):
             resolve_j("a" * 501, self.COLS, regex=True)
 
-    def test_list_regex_too_long_raises(self):
-        with pytest.raises(ValueError, match="regex pattern is too long"):
-            resolve_j(["A", "a" * 501], self.COLS, regex=True)
 
-    def test_list_regex_each_element(self):
-        assert resolve_j(["am", "v"], self.COLS, regex=True) == [3, 4]
-        assert resolve_j(["A", "na"], self.COLS, regex=True) == [1, 3]
+class TestResolveWhere:
+    DF = pl.DataFrame({"a": [1, 3], "b": [2, 4]})
+    LAYOUT = RowLayout.create(
+        source_rows=2,
+        column_group_rows=0,
+        has_header=True,
+        group_body_rows={1},
+    )
 
-    def test_list_regex_no_match_raises(self):
-        with pytest.raises(ValueError, match="regex matched no columns"):
-            resolve_j(["zzz", "yyy"], self.COLS, regex=True)
+    def test_cells_use_display_coordinates(self):
+        assert resolve_where(pl.all() > 2, data=self.DF, layout=self.LAYOUT) == {(3, 0), (3, 1)}
 
-    def test_list_of_names(self):
-        assert resolve_j(["A", "B"], self.COLS) == [1, 2]
+    def test_empty_expression(self):
+        assert resolve_where(pl.exclude("a", "b"), data=self.DF, layout=self.LAYOUT) == set()
 
-    def test_list_of_ints(self):
-        assert resolve_j([0, 2], self.COLS) == [1, 3]
-
-    def test_mixed_name_and_position_list(self):
-        assert resolve_j(["A", 2], self.COLS) == [1, 3]
-
-    @pytest.mark.parametrize("selector", [-1, 4, 10])
-    def test_integer_position_out_of_range(self, selector):
-        with pytest.raises(ValueError, match=rf"column selector position {selector} out of range"):
-            resolve_j(selector, self.COLS)
-
-    def test_out_of_range_in_mixed_list_uses_same_error(self):
-        with pytest.raises(ValueError, match="column selector position 4 out of range"):
-            resolve_j(["A", 4], self.COLS)
-
-    @pytest.mark.parametrize("selector", [True, ["A", True], ["A", 1.5], [object()]])
-    def test_invalid_elements_are_rejected(self, selector):
-        with pytest.raises(TypeError, match="column selector elements must be integers or strings"):
-            resolve_j(selector, self.COLS)
-
-    def test_list_name_not_found_raises(self):
-        with pytest.raises(ValueError):
-            resolve_j(["A", "ZZZ"], self.COLS)
-
-
-class TestResolveIListOfStrings:
-    def test_single_string_in_list(self):
-        assert resolve_i(
-            ["header"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [0]
-
-    def test_mixed_strings(self):
-        result = resolve_i(
-            ["header", "data"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        )
-        assert result == [0, 1, 2, 3]
-
-    def test_groupi_and_data_are_canonical_and_deduplicated(self):
-        result = resolve_i(
-            ["groupi", "data", "groupi"],
-            nhead=1,
-            group_positions={2},
-            n_merged_body=4,
-            has_header=True,
-        )
-        assert result == [1, 2, 3, 4]
-
-    def test_empty_string_list(self):
-        assert resolve_i([], nhead=1, group_positions=set(), n_merged_body=3, has_header=True) == []
-
-    def test_unknown_string_raises(self):
-        with pytest.raises(ValueError):
-            resolve_i(["bogus"], nhead=1, group_positions=set(), n_merged_body=3, has_header=True)
-
-    def test_with_ints(self):
-        assert resolve_i(
-            ["header", 0, 1], nhead=1, group_positions=set(), n_merged_body=3, has_header=True
-        ) == [0, 1, 2]
-
-
-class TestResolveIDataDriven:
-    DF = pl.DataFrame({"Score": [95, 72, 88, 60], "Grade": ["A", "C", "B", "D"]})
-
-    def test_polars_expr(self):
-        result = resolve_i(
-            pl.col("Score") > 80,
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [1, 3]
-
-    def test_polars_expr_no_match(self):
-        result = resolve_i(
-            pl.col("Score") > 200,
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == []
-
-    def test_polars_expr_match_all(self):
-        result = resolve_i(
-            pl.col("Score") > 0,
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [1, 2, 3, 4]
-
-    def test_polars_series(self):
-        mask = pl.Series("m", [True, False, True, False])
-        result = resolve_i(
-            mask,
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [1, 3]
-
-    def test_boolean_list(self):
-        result = resolve_i(
-            [True, False, True, False],
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [1, 3]
-
-    def test_boolean_tuple(self):
-        result = resolve_i(
-            (False, True, False, True),
-            nhead=1,
-            group_positions={2, 5},
-            n_merged_body=6,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [3, 6]
-
-    @pytest.mark.parametrize("mask", [[True, 1, False, 2], [True, "header", False, 2]])
-    def test_boolean_mask_rejects_mixed_selector_types(self, mask):
-        with pytest.raises(TypeError, match="cannot mix"):
-            resolve_i(
-                mask,
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=4,
-                has_header=True,
-                data=self.DF,
-            )
-
-    def test_boolean_list_rejects_wrong_length(self):
-        with pytest.raises(ValueError, match="length 3, expected 4"):
-            resolve_i(
-                [True, False, True],
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=4,
-                has_header=True,
-                data=self.DF,
-            )
-
-    def test_polars_series_rejects_non_boolean_dtype(self):
-        with pytest.raises(TypeError, match="must have Boolean dtype"):
-            resolve_i(
-                pl.Series([1, 0, 1, 0]),
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=4,
-                has_header=True,
-                data=self.DF,
-            )
-
-    def test_polars_series_rejects_wrong_length(self):
-        with pytest.raises(ValueError, match="length 3, expected 4"):
-            resolve_i(
-                pl.Series([True, False, True]),
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=4,
-                has_header=True,
-                data=self.DF,
-            )
-
-    def test_callable(self):
-        result = resolve_i(
-            lambda row: row["Grade"] == "D",
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [4]
-
-    def test_callable_height_mismatch_ok(self):
-        """Callable filters independently; series length need not match merged body."""
-
-        def pred(row):
-            return row["Score"] % 2 == 0
-
-        result = resolve_i(
-            pred,
-            nhead=1,
-            group_positions=set(),
-            n_merged_body=4,
-            has_header=True,
-            data=self.DF,
-        )
-        assert result == [2, 3, 4]
-
-    def test_expression_skipped_when_data_is_none(self):
-        """Without data, pl.Expr/Series/callable fall through to TypeError."""
-        with pytest.raises(TypeError):
-            resolve_i(
-                pl.col("Score") > 80,
-                nhead=1,
-                group_positions=set(),
-                n_merged_body=4,
-                has_header=True,
-            )
-
-    def test_with_row_groups_maps_indices(self):
-        df = pl.DataFrame({"v": [10, 20, 30, 40]})
-        result = resolve_i(
-            pl.col("v") > 15,
-            nhead=1,
-            group_positions={2, 5},
-            n_merged_body=6,
-            has_header=True,
-            data=df,
-        )
-        assert result == [3, 4, 6]
-
-
-class TestMapOriginalToInternal:
-    def test_no_groups(self):
-        assert _map_original_to_internal([0, 1, 2], set()) == [1, 2, 3]
-
-    def test_empty_indices(self):
-        assert _map_original_to_internal([], {2, 5}) == []
-
-    def test_with_groups(self):
-        result = _map_original_to_internal([0, 1, 2, 3], {2, 5})
-        assert result == [1, 3, 4, 6]
-
-    def test_group_before_first_row(self):
-        result = _map_original_to_internal([0, 1], {1})
-        assert result == [2, 3]
-
-    def test_unsorted_indices(self):
-        result = _map_original_to_internal([3, 0, 2], {3})
-        assert result == [1, 4, 5]
+    def test_contracts(self):
+        with pytest.raises(TypeError, match="Polars expression"):
+            resolve_where(True, data=self.DF, layout=self.LAYOUT)
+        with pytest.raises(TypeError, match="boolean columns"):
+            resolve_where(pl.col("a"), data=self.DF, layout=self.LAYOUT)
+        with pytest.raises(ValueError, match="do not match source columns"):
+            resolve_where((pl.col("a") > 0).alias("unknown"), data=self.DF, layout=self.LAYOUT)

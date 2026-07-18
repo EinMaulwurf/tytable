@@ -11,7 +11,6 @@ from typing import Any
 from ._colors import color_to_css
 from ._escape import escape_html
 from ._groups import _resolve_col_group_spans
-from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._style_markup import StyleMarkup, align_to_css
@@ -47,12 +46,12 @@ def _with_default_alignment(
     return {**props, "align": alignment}
 
 
-def _build_border_map(style_lines: list[dict[str, Any]], nhead: int) -> dict[tuple[int, int], str]:
+def _build_border_map(style_lines: list[dict[str, Any]]) -> dict[tuple[int, int], str]:
     """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
     border_map: dict[tuple[int, int], str] = {}
     for entry in style_lines:
-        ti = convert_row_to_typst(entry["i"], nhead)
-        tj = convert_col_to_typst(entry["j"])
+        ti = entry["i"]
+        tj = entry["j"]
         width = entry.get("line_width", 0.1)
         line_color = color_to_css(entry.get("line_color", "black"))
         line = entry["line"]
@@ -77,7 +76,7 @@ class HtmlRenderer(Renderer):
     def render(self, built: BuiltTable) -> str:
         """Produce the full ``<table>…</table>`` HTML (colgroup, thead, tbody, tfoot)."""
         ncol = len(built.colnames_display)
-        border_map = _build_border_map(built.style_lines, built.nhead)
+        border_map = _build_border_map(built.style_lines)
         parts = [self._table_open(built)]
         self._emit_colgroup(parts, built)
         self._emit_caption(parts, built)
@@ -133,7 +132,7 @@ class HtmlRenderer(Renderer):
     ) -> None:
         """Append column-group and column-name header rows."""
         head_parts: list[str] = []
-        head_parts.extend(self._col_group_rows(built))
+        head_parts.extend(self._col_group_rows(built, border_map))
         if built.show_colnames:
             head_parts.append(self._column_name_row(built, border_map))
 
@@ -143,18 +142,18 @@ class HtmlRenderer(Renderer):
             parts.append("</thead>")
 
     @staticmethod
-    def _col_group_rows(built: BuiltTable) -> list[str]:
+    def _col_group_rows(built: BuiltTable, border_map: dict[tuple[int, int], str]) -> list[str]:
         """Build HTML rows for resolved column-group spans."""
         rows: list[str] = []
-        for cg_row in built.col_groups:
+        for display_row, cg_row in enumerate(built.col_groups):
             cells: list[str] = []
-            for label, _start, span in _resolve_col_group_spans(cg_row):
-                if not label:
-                    cells.append("<th></th>")
-                    continue
-                escaped = escape_html(label)
+            for label, start, span in _resolve_col_group_spans(cg_row):
+                escaped = escape_html(label) if label else ""
                 colspan = f' colspan="{span}"' if span > 1 else ""
-                cells.append(f'<th{colspan} style="text-align:center">{escaped}</th>')
+                props = {"align": "c", **built.style_grid.get((display_row, start), {})}
+                style = _build_cell_style(props, border_map.get((display_row, start), ""))
+                style_attr = f' style="{style}"' if style else ""
+                cells.append(f"<th{colspan}{style_attr}>{escaped}</th>")
             rows.append(f"<tr>{' '.join(cells)}</tr>")
         return rows
 
@@ -162,13 +161,14 @@ class HtmlRenderer(Renderer):
     def _column_name_row(built: BuiltTable, border_map: dict[tuple[int, int], str]) -> str:
         """Build the styled column-name header row."""
         cells: list[str] = []
-        ti = convert_row_to_typst(0, built.nhead)
+        display_row = built.layout.header_row
+        if display_row is None:
+            return ""
         for j, colname in enumerate(built.colnames_display):
-            j_internal = j + 1
             cell_props = _with_default_alignment(
-                built.style_grid.get((0, j_internal), {}), built.column_alignments[j]
+                built.style_grid.get((display_row, j), {}), built.column_alignments[j]
             )
-            border_css = border_map.get((ti, j), "")
+            border_css = border_map.get((display_row, j), "")
             style = _build_cell_style(cell_props, border_css)
             cells.append(HtmlRenderer._cell("th", colname, style))
         return f"<tr>{' '.join(cells)}</tr>"
@@ -183,20 +183,19 @@ class HtmlRenderer(Renderer):
         parts.append("<tbody>")
         covered = compute_covered_cells(built.style_grid)
         for r, row in enumerate(built.data_body):
-            i_internal = r + 1
+            display_row = built.layout.header_rows + r
             cells: list[str] = []
             for c, val in enumerate(row):
-                j_internal = c + 1
-                if (i_internal, j_internal) in covered:
+                if (display_row, c) in covered:
                     continue
+                is_group = display_row in built.layout.groupi_rows
                 cell_props = _with_default_alignment(
-                    built.style_grid.get((i_internal, j_internal), {}),
+                    built.style_grid.get((display_row, c), {}),
                     built.column_alignments[c],
-                    row_group=i_internal in built.row_group_positions,
+                    row_group=is_group,
                 )
-                ti = convert_row_to_typst(i_internal, built.nhead)
-                style = _build_cell_style(cell_props, border_map.get((ti, c), ""))
-                if i_internal in built.row_group_positions and not style:
+                style = _build_cell_style(cell_props, border_map.get((display_row, c), ""))
+                if is_group and not style:
                     style = "font-weight:bold;background-color:#f0f0f0"
                 attrs = HtmlRenderer._span_attrs(cell_props)
                 cells.append(HtmlRenderer._cell("td", val, style, attrs))

@@ -18,6 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   DataFrame rows; remove negative indices and the ambiguous `i="body"` / `i="~groupi"` names.
   Resolved row and column selections are deduplicated into canonical displayed row-major order,
   including targeted notes and media cardinality.
+- Reject structural row kinds that a content operation cannot represent instead of silently
+  ignoring them. Styling still supports the whole grid; formatting and targeted notes support
+  data, row-group, and column-name rows; plots and images support data and row-group rows.
 - Resolve every `j` selector against the original DataFrame column names. Display labels assigned
   by `.set_name()` or `colnames_override` are now presentation-only, so renaming headers cannot
   change which columns later directives select and duplicate or empty display labels remain

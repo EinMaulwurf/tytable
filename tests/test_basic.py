@@ -102,14 +102,13 @@ class TestByteExact:
     def test_render_does_not_mutate_resolution_state(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         t = tt(df)
-        state = (len(t._style_directives), len(t._format_directives), t._nhead)
+        state = (len(t._style_directives), len(t._format_directives))
 
         first = t.render("typst")
         second = t.render("typst")
 
         assert first == second
-        assert (len(t._style_directives), len(t._format_directives), t._nhead) == state
-        assert t._n_merged_body_rows == 0
+        assert (len(t._style_directives), len(t._format_directives)) == state
 
     def test_pristine_data(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
@@ -232,17 +231,17 @@ class TestDefaultAlignment:
         table = tt(pl.DataFrame({"number": [123]})).theme_plain().style(j="number", align="l")
         built = build(table, "typst")
 
-        assert (0, 1) not in built.style_grid
-        assert built.style_grid[(1, 1)]["align"] == "l"
+        assert (0, 0) not in built.style_grid
+        assert built.style_grid[(1, 0)]["align"] == "l"
         assert '<td style="text-align:left">123</td>' in table.render("html")
         assert "| 123    |" in table.render("ascii")
 
     def test_numeric_row_group_label_stays_left_aligned(self):
         table = tt(pl.DataFrame({"number": [1, 2]})).theme_plain().group(i={"Group": 0})
         built = build(table, "typst")
-        group_row = next(iter(built.row_group_positions))
+        group_row = built.layout.groupi_rows[0]
 
-        assert built.style_grid[(group_row, 1)]["align"] == "l"
+        assert built.style_grid[(group_row, 0)]["align"] == "l"
 
 
 @pytest.mark.typst

@@ -16,7 +16,6 @@ from ._colors import color_to_typst
 from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
 from ._groups import _resolve_col_group_spans
-from ._indices import convert_col_to_typst, convert_row_to_typst
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._style_markup import StyleMarkup
@@ -243,13 +242,12 @@ class TypstRenderer(Renderer):
         """Append visible table body cells, including span declarations."""
         covered = compute_covered_cells(built.style_grid)
         for r, row in enumerate(built.data_body):
-            i_internal = r + 1
+            display_row = built.layout.header_rows + r
             parts = []
             for c, val in enumerate(row):
-                j_internal = c + 1
-                if (i_internal, j_internal) in covered:
+                if (display_row, c) in covered:
                     continue
-                span_props = built.style_grid.get((i_internal, j_internal), {})
+                span_props = built.style_grid.get((display_row, c), {})
                 colspan = span_props.get("colspan", 1)
                 rowspan = span_props.get("rowspan", 1)
                 args = []
@@ -380,8 +378,8 @@ class TypstRenderer(Renderer):
         vlines: dict[tuple[int, str], set[int]] = {}
 
         for entry in built.style_lines:
-            ti = convert_row_to_typst(entry["i"], built.nhead)
-            tj = convert_col_to_typst(entry["j"])
+            ti = entry["i"]
+            tj = entry["j"]
             width = entry.get("line_width", 0.1)
             line_color = entry.get("line_color", "black")
             color_expr = color_to_typst(line_color)
@@ -422,9 +420,7 @@ class TypstRenderer(Renderer):
             sig = _props_to_signature(props)
             if not sig:
                 continue
-            ti = convert_row_to_typst(i, built.nhead)
-            tj = j - 1
-            styled.append((ti, tj, sig))
+            styled.append((i, j, sig))
 
         sig_to_idx: dict[str, int] = {}
         coord_entries: list[tuple[int, int, int]] = []

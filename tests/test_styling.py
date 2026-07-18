@@ -231,7 +231,7 @@ class TestAppendVsOverwrite:
     def test_non_line_props_overwrite(self):
         t = tt(DF).theme_plain().style(i=0, j=0, bold=True).style(i=0, j=0, bold=False)
         built = build(t, "typst")
-        assert built.style_grid[(1, 1)] == {"bold": False}
+        assert built.style_grid[(1, 0)] == {"bold": False}
 
     def test_line_props_append(self):
         t = tt(DF).theme_plain().style(i=0, j=0, line="t").style(i=0, j=0, line="l")
@@ -669,8 +669,8 @@ class TestCellSelectors:
         )
 
         assert built.style_grid == {
-            (1, 2): {"bold": True},
-            (2, 3): {"bold": True},
+            (1, 1): {"bold": True},
+            (2, 2): {"bold": True},
         }
 
     def test_without_where_keeps_row_column_cross_product(self):
@@ -682,8 +682,8 @@ class TestCellSelectors:
         )
 
         assert built.style_grid == {
+            (1, 1): {"bold": True},
             (1, 2): {"bold": True},
-            (1, 3): {"bold": True},
         }
 
     def test_where_intersects_i_and_j(self):
@@ -700,7 +700,7 @@ class TestCellSelectors:
             "typst",
         )
 
-        assert built.style_grid == {(2, 3): {"bold": True}}
+        assert built.style_grid == {(2, 2): {"bold": True}}
 
     def test_where_does_not_select_headers(self):
         built = build(
@@ -719,7 +719,7 @@ class TestCellSelectors:
             "typst",
         )
 
-        assert built.style_grid == {(1, 2): {"bold": True}}
+        assert built.style_grid == {(1, 1): {"bold": True}}
 
     def test_where_maps_rows_past_row_groups(self):
         built = build(
@@ -730,9 +730,9 @@ class TestCellSelectors:
             "typst",
         )
 
-        assert built.style_grid[(1, 2)] == {"bold": True}
-        assert built.style_grid[(3, 3)] == {"bold": True}
-        assert (2, 3) not in built.style_grid
+        assert built.style_grid[(1, 1)] == {"bold": True}
+        assert built.style_grid[(3, 2)] == {"bold": True}
+        assert (2, 2) not in built.style_grid
 
     def test_where_filters_line_directives(self):
         built = build(
@@ -740,7 +740,7 @@ class TestCellSelectors:
             "typst",
         )
 
-        assert [(line["i"], line["j"]) for line in built.style_lines] == [(1, 2), (2, 3)]
+        assert [(line["i"], line["j"]) for line in built.style_lines] == [(1, 1), (2, 2)]
 
     def test_where_null_and_no_matches_are_ignored(self):
         df = pl.DataFrame({"x": [None, 50, 100], "label": ["a", "b", "c"]})
@@ -805,47 +805,47 @@ class TestPerColumnAlign:
     def test_align_j_list(self):
         t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], align="lcr")
         built = build(t, "typst")
-        assert built.style_grid[(1, 1)]["align"] == "l"
-        assert built.style_grid[(1, 2)]["align"] == "c"
-        assert built.style_grid[(1, 3)]["align"] == "r"
+        assert built.style_grid[(1, 0)]["align"] == "l"
+        assert built.style_grid[(1, 1)]["align"] == "c"
+        assert built.style_grid[(1, 2)]["align"] == "r"
 
     def test_align_all_rows(self):
         t = tt(self.DF3).theme_plain().style(j=[0, 1, 2], align="lcr")
         built = build(t, "typst")
         for i in (1, 2):
-            assert built.style_grid[(i, 1)]["align"] == "l"
-            assert built.style_grid[(i, 2)]["align"] == "c"
-            assert built.style_grid[(i, 3)]["align"] == "r"
-        assert (0, 1) not in built.style_grid
+            assert built.style_grid[(i, 0)]["align"] == "l"
+            assert built.style_grid[(i, 1)]["align"] == "c"
+            assert built.style_grid[(i, 2)]["align"] == "r"
+        assert (0, 0) not in built.style_grid
 
     def test_alignv_j_list(self):
         t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], alignv="tmb")
         built = build(t, "typst")
-        assert built.style_grid[(1, 1)]["alignv"] == "t"
-        assert built.style_grid[(1, 2)]["alignv"] == "m"
-        assert built.style_grid[(1, 3)]["alignv"] == "b"
+        assert built.style_grid[(1, 0)]["alignv"] == "t"
+        assert built.style_grid[(1, 1)]["alignv"] == "m"
+        assert built.style_grid[(1, 2)]["alignv"] == "b"
 
     def test_align_implicit_all_columns(self):
         t = tt(self.DF3).theme_plain().style(i=0, align="lcr")
         built = build(t, "typst")
-        assert built.style_grid[(1, 1)]["align"] == "l"
-        assert built.style_grid[(1, 2)]["align"] == "c"
-        assert built.style_grid[(1, 3)]["align"] == "r"
+        assert built.style_grid[(1, 0)]["align"] == "l"
+        assert built.style_grid[(1, 1)]["align"] == "c"
+        assert built.style_grid[(1, 2)]["align"] == "r"
 
     def test_align_single_value_broadcasts(self):
         t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], align="r")
         built = build(t, "typst")
-        for j in (1, 2, 3):
+        for j in (0, 1, 2):
             assert built.style_grid[(1, j)]["align"] == "r"
 
     def test_align_and_alignv_per_column(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         t = tt(df).theme_plain().style(i=0, j=[0, 1], align="lr", alignv="tm")
         built = build(t, "typst")
-        assert built.style_grid[(1, 1)]["align"] == "l"
-        assert built.style_grid[(1, 1)]["alignv"] == "t"
-        assert built.style_grid[(1, 2)]["align"] == "r"
-        assert built.style_grid[(1, 2)]["alignv"] == "m"
+        assert built.style_grid[(1, 0)]["align"] == "l"
+        assert built.style_grid[(1, 0)]["alignv"] == "t"
+        assert built.style_grid[(1, 1)]["align"] == "r"
+        assert built.style_grid[(1, 1)]["alignv"] == "m"
 
     def test_align_length_mismatch_raises(self):
         with pytest.raises(ValueError, match="3 chars but 2 column"):

@@ -9,6 +9,15 @@ DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
 @pytest.mark.typst
 class TestThemeDefault:
+    def test_empty_table_styles_only_visible_header_boundaries(self):
+        from tytable._resolve import build
+
+        built = build(tt(pl.DataFrame(schema={"A": pl.Int64})), "typst")
+        assert [(line["i"], line["line"], line["line_width"]) for line in built.style_lines] == [
+            (0, "t", 0.08),
+            (0, "b", 0.05),
+        ]
+
     def test_booktab_rules(self):
         out = tt(DF).render("typst")
         assert out.count("table.hline") == 3
@@ -67,7 +76,7 @@ class TestThemeGrid:
         table = tt(DF).group(i={"group": 1}).group(j={"all": ["A", "B"]}).theme_grid()
         built = build(table, "typst")
         assert {(line["i"], line["j"]) for line in built.style_lines} == {
-            (i, j) for i in (-1, 0, 1, 2, 3) for j in (1, 2)
+            (i, j) for i in range(5) for j in range(2)
         }
 
 

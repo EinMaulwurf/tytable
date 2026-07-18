@@ -142,7 +142,7 @@ class TestSetNameSelectorSemantics:
             "typst",
         )
         assert before.style_grid == after.style_grid
-        assert before.style_grid[(1, 1)]["bold"] is True
+        assert before.style_grid[(1, 0)]["bold"] is True
         assert (1, 2) not in before.style_grid
 
     def test_display_name_is_not_a_selector(self):
@@ -176,7 +176,7 @@ class TestSetNameSelectorSemantics:
             tt(df).theme_plain().set_name(name=["", ""]).style(j="^revenue", regex=True, bold=True),
             "typst",
         )
-        assert built.style_grid[(1, 1)]["bold"] is True
+        assert built.style_grid[(1, 0)]["bold"] is True
         assert (1, 2) not in built.style_grid
 
     def test_notes_use_source_names_with_duplicate_labels(self):
@@ -222,8 +222,8 @@ class TestSetNameSelectorSemantics:
             tt(self.DF).theme_plain().set_name(name=["", ""]).style(j=1, bold=True),
             "typst",
         )
-        assert built.style_grid[(1, 2)]["bold"] is True
-        assert (1, 1) not in built.style_grid
+        assert built.style_grid[(1, 1)]["bold"] is True
+        assert (1, 0) not in built.style_grid
 
 
 @pytest.mark.typst

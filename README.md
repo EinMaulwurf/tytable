@@ -68,6 +68,9 @@ whole document.
   DataFrame positions, even after row groups are inserted. Omitting `i` (or
   using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`,
   `i="groupj"`, or `i="all"` for explicit structural selections.
+  Styling supports every grid row. Formatting and targeted notes support data,
+  row-group, and column-name rows; plots and images support data and row-group
+  rows. Unsupported structural targets raise a clear error when rendered.
 - **Column selection**: use original DataFrame names (`j="Score"`) or 0-based
   positions (`j=0`); display names are presentation-only.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()`

@@ -254,6 +254,13 @@ or writing `i="data"` explicitly, selects every genuine source-data row. Use
 `i="groupj"` for all column-group rows, and `i="all"` for the complete grid.
 Negative public row indices are not supported.
 
+The selector vocabulary is shared, but each operation accepts only rows whose
+content it can represent. `.style()` supports every grid row. `.fmt()` and
+targeted notes support data rows, row-group separators, and the column-name
+header. `.plot()` and `.images()` support data and row-group rows. Selecting an
+unsupported row kind raises a targeted error during rendering instead of being
+silently ignored.
+
 == Select columns by name
 
 `j="Score"` is the preferred form; `j=0` selects the first column by position.
@@ -1259,8 +1266,8 @@ boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is
 evaluated against the original DataFrame. Masks must be Boolean and have
 exactly one entry per source row; a boolean mask cannot mix booleans with
 integer selectors. Matching source rows are mapped around inserted row-group
-separators. Thus use an integer for a final visible row, or a predicate/mask
-when the target is an original data row. `where` is also evaluated against the
+separators. Thus use an integer for a stable source-row position, or a predicate/mask
+when the target depends on source data values. `where` is also evaluated against the
 original DataFrame; it must return Boolean columns with original source-column
 names and the source row count. Its true cells are intersected with `i` and
 `j`, and it cannot target synthetic headers, group rows, captions, or notes.

@@ -1,50 +1,56 @@
-"""Built-in, replaceable base appearances.
-
-Themes are resolved against the semantic table structure during ``build()``.
-They therefore never become ordinary user directives and explicit ``style()``
-calls always take precedence, regardless of call order.
-"""
+"""Built-in base appearances resolved directly against the final row layout."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
-
-from ._indices import _BoundaryRow
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
+    from ._indices import RowLayout
     from ._tytable import TyTable
 
 BaseTheme = Literal["default", "plain", "striped", "grid"]
 
 
-def apply_base_theme(table: TyTable) -> None:
-    """Record the selected base appearance on an isolated build-time table."""
+def apply_base_theme(
+    table: TyTable,
+    layout: RowLayout,
+    ncols: int,
+    grid: dict[tuple[int, int], dict[str, Any]],
+    lines: list[dict[str, Any]],
+) -> None:
+    """Seed resolved base styles before explicit user directives are applied."""
     if table._theme == "plain":
         return
     if table._theme == "striped":
-        even_source_rows = list(range(0, table._data.height, 2))
-        if even_source_rows:
-            table._deferred_style(i=even_source_rows, background="#ededed")
+        for row in layout.data_rows[::2]:
+            for col in range(ncols):
+                grid.setdefault((row, col), {})["background"] = "#ededed"
         return
     if table._theme == "grid":
         table._typst_opts.grid_stroke = "(paint: black)"
-        table._deferred_style(i="all", line="tblr", line_color="black", line_width=0.05)
+        for row in range(layout.total_rows):
+            _add_line(lines, row, range(ncols), "tblr", 0.05)
         return
 
-    # The default appearance follows actual rendered boundaries.  The private
-    # boundary selectors are semantic identities resolved only after grouping.
-    last = table._n_merged_body_rows
-    if last:
-        table._deferred_style(i=_BoundaryRow("last"), line="b", line_color="black", line_width=0.08)
-    if table._col_group_rows:
-        table._deferred_style(
-            i=_BoundaryRow("first"), line="t", line_color="black", line_width=0.08
+    if layout.body_rows and layout.last_row is not None:
+        _add_line(lines, layout.last_row, range(ncols), "b", 0.08)
+    if layout.first_row is not None:
+        _add_line(lines, layout.first_row, range(ncols), "t", 0.08)
+    if layout.header_row is not None:
+        _add_line(lines, layout.header_row, range(ncols), "b", 0.05)
+
+
+def _add_line(
+    lines: list[dict[str, Any]], row: int, columns: range, sides: str, width: float
+) -> None:
+    for col in columns:
+        lines.append(
+            {
+                "i": row,
+                "j": col,
+                "line": sides,
+                "line_color": "black",
+                "line_width": width,
+                "line_trim": None,
+            }
         )
-    elif table._show_colnames:
-        table._deferred_style(i="header", line="t", line_color="black", line_width=0.08)
-    elif last:
-        table._deferred_style(
-            i=_BoundaryRow("first"), line="t", line_color="black", line_width=0.08
-        )
-    if table._show_colnames:
-        table._deferred_style(i="header", line="b", line_color="black", line_width=0.05)

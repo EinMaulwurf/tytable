@@ -18,6 +18,7 @@ from ._indices import resolve_i
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
+    from ._indices import RowLayout
     from ._tytable import TyTable
 
 StaticImagePolicy: TypeAlias = Literal["copy", "reference", "embed"]
@@ -273,10 +274,7 @@ def execute_plots(
     output: str,
     *,
     media_context: MediaContext | None,
-    nhead: int,
-    has_header: bool,
-    n_merged_body: int,
-    group_positions: set[int],
+    layout: RowLayout,
 ) -> set[tuple[int, int]]:
     """Run generated-plot and static-image directives, writing image markup in place.
 
@@ -295,25 +293,17 @@ def execute_plots(
 
         i_vals = resolve_i(
             d.i,
-            nhead=nhead,
-            group_positions=group_positions,
-            n_merged_body=n_merged_body,
-            has_header=has_header,
+            layout=layout,
             data=table._data,
         )
-        body_rows = [i for i in i_vals if i > 0]
+        method = ".images()" if isinstance(d, ImageDirective) else ".plot()"
+        layout.require_supported(i_vals, allowed={"groupi", "data"}, method=method)
         j_vals = table._resolve_j(d.j, regex=d.regex)
 
-        target_cells = [
-            (i - 1, j - 1)
-            for i in body_rows
-            for j in j_vals
-            if i <= len(data_body) and j <= len(data_body[i - 1])
-        ]
+        target_cells = [(i, layout.body_index(i), j) for i in i_vals for j in j_vals]
         supplied = d.images if isinstance(d, ImageDirective) else d.data
         if supplied is not None and len(supplied) != len(target_cells):
             argument = "paths" if isinstance(d, ImageDirective) else "data"
-            method = ".images()" if isinstance(d, ImageDirective) else ".plot()"
             raise ValueError(
                 f"{method} {argument} has {len(supplied)} item(s), but the resolved "
                 f"selection contains {len(target_cells)} cell(s)"
@@ -327,7 +317,7 @@ def execute_plots(
 
         height = _height_to_float(d.height)
 
-        for total_idx, (body_row, col_idx) in enumerate(target_cells):
+        for total_idx, (display_row, body_row, col_idx) in enumerate(target_cells):
             cell_context = (
                 f"{'.images()' if isinstance(d, ImageDirective) else '.plot()'} directive "
                 f"{rank + 1}, selected cell (row={body_row}, column={col_idx})"
@@ -367,7 +357,7 @@ def execute_plots(
                             image_format,
                         )
                 data_body[body_row][col_idx] = cell_str
-                image_cells.add((body_row, col_idx))
+                image_cells.add((display_row, col_idx))
             else:
                 entry = d.data[total_idx] if d.data is not None else typed_body[body_row][col_idx]
 
@@ -447,6 +437,6 @@ def execute_plots(
                         d.height_px,
                     )
                 data_body[body_row][col_idx] = cell_str
-                image_cells.add((body_row, col_idx))
+                image_cells.add((display_row, col_idx))
 
     return image_cells

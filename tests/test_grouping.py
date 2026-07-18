@@ -48,7 +48,7 @@ class TestRowGroups:
     def test_row_groups_from_run_length_list(self):
         df = pl.DataFrame({"value": [1, 2, 3, 4, 5]})
         built = build(tt(df).theme_plain().group(i=["A", "A", "B", "B", "C"]), "typst")
-        assert built.row_group_positions == {1: "A", 4: "B", 7: "C"}
+        assert built.layout.groupi_rows == (1, 4, 7)
         assert [row[0] for row in built.data_body] == ["A", "1", "2", "B", "3", "4", "C", "5"]
 
 
@@ -57,7 +57,7 @@ class TestRowGroupPositionFormula:
     def test_position_shift(self):
         df = pl.DataFrame({"a": [1, 2, 3, 4, 5], "b": [6, 7, 8, 9, 10]})
         built = build(tt(df).group(i={"G1": 1, "G2": 3}), "typst")
-        assert built.nhead == 1
+        assert built.layout.header_rows == 1
         assert len(built.data_body) == 7
         assert built.data_body[1][0] == "G1"
         assert built.data_body[4][0] == "G2"
@@ -103,26 +103,26 @@ class TestColumnGroups:
 
 
 @pytest.mark.typst
-class TestNhead:
-    def test_nhead_no_groups(self):
+class TestHeaderRows:
+    def test_no_groups(self):
         built = build(tt(DF), "typst")
-        assert built.nhead == 1
+        assert built.layout.header_rows == 1
 
-    def test_nhead_one_col_group(self):
+    def test_one_col_group(self):
         built = build(tt(DF).group(j={"G": [0, 1]}), "typst")
-        assert built.nhead == 2
+        assert built.layout.header_rows == 2
 
-    def test_nhead_two_col_groups(self):
+    def test_two_col_groups(self):
         built = build(tt(DF).group(j={"G": [0, 1]}).group(j={"T": [0, 1]}), "typst")
-        assert built.nhead == 3
+        assert built.layout.header_rows == 3
 
-    def test_nhead_no_colnames_with_col_groups(self):
+    def test_no_colnames_with_col_groups(self):
         built = build(tt(DF, colnames=False).group(j={"G": [0, 1]}), "typst")
-        assert built.nhead == 1
+        assert built.layout.header_rows == 1
 
-    def test_nhead_no_colnames_no_groups(self):
+    def test_no_colnames_no_groups(self):
         built = build(tt(DF, colnames=False), "typst")
-        assert built.nhead == 0
+        assert built.layout.header_rows == 0
 
     def test_groupj_hits_every_column_group_level(self):
         built = build(
@@ -132,9 +132,8 @@ class TestNhead:
             .style(i="groupj", bold=True),
             "typst",
         )
-        assert (-1, 1) in built.style_grid
-        assert built.style_grid[(-1, 1)].get("bold") is True
-        assert built.style_grid[(-2, 1)].get("bold") is True
+        assert built.style_grid[(0, 0)].get("bold") is True
+        assert built.style_grid[(1, 0)].get("bold") is True
 
 
 @pytest.mark.typst
@@ -152,9 +151,8 @@ class TestCombinedGroups:
             tt(df).group(j={"H": [0, 1]}).group(i={"G": 2}).style(i="groupi", bold=True),
             "typst",
         )
-        row_positions = list(built.row_group_positions.keys())
-        for pos in row_positions:
-            assert built.style_grid[(pos, 1)].get("bold") is True
+        assert built.layout.groupi_rows == (4,)
+        assert built.style_grid[(4, 0)].get("bold") is True
 
 
 @pytest.mark.typst
@@ -251,7 +249,7 @@ class TestGroupValidation:
     def test_empty_column_group_spec_is_a_noop(self):
         built = build(tt(DF).group(j={}), "typst")
         assert built.col_groups == []
-        assert built.nhead == 1
+        assert built.layout.header_rows == 1
 
 
 @pytest.mark.typst

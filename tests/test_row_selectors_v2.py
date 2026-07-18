@@ -14,12 +14,12 @@ def grouped_table():
 def test_omitted_style_selector_targets_only_source_data():
     built = build(grouped_table().style(background="gray"), "typst")
     assert {cell for cell, props in built.style_grid.items() if props.get("background")} == {
+        (2, 0),
         (2, 1),
-        (2, 2),
+        (4, 0),
         (4, 1),
-        (4, 2),
+        (5, 0),
         (5, 1),
-        (5, 2),
     }
 
 
@@ -28,7 +28,7 @@ def test_all_explicitly_includes_headers_and_synthetic_rows():
         grouped_table().group(j={"columns": ["a", "b"]}).style(i="all", bold=True),
         "typst",
     )
-    assert {i for i, _ in built.style_grid} == {-1, 0, 1, 2, 3, 4, 5, 6}
+    assert {i for i, _ in built.style_grid} == set(range(8))
 
 
 @pytest.mark.parametrize("method", ["style", "fmt", "images"])
@@ -36,8 +36,8 @@ def test_integer_selectors_keep_source_identity_past_groups(method):
     table = grouped_table()
     if method == "style":
         built = build(table.style(i=1, j="a", bold=True), "typst")
-        assert built.style_grid[(4, 1)]["bold"] is True
-        assert (2, 1) not in built.style_grid
+        assert built.style_grid[(4, 0)]["bold"] is True
+        assert (2, 0) not in built.style_grid
     elif method == "fmt":
         built = build(table.fmt(i=1, j="a", replace={20: "selected"}), "typst")
         assert built.data_body[3][0] == "selected"
@@ -59,6 +59,35 @@ def test_repeated_rows_and_columns_are_deduplicated_in_display_order():
     )
     assert built.data_body[1] == ["[image]", "[image]"]
     assert built.data_body[4] == ["[image]", "[image]"]
+
+
+@pytest.mark.parametrize(
+    ("operation", "match"),
+    [
+        (lambda table: table.fmt(i="groupj", replace=True), r"\.fmt\(\).*'groupj'"),
+        (
+            lambda table: table.images(i="header", j="a", paths=["one.png"]),
+            r"\.images\(\).*'header'",
+        ),
+        (
+            lambda table: table.plot(i="header", j="a", fun=lambda value: value),
+            r"\.plot\(\).*'header'",
+        ),
+    ],
+)
+def test_content_operations_reject_unsupported_row_kinds(operation, match):
+    table = operation(tt(DF).theme_plain().group(j={"columns": ["a", "b"]}))
+    with pytest.raises(ValueError, match=match):
+        build(table, "ascii")
+
+
+def test_targeted_notes_reject_column_group_rows():
+    table = tt(
+        DF,
+        notes=[{"text": "not representable", "i": "groupj", "j": "a"}],
+    ).group(j={"columns": ["a", "b"]})
+    with pytest.raises(ValueError, match="targeted notes.*'groupj'"):
+        build(table, "typst")
 
 
 def test_targeted_note_defaults_missing_axis_to_data_region():

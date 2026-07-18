@@ -15,6 +15,7 @@ from ._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
     from ._directives import FormatDirective
+    from ._indices import RowLayout
     from ._tytable import TyTable
 
 Cell = tuple[int, int]
@@ -114,40 +115,37 @@ def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
 def _resolve_target_cells(
     i_vals: list[int],
     j_vals: list[int],
-    data_body: list[list[str]],
-    colnames_display: list[str],
+    layout: RowLayout,
 ) -> list[Cell]:
-    """Translate resolved table coordinates into body/header cell coordinates."""
-    target_cells: list[Cell] = []
-    for i_idx in i_vals:
-        if i_idx == 0:
-            target_cells.extend(
-                (-1, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(colnames_display)
-            )
-            continue
-        row_idx = i_idx - 1
-        if row_idx < 0 or row_idx >= len(data_body):
-            continue
-        target_cells.extend(
-            (row_idx, j_idx - 1) for j_idx in j_vals if 0 < j_idx <= len(data_body[row_idx])
-        )
-    return target_cells
+    """Return final display coordinates supported by value formatting."""
+    layout.require_supported(i_vals, allowed={"header", "groupi", "data"}, method=".fmt()")
+    return [(row, col) for row in i_vals for col in j_vals]
 
 
-def _typed_value(cell: Cell, typed_body: list[list[Any]], colnames: list[str]) -> object | None:
+def _typed_value(
+    cell: Cell, typed_body: list[list[Any]], colnames: list[str], layout: RowLayout
+) -> object | None:
     """Return the original typed value for a body or header cell."""
-    row_idx, col_idx = cell
-    if row_idx == -1:
+    display_row, col_idx = cell
+    if display_row == layout.header_row:
         return colnames[col_idx]
+    row_idx = layout.body_index(display_row)
     if row_idx < len(typed_body) and col_idx < len(typed_body[row_idx]):
         return typed_body[row_idx][col_idx]
     return None
 
 
-def _cell_value(cell: Cell, data_body: list[list[str]], colnames_display: list[str]) -> str:
+def _cell_value(
+    cell: Cell,
+    data_body: list[list[str]],
+    colnames_display: list[str],
+    layout: RowLayout,
+) -> str:
     """Read the current rendered value of a body or header cell."""
-    row_idx, col_idx = cell
-    return colnames_display[col_idx] if row_idx == -1 else data_body[row_idx][col_idx]
+    display_row, col_idx = cell
+    if display_row == layout.header_row:
+        return colnames_display[col_idx]
+    return data_body[layout.body_index(display_row)][col_idx]
 
 
 def _set_cell_value(
@@ -155,13 +153,14 @@ def _set_cell_value(
     value: object,
     data_body: list[list[str]],
     colnames_display: list[str],
+    layout: RowLayout,
 ) -> None:
     """Set the rendered value of a body or header cell."""
-    row_idx, col_idx = cell
-    if row_idx == -1:
+    display_row, col_idx = cell
+    if display_row == layout.header_row:
         colnames_display[col_idx] = str(value)
     else:
-        data_body[row_idx][col_idx] = str(value)
+        data_body[layout.body_index(display_row)][col_idx] = str(value)
 
 
 def _apply_digits(
@@ -172,6 +171,7 @@ def _apply_digits(
     colnames_display: list[str],
     colnames: list[str],
     output: str,
+    layout: RowLayout,
 ) -> dict[Cell, str]:
     """Apply numeric formatting and return any generated backend markup."""
     if directive.digits is None:
@@ -183,14 +183,14 @@ def _apply_digits(
     formatter = formatters.get(directive.num_fmt or "decimal", _fmt_numeric_decimal)
     generated_markup: dict[Cell, str] = {}
     for cell in cells:
-        typed_val = _typed_value(cell, typed_body, colnames)
+        typed_val = _typed_value(cell, typed_body, colnames, layout)
         if _is_numeric_typed(typed_val):
             if directive.num_fmt == "scientific":
                 formatted = _fmt_numeric_scientific(typed_val, directive.digits, output)
                 generated_markup[cell] = formatted
             else:
                 formatted = formatter(typed_val, directive.digits)
-            _set_cell_value(cell, formatted, data_body, colnames_display)
+            _set_cell_value(cell, formatted, data_body, colnames_display, layout)
     return generated_markup
 
 
@@ -199,6 +199,7 @@ def _apply_fn(
     directive: FormatDirective,
     data_body: list[list[str]],
     colnames_display: list[str],
+    layout: RowLayout,
 ) -> None:
     """Apply a column-wise transform to the selected cells."""
     if directive.fn is None:
@@ -208,14 +209,14 @@ def _apply_fn(
         col_to_rows.setdefault(col_idx, []).append(row_idx)
     for col_idx, rows in col_to_rows.items():
         column_cells = [(row_idx, col_idx) for row_idx in sorted(rows)]
-        values = [_cell_value(cell, data_body, colnames_display) for cell in column_cells]
+        values = [_cell_value(cell, data_body, colnames_display, layout) for cell in column_cells]
         result = directive.fn(values)
         if not isinstance(result, Sequence) or isinstance(result, (str, bytes)):
             raise TypeError(f"fn() must return a non-string sequence, got {type(result).__name__}")
         if len(result) != len(values):
             raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
         for cell, value in zip(column_cells, result, strict=True):
-            _set_cell_value(cell, value, data_body, colnames_display)
+            _set_cell_value(cell, value, data_body, colnames_display, layout)
 
 
 def _apply_replacements(
@@ -225,17 +226,18 @@ def _apply_replacements(
     typed_body: list[list[Any]],
     colnames_display: list[str],
     colnames: list[str],
+    layout: RowLayout,
 ) -> None:
     """Apply replacement rules to the selected cells."""
     if directive.replace is None:
         return
     for cell in cells:
         formatted = _apply_replace(
-            _typed_value(cell, typed_body, colnames),
-            _cell_value(cell, data_body, colnames_display),
+            _typed_value(cell, typed_body, colnames, layout),
+            _cell_value(cell, data_body, colnames_display, layout),
             directive.replace,
         )
-        _set_cell_value(cell, formatted, data_body, colnames_display)
+        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
 
 
 def _apply_escapes(
@@ -244,15 +246,16 @@ def _apply_escapes(
     data_body: list[list[str]],
     colnames_display: list[str],
     output: str,
+    layout: RowLayout,
 ) -> set[Cell]:
     """Apply directive-level escaping and return the escaped cell coordinates."""
     if not directive.escape:
         return set()
     for cell in cells:
         formatted = _apply_escape(
-            _cell_value(cell, data_body, colnames_display), directive.escape, output
+            _cell_value(cell, data_body, colnames_display, layout), directive.escape, output
         )
-        _set_cell_value(cell, formatted, data_body, colnames_display)
+        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
     return set(cells)
 
 
@@ -265,6 +268,7 @@ def _apply_linebreaks(
     *,
     global_escape: bool,
     escaped_cells: set[Cell],
+    layout: RowLayout,
 ) -> dict[Cell, str]:
     """Replace a literal marker with safe backend-native line-break markup."""
     marker = directive.linebreak
@@ -275,7 +279,7 @@ def _apply_linebreaks(
 
     generated_markup: dict[Cell, str] = {}
     for cell in cells:
-        current = _cell_value(cell, data_body, colnames_display)
+        current = _cell_value(cell, data_body, colnames_display, layout)
         if marker not in current:
             continue
         chunks = current.split(marker)
@@ -287,7 +291,7 @@ def _apply_linebreaks(
         ):
             chunks = [_apply_escape(chunk, True, output) for chunk in chunks]
         formatted = separator.join(chunks)
-        _set_cell_value(cell, formatted, data_body, colnames_display)
+        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
         generated_markup[cell] = formatted
     return generated_markup
 
@@ -298,6 +302,7 @@ def _apply_math(
     data_body: list[list[str]],
     colnames_display: list[str],
     output: str,
+    layout: RowLayout,
 ) -> dict[Cell, str]:
     """Wrap selected values in Typst math, leaving other backends unchanged."""
     if not directive.math or output != "typst":
@@ -305,9 +310,9 @@ def _apply_math(
 
     generated_markup: dict[Cell, str] = {}
     for cell in cells:
-        current = _cell_value(cell, data_body, colnames_display)
+        current = _cell_value(cell, data_body, colnames_display, layout)
         formatted = current if current.startswith("$") and current.endswith("$") else f"${current}$"
-        _set_cell_value(cell, formatted, data_body, colnames_display)
+        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
         generated_markup[cell] = formatted
     return generated_markup
 
@@ -318,17 +323,10 @@ def apply_formats(
     colnames_display: list[str],
     table: TyTable,
     *,
-    nhead: int,
-    has_header: bool,
-    n_merged_body: int,
-    group_positions: set[int],
+    layout: RowLayout,
     output: str,
 ) -> set[tuple[int, int]]:
-    """Apply every ``FormatDirective``, returning cells that were explicitly escaped.
-
-    Body cells use their zero-based row index.  Header cells use row ``-1`` so
-    callers can distinguish them when applying the table-wide escape pass.
-    """
+    """Apply every format directive and return trusted display coordinates."""
     escaped_cells: set[tuple[int, int]] = set()
 
     for d in table._format_directives:
@@ -337,26 +335,21 @@ def apply_formats(
 
         i_vals = resolve_i(
             d.i,
-            nhead=nhead,
-            group_positions=group_positions,
-            n_merged_body=n_merged_body,
-            has_header=has_header,
+            layout=layout,
             data=table._data,
         )
         j_vals = table._resolve_j(d.j, regex=d.regex)
 
-        target_cells = _resolve_target_cells(i_vals, j_vals, data_body, colnames_display)
+        target_cells = _resolve_target_cells(i_vals, j_vals, layout)
         if d.where is not None:
             where_cells = resolve_where(
                 d.where,
                 data=table._data,
-                group_positions=group_positions,
+                layout=layout,
             )
-            target_cells = [
-                cell for cell in target_cells if (cell[0] + 1, cell[1] + 1) in where_cells
-            ]
+            target_cells = [cell for cell in target_cells if cell in where_cells]
         values_before = {
-            cell: _cell_value(cell, data_body, colnames_display) for cell in target_cells
+            cell: _cell_value(cell, data_body, colnames_display, layout) for cell in target_cells
         }
         generated_markup = _apply_digits(
             target_cells,
@@ -366,10 +359,17 @@ def apply_formats(
             colnames_display,
             table._source_colnames,
             output,
+            layout,
         )
-        _apply_fn(target_cells, d, data_body, colnames_display)
+        _apply_fn(target_cells, d, data_body, colnames_display, layout)
         _apply_replacements(
-            target_cells, d, data_body, typed_body, colnames_display, table._source_colnames
+            target_cells,
+            d,
+            data_body,
+            typed_body,
+            colnames_display,
+            table._source_colnames,
+            layout,
         )
         generated_markup.update(
             _apply_linebreaks(
@@ -380,22 +380,27 @@ def apply_formats(
                 output,
                 global_escape=table._escape,
                 escaped_cells=escaped_cells,
+                layout=layout,
             )
         )
-        generated_markup.update(_apply_math(target_cells, d, data_body, colnames_display, output))
+        generated_markup.update(
+            _apply_math(target_cells, d, data_body, colnames_display, output, layout)
+        )
         intact_markup = {
             cell
             for cell, generated in generated_markup.items()
-            if _cell_value(cell, data_body, colnames_display) == generated
+            if _cell_value(cell, data_body, colnames_display, layout) == generated
         }
         escape_targets = [
             cell for cell in target_cells if cell not in intact_markup and cell not in escaped_cells
         ]
-        explicitly_escaped = _apply_escapes(escape_targets, d, data_body, colnames_display, output)
+        explicitly_escaped = _apply_escapes(
+            escape_targets, d, data_body, colnames_display, output, layout
+        )
         changed_cells = {
             cell
             for cell, before in values_before.items()
-            if _cell_value(cell, data_body, colnames_display) != before
+            if _cell_value(cell, data_body, colnames_display, layout) != before
         }
         escaped_cells.difference_update(changed_cells)
         escaped_cells.update(intact_markup | explicitly_escaped)

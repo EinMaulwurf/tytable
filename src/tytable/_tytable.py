@@ -12,7 +12,7 @@ import pathlib
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 import polars as pl
 
@@ -85,7 +85,8 @@ def tt(
         Sequence of footnotes. Each entry may be a plain ``str`` (untargeted
         note) or a :class:`~tytable.NoteDict` with ``text``, ``marker``, ``i``,
         and ``j`` keys. Notes attached to cells via ``i`` / ``j`` get
-        auto-numbered superscript markers.
+        auto-numbered superscript markers. Targeted notes support data rows,
+        row-group rows, and the column-name header.
     width
         Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
         half), a per-column list of fractions/strings/``None`` (``None`` =
@@ -315,7 +316,6 @@ class TyTable:
         self._rownames = rownames
         self._digits = digits
         self._style_directives: list[StyleDirective] = []
-        self._deferred_style_directives: list[StyleDirective] = []
         self._format_directives: list[FormatDirective] = []
         self._plot_directives: list[PlotDirective] = []
         self._image_directives: list[ImageDirective] = []
@@ -324,8 +324,6 @@ class TyTable:
         self._col_group_rows: list[list[str | None]] = []
         self._notes: list[Note] = _normalize_notes(notes or [])
         self._finalize_hooks: list[Callable[[str, str], str]] = []
-        self._nhead: int = 0
-        self._n_merged_body_rows: int = 0
         self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
@@ -533,15 +531,6 @@ class TyTable:
         )
         return self
 
-    def _deferred_style(self, *args: Any, **kwargs: Any) -> TyTable:
-        """Record a prepare-hook style separately so user styles retain precedence."""
-        before = len(self._style_directives)
-        self.style(*args, **kwargs)
-        if len(self._style_directives) != before + 1:
-            raise RuntimeError("style() did not record exactly one directive")
-        self._deferred_style_directives.append(self._style_directives.pop())
-        return self
-
     def fmt(
         self,
         i: int
@@ -575,7 +564,9 @@ class TyTable:
         ----------
         i, j
             Row/column selectors — see :meth:`style`. ``i`` defaults to *all
-            body rows*, ``j`` to *all columns*.
+            source-data rows*, ``j`` to *all columns*. Formatting supports
+            data rows, row-group rows, and the column-name header; selecting a
+            column-group header raises when the table is rendered.
         where
             Polars expression selecting individual body cells. Each boolean
             output column is matched to the source column with the same name.
@@ -711,7 +702,8 @@ class TyTable:
         ----------
         i, j
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
-            defaults to every source-data row.
+            defaults to every source-data row. Plots can target data and
+            row-group rows; selecting either header kind raises when rendered.
         fun
             Plotting callable. Called once per selected cell with either the
             typed cell value (or the matching ``data`` list entry). ``color`` and
@@ -815,7 +807,8 @@ class TyTable:
         ----------
         i, j
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
-            defaults to every source-data row.
+            defaults to every source-data row. Images can target data and
+            row-group rows; selecting either header kind raises when rendered.
         paths
             Image file paths, with exactly one path per selected cell, indexed
             row-major.
@@ -998,7 +991,7 @@ class TyTable:
                 )
             idxs = self._resolve_j(j, regex=regex)
             for k in idxs:
-                self._colnames_display[k - 1] = name
+                self._colnames_display[k] = name
             return self
 
         if not isinstance(name, Sequence):
@@ -1024,7 +1017,7 @@ class TyTable:
                 f"set_name() got {len(names)} name(s) for {len(idxs)} selected column(s)"
             )
         for k, nm in zip(idxs, names, strict=True):
-            self._colnames_display[k - 1] = nm
+            self._colnames_display[k] = nm
         return self
 
     def theme_default(self) -> TyTable:

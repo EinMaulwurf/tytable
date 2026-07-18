@@ -44,6 +44,20 @@ class TestBasicHtml:
 
 @pytest.mark.html
 class TestHtmlStyle:
+    def test_column_group_style_uses_display_coordinates(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = (
+            tt(df)
+            .theme_plain()
+            .group(j={"Group": ["A", "B"]})
+            .style(i="groupj", bold=True, background="#eee")
+            .render("html")
+        )
+        assert (
+            '<th colspan="2" style="font-weight:bold; background-color:#eeeeee; '
+            'text-align:center">Group</th>' in out
+        )
+
     def test_bold(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).style(i=0, j=0, bold=True).render("html")
