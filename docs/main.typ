@@ -269,9 +269,9 @@ bold=True)` styles only that cell.
 
 == Everything returns `self`
 
-`.style()`, `.fmt()`, `.group()`, `.set_name()`, and the `.theme_*()` methods
-all return the table, so you chain them. `.theme(fn)` applies a custom theme
-callable. `.render()` and `.save()` are terminal.
+`.style()`, `.fmt()`, `.group()`, `.set_name()`, the `.theme_*()` methods, and
+the named layout operations all return the table, so you chain them.
+`.render()` and `.save()` are terminal.
 
 == Evaluation is lazy
 
@@ -766,44 +766,30 @@ value and are converted to text.
 
 = Themes
 
-Themes bundle reusable appearance and layout choices behind chainable methods.
-The subsections below cover styling and composition, resizing, and pagination.
+Themes provide one replaceable base appearance. Resizing and pagination are
+independent layout operations.
 
 == Styling and composition
 
 Restrained top, header, and bottom rules give every new table the `default`
-booktab treatment. Add striping with `.theme_striped()` or cell borders with
-`.theme_grid()`. Themes stack, so both can be combined with the default rules
-and the layout themes described below. Explicit `.style()` calls retain
-precedence over the deferred default and striped styles.
+booktab treatment. Select alternating source-data rows with `.theme_striped()`,
+cell borders with `.theme_grid()`, or no base styling with `.theme_plain()`.
+Calling a theme method replaces the previous base appearance. Explicit
+`.style()` calls always take precedence, whether they appear before or after
+the theme call.
 
-`.theme_empty()` is the escape hatch for a blank slate. It clears all themes,
-styles, formats, prepare hooks, and theme-level Typst options recorded before
-it, so call it immediately after `tt(...)` and before adding anything that
-should remain:
+Selecting the plain theme does not clear styling, formatting, media, groups,
+or other recorded intent:
 
 ```python
-table = tt(df).theme_empty().fmt(j="Score", digits=2).style(i="header", bold=True)
+table = tt(df).fmt(j="Score", digits=2).theme_plain().style(i="header", bold=True)
 ```
 
-Use `.theme(custom_theme)` for a custom callable accepting the table and
-returning it (or `None`). The public `THEMES` registry remains available for
-discovery and advanced composition, but normal application code should prefer
-the typed methods.
+For reusable project-specific looks, write an ordinary function that selects a
+base and adds explicit styles. There is no separate theme registry or plugin
+mechanism.
 
-`THEMES` is a dictionary with the keys `"default"`, `"striped"`, `"grid"`,
-`"empty"`, `"rotate"`, `"resize"`, and `"multipage"`. Every value is a
-callable whose first argument is a `TyTable`; it mutates that table and returns
-the same object. `default`, `striped`, `grid`, and `empty` have the shape
-`fn(table)`. `rotate` adds `angle=90, i=None, j=None`; `resize` adds
-`width=1, height=None, direction="both"`; and `multipage` adds the keyword-only
-`repeat_headers=True`. Registry functions are useful for discovery or custom
-composition, for example `THEMES["grid"](table)`, but `.theme_grid()`,
-`.theme_resize(...)`, and the other typed methods are the recommended,
-IDE-friendly interface.
-
-The gallery compares the default, stacked striped and grid treatments, and the
-unstyled result:
+The gallery compares the four base appearances:
 
 #tag("SOURCE")
 #source("examples/05_theme.py")
@@ -820,19 +806,19 @@ unstyled result:
 #v(0.12em)
 #include "build/05_theme_grid.typ"
 
-#tag("GALLERY — empty")
+#tag("GALLERY — plain")
 #v(0.12em)
-#include "build/05_theme_empty.typ"
+#include "build/05_theme_plain.typ"
 
 == Resize
 
-The `resize` theme scales a table to fit a target size, expressed as a fraction
+The `.resize()` operation scales a table to fit a target size, expressed as a fraction
 of the available page area. It wraps the rendered fragment in a Typst
 `#layout(size => …)` block that measures the table and rescales it by a uniform
 factor. This is useful when a wide table would otherwise overflow the text
 column.
 
-Three knobs control `.theme_resize()`:
+Three knobs control `.resize()`:
 
 - `width` — target width as a fraction of the page content width (`1` = full
   width). Used unless `height` is given.
@@ -845,10 +831,10 @@ Three knobs control `.theme_resize()`:
 from tytable import tt
 
 # Shrink only if wider than 95% of the page; leave smaller tables alone.
-tt(df).theme_resize(width=0.95, direction="down")
+tt(df).resize(width=0.95, direction="down")
 
 # Always scale to the full page width.
-tt(df).theme_resize()
+tt(df).resize()
 ```
 
 #tag("SOURCE")
@@ -861,19 +847,19 @@ tt(df).theme_resize()
 == Multipage tables
 
 Typst figures normally keep their contents on one page. For a long table,
-`.theme_multipage()` makes tytable figures breakable while preserving their
+`.multipage()` makes tytable figures breakable while preserving their
 caption, numbering, label, and reference semantics. The complete header block,
 including column-group rows, repeats at the top of each page by default:
 
 ```python
-tt(df, caption="Long results", label="long-results").theme_multipage()
+tt(df, caption="Long results", label="long-results").multipage()
 ```
 
 Disable header repetition when the surrounding document supplies its own page
 context:
 
 ```python
-tt(df).theme_multipage(repeat_headers=False)
+tt(df).multipage(repeat_headers=False)
 ```
 
 The generated Typst show rule is scoped to figures whose kind is `"tytable"`,
@@ -1224,8 +1210,8 @@ Start here when you know the task but not the method. Methods marked
   [Format values], [`.fmt(...)`], [chainable],
   [Group rows/columns], [`.group(...)`], [chainable],
   [Rename headers], [`.set_name(...)`], [chainable],
-  [Add a built-in theme], [`.theme_striped()` / `.theme_resize(...)`], [chainable],
-  [Apply a custom theme], [`.theme(fn)`], [chainable],
+  [Choose a base theme], [`.theme_striped()` / `.theme_grid()`], [chainable],
+  [Adjust table layout], [`.rotate()` / `.resize()` / `.multipage()`], [chainable],
   [Add plots/images], [`.plot(...)` / `.images(...)`], [chainable],
   [Post-process output], [`.finalize(...)`], [chainable],
   [Get a string], [`.render(...)`], [`str` (terminal)],
@@ -1398,31 +1384,26 @@ With `j`, `name` is one display name or a list matching the selected columns.
 Without `j`, pass the complete list of display names. The DataFrame remains
 unchanged, and all `j` selectors continue to use its original column names.
 
-#api("Custom theme", api_signatures.at("theme"))
-
-`fn` is a callable `theme(table) -> TyTable | None`. Built-in themes use the
-typed methods below; they stack on the implicit default theme.
+#api("Use default appearance", api_signatures.at("theme_default"))
 
 #api("Add stripes", api_signatures.at("theme_striped"))
 
 #api("Add a grid", api_signatures.at("theme_grid"))
 
-#api("Reset styling", api_signatures.at("theme_empty"))
+#api("Use plain appearance", api_signatures.at("theme_plain"))
 
-This reset is destructive and order-sensitive. Call it immediately after
-`tt(...)`; constructor-level figure, row-height, and gutter settings survive.
+This changes only the base appearance; all other recorded intent survives.
 
-#api("Rotate", api_signatures.at("theme_rotate"))
+#api("Rotate", api_signatures.at("rotate"))
 
-With no selectors, rotates the whole table. Pass `i` and/or `j` to rotate
-selected cell content instead.
+Rotates the whole table. Rotate selected cell content with `.style(rotate=...)`.
 
-#api("Resize", api_signatures.at("theme_resize"))
+#api("Resize", api_signatures.at("resize"))
 
 Scales Typst output by width or height. `direction` is `"down"`, `"up"`, or
 `"both"`.
 
-#api("Span pages", api_signatures.at("theme_multipage"))
+#api("Span pages", api_signatures.at("multipage"))
 
 Makes the Typst figure breakable. Header and column-group rows repeat on each
 page unless `repeat_headers=False`.

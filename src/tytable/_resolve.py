@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     import polars as pl
 
     from ._images import MediaContext
+    from ._render_typst import TypstRenderOptions
     from ._tytable import TyTable
 
 
@@ -53,7 +54,9 @@ class BuiltTable:
     ``"l"``/``"r"`` entry per source column. ``width`` is a table fraction,
     Typst length, or per-column sequence; ``height`` is the constructor's
     row-height value in em. ``has_background`` lets the Typst renderer avoid a
-    conflicting grouped-table gutter.
+    conflicting grouped-table gutter. ``typst_options`` is an invocation-local
+    copy carrying layout operations and the Typst-specific part of the resolved
+    base appearance.
     """
 
     output: OutputFormat
@@ -74,6 +77,7 @@ class BuiltTable:
     width: float | Sequence[float | str | None] | str | None = None
     height: float | None = None
     has_background: bool = False
+    typst_options: TypstRenderOptions | None = None
 
 
 @dataclass
@@ -212,6 +216,7 @@ def _copy_for_build(table: TyTable) -> TyTable:
     working._row_groups = list(table._row_groups)
     working._col_group_rows = list(table._col_group_rows)
     working._notes = list(table._notes)
+    working._typst_opts = copy(table._typst_opts)
     return working
 
 
@@ -271,12 +276,13 @@ def _merge_groups(state: _BuildState) -> None:
     state.group_positions = set(state.row_group_positions)
 
 
-def _run_prepare_hooks(state: _BuildState) -> None:
-    """Run theme hooks after table dimensions and group positions are known."""
+def _apply_base_appearance(state: _BuildState) -> None:
+    """Apply the base appearance after semantic table dimensions are known."""
+    from ._themes import apply_base_theme
+
     state.table._nhead = state.nhead
     state.table._n_merged_body_rows = state.n_merged_body
-    for hook in state.table._prepare_hooks:
-        hook(state.table)
+    apply_base_theme(state.table)
 
 
 def _reorder_directives(state: _BuildState) -> None:
@@ -386,15 +392,16 @@ def build(
     """
     Resolve a table's recorded directives into a backend-agnostic :class:`BuiltTable`.
 
-    Runs the fixed pipeline: merge row groups → run prepare-hooks → apply
-    formats → execute plots → insert footnote markers → build the style grid.
+    Runs the fixed pipeline: merge row groups → apply the base appearance →
+    apply formats → execute plots → insert footnote markers → build the style
+    grid.
     """
     if output not in ("typst", "html", "ascii"):
         raise NotImplementedError(f"output={output!r} not implemented")
 
     state = _extract_body(_copy_for_build(table), output, media_context)
     _merge_groups(state)
-    _run_prepare_hooks(state)
+    _apply_base_appearance(state)
     _reorder_directives(state)
     _apply_formatting(state)
     _execute_plots(state)
@@ -425,4 +432,5 @@ def build(
         width=state.table._width,
         height=state.table._height,
         notes=state.table._notes,
+        typst_options=state.table._typst_opts,
     )

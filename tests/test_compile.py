@@ -98,10 +98,10 @@ def test_compile_themes(tmp_path):
         tt(df),
         tt(df).theme_striped(),
         tt(df).theme_grid(),
-        tt(df).theme_empty(),
-        tt(df).theme_rotate(),
-        tt(df).theme_multipage(),
-        tt(df).theme_multipage(repeat_headers=False),
+        tt(df).theme_plain(),
+        tt(df).rotate(),
+        tt(df).multipage(),
+        tt(df).multipage(repeat_headers=False),
     )
     for table in tables:
         _compile(table.render("typst"), tmp_path)

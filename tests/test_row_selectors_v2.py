@@ -8,7 +8,7 @@ DF = pl.DataFrame({"a": [10, 20, 30], "b": [1, 2, 3]})
 
 
 def grouped_table():
-    return tt(DF).theme_empty().group(i={"before": 0, "middle": 1, "after": 3})
+    return tt(DF).theme_plain().group(i={"before": 0, "middle": 1, "after": 3})
 
 
 def test_omitted_style_selector_targets_only_source_data():
@@ -67,7 +67,7 @@ def test_targeted_note_defaults_missing_axis_to_data_region():
             DF,
             notes=[{"text": "column", "j": "a"}, {"text": "row", "i": 1}],
         )
-        .theme_empty()
+        .theme_plain()
         .group(i={"before": 0, "middle": 1, "after": 3}),
         "typst",
     )

@@ -9,6 +9,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Breaking
 
+- Make `default`, `plain`, `striped`, and `grid` replaceable base appearances which are applied
+  before explicit styles regardless of call order. Replace destructive `.theme_empty()` with
+  `.theme_plain()`, remove `.theme(fn)` and the public `THEMES` registry, and rename the independent
+  layout operations to `.rotate()`, `.resize()`, and `.multipage()`.
 - Make omitted row selectors target genuine source-data rows, add `i="data"`, and reserve
   `i="all"` for the complete grid. Non-negative integers now always address stable 0-based source
   DataFrame rows; remove negative indices and the ambiguous `i="body"` / `i="~groupi"` names.

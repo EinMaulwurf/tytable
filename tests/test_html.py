@@ -11,7 +11,7 @@ from tytable._escape import escape_html
 class TestBasicHtml:
     def test_basic_2x2(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert out.startswith("<table")
         assert out.endswith("</table>")
         assert '<td style="text-align:right">1</td>' in out
@@ -19,12 +19,12 @@ class TestBasicHtml:
 
     def test_basic_3x3(self):
         df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert_snapshot("html_basic_3x3", out)
 
     def test_repr_html(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        tab = tt(df).theme_empty()
+        tab = tt(df).theme_plain()
         html = tab._repr_html_()
         assert html.startswith("<table")
         assert html.endswith("</table>")
@@ -116,7 +116,7 @@ class TestHtmlStyle:
 
     def test_rotate_not_emitted_when_none(self):
         df = pl.DataFrame({"A": [1, 2]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert "transform:rotate" not in out
 
     def test_column_style(self):
@@ -129,14 +129,14 @@ class TestHtmlStyle:
 class TestHtmlGrouping:
     def test_col_group(self):
         df = pl.DataFrame({"Region": ["East"], "Sales": [100]})
-        out = tt(df).theme_empty().group(j={"Group": ["Region", "Sales"]}).render("html")
+        out = tt(df).theme_plain().group(j={"Group": ["Region", "Sales"]}).render("html")
         assert "Group" in out
         assert 'colspan="2"' in out
         assert_snapshot("html_group_col", out)
 
     def test_row_group(self):
         df = pl.DataFrame({"A": [1, 2, 3]})
-        out = tt(df).theme_empty().group(i={"First": 0, "Second": 2}).render("html")
+        out = tt(df).theme_plain().group(i={"First": 0, "Second": 2}).render("html")
         assert "First" in out
         assert "Second" in out
         assert_snapshot("html_group_row", out)
@@ -146,7 +146,7 @@ class TestHtmlGrouping:
 class TestHtmlNotes:
     def test_footnote_targeted(self):
         df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-        out = tt(df, notes=[{"text": "Note", "i": [0], "j": ["A"]}]).theme_empty().render("html")
+        out = tt(df, notes=[{"text": "Note", "i": [0], "j": ["A"]}]).theme_plain().render("html")
         assert "<tfoot>" in out
         assert "<sup>1</sup>" in out
         assert_snapshot("html_footnote", out)
@@ -161,7 +161,7 @@ class TestHtmlNotes:
                     {"text": "Second note", "i": [1], "j": ["A"]},
                 ],
             )
-            .theme_empty()
+            .theme_plain()
             .render("html")
         )
         assert "First note" in out
@@ -172,29 +172,29 @@ class TestHtmlNotes:
 class TestHtmlEscape:
     def test_column_name_escaped_once(self):
         df = pl.DataFrame({"X<Y&Z": [1]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert '<th style="text-align:right">X&lt;Y&amp;Z</th>' in out
         assert "&amp;lt;" not in out
 
     def test_raw_column_name_when_escape_disabled(self):
         df = pl.DataFrame({"<em>A</em>": [1]})
-        out = tt(df, escape=False).theme_empty().render("html")
+        out = tt(df, escape=False).theme_plain().render("html")
         assert '<th style="text-align:right"><em>A</em></th>' in out
 
     def test_user_image_markup_is_escaped(self):
         df = pl.DataFrame({"A": ['<img src=x onerror="alert(1)">']})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert '<td>&lt;img src=x onerror="alert(1)"&gt;</td>' in out
         assert '<td><img src=x onerror="alert(1)">' not in out
 
     def test_brackets_escaped(self):
         df = pl.DataFrame({"A": ["x<y"]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert "&lt;" in out
 
     def test_ampersand_escaped(self):
         df = pl.DataFrame({"A": ["a&b"]})
-        out = tt(df).theme_empty().render("html")
+        out = tt(df).theme_plain().render("html")
         assert "&amp;" in out
 
     def test_html_escape_helper(self):
@@ -224,7 +224,7 @@ class TestHtmlOutputGating:
 class TestAscii:
     def test_basic_ascii(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
-        out = tt(df).theme_empty().render("ascii")
+        out = tt(df).theme_plain().render("ascii")
         assert "+---+---+" in out
         assert "| A | B |" in out
         assert "| 1 | 2 |" in out
@@ -239,18 +239,18 @@ class TestAscii:
 
     def test_repr_ascii(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        tab = tt(df).theme_empty()
+        tab = tt(df).theme_plain()
         r = repr(tab)
         assert "+---+---+" in r
 
     def test_wide_cell_truncate(self):
         df = pl.DataFrame({"A": ["x" * 70]})
-        out = tt(df).theme_empty().render("ascii")
+        out = tt(df).theme_plain().render("ascii")
         assert "…" in out
 
     def test_plain_text_does_not_leak_html_escaping(self):
         df = pl.DataFrame({"A&B": ["<tag>"]})
-        out = tt(df).theme_empty().render("ascii")
+        out = tt(df).theme_plain().render("ascii")
 
         assert "A&B" in out
         assert "<tag>" in out
@@ -275,13 +275,13 @@ class TestAscii:
 
     def test_unicode_display_width_keeps_borders_aligned(self):
         df = pl.DataFrame({"text": ["日本語", "abc"], "n": [1, 2]})
-        lines = tt(df).theme_empty().render("ascii").splitlines()
+        lines = tt(df).theme_plain().render("ascii").splitlines()
 
         assert len({wcswidth(line) for line in lines}) == 1
 
     def test_long_unicode_cell_truncates_by_display_width(self):
         df = pl.DataFrame({"text": ["界" * 40]})
-        out = tt(df).theme_empty().render("ascii")
+        out = tt(df).theme_plain().render("ascii")
 
         assert "界" * 29 + "…" in out
         assert max(wcswidth(line) for line in out.splitlines()) == 64
@@ -303,14 +303,14 @@ class TestHtmlBorders:
 
     def test_explicit_line_on_header(self):
         df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-        out = tt(df).theme_empty().style(i="header", line="b").render("html")
+        out = tt(df).theme_plain().style(i="header", line="b").render("html")
         header_line = [ln for ln in out.splitlines() if "<th" in ln and "border" in ln]
         assert len(header_line) == 1
         assert "border-bottom:0.1em" in header_line[0]
 
     def test_explicit_line_on_body_row(self):
         df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
-        out = tt(df).theme_empty().style(i=1, line="b").render("html")
+        out = tt(df).theme_plain().style(i=1, line="b").render("html")
         body_lines = [ln for ln in out.splitlines() if "<td" in ln and "border" in ln]
         assert any("border-bottom:0.1em" in ln for ln in body_lines)
 
@@ -319,36 +319,36 @@ class TestHtmlBorders:
 class TestHtmlWidth:
     def test_scalar_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=0.8).theme_empty().render("html")
+        out = tt(df, width=0.8).theme_plain().render("html")
         assert "width:80.00%" in out
 
     def test_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.3, 0.7]).theme_empty().render("html")
+        out = tt(df, width=[0.3, 0.7]).theme_plain().render("html")
         assert "<colgroup>" in out
         assert "width:30.00%" in out
         assert "width:70.00%" in out
 
     def test_string_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width="5cm").theme_empty().render("html")
+        out = tt(df, width="5cm").theme_plain().render("html")
         assert "width:5cm" in out
 
     def test_list_with_none_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=["5cm", None]).theme_empty().render("html")
+        out = tt(df, width=["5cm", None]).theme_plain().render("html")
         assert "width:5cm" in out
         assert "<col>" in out
 
     def test_list_width_sum_over_1_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.6, 0.7]).theme_empty().render("html")
+        out = tt(df, width=[0.6, 0.7]).theme_plain().render("html")
         assert "width:46.15%" in out
         assert "width:53.85%" in out
 
     def test_mixed_list_sum_over_1_not_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.6, None, 0.7]).theme_empty().render("html")
+        out = tt(df, width=[0.6, None, 0.7]).theme_plain().render("html")
         assert "width:60.00%" in out
         assert "width:70.00%" in out
         assert "<col>" in out
@@ -358,54 +358,54 @@ class TestHtmlWidth:
 class TestTypstWidth:
     def test_scalar_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=0.8).theme_empty().render("typst")
+        out = tt(df, width=0.8).theme_plain().render("typst")
         assert "40.00%" in out
 
     def test_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.3, 0.7]).theme_empty().render("typst")
+        out = tt(df, width=[0.3, 0.7]).theme_plain().render("typst")
         assert "30.00%" in out
         assert "70.00%" in out
 
     def test_no_width_uses_auto(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df).theme_empty().render("typst")
+        out = tt(df).theme_plain().render("typst")
         assert "columns: (auto, auto)" in out
 
     def test_string_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width="5cm").theme_empty().render("typst")
+        out = tt(df, width="5cm").theme_plain().render("typst")
         assert "columns: (5cm, 5cm)" in out
 
     def test_mixed_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=["5cm", None]).theme_empty().render("typst")
+        out = tt(df, width=["5cm", None]).theme_plain().render("typst")
         assert "columns: (5cm, auto)" in out
 
     def test_list_with_none_width(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.3, None, "2cm"]).theme_empty().render("typst")
+        out = tt(df, width=[0.3, None, "2cm"]).theme_plain().render("typst")
         assert "columns: (30.00%, auto, 2cm)" in out
 
     def test_list_width_sum_over_1_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.6, 0.7]).theme_empty().render("typst")
+        out = tt(df, width=[0.6, 0.7]).theme_plain().render("typst")
         assert "columns: (46.15%, 53.85%)" in out
 
     def test_mixed_list_sum_over_1_not_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.6, None, 0.7]).theme_empty().render("typst")
+        out = tt(df, width=[0.6, None, 0.7]).theme_plain().render("typst")
         assert "columns: (60.00%, auto, 70.00%)" in out
 
     def test_finalize_callback(self):
         df = pl.DataFrame({"A": [1]})
-        out = tt(df).theme_empty().finalize(lambda s, o: s.upper()).render("typst")
-        assert out == tt(df).theme_empty().render("typst").upper()
+        out = tt(df).theme_plain().finalize(lambda s, o: s.upper()).render("typst")
+        assert out == tt(df).theme_plain().render("typst").upper()
 
     def test_finalize_receives_output(self):
         df = pl.DataFrame({"A": [1]})
         calls = []
-        tt(df).theme_empty().finalize(lambda s, o: calls.append(o) or s).render("typst")
+        tt(df).theme_plain().finalize(lambda s, o: calls.append(o) or s).render("typst")
         assert calls == ["typst"]
 
 

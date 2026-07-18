@@ -103,7 +103,7 @@ class TestStyleProps:
         assert "align(a, rotate(style.rotate, reflow: true, tmp))" in out
 
     def test_rotate_not_emitted_when_none(self):
-        out = tt(DF).theme_empty().render("typst")
+        out = tt(DF).theme_plain().render("typst")
         assert "rotate:" not in out
 
     def test_align(self):
@@ -135,13 +135,13 @@ class TestStyleProps:
 
     def test_rowspan_typst(self):
         df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
-        out = tt(df).theme_empty().style(i=0, j="A", rowspan=2).render("typst")
+        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("typst")
         assert "table.cell(rowspan: 2)[top]" in out
         assert "covered" not in out
 
     def test_rowspan_html(self):
         df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
-        out = tt(df).theme_empty().style(i=0, j="A", rowspan=2).render("html")
+        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("html")
         assert '<td rowspan="2">top</td>' in out
         assert "covered" not in out
 
@@ -178,7 +178,7 @@ class TestStyleProps:
     )
     def test_unsafe_color_value_rejected(self, prop, value):
         with pytest.raises(ValueError, match=f"invalid {prop}"):
-            tt(DF).theme_empty().style(**{prop: value})
+            tt(DF).theme_plain().style(**{prop: value})
 
     @pytest.mark.parametrize("value", ["left#", "left()", "left;", "left[]"])
     def test_typst_signature_rejects_unsafe_string_properties(self, value):
@@ -229,12 +229,12 @@ class TestTargeting:
 @pytest.mark.typst
 class TestAppendVsOverwrite:
     def test_non_line_props_overwrite(self):
-        t = tt(DF).theme_empty().style(i=0, j=0, bold=True).style(i=0, j=0, bold=False)
+        t = tt(DF).theme_plain().style(i=0, j=0, bold=True).style(i=0, j=0, bold=False)
         built = build(t, "typst")
         assert built.style_grid[(1, 1)] == {"bold": False}
 
     def test_line_props_append(self):
-        t = tt(DF).theme_empty().style(i=0, j=0, line="t").style(i=0, j=0, line="l")
+        t = tt(DF).theme_plain().style(i=0, j=0, line="t").style(i=0, j=0, line="l")
         built = build(t, "typst")
         assert len(built.style_lines) == 2
 
@@ -256,9 +256,9 @@ class TestCoveredCells:
 @pytest.mark.typst
 class TestOutputGating:
     def test_html_only_directive_skipped_for_typst(self):
-        out = tt(DF).theme_empty().style(i=0, j=0, bold=True, output=("html",)).render("typst")
+        out = tt(DF).theme_plain().style(i=0, j=0, bold=True, output=("html",)).render("typst")
         assert "(bold: true,)" not in out
-        assert out == tt(DF).theme_empty().render("typst")
+        assert out == tt(DF).theme_plain().render("typst")
 
 
 @pytest.mark.typst
@@ -365,7 +365,7 @@ class TestBordersLines:
         assert "0.1em + black" in out
 
     def test_no_lines_default(self):
-        out = tt(DF).theme_empty().render("typst")
+        out = tt(DF).theme_plain().render("typst")
         assert "table.hline" not in out
         assert "table.vline" not in out
 
@@ -664,7 +664,7 @@ class TestCellSelectors:
 
     def test_where_styles_individual_numeric_cells(self):
         built = build(
-            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            tt(self.DF).theme_plain().style(where=cs.numeric() > 100, bold=True),
             "typst",
         )
 
@@ -676,7 +676,7 @@ class TestCellSelectors:
     def test_without_where_keeps_row_column_cross_product(self):
         built = build(
             tt(self.DF)
-            .theme_empty()
+            .theme_plain()
             .style(i=pl.col("Price") > 100, j=["Price", "Stock"], bold=True),
             "typst",
         )
@@ -690,7 +690,7 @@ class TestCellSelectors:
         df = self.DF.with_columns(active=pl.Series([False, True]))
         built = build(
             tt(df)
-            .theme_empty()
+            .theme_plain()
             .style(
                 i=pl.col("active"),
                 j=["Price", "Stock"],
@@ -704,7 +704,7 @@ class TestCellSelectors:
 
     def test_where_does_not_select_headers(self):
         built = build(
-            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, italic=True),
+            tt(self.DF).theme_plain().style(where=cs.numeric() > 100, italic=True),
             "typst",
         )
 
@@ -713,7 +713,7 @@ class TestCellSelectors:
     def test_where_uses_source_names_after_display_rename(self):
         built = build(
             tt(self.DF)
-            .theme_empty()
+            .theme_plain()
             .set_name(j="Price", name="Unit price")
             .style(j="Price", where=pl.col("Price") > 100, bold=True),
             "typst",
@@ -724,7 +724,7 @@ class TestCellSelectors:
     def test_where_maps_rows_past_row_groups(self):
         built = build(
             tt(self.DF)
-            .theme_empty()
+            .theme_plain()
             .group(i={"Second": 1})
             .style(where=cs.numeric() > 100, bold=True),
             "typst",
@@ -736,7 +736,7 @@ class TestCellSelectors:
 
     def test_where_filters_line_directives(self):
         built = build(
-            tt(self.DF).theme_empty().style(where=cs.numeric() > 100, line="b"),
+            tt(self.DF).theme_plain().style(where=cs.numeric() > 100, line="b"),
             "typst",
         )
 
@@ -745,7 +745,7 @@ class TestCellSelectors:
     def test_where_null_and_no_matches_are_ignored(self):
         df = pl.DataFrame({"x": [None, 50, 100], "label": ["a", "b", "c"]})
         built = build(
-            tt(df).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            tt(df).theme_plain().style(where=cs.numeric() > 100, bold=True),
             "typst",
         )
 
@@ -754,7 +754,7 @@ class TestCellSelectors:
     def test_where_with_no_output_columns_is_a_noop(self):
         df = pl.DataFrame({"label": ["a", "b"]})
         built = build(
-            tt(df).theme_empty().style(where=cs.numeric() > 100, bold=True),
+            tt(df).theme_plain().style(where=cs.numeric() > 100, bold=True),
             "typst",
         )
 
@@ -803,14 +803,14 @@ class TestPerColumnAlign:
     DF3 = pl.DataFrame({"A": [1, 4], "B": [2, 5], "C": [3, 6]})
 
     def test_align_j_list(self):
-        t = tt(self.DF3).theme_empty().style(i=0, j=[0, 1, 2], align="lcr")
+        t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], align="lcr")
         built = build(t, "typst")
         assert built.style_grid[(1, 1)]["align"] == "l"
         assert built.style_grid[(1, 2)]["align"] == "c"
         assert built.style_grid[(1, 3)]["align"] == "r"
 
     def test_align_all_rows(self):
-        t = tt(self.DF3).theme_empty().style(j=[0, 1, 2], align="lcr")
+        t = tt(self.DF3).theme_plain().style(j=[0, 1, 2], align="lcr")
         built = build(t, "typst")
         for i in (1, 2):
             assert built.style_grid[(i, 1)]["align"] == "l"
@@ -819,28 +819,28 @@ class TestPerColumnAlign:
         assert (0, 1) not in built.style_grid
 
     def test_alignv_j_list(self):
-        t = tt(self.DF3).theme_empty().style(i=0, j=[0, 1, 2], alignv="tmb")
+        t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], alignv="tmb")
         built = build(t, "typst")
         assert built.style_grid[(1, 1)]["alignv"] == "t"
         assert built.style_grid[(1, 2)]["alignv"] == "m"
         assert built.style_grid[(1, 3)]["alignv"] == "b"
 
     def test_align_implicit_all_columns(self):
-        t = tt(self.DF3).theme_empty().style(i=0, align="lcr")
+        t = tt(self.DF3).theme_plain().style(i=0, align="lcr")
         built = build(t, "typst")
         assert built.style_grid[(1, 1)]["align"] == "l"
         assert built.style_grid[(1, 2)]["align"] == "c"
         assert built.style_grid[(1, 3)]["align"] == "r"
 
     def test_align_single_value_broadcasts(self):
-        t = tt(self.DF3).theme_empty().style(i=0, j=[0, 1, 2], align="r")
+        t = tt(self.DF3).theme_plain().style(i=0, j=[0, 1, 2], align="r")
         built = build(t, "typst")
         for j in (1, 2, 3):
             assert built.style_grid[(1, j)]["align"] == "r"
 
     def test_align_and_alignv_per_column(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        t = tt(df).theme_empty().style(i=0, j=[0, 1], align="lr", alignv="tm")
+        t = tt(df).theme_plain().style(i=0, j=[0, 1], align="lr", alignv="tm")
         built = build(t, "typst")
         assert built.style_grid[(1, 1)]["align"] == "l"
         assert built.style_grid[(1, 1)]["alignv"] == "t"

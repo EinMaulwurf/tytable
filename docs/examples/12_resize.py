@@ -1,4 +1,4 @@
-"""Resize theme — scale a wide table down to fit the page width."""
+"""Resize a wide table down to fit the page width."""
 
 import polars as pl
 
@@ -24,6 +24,6 @@ df = pl.DataFrame(
 # page; smaller tables are left untouched. Use direction="both" to always scale.
 (
     tt(df, caption='Resized to fit (width=0.95, direction="down")')
-    .theme_resize(width=0.95, direction="down")
+    .resize(width=0.95, direction="down")
     .save("build/12_resize.typ")
 )

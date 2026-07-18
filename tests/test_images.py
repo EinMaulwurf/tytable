@@ -19,7 +19,7 @@ import sys
 import polars as pl
 from tytable import tt
 
-tt(pl.DataFrame({"A": [1]})).theme_empty().render("html")
+tt(pl.DataFrame({"A": [1]})).theme_plain().render("html")
 assert "matplotlib" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", code], check=True)
@@ -28,7 +28,7 @@ assert "matplotlib" not in sys.modules
 def test_plot_and_image_calls_record_distinct_directive_types():
     table = (
         tt(pl.DataFrame({"Value": [[1, 2, 3]]}))
-        .theme_empty()
+        .theme_plain()
         .images(j="Value", paths=["image.png"])
         .plot(j="Value", fun=_sparkline)
     )
@@ -49,7 +49,7 @@ def test_existing_images_do_not_require_plotting_dependencies(monkeypatch):
     monkeypatch.setattr("tytable._images._require_plotting", _unexpected_require)
     df = pl.DataFrame({"Logo": ["placeholder"]})
 
-    result = tt(df).theme_empty().images(j="Logo", paths=["img/a.png"]).render("typst")
+    result = tt(df).theme_plain().images(j="Logo", paths=["img/a.png"]).render("typst")
 
     assert '#image("img/a.png", height: 1em)' in result
 
@@ -106,7 +106,7 @@ class TestPlotSparkline:
     def test_direct_render_is_side_effect_free_and_repeatable(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_empty().plot(j="Trend", fun=_sparkline)
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=_sparkline)
         )
 
         before = set(tmp_path.iterdir())
@@ -120,7 +120,7 @@ class TestPlotSparkline:
     def test_direct_html_render_embeds_data_uri(self):
         result = (
             tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
-            .theme_empty()
+            .theme_plain()
             .plot(j="Trend", fun=_sparkline)
             .render("html")
         )
@@ -129,7 +129,7 @@ class TestPlotSparkline:
 
     def test_save_and_render_destinations_are_independent(self, tmp_path):
         table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_empty().plot(j="Trend", fun=_sparkline)
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=_sparkline)
         )
 
         table.save(str(tmp_path / "one" / "sales.typ"))
@@ -151,7 +151,7 @@ class TestPlotSparkline:
             raise AssertionError("ASCII must not generate plot assets")
 
         result = (
-            tt(pl.DataFrame({"Trend": [1]})).theme_empty().plot(j="Trend", fun=fail).render("ascii")
+            tt(pl.DataFrame({"Trend": [1]})).theme_plain().plot(j="Trend", fun=fail).render("ascii")
         )
 
         assert "[plot]" in result
@@ -159,7 +159,7 @@ class TestPlotSparkline:
     def test_plot_uses_source_name_after_duplicate_display_rename(self, tmp_path):
         df = pl.DataFrame({"revenue": [[1, 2, 3]], "cost": [2]})
         table = (
-            tt(df).theme_empty().set_name(name=["Value", "Value"]).plot(j="revenue", fun=_sparkline)
+            tt(df).theme_plain().set_name(name=["Value", "Value"]).plot(j="revenue", fun=_sparkline)
         )
 
         table.save(str(tmp_path / "out.typ"))
@@ -170,7 +170,7 @@ class TestPlotSparkline:
 
     def test_matplotlib_uses_requested_pixel_dimensions(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        tt(df).theme_empty().plot(j="Trend", fun=_sparkline, width_px=320, height_px=96).save(
+        tt(df).theme_plain().plot(j="Trend", fun=_sparkline, width_px=320, height_px=96).save(
             str(tmp_path / "out.typ")
         )
 
@@ -181,14 +181,14 @@ class TestPlotSparkline:
 
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert '#image("out_assets/plot_0000_0000_' in result
         assert len(list((tmp_path / "out_assets").glob("plot_*.png"))) == 2
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
-        tt(df).theme_empty().plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
+        tt(df).theme_plain().plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -196,14 +196,14 @@ class TestPlotSparkline:
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         normalized = re.sub(r"(?<=_)\w{12}(?=\.png)", "<content-hash>", result)
         assert_snapshot("images_sparkline", normalized)
 
     def test_sparkline_height_str(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_empty().plot(j="Trend", fun=_sparkline, height="1.5em").save(
+        tt(df).theme_plain().plot(j="Trend", fun=_sparkline, height="1.5em").save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -211,7 +211,7 @@ class TestPlotSparkline:
 
     def test_sparkline_custom_assets(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        tt(df).theme_empty().plot(j="Trend", fun=_sparkline).save(
+        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(
             str(tmp_path / "sub/out.typ"), assets="../assets/myplots"
         )
         result = (tmp_path / "sub" / "out.typ").read_text()
@@ -220,7 +220,7 @@ class TestPlotSparkline:
 
     def test_sparkline_render_embeds_plot(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
         assert "#image(bytes(" in result
 
     @pytest.mark.parametrize("policy", ["copy", "reference", "embed"])
@@ -233,7 +233,7 @@ class TestPlotSparkline:
         output = tmp_path / f"{policy}.typ"
         table = (
             tt(pl.DataFrame({"Logo": [1], "Trend": [[1, 2, 3]]}))
-            .theme_empty()
+            .theme_plain()
             .images(j="Logo", paths=["logo.svg"])
             .plot(j="Trend", fun=_sparkline)
         )
@@ -256,7 +256,7 @@ class TestPlotSparkline:
 class TestImages:
     def test_images_existing_files(self, tmp_path):
         df = pl.DataFrame({"Logo": ["a.png", "b.png"]})
-        tt(df).theme_empty().images(j="Logo", paths=["img/a.png", "img/b.png"]).save(
+        tt(df).theme_plain().images(j="Logo", paths=["img/a.png", "img/b.png"]).save(
             str(tmp_path / "out.typ"), static_images="reference"
         )
         result = (tmp_path / "out.typ").read_text()
@@ -266,13 +266,13 @@ class TestImages:
     def test_image_paths_are_escaped_for_markup(self):
         df = pl.DataFrame({"Logo": ["placeholder"]})
 
-        html = tt(df).theme_empty().images(j="Logo", paths=['x" onerror="alert(1)']).render("html")
+        html = tt(df).theme_plain().images(j="Logo", paths=['x" onerror="alert(1)']).render("html")
         assert '<img src="x&amp;quot; onerror=&amp;quot;alert(1)"' not in html
         assert '<img src="x&quot; onerror=&quot;alert(1)"' in html
 
         typst = (
             tt(df)
-            .theme_empty()
+            .theme_plain()
             .images(j="Logo", paths=['x"), pagebreak(), image("'])
             .render("typst")
         )
@@ -289,7 +289,7 @@ class TestStaticImagePolicies:
         monkeypatch.chdir(source)
 
         table_path = tmp_path / "build" / "report.typ"
-        tt(pl.DataFrame({"Logo": ["x"]})).theme_empty().images(j="Logo", paths=["logo.svg"]).save(
+        tt(pl.DataFrame({"Logo": ["x"]})).theme_plain().images(j="Logo", paths=["logo.svg"]).save(
             str(table_path)
         )
 
@@ -311,7 +311,7 @@ class TestStaticImagePolicies:
         monkeypatch.chdir(source)
 
         table_path = tmp_path / "out.typ"
-        tt(pl.DataFrame({"Logo": [1, 2, 3]})).theme_empty().images(
+        tt(pl.DataFrame({"Logo": [1, 2, 3]})).theme_plain().images(
             j="Logo",
             paths=["one/logo.svg", "one/logo.svg", "two/logo.svg"],
         ).save(str(table_path))
@@ -325,7 +325,7 @@ class TestStaticImagePolicies:
 
     def test_reference_preserves_authored_path_and_url(self, tmp_path):
         paths = [r"managed\logo.svg", "https://example.test/logo.svg?a=1&b=2"]
-        table = tt(pl.DataFrame({"Logo": [1, 2]})).theme_empty().images(j="Logo", paths=paths)
+        table = tt(pl.DataFrame({"Logo": [1, 2]})).theme_plain().images(j="Logo", paths=paths)
 
         typst_path = tmp_path / "out.typ"
         table.save(str(typst_path), static_images="reference")
@@ -338,7 +338,7 @@ class TestStaticImagePolicies:
     def test_render_embeds_static_svg_without_writing_files(self, tmp_path, monkeypatch):
         (tmp_path / "logo.svg").write_bytes(self.SVG)
         monkeypatch.chdir(tmp_path)
-        table = tt(pl.DataFrame({"Logo": [1]})).theme_empty().images(j="Logo", paths=["logo.svg"])
+        table = tt(pl.DataFrame({"Logo": [1]})).theme_plain().images(j="Logo", paths=["logo.svg"])
         before = set(tmp_path.iterdir())
 
         typst = table.render("typst", static_images="embed")
@@ -353,7 +353,7 @@ class TestStaticImagePolicies:
         (tmp_path / "logo.svg").write_bytes(self.SVG)
         monkeypatch.chdir(tmp_path)
 
-        tt(pl.DataFrame({"Logo": [1]})).theme_empty().images(j="Logo", paths=["logo.svg"]).save(
+        tt(pl.DataFrame({"Logo": [1]})).theme_plain().images(j="Logo", paths=["logo.svg"]).save(
             "out.html", static_images="embed"
         )
 
@@ -422,7 +422,7 @@ class TestStaticImagePolicies:
     def test_ascii_does_not_read_static_image(self):
         result = (
             tt(pl.DataFrame({"Logo": [1]}))
-            .theme_empty()
+            .theme_plain()
             .images(j="Logo", paths=["missing.svg"])
             .render("ascii", static_images="embed")
         )
@@ -445,7 +445,7 @@ class TestPlotnine:
             data = pd.DataFrame({"x": range(len(values)), "y": values})
             return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line(color=color)
 
-        tt(df).theme_empty().plot(j="Trend", fun=p9_sparkline, height_px=96, width_px=320).save(
+        tt(df).theme_plain().plot(j="Trend", fun=p9_sparkline, height_px=96, width_px=320).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -462,32 +462,15 @@ class TestPlotnine:
 class TestPortable:
     def test_direct_typst_render_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df).theme_empty().plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
         assert "#image(bytes(" in result
 
-    def test_portable_theme_typst_inline_svg(self):
-        from tytable._themes import theme_typst
-
+    def test_inline_plot_uses_requested_pixel_dimensions(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = (
             tt(df)
-            .theme_empty()
-            .plot(j="Trend", fun=_sparkline)
-            .theme(lambda t: theme_typst(t, portable=True))
-            .render("typst")
-        )
-        assert "#image(bytes(" in result
-        assert 'format: "svg"' in result
-
-    def test_portable_wrapper_uses_requested_pixel_dimensions(self):
-        from tytable._themes import theme_typst
-
-        df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = (
-            tt(df)
-            .theme_empty()
+            .theme_plain()
             .plot(j="Trend", fun=_sparkline, width_px=320, height_px=96)
-            .theme(lambda t: theme_typst(t, portable=True))
             .render("typst")
         )
 
@@ -495,19 +478,12 @@ class TestPortable:
         assert "viewBox='0 0 320 96'" in result
 
     def test_temp_dir_cleaned_up_when_plot_fails(self, tmp_path, monkeypatch):
-        from tytable._themes import theme_typst
-
         monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
 
         def fail(_value):
             raise RuntimeError("plot failed")
 
-        table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
-            .theme_empty()
-            .plot(j="Trend", fun=fail)
-            .theme(lambda t: theme_typst(t, portable=True))
-        )
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=fail)
 
         with pytest.raises(
             RuntimeError,
@@ -558,7 +534,7 @@ class TestValidation:
         monkeypatch.setattr("tytable._images._require_plotting", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match=r"\.plot\(\) directive 1:.*images.*extra"):
-            build(tt(df).theme_empty().plot(j="Trend", fun=_sparkline), "typst")
+            build(tt(df).theme_plain().plot(j="Trend", fun=_sparkline), "typst")
 
     def test_asset_directory_failure_includes_directive_and_path(self, tmp_path):
         occupied = tmp_path / "occupied"
@@ -588,7 +564,7 @@ class TestMediaCardinality:
 
     def test_images_assign_multiple_rows_and_columns_row_major(self):
         built = build(
-            tt(self.DF).theme_empty().images(j=["A", "B"], paths=["a", "b", "c", "d"]),
+            tt(self.DF).theme_plain().images(j=["A", "B"], paths=["a", "b", "c", "d"]),
             "typst",
         )
 

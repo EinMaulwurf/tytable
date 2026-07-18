@@ -60,7 +60,7 @@ def tt(
 
     This is the main entry point of the library. The returned table is
     configured by chaining methods — ``.style()``, ``.fmt()``, ``.group()``,
-    the built-in theme methods, ``.theme()``, and ``.plot()`` — and finally
+    the built-in theme methods and ``.plot()`` — and finally
     rendered to Typst, HTML, or ASCII with ``.render()`` or ``.save()``. All
     chaining methods return the table (``self``), so a single fluent expression
     can describe a complex table.
@@ -323,7 +323,6 @@ class TyTable:
         self._row_groups: list[RowGroup] = []
         self._col_group_rows: list[list[str | None]] = []
         self._notes: list[Note] = _normalize_notes(notes or [])
-        self._prepare_hooks: list[Callable[[TyTable], None]] = []
         self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._nhead: int = 0
         self._n_merged_body_rows: int = 0
@@ -331,9 +330,7 @@ class TyTable:
         if height is not None:
             self._typst_opts.row_height_em = float(height)
         self._typst_opts.column_gutter = gutter
-        self._base_typst_opts = replace(self._typst_opts)
-
-        _themes.theme_default(self)
+        self._theme: _themes.BaseTheme = "default"
 
     def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:
         """Resolve a column selector against stable source-column names."""
@@ -1030,82 +1027,42 @@ class TyTable:
             self._colnames_display[k - 1] = nm
         return self
 
-    def theme(self, fn: Callable[[TyTable], TyTable | None]) -> TyTable:
-        """
-        Apply a custom theme callable.
-
-        Use :meth:`theme_striped`, :meth:`theme_grid`, :meth:`theme_empty`,
-        :meth:`theme_rotate`, :meth:`theme_resize`, or :meth:`theme_multipage`
-        for built-in themes.
-
-        Parameters
-        ----------
-        fn
-            Callable ``theme(table) -> TyTable | None``. It receives this table
-            and may add styles, formats, hooks, or rendering options.
-
-        Returns
-        -------
-        TyTable
-            ``self``, for chaining.
-
-        Raises
-        ------
-        TypeError
-            If ``fn`` is not callable.
-        """
-        if not callable(fn):
-            raise TypeError("theme() requires a callable; use a built-in theme_*() method")
-        fn(self)
+    def theme_default(self) -> TyTable:
+        """Use the default booktab-style base appearance."""
+        self._theme = "default"
         return self
 
     def theme_striped(self) -> TyTable:
-        """Add alternating grey backgrounds to data rows."""
-        _themes.theme_striped(self)
+        """Use alternating grey source-data rows as the base appearance."""
+        self._theme = "striped"
         return self
 
     def theme_grid(self) -> TyTable:
-        """Add borders around every cell."""
-        _themes.theme_grid(self)
+        """Use borders around every grid cell as the base appearance."""
+        self._theme = "grid"
         return self
 
-    def theme_empty(self) -> TyTable:
-        """Reset prior themes, styles, formats, and Typst theme options.
-
-        This method is destructive and order-sensitive. Call it immediately
-        after :func:`tt` when starting from an unstyled table, then add any
-        formatting and styling that should remain. Constructor-level figure,
-        row-height, and gutter settings are preserved.
-        """
-        _themes.theme_empty(self)
+    def theme_plain(self) -> TyTable:
+        """Use an unstyled base appearance without clearing recorded intent."""
+        self._theme = "plain"
         return self
 
-    def theme_rotate(
-        self,
-        angle: float = 90,
-        i: int | str | Sequence[int | str] | None = None,
-        j: _ColumnSelector = None,
-    ) -> TyTable:
-        """Rotate the table, or selected cells when ``i`` or ``j`` is given.
+    def rotate(self, angle: float = 90) -> TyTable:
+        """Rotate the complete rendered Typst table.
 
         Parameters
         ----------
         angle
             Rotation in degrees (default ``90``).
-        i, j
-            Optional row/column selectors. With neither selector, rotate the
-            entire rendered table. With either selector, rotate matching cell
-            content using the same selector rules as :meth:`style`.
-
         Returns
         -------
         TyTable
             ``self``, for chaining.
         """
-        _themes.theme_rotate(self, angle=angle, i=i, j=j)
+        self._typst_opts.rotate_angle = angle
         return self
 
-    def theme_resize(
+    def resize(
         self,
         width: float | None = 1,
         height: float | None = None,
@@ -1135,10 +1092,12 @@ class TyTable:
         ValueError
             If the resize configuration is invalid; raised when rendering.
         """
-        _themes.theme_resize(self, width=width, height=height, direction=direction)
+        self._typst_opts.resize_width = width
+        self._typst_opts.resize_height = height
+        self._typst_opts.resize_direction = direction
         return self
 
-    def theme_multipage(self, *, repeat_headers: bool = True) -> TyTable:
+    def multipage(self, *, repeat_headers: bool = True) -> TyTable:
         """Allow the Typst table to span pages.
 
         Parameters
@@ -1158,7 +1117,8 @@ class TyTable:
         figures with tytable's custom figure kind breakable, so other figures
         in the surrounding document are unaffected.
         """
-        _themes.theme_multipage(self, repeat_headers=repeat_headers)
+        self._typst_opts.multipage = True
+        self._typst_opts.repeat_headers = repeat_headers
         return self
 
     def finalize(self, fn: Callable[[str, str], str]) -> TyTable:
@@ -1256,7 +1216,7 @@ class TyTable:
         renderers: dict[str, Renderer] = {
             "html": HtmlRenderer(),
             "ascii": AsciiRenderer(),
-            "typst": TypstRenderer(self._typst_opts),
+            "typst": TypstRenderer(built.typst_options or self._typst_opts),
         }
         renderer = renderers.get(output, renderers["typst"])
         result = renderer.render(built)

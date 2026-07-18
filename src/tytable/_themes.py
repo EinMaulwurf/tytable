@@ -1,156 +1,50 @@
-"""
-Built-in theme registry and the theme functions behind it.
+"""Built-in, replaceable base appearances.
 
-Each theme is a callable ``theme(table) -> TyTable`` that records style
-directives and/or Typst options on the table. Public application code normally
-uses the typed ``TyTable.theme_*()`` methods; ``THEMES`` remains available for
-discovery and advanced composition.
+Themes are resolved against the semantic table structure during ``build()``.
+They therefore never become ordinary user directives and explicit ``style()``
+calls always take precedence, regardless of call order.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import fields, replace
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from ._indices import _BoundaryRow
-from ._render_typst import TypstRenderOptions
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
 
-
-def default_line_color(table: TyTable) -> str:
-    """Return the default rule color (always black)."""
-    return "black"
+BaseTheme = Literal["default", "plain", "striped", "grid"]
 
 
-def theme_default(table: TyTable) -> TyTable:
-    """Apply the booktab-style default theme: thin top/bottom rules under the header."""
-    col = default_line_color(table)
+def apply_base_theme(table: TyTable) -> None:
+    """Record the selected base appearance on an isolated build-time table."""
+    if table._theme == "plain":
+        return
+    if table._theme == "striped":
+        even_source_rows = list(range(0, table._data.height, 2))
+        if even_source_rows:
+            table._deferred_style(i=even_source_rows, background="#ededed")
+        return
+    if table._theme == "grid":
+        table._typst_opts.grid_stroke = "(paint: black)"
+        table._deferred_style(i="all", line="tblr", line_color="black", line_width=0.05)
+        return
 
-    def prepare(t: TyTable) -> None:
-        last = t._n_merged_body_rows
-        if last:
-            t._deferred_style(i=_BoundaryRow("last"), line="b", line_color=col, line_width=0.08)
-        n_cg = len(t._col_group_rows)
-        if n_cg > 0:
-            t._deferred_style(i=_BoundaryRow("first"), line="t", line_color=col, line_width=0.08)
-        elif t._show_colnames:
-            t._deferred_style(i="header", line="t", line_color=col, line_width=0.08)
-        else:
-            if last:
-                t._deferred_style(
-                    i=_BoundaryRow("first"), line="t", line_color=col, line_width=0.08
-                )
-        if t._show_colnames:
-            t._deferred_style(i="header", line="b", line_color=col, line_width=0.05)
-
-    table._prepare_hooks.append(prepare)
-    theme_typst(table)
-    return table
-
-
-def theme_striped(table: TyTable) -> TyTable:
-    """Apply alternating grey background stripes to even data rows."""
-
-    def prepare(t: TyTable) -> None:
-        even = list(range(0, t._data.height, 2))
-        if even:
-            t._deferred_style(i=even, background="#ededed")
-
-    table._prepare_hooks.append(prepare)
-    return table
-
-
-def theme_grid(table: TyTable) -> TyTable:
-    """Apply a full grid: black borders around every cell."""
-    table._typst_opts.grid_stroke = "(paint: black)"
-    table.style(i="all", line="tblr", line_color="black", line_width=0.05)
-    return table
-
-
-def theme_empty(table: TyTable) -> TyTable:
-    """Strip prior styles, formats, prepare hooks, and theme-level Typst options."""
-    table._style_directives.clear()
-    table._deferred_style_directives.clear()
-    table._format_directives.clear()
-    table._prepare_hooks.clear()
-    table._typst_opts = replace(table._base_typst_opts)
-    return table
-
-
-def theme_rotate(
-    table: TyTable,
-    angle: float = 90,
-    i: int | str | Sequence[int | str] | None = None,
-    j: int | str | Sequence[int | str] | None = None,
-) -> TyTable:
-    """Rotate the whole table (``i``/``j`` both ``None``) or just selected cells."""
-    if i is None and j is None:
-        table._typst_opts.rotate_angle = angle
-    else:
-        table.style(i=i, j=j, rotate=angle)
-    return table
-
-
-def theme_typst(table: TyTable, **opts: object) -> TyTable:
-    """Set raw Typst render options (``figure``, ``multipage``, ``portable``, …)."""
-    valid_keys = {field.name for field in fields(TypstRenderOptions)}
-    invalid_keys = opts.keys() - valid_keys
-    if invalid_keys:
-        invalid = ", ".join(sorted(invalid_keys))
-        valid = ", ".join(sorted(valid_keys))
-        raise ValueError(f"unknown Typst render option(s): {invalid}. Valid options: {valid}")
-
-    for key, value in opts.items():
-        if value is not None:
-            setattr(table._typst_opts, key, value)
-    return table
-
-
-def theme_resize(
-    table: TyTable,
-    width: float | None = 1,
-    height: float | None = None,
-    direction: str = "both",
-) -> TyTable:
-    """Scale the table to fit a target size (a fraction of the available area).
-
-    Wraps the rendered Typst fragment in a ``#layout(size => …)`` block that
-    measures the table and rescales it by a uniform factor.
-
-    Parameters
-    ----------
-    width
-        Target width as a fraction of the page content width (``1`` = full
-        width). Used unless ``height`` is given. Defaults to ``1``.
-    height
-        Target height as a fraction of the page content height. When set,
-        height drives the scaling and width follows proportionally.
-    direction
-        ``"down"`` only shrink oversized tables, ``"up"`` only expand
-        undersized ones, ``"both"`` (default) always scale to the target.
-    """
-    table._typst_opts.resize_width = width
-    table._typst_opts.resize_height = height
-    table._typst_opts.resize_direction = direction
-    return table
-
-
-def theme_multipage(table: TyTable, *, repeat_headers: bool = True) -> TyTable:
-    """Allow a Typst table to span pages and optionally repeat its header rows."""
-    table._typst_opts.multipage = True
-    table._typst_opts.repeat_headers = repeat_headers
-    return table
-
-
-THEMES = {
-    "default": theme_default,
-    "grid": theme_grid,
-    "striped": theme_striped,
-    "empty": theme_empty,
-    "rotate": theme_rotate,
-    "resize": theme_resize,
-    "multipage": theme_multipage,
-}
+    # The default appearance follows actual rendered boundaries.  The private
+    # boundary selectors are semantic identities resolved only after grouping.
+    last = table._n_merged_body_rows
+    if last:
+        table._deferred_style(i=_BoundaryRow("last"), line="b", line_color="black", line_width=0.08)
+    if table._col_group_rows:
+        table._deferred_style(
+            i=_BoundaryRow("first"), line="t", line_color="black", line_width=0.08
+        )
+    elif table._show_colnames:
+        table._deferred_style(i="header", line="t", line_color="black", line_width=0.08)
+    elif last:
+        table._deferred_style(
+            i=_BoundaryRow("first"), line="t", line_color="black", line_width=0.08
+        )
+    if table._show_colnames:
+        table._deferred_style(i="header", line="b", line_color="black", line_width=0.05)

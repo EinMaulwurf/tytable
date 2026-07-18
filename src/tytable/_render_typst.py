@@ -69,9 +69,9 @@ class TypstRenderOptions:
     renders now always embed generated plots and saves always materialize them.
 
     The constructor seeds ``figure``, ``multipage``, row height, and gutter.
-    Theme functions then mutate this object in chain order, so later themes
-    win. ``theme_empty`` restores the constructor snapshot before subsequent
-    themes apply. Per-cell border directives remain separate from
+    Direct layout operations mutate this object. Base appearance options are
+    applied to a build-time copy, so switching themes never leaves stale
+    renderer state. Per-cell border directives remain separate from
     ``grid_stroke`` and are emitted as explicit lines over that table default.
     """
 
