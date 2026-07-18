@@ -6,6 +6,9 @@
 
 A lightweight Python package for creating typst tables from (polars) dataframes. Inspired by the tinytable R package.
 
+**Version 2 direction:** The current v2 work aims to reduce complexity in both the public API and
+the internals while preserving a flexible, modern user experience.
+
 ## Commands
 
 ```bash
