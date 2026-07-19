@@ -59,6 +59,8 @@ tab.save("report_assets/products.typ")
 tab
 ```
 
+![Rendered Product scores table](docs/assets/readme-example.png)
+
 The `.typ` file can be `#include`d in a Typst report and compiled as part of the
 whole document.
 
