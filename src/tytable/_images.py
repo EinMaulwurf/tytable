@@ -143,6 +143,7 @@ def _escape_typst_bytes(s: str) -> str:
     """Escape backslashes and double-quotes for embedding inside a Typst string literal."""
     s = s.replace("\\", "\\\\")
     s = s.replace('"', '\\"')
+    s = s.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
     return s
 
 
@@ -164,6 +165,21 @@ def _typst_embedded_bytes(data: bytes) -> str:
     """Encode arbitrary bytes as a Typst byte-array expression."""
     values = ", ".join(str(value) for value in data)
     return f"bytes(({values}))"
+
+
+def _typst_embedded_image(
+    legacy_source: str,
+    modern_source: str,
+    typst_format: str,
+    height: str,
+) -> str:
+    """Decode in-memory image data across Typst's pre- and post-0.13 APIs."""
+    arguments = f'format: "{typst_format}", height: {height}em'
+    return (
+        f"#if sys.version < version(0, 13, 0) "
+        f"{{ image.decode({legacy_source}, {arguments}) }} "
+        f"else {{ image({modern_source}, {arguments}) }}"
+    )
 
 
 def _static_image_bytes(
@@ -249,10 +265,14 @@ def _build_image_cell_string(
             if image_format is None:
                 svg = _make_svg_wrapper(image_data, width_px, height_px)
                 escaped = _escape_typst_bytes(svg)
-                return f'#image(bytes("{escaped}"), format: "svg", height: {h}em)'
+                return _typst_embedded_image(f'"{escaped}"', f'bytes("{escaped}")', "svg", h)
             typst_format, _mime = image_format
+            if typst_format == "svg":
+                svg = image_data.decode("utf-8-sig")
+                escaped = _escape_typst_bytes(svg)
+                return _typst_embedded_image(f'"{escaped}"', f'bytes("{escaped}")', "svg", h)
             encoded = _typst_embedded_bytes(image_data)
-            return f'#image({encoded}, format: "{typst_format}", height: {h}em)'
+            return _typst_embedded_image(encoded, encoded, typst_format, h)
         else:
             return f'#image("{_escape_typst_bytes(relpath)}", height: {h}em)'
     elif output == "html":

@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixes
+
+- Decode embedded media through Typst's version-appropriate API and require Typst 0.11.1 or newer because Typst 0.11.0 does not expose in-memory image decoding.
+
 ## [2.0.0] - 2026-07-19
 
 Version 2 makes selectors, themes, and media handling more predictable while removing redundant ways to configure the same behavior.

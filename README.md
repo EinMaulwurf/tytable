@@ -19,7 +19,7 @@ Or with pip:
 pip install tytable
 ```
 
-Tytable-generated `.typ` fragments require **Typst 0.11.0 or newer** to compile.
+Tytable-generated `.typ` fragments require **Typst 0.11.1 or newer** to compile.
 The published documentation PDF is built with Typst 0.15.0.
 
 For generated plots and sparklines, install the optional extra. Embedding existing

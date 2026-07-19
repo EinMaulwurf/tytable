@@ -68,7 +68,7 @@ embedded without additional Python dependencies:
 uv add "tytable[images]"
 ```
 
-Tytable-generated `.typ` fragments require *Typst 0.11.0 or newer* to compile.
+Tytable-generated `.typ` fragments require *Typst 0.11.1 or newer* to compile.
 The published documentation PDF is built with Typst 0.15.0.
 
 == Start here: your first table

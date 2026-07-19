@@ -114,7 +114,7 @@ class TestPlotSparkline:
         second = table.render("typst")
 
         assert first == second
-        assert "#image(bytes(" in first
+        assert "image.decode(" in first
         assert set(tmp_path.iterdir()) == before
 
     def test_direct_html_render_embeds_data_uri(self):
@@ -140,7 +140,7 @@ class TestPlotSparkline:
         second = (tmp_path / "two" / "report.typ").read_text()
         assert 'image("sales_assets/' in first
         assert 'image("media/' in second
-        assert "#image(bytes(" in direct
+        assert "image.decode(" in direct
         assert (tmp_path / "one" / "sales_assets").is_dir()
         assert (tmp_path / "two" / "media").is_dir()
         assert not hasattr(table, "_assets_dir")
@@ -221,7 +221,7 @@ class TestPlotSparkline:
     def test_sparkline_render_embeds_plot(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
-        assert "#image(bytes(" in result
+        assert "image.decode(" in result
 
     @pytest.mark.parametrize("policy", ["copy", "reference", "embed"])
     def test_save_combines_generated_plots_with_every_static_policy(
@@ -344,7 +344,7 @@ class TestStaticImagePolicies:
         typst = table.render("typst", static_images="embed")
         html = table.render("html", static_images="embed")
 
-        assert "#image(bytes((" in typst
+        assert 'image.decode("<svg' in typst
         assert 'format: "svg"' in typst
         assert '<img src="data:image/svg+xml;base64,' in html
         assert set(tmp_path.iterdir()) == before
@@ -463,7 +463,7 @@ class TestPortable:
     def test_direct_typst_render_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
-        assert "#image(bytes(" in result
+        assert "image.decode(" in result
 
     def test_inline_plot_uses_requested_pixel_dimensions(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
