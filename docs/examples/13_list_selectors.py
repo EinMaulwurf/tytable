@@ -1,16 +1,4 @@
-"""
-List selectors — targeting multiple rows and columns by name in one call.
-
-``i`` and ``j`` both accept a list of strings, so you can apply the same
-formatting or styling to several columns or rows without repeating yourself.
-Unlike integer lists, string lists read as plain-language descriptions:
-``j=["Revenue", "Cost"]`` instead of ``j=[0, 2]``.
-
-This example uses list-of-strings ``j`` selectors to format several numeric
-columns in one call, and a list-of-strings ``i`` selector to make both the
-column-header row and all data rows bold at once. The numeric columns are
-right-aligned automatically from their Polars dtypes.
-"""
+"""List selectors — targeting multiple rows and columns by name in one call."""
 
 import polars as pl
 

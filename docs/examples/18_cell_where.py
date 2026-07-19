@@ -1,9 +1,4 @@
-"""Cell-level styling — test each numeric cell instead of selecting whole rows.
-
-``i`` and ``j`` select rows and columns independently, so their intersections
-form a rectangle. ``where`` instead keeps the shape of a multi-column Polars
-expression and styles only the individual cells whose mask value is true.
-"""
+"""Cell-level styling — test each numeric cell instead of selecting whole rows."""
 
 import polars as pl
 import polars.selectors as cs

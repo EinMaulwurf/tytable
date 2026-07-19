@@ -1,10 +1,4 @@
-"""Data-driven selectors — style financial results without fixed row numbers.
-
-This example demonstrates all three dynamic selector forms:
-1. A multi-column Polars expression highlights profitable growth.
-2. A boolean Series marks rows selected for manual review.
-3. A Python callable identifies individual loss-making cells.
-"""
+"""Data-driven selectors — style results without fixed row numbers."""
 
 import polars as pl
 

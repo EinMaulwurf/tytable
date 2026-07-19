@@ -1,9 +1,4 @@
-"""Intersect a cell mask with row and column restrictions.
-
-The ``Active`` column supplies a row mask through ``i``. ``j`` limits the
-candidate display columns, and ``where`` tests each candidate cell's own value.
-A cell is highlighted only when all three selectors include it.
-"""
+"""Intersect a cell mask with row and column restrictions."""
 
 import polars as pl
 import polars.selectors as cs

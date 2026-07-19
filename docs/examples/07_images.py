@@ -1,9 +1,4 @@
-"""
-Images & sparklines example — embedding existing files and generated plots.
-
-Only the generated `.plot()` sparklines require the `images` extra:
-pip install tytable[images]
-"""
+"""Images & sparklines example — embedding existing files and generated plots."""
 
 import matplotlib.pyplot as plt
 import polars as pl

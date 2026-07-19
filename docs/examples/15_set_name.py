@@ -1,6 +1,4 @@
-"""
-Renaming columns with ``.set_name()``.
-"""
+"""Renaming columns with ``.set_name()``."""
 
 import polars as pl
 
