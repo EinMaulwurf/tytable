@@ -285,6 +285,46 @@ Both forms always see the original typed values and original column names,
 including after `.set_name()`. `where` cannot target headers, group rows,
 captions, or notes.
 
+#pagebreak()
+#set page(width: 297mm, height: 210mm, margin: (x: 1.8cm, y: 1.5cm), numbering: "1", number-align: center)
+
+=== Selectors at a glance
+
+Every panel below starts from the same four-row table, including its `Results` column group and inserted `Group B` row. The selector printed above it is the only selection that changes; green shows every cell it targets.
+
+#let selector-card(label, result) = block(
+  width: 100%,
+  breakable: false,
+  fill: rgb("#f7f9f8"),
+  stroke: 0.5pt + rgb("#dfe6e2"),
+  inset: 8pt,
+  radius: 5pt,
+)[
+  #block(height: 2.5em)[#text(size: 8.5pt)[#raw(label, lang: "python")]]
+  #v(4pt)
+  #result
+]
+
+#grid(
+  columns: (1fr, 1fr, 1fr),
+  gutter: 11pt,
+  row-gutter: 11pt,
+  selector-card("i=0", [#include "build/20_selector_i0.typ"]),
+  selector-card("i=[0, 2]", [#include "build/20_selector_ilist.typ"]),
+  selector-card("i=pl.col(\"Score\") > 100", [#include "build/20_selector_iexpr.typ"]),
+  selector-card("j=\"Sales\"", [#include "build/20_selector_jname.typ"]),
+  selector-card("i=1, j=[\"Sales\", \"Cost\"]", [#include "build/20_selector_ij.typ"]),
+  selector-card("i=pl.col(\"Score\") > 100,\nj=[\"Sales\", \"Cost\"]", [#include "build/20_selector_crossproduct.typ"]),
+  selector-card("where=cs.numeric() > 100", [#include "build/20_selector_where.typ"]),
+  selector-card("i=\"header\"", [#include "build/20_selector_header.typ"]),
+  selector-card("i=[\"groupi\", \"groupj\"]", [#include "build/20_selector_groups.typ"]),
+)
+
+Compare the middle-right and lower-left panels: `i=pl.col("Score") > 100, j=["Sales", "Cost"]` first finds two rows and two columns, then styles their four-cell cross-product—even though some of those cells are below 100. `where=cs.numeric() > 100` instead tests each numeric cell and styles only the values that pass.
+
+#pagebreak()
+#set page(paper: "a4", margin: (x: 2.4cm, y: 2.5cm), numbering: "1", number-align: center)
+
 == Renaming columns
 
 `.set_name()` renames column headers for display without touching the
