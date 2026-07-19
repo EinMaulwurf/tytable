@@ -39,6 +39,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Remove `colnames_override` from `tt()` and `TyTable`; rename display headers with
   `.set_name(name={"source_name": "Display name"})` instead.
 
+### Documentation
+
+- Carry the three-part tutorial, advanced-guides, and reference organization forward with the
+  version 2 API, selector semantics, themes, media policies, and rendering contracts.
+
 ## [1.3.0] - 2026-07-17
 
 ### Features
