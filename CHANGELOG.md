@@ -7,6 +7,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Version 2 makes selectors, themes, and media handling more predictable while removing redundant
+ways to configure the same behavior.
+
 ### Features
 
 - Accept `range` and other selector sequences for row and column selectors while continuing to
