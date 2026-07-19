@@ -89,11 +89,17 @@ inserted group rows and headers are selected by explicit semantic names.
 | `_render_ascii.py` | ASCII `__repr__`                                                                                  |
 | `_images.py`       | Plot/image embedding (requires `images` extra)                                                    |
 
-`docs/` contains several small, standalone python scripts with examples and a `.typ` file which is compiled to a standalone documentation PDF on every push and release.
+`docs/` contains several small, standalone python scripts with examples and a `.typ` file which is
+compiled to a standalone documentation PDF on every push and release. `docs/agent-guide.md` is the
+concise user-facing API reference for coding agents. After changing public behavior, selectors,
+styling, formatting, or examples, check both `docs/main.typ` and `docs/agent-guide.md` and update
+either one that is affected.
 
 ## Commit style
 
 Conventional commits: `type(scope): description`. Types: `feat`, `fix`, `docs`, `test`, `ci`, `build`, `refactor`. Scope optional. Keep descriptions imperative and lowercase. Examples from history: `refactor: make themes replaceable base appearances`, `fix: resolve all 20 mypy type-checking errors`, `docs: add docstrings to all public API`.
+
+## Other conventions
 
 - All source modules start with `_` (private). Public API is only what `__init__.py` exports.
 - **Semantic row selection**: `i=0` is the first source-data row, even after grouping inserts
