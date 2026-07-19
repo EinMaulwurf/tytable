@@ -149,53 +149,136 @@ The recommended path is:
 4. embed plots and assemble a complete report table;
 5. turn the same chain into a reusable, typed Python component;
 6. use the task-oriented API reference to find the method for a job.
+
 == Core concepts
 
-Four conventions make tytable chains predictable before you begin combining
+Two conventions make tytable chains predictable before you begin combining
 formatting, styling, and grouping directives.
 
-=== Row selectors are semantic
-
-`i=0` is the first source DataFrame row. Non-negative integers keep that
-meaning even when row-group separators are inserted before them. Omitting `i`,
-or writing `i="data"` explicitly, selects every genuine source-data row. Use
-`i="header"` for the column-name row, `i="groupi"` for row-group separators,
-`i="groupj"` for all column-group rows, and `i="all"` for the complete grid.
-Negative public row indices are not supported.
-
-The selector vocabulary is shared, but each operation accepts only rows whose
-content it can represent. `.style()` supports every grid row. `.fmt()` and
-targeted notes support data rows, row-group separators, and the column-name
-header. `.plot()` and `.images()` support data and row-group rows. Selecting an
-unsupported row kind raises a targeted error during rendering instead of being
-silently ignored.
-
-=== Select columns by name
-
-`j="Score"` is the preferred form; `j=0` selects the first column by position.
-Both `i` and `j` also accept sequences of strings or integers to target several rows or columns in
-one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "data"]`, or `j=range(5)`
-for the first five columns. Lists, tuples, and ranges are supported; arbitrary
-iterables such as generators and sets are not. `i` additionally
-accepts Polars expressions, boolean series, and callables for data-driven
-selection (see the *Styling* section).
-
-`.fmt()` and `.style()` use the intersection of `i` and `j`, so combining them
-targets individual cells—for example, `.fmt(i=1, j="Score", digits=1)` formats
-only the `Score` cell in the second data row, and `.style(i=1, j="Score",
-bold=True)` styles only that cell.
-
-=== Everything returns `self`
-
-`.style()`, `.fmt()`, `.group()`, `.set_name()`, the `.theme_*()` methods, and
+Everything returns `self`: `.style()`, `.fmt()`, `.group()`, `.set_name()`, the `.theme_*()` methods, and
 the named layout operations all return the table, so you chain them.
 `.render()` and `.save()` are terminal.
 
-=== Evaluation is lazy
-
-Styling, formatting, grouping, and plotting are recorded as _intent_ and
+Evaluation is lazy: Styling, formatting, grouping, and plotting are recorded as _intent_ and
 replayed in a fixed order at render time. Integer row selectors always refer to
 stable, 0-based source DataFrame rows.
+
+== Select rows and columns <selectors>
+
+Methods that act on part of a table use `i` to select rows and `j` to select
+columns. This includes `.fmt()`, `.style()`, `.plot()`, `.images()`, and targeted
+notes. The small calls below only illustrate selection; #link(<formatting>)[Formatting]
+and #link(<styling>)[Styling] introduce the operations themselves in more detail.
+
+=== Select rows with `i`
+
+Non-negative integers are 0-based positions in the original DataFrame, so `i=0`
+always means the first source row. Inserting row groups does not change that
+meaning. Negative row positions are not supported. Omit `i`, pass `None`, or use
+`i="data"` to select every genuine source-data row.
+
+Use a list, tuple, or range to select several rows:
+
+```python
+table.style(i=0, bold=True)          # first source row
+table.style(i=range(3), bold=True)   # first three source rows
+```
+
+Structural rows have semantic names:
+
+#table(
+  columns: (auto, 1fr),
+  inset: 5pt,
+  align: (left, left),
+  table.header([Selector], [Target]),
+  [`"data"`], [all genuine source-data rows],
+  [`"header"`], [the column-name row],
+  [`"groupi"`], [inserted row-group separator rows],
+  [`"groupj"`], [spanning column-group header rows],
+  [`"all"`], [the complete displayed grid],
+  [`"caption"`], [the caption; `.style()` only],
+  [`"notes"`], [all footer notes; `.style()` only],
+)
+
+Sequences may mix positions and semantic names, such as
+`i=[0, 2, "header"]`. Lists, tuples, and ranges are supported; generators and
+sets are not.
+
+Rows may also be selected from their source values:
+
+```python
+table.style(i=pl.col("Score") >= 80, bold=True)
+table.style(i=[True, False, True], bold=True)
+table.style(i=pl.Series([True, False, True]), bold=True)
+table.style(i=lambda row: row["Score"] >= 80, bold=True)
+```
+
+Boolean masks and Series need exactly one value per source row. Expressions and
+callables are evaluated against the original DataFrame. All four forms work
+with `.style()`, `.fmt()`, `.plot()`, and `.images()`.
+
+The selector vocabulary is shared, but operations accept only row kinds they
+can represent. `.style()` supports every grid row as well as captions and notes;
+`.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()`
+and `.images()` support data and `"groupi"`. Unsupported structural selections
+raise an error during rendering.
+
+=== Select columns with `j`
+
+Select columns by their original DataFrame names whenever possible. Integer
+positions, sequences, and ranges are also supported. Omitting `j` selects every
+column.
+
+```python
+table.fmt(j="Score", digits=1)
+table.style(j=["Name", "Score"], bold=True)
+table.style(j=range(2), bold=True)
+```
+
+With `regex=True`, strings are regular expressions matched against the original
+column names using Python's `re.search`:
+
+```python
+table.fmt(j=r"^Q[1-4]$", regex=True, digits=1)
+```
+
+Names assigned by `.set_name()` are display labels, not selectors. Continue to
+use the original DataFrame name after renaming a header.
+
+=== Combine rows and columns, or select individual cells
+
+Combining `i` and `j` selects their rectangular cross-product. This call acts
+on just the `Score` cell in the second source row:
+
+```python
+table.style(i=1, j="Score", bold=True)
+```
+
+Use `where` with `.style()` or `.fmt()` when a condition should select
+individual data cells instead of complete rows:
+
+```python
+table.style(where=pl.col("Score") >= 80, bold=True)
+```
+
+A `where` expression is evaluated against the original typed DataFrame. Its
+Boolean output columns are matched to source columns by name and intersected
+with any `i` and `j` selection:
+
+```text
+(rows selected by i × columns selected by j) ∩ true cells selected by where
+```
+
+An `i` expression must resolve to one Boolean value per source row; use
+`pl.any_horizontal` or `pl.all_horizontal` to reduce a multi-column condition.
+A `where` expression instead preserves its Boolean output columns so each true
+value maps to one source cell. Each output column name must match a source
+column, and false or null values select nothing.
+
+Both forms always see the original typed values and original column names,
+including after `.set_name()`. `where` cannot target headers, group rows,
+captions, or notes.
+
 == Renaming columns
 
 `.set_name()` renames column headers for display without touching the
@@ -208,8 +291,8 @@ duplicate).
 Three calling modes:
 
 - *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`.
-  `j` follows the same selector rules as `.style()` / `.fmt()` (name, integer
-  position, a list, or a regex with `regex=True`; see `.style()`). `name` is a
+  `j` follows the #link(<selectors>)[column selector rules] (name, integer
+  position, a list, or a regex with `regex=True`). `name` is a
   single `str` (applied to every matched column) or a `list[str]` with one entry
   per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
@@ -217,12 +300,11 @@ Three calling modes:
 - *Mapping*: `.set_name(name={source: display, ...})` renames any subset using
   exact original DataFrame column names as keys.
 
-Every `j` selector continues to use the original Polars column names, whether
-the directive was recorded before or after the rename. Display labels are
-presentation only and never become selectors. This keeps duplicate and empty
-labels unambiguous: the example displays `""`, `Revenue`, and `Cost`, then
-formats those columns using the source names `val_1` and `val_2`. Their
-alignment continues to follow the source-column numeric dtypes:
+Because #link(<selectors>)[selectors keep using source-column names], display
+labels may safely be duplicate or empty. This example displays `""`, `Revenue`,
+and `Cost`, then formats the last two columns using their source names `val_1`
+and `val_2`. Their alignment continues to follow the source-column numeric
+dtypes:
 
 #tag("SOURCE")
 #source("examples/15_set_name.py")
@@ -230,7 +312,8 @@ alignment continues to follow the source-column numeric dtypes:
 #tag("RESULT")
 #v(0.12em)
 #include "build/15_set_name.typ"
-== Formatting
+
+== Formatting <formatting>
 
 Cell values can be formatted in three complementary ways. Pick whichever suits
 the column, or mix them across columns in the same table.
@@ -262,7 +345,9 @@ whatever strings Polars produces, so characters like `$` are escaped for you.)
 === With `.fmt()`
 
 For quick, in-table transforms that stay inside the `tt()` chain, without
-reaching back into polars:
+reaching back into polars. See #link(<selectors>)[Select rows and columns] to
+restrict any transform to particular rows, columns, or conditionally selected
+cells.
 
 - `digits` — fixed decimal places (`num_fmt="decimal"`), significant figures
   (`num_fmt="significant"`), or typeset scientific notation
@@ -340,7 +425,7 @@ as `$` in Typst:
 
 Mizani is an optional development dependency used for this documentation
 example; it is not installed with tytable at runtime.
-== Styling
+== Styling <styling>
 
 Styling directives control the appearance of cells and table-adjacent text
 without changing the underlying values.
@@ -358,6 +443,9 @@ Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`,
 `smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`c`/`r`), `alignv`
 (`t`/`m`/`b`), `indent`, `colspan`, `rowspan`, and per-side borders (`line="tblr"`
 in any combination, with `line_color` / `line_width`).
+
+See #link(<selectors>)[Select rows and columns] for positional, semantic,
+data-driven, and individual-cell selection.
 
 Any number of these properties can be combined in a single `.style()` call when
 they share the same selectors — e.g.
@@ -448,16 +536,14 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 
 A plain string in `notes` is an unmarked footer note. Use a dictionary when a
 note should point back to one or more cells. Its `text` value is the footer
-text, while `i` selects rows and `j` selects columns. Row selectors follow the
-normal conventions (`0` is the first data row and `"header"` is the column-name
-row); column names are preferred over positions.
+text, while `i` and `j` follow the #link(<selectors>)[usual selector rules].
 
 If no `marker` is supplied, targeted notes receive superscript numbers in note
 order. Set `marker` explicitly for a symbol or label such as `"*"`; the same
 marker appears at every selected cell and beside the footer text. For a cell
 target, supply `i`; omitting `j` targets every column in those rows. When both
-selectors are lists, tytable marks their cross-product, not pairwise row/column
-coordinates.
+selectors contain several entries, tytable uses their normal cross-product,
+not pairwise row/column coordinates.
 
 #tag("SOURCE")
 #source("examples/04_targeted_notes.py")
@@ -466,163 +552,6 @@ coordinates.
 #v(0.12em)
 #include "build/04_targeted_notes.typ"
 
-=== Sequence selectors
-
-`i` and `j` accept sequences of strings as well as integers, so you can name
-several rows or columns in one call without repeating yourself. A list-of-strings
-`j` selector like `j=["Revenue", "Cost", "Growth %"]` is self-documenting
-and resilient to column reordering — no need to track integer positions.
-
-Ranges are convenient for positional spans: `j=range(5)` selects the first
-five columns, while `i=range(5)` selects the first five source rows. Tuples are
-also accepted. Arbitrary iterables such as generators and sets are rejected so
-deferred selectors remain deterministic across repeated renders.
-
-The same works for `i`: `i=["header", "data"]` styles the column-name row
-and every data row in a single directive.
-
-#tag("SOURCE")
-#source("examples/13_list_selectors.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/13_list_selectors.typ"
-
-=== Data-driven row selectors
-
-Instead of hard-coding row numbers, select rows by value. `i` accepts four
-dynamic forms evaluated against the original DataFrame at render time:
-
-- A #emph[Polars expression]: `i=(pl.col("Growth %") > 0) & (pl.col("Profit") > 0)`
-- A Python boolean mask: `i=[False, True, False, True]`
-- A boolean `pl.Series`: `i=pl.Series("review", [False, True, False, True])`
-- A Python callable: `i=lambda row: row["Profit"] < 0`
-
-Boolean lists, tuples, and Series must have exactly one value per source row;
-mixed boolean/index lists are rejected. All four forms work with `.style()`,
-`.fmt()`, `.plot()`, and `.images()`.
-The expression or callable runs against the #emph[original] `DataFrame` (before
-row-group insertion), so the column names you use are always the original ones.
-Polars expressions may combine any number of columns: the example marks a row
-green and bold only when growth is positive *and* profit is above zero. It also
-uses an explicit review mask and a callable that targets only the `Profit` cell
-in loss-making rows. South deliberately combines positive growth (`3.1`) with a
-loss (`-44`), demonstrating why both sides of the expression matter.
-
-#tag("SOURCE")
-#source("examples/14_data_driven.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/14_data_driven.typ"
-
-=== Cell-level conditional styling and formatting
-
-The selectors answer different questions:
-
-- `i` asks #emph[which rows?] and resolves to one boolean value per source row.
-- `j` asks #emph[which columns?] and resolves names, positions, lists, or regex patterns.
-- `where` asks #emph[which individual body cells?] and preserves one boolean
-  output column per selected source column.
-
-Without `where`, `i` and `j` are independent. tytable applies the directive to
-every intersection of the selected rows and columns — their cross-product. For
-this data:
-
-#table(
-  columns: 3,
-  inset: 5pt,
-  table.header([Product], [Price], [Stock]),
-  [A], [150], [20],
-  [B], [80], [200],
-)
-
-the following row mask selects both rows because each contains at least one
-numeric value over 100:
-
-```python
-numeric = ["Price", "Stock"]
-
-table.style(
-    i=pl.any_horizontal(pl.col(numeric) > 100),
-    j=numeric,
-    bold=True,
-)
-```
-
-`pl.any_horizontal(...)` is necessary here because `i` needs a single boolean
-per row. Once both rows are selected, `j` selects both numeric columns, so all
-four numeric cells become bold — including `20` and `80`. It means “style these
-columns in rows where #emph[anything] matched,” not “style each value that
-matched.”
-
-Passing `i=pl.col(numeric) > 100` directly does not fix this: that expression
-has two output columns rather than one row mask. Multi-output `i` expressions
-are not supported; the current resolver takes only their first output column.
-Use `pl.any_horizontal` / `pl.all_horizontal` for intentional row selection, or
-use `where` for cell selection.
-
-=== A mask for each numeric cell
-
-`where` evaluates its Polars expression once against the original DataFrame.
-`cs.numeric() > 100` returns boolean columns named `Price` and `Stock`, and each
-true value maps back to that exact source cell. Thus `150` and `200` are styled,
-while `20` and `80` are not:
-
-#tag("SOURCE")
-#source("examples/18_cell_where.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/18_cell_where.typ"
-
-When `where` is present, the final target is:
-
-```text
-(rows selected by i × columns selected by j) ∩ true cells selected by where
-```
-
-Omit `i` and `j` when the `where` expression already identifies everything you
-need. Add either selector when it provides a useful additional restriction.
-
-=== Restrict the mask with a boolean row column
-
-The next example has an `Active` boolean column. `i=pl.col("Active")` removes
-inactive rows, `j` limits the candidate display columns to `Price` and `Stock`,
-and `where` tests each remaining cell. The inactive row B is not highlighted
-even though both of its numeric values exceed 100; in active row C, only Stock
-matches.
-
-#tag("SOURCE")
-#source("examples/19_cell_where_active.py")
-
-#tag("RESULT")
-#v(0.12em)
-#include "build/19_cell_where_active.typ"
-
-=== Formatting selected cells
-
-`.fmt()` accepts the same cell mask. Every transform recorded in that one
-directive — `digits`, `fn`, `replace`, `linebreak`, `math`, and `escape` — runs
-only on matching cells:
-
-```python
-table = tt(df).fmt(
-    where=cs.numeric() > 100,
-    digits=0,
-)
-```
-
-Conditions always see the original typed values, not strings produced by an
-earlier formatting directive. `where` expressions also use original source
-column names after `.set_name()` changes displayed headers; `j` uses those same
-stable source names. False and null mask values select nothing. A mask
-must have one boolean value per source row, and each output column name must
-match a source column.
-
-Because `where` maps source data cells, it never selects column headers, group
-labels, captions, or notes. Continue to use `i="header"`, `i="groupi"`,
-`i="groupj"`, `i="caption"`, or `i="notes"` for those synthetic targets.
 == Grouping
 
 Grouping adds visual hierarchy by placing spanning labels above related columns
@@ -727,13 +656,17 @@ The gallery compares the four base appearances:
 #v(0.12em)
 #include "build/05_theme_plain.typ"
 
-=== Resize
+=== Resize <resize>
 
 The `.resize()` operation scales a table to fit a target size, expressed as a fraction
 of the available page area. It wraps the rendered fragment in a Typst
 `#layout(size => …)` block that measures the table and rescales it by a uniform
 factor. This is useful when a wide table would otherwise overflow the text
 column.
+
+This is different from `tt(width=...)`, which assigns available width among
+columns without scaling their contents, and `tt(height=...)`, which sets row
+height in `em`. See #link(<column-widths>)[Column widths] for column layout.
 
 Three knobs control `.resize()`:
 
@@ -782,7 +715,8 @@ tt(df).multipage(repeat_headers=False)
 The generated Typst show rule is scoped to figures whose kind is `"tytable"`,
 so images and other figures later in the document retain their own page-break
 behaviour.
-== Saving and using a table in Typst
+
+== Saving and using a table in Typst <saving-typst>
 
 There are two ways to get Typst output, depending on what you want to do next:
 
@@ -859,6 +793,7 @@ process's current working directory. `static_images="reference"` does not resolv
 the authored value at all; after saving, a relative reference is interpreted from
 the `.typ` or `.html` fragment (or its served URL). Use reference mode for remote
 HTML resources or assets already managed by a surrounding report project.
+
 == Putting it together
 
 A feature-rich table built without any image dependencies — combining explicit

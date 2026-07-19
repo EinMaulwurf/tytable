@@ -6,13 +6,17 @@
 
 These chapters are independent. Read the ones that match the table or application you are building.
 
-== Column widths
+== Column widths <column-widths>
 
 The `width` parameter of `tt()` accepts several forms: a single fraction spread
 evenly, a per-column list of fractions, a Typst/HTML unit string, or `None` for
 auto. You may mix all three in one list. Pass `width=1` for a #emph[full-width]
 table — the fraction is split across columns so the table fills the available
 content width (e.g. `width=0.5` covers half).
+
+This controls column layout; it does not scale the rendered table or its text.
+Use #link(<resize>)[`.resize()`] when the complete table should be uniformly
+shrunk or enlarged to fit a target width or height.
 
 #tag("SOURCE")
 #source("examples/06_widths.py")
@@ -57,6 +61,10 @@ the `images` extra.
 #tag("RESULT")
 #v(0.12em)
 #include "build/07_images.typ"
+
+See #link(<saving-typst>)[Saving and using a table in Typst] for the asset
+directories, copy/embed/reference policies, and the difference between
+`.render()` and `.save()` for media.
 == Alternative backends <alternative-backends>
 
 Typst is the primary output format, but a `TyTable` can render the same recorded

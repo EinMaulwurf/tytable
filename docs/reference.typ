@@ -125,8 +125,9 @@ options fall into these groups:
 
 `width` accepts a fraction, a Typst length string, or one entry per column
 (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
-`gutter` accepts points as a number, a unit string, or `None`. Numeric formatting
-is configured separately with `.fmt()`. A note is a string or a `NoteDict`,
+`height` sets row height in `em`; it does not scale the table like
+#link(<resize>)[`.resize()`]. `gutter` accepts points as a number, a unit string,
+or `None`. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`,
 exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an
 explicit string or `None`), `i` (row selector), and `j` (column selector):
 
