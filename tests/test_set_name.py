@@ -80,7 +80,9 @@ class TestSetNameFullList:
 
     def test_non_string_scalar_name_raises_clear_error(self):
         t = tt(self.DF).theme_plain()
-        with pytest.raises(TypeError, match="name must be a string or sequence of strings"):
+        with pytest.raises(
+            TypeError, match="name must be a string, sequence of strings, or mapping"
+        ):
             t.set_name(j="x", name=123)  # type: ignore[arg-type]
 
     def test_name_sequence_rejects_non_strings(self):
@@ -254,22 +256,43 @@ class TestSetNameHtml:
 
 
 @pytest.mark.typst
-class TestSetNameColnamesOverrideInterplay:
-    def test_set_name_after_override_renames_further(self):
+class TestSetNameMapping:
+    def test_partial_mapping_renames_display_headers(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
-        t = tt(df, colnames_override={"x": "X1", "y": "Y1"}).theme_plain()
-        assert t._colnames_display == ["X1", "Y1"]
-        t.set_name(j="x", name="X2")
-        assert t._colnames_display == ["X2", "Y1"]
+        t = tt(df).theme_plain().set_name(name={"x": "X"})
+        assert t._colnames_display == ["X", "y"]
+        assert "[X],[y]," in t.render("typst")
 
-    def test_set_name_full_list_overrides_override(self):
+    def test_mapping_returns_self(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
-        t = tt(df, colnames_override={"x": "X1", "y": "Y1"}).theme_plain()
-        t.set_name(name=["A", "B"])
-        assert t._colnames_display == ["A", "B"]
+        t = tt(df).theme_plain()
+        assert t.set_name(name={"x": "X", "y": "Y"}) is t
 
-    def test_override_names_are_not_selectors(self):
+    def test_mapping_display_names_are_not_selectors(self):
         df = pl.DataFrame({"x": [1], "y": [2]})
-        t = tt(df, colnames_override={"x": "X1"}).theme_plain().style(j="X1", bold=True)
-        with pytest.raises(ValueError, match="column not found: 'X1'"):
+        t = tt(df).theme_plain().set_name(name={"x": "X"}).style(j="X", bold=True)
+        with pytest.raises(ValueError, match="column not found: 'X'"):
             t.render("typst")
+
+    def test_mapping_rejects_unknown_source_without_partial_update(self):
+        df = pl.DataFrame({"x": [1], "y": [2]})
+        t = tt(df).theme_plain()
+        with pytest.raises(ValueError, match="column not found: 'missing'"):
+            t.set_name(name={"x": "X", "missing": "Missing"})
+        assert t._colnames_display == ["x", "y"]
+
+    @pytest.mark.parametrize("name", [{1: "X"}, {"x": 1}])
+    def test_mapping_rejects_non_string_keys_or_values(self, name):
+        t = tt(pl.DataFrame({"x": [1]})).theme_plain()
+        with pytest.raises(TypeError, match="only string keys and values"):
+            t.set_name(name=name)
+
+    def test_mapping_rejects_j(self):
+        t = tt(pl.DataFrame({"x": [1]})).theme_plain()
+        with pytest.raises(ValueError, match="cannot be combined with j"):
+            t.set_name(j="x", name={"x": "X"})
+
+    def test_mapping_rejects_regex(self):
+        t = tt(pl.DataFrame({"x": [1]})).theme_plain()
+        with pytest.raises(ValueError, match="cannot be combined with regex=True"):
+            t.set_name(regex=True, name={"x": "X"})

@@ -297,7 +297,7 @@ want human-readable headers in the rendered table, or when you need a header
 that Polars would reject as a column name (such as an empty string `""` or a
 duplicate).
 
-Two calling modes:
+Three calling modes:
 
 - *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`.
   `j` follows the same selector rules as `.style()` / `.fmt()` (name, integer
@@ -306,6 +306,8 @@ Two calling modes:
   per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column
   header at once — the list length must equal the column count.
+- *Mapping*: `.set_name(name={source: display, ...})` renames any subset using
+  exact original DataFrame column names as keys.
 
 Every `j` selector continues to use the original Polars column names, whether
 the directive was recorded before or after the rename. Display labels are
@@ -320,9 +322,6 @@ alignment continues to follow the source-column numeric dtypes:
 #tag("RESULT")
 #v(0.12em)
 #include "build/15_set_name.typ"
-
-For one-off renames at construction time, `tt(df, colnames_override={old: new})`
-does the same thing without a chained call.
 
 = Formatting
 
@@ -1239,7 +1238,8 @@ Start here when you know the task but not the method. Methods marked
 `.set_name()` shares `j`. Omitting `i` selects every genuine source-data row
 for `.style()`, `.fmt()`, `.plot()`, and `.images()`.
 With `j=None`, every column is selected (`.plot()` and `.images()` require an
-explicit `j`; `.set_name()` instead enters full-list replacement mode).
+explicit `j`; `.set_name()` instead accepts a full-list replacement or a
+source-to-display mapping).
 
 #table(
   columns: (0.8fr, 1.45fr, 2.75fr),
@@ -1281,8 +1281,8 @@ names and the source row count. Its true cells are intersected with `i` and
 
 Integer `j` values range from zero through the column count minus one. Exact
 string names are case-sensitive and always refer to original DataFrame column
-names. Names assigned by `.set_name()` or `colnames_override` are display-only
-and never match a selector unless the same string is independently an original
+names. Names assigned by `.set_name()` are display-only and never match a
+selector unless the same string is independently an original
 column name. This makes duplicate and empty display labels legal and
 unambiguous. Directives recorded before and after a rename therefore select the
 same columns. Sequence selections are deduplicated and resolved into displayed
@@ -1319,7 +1319,7 @@ options fall into these groups:
   table.header(text(weight: "bold")[Concern], text(weight: "bold")[Options], text(weight: "bold")[Notes]),
   [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
   [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
-  [Headers], [`colnames`, `colnames_override`], [show and rename display headers],
+  [Headers], [`colnames`], [show or hide display headers],
   [Values], [`escape`], [global safe-markup policy],
   [Behaviour], [`finalize`], [initial output callback],
 )
@@ -1393,8 +1393,9 @@ mutually exclusive.
 #api("Rename display headers", api_signatures.at("set_name"))
 
 With `j`, `name` is one display name or a list matching the selected columns.
-Without `j`, pass the complete list of display names. The DataFrame remains
-unchanged, and all `j` selectors continue to use its original column names.
+Without `j`, pass either the complete list of display names or a mapping from
+original DataFrame names to display names. The DataFrame remains unchanged, and
+all `j` selectors continue to use its original column names.
 
 #api("Use default appearance", api_signatures.at("theme_default"))
 

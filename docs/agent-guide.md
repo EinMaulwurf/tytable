@@ -56,7 +56,6 @@ tt(
     height=None,
     gutter=2,
     colnames=True,
-    colnames_override=None,
     escape=True,
 )
 ```
@@ -66,7 +65,6 @@ tt(
 - `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst
   lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is the row height in `em`, not a table scaling factor.
-- `colnames_override={"source_name": "Display name"}` changes display labels only.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally
   supplying raw markup.
 
@@ -134,8 +132,8 @@ column names:
 table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
 ```
 
-Display names created by `colnames_override` or `.set_name()` never become selectors. Continue to
-select the original name:
+Display names created by `.set_name()` never become selectors. Continue to select the original
+name:
 
 ```python
 table = tt(df).set_name(j="annual_revenue_usd", name="Revenue")
@@ -299,6 +297,7 @@ Rename headers for display without altering selectors:
 ```python
 table.set_name(j="annual_revenue_usd", name="Revenue")
 table.set_name(name=["Region", "Revenue", "Cost"])
+table.set_name(name={"annual_revenue_usd": "Revenue", "annual_cost_usd": "Cost"})
 ```
 
 ## Notes, layout, and output
@@ -347,8 +346,8 @@ rules are intentionally strict.
 - Do not use 1-based row positions. `i=0` is the first source row.
 - Do not adjust row positions after grouping. Integer selectors always address source rows.
 - Do not use negative row positions.
-- Do not select a display label introduced by `.set_name()` or `colnames_override`; use the original
-  DataFrame column name.
+- Do not select a display label introduced by `.set_name()`; use the original DataFrame column
+  name.
 - Do not put value options such as `digits` in `.style()`; use `.fmt()`.
 - Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of strings.
 - Do not use `"left"`, `"center"`, or `"right"` for `align`; use `"l"`, `"c"`, or `"r"`.

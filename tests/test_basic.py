@@ -81,11 +81,13 @@ def test_public_table_class_is_tytable():
     assert not hasattr(tytable, "TinyTable")
 
 
-def test_construction_api_excludes_inert_parameters():
+def test_construction_api_excludes_removed_parameters():
     assert "rownames" not in inspect.signature(tt).parameters
     assert "digits" not in inspect.signature(tt).parameters
+    assert "colnames_override" not in inspect.signature(tt).parameters
     assert "rownames" not in inspect.signature(TyTable).parameters
     assert "digits" not in inspect.signature(TyTable).parameters
+    assert "colnames_override" not in inspect.signature(TyTable).parameters
 
 
 def test_note_dict_is_public_and_describes_note_keys():

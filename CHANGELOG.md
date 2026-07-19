@@ -27,9 +27,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ignoring them. Styling still supports the whole grid; formatting and targeted notes support
   data, row-group, and column-name rows; plots and images support data and row-group rows.
 - Resolve every `j` selector against the original DataFrame column names. Display labels assigned
-  by `.set_name()` or `colnames_override` are now presentation-only, so renaming headers cannot
-  change which columns later directives select and duplicate or empty display labels remain
-  unambiguous.
+  by `.set_name()` are presentation-only, so renaming headers cannot change which columns later
+  directives select and duplicate or empty display labels remain unambiguous.
 - Make `.render()` filesystem-side-effect-free by embedding generated plots, and make `.save()`
   independently materialize them in a table-specific `<stem>_assets/` directory by default.
 - Make `.save()` copy static `.images()` inputs into its asset directory by default. Add explicit
@@ -37,6 +36,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   or self-contained, and make `assets=` cover all externalized media.
 - Remove the inert `rownames` and constructor-level `digits` parameters from `tt()` and
   `TyTable`; configure numeric formatting with `.fmt(digits=...)`.
+- Remove `colnames_override` from `tt()` and `TyTable`; rename display headers with
+  `.set_name(name={"source_name": "Display name"})` instead.
 
 ### Fixes
 

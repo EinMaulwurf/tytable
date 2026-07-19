@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import pathlib
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
 from typing import TypeAlias
 
@@ -49,7 +49,6 @@ def tt(
     height: float | None = None,
     gutter: float | str | None = 2,
     colnames: bool = True,
-    colnames_override: dict[str, str] | None = None,
     escape: bool = True,
     finalize: Callable[[str, str], str] | None = None,
 ) -> TyTable:
@@ -100,9 +99,6 @@ def tt(
         ``"0.1em"`` is passed through. ``None`` suppresses the gutter.
     colnames
         Show the column-name header row (default ``True``).
-    colnames_override
-        Mapping ``{original_name: display_name}`` renaming columns for display
-        only (the dataframe itself is untouched).
     escape
         Escape cell text for the target backend (default ``True``). Typst and
         HTML metacharacters are escaped automatically; set ``False`` to pass
@@ -153,7 +149,6 @@ def tt(
         height=height,
         gutter=gutter,
         colnames=colnames,
-        colnames_override=colnames_override,
         escape=escape,
     )
     if finalize is not None:
@@ -274,7 +269,6 @@ class TyTable:
         height: float | None = None,
         gutter: float | str | None = 2,
         colnames: bool = True,
-        colnames_override: dict[str, str] | None = None,
         escape: bool = True,
     ) -> None:
         """Direct constructor — prefer the :func:`tt` factory.
@@ -291,11 +285,7 @@ class TyTable:
         _validate_figure_options(figure, caption, label)
         self._data = data.clone()
         self._source_colnames: list[str] = list(data.columns)
-        self._colnames_display: list[str] = (
-            [colnames_override.get(c, c) for c in data.columns]
-            if colnames_override
-            else list(data.columns)
-        )
+        self._colnames_display: list[str] = list(data.columns)
         self._show_colnames = colnames
         self._caption = caption
         self._label = label
@@ -378,9 +368,8 @@ class TyTable:
             Column selector: an original DataFrame name (``"Score"``), an
             integer position (``0``), or a sequence of any of these. For example,
             ``range(5)`` selects the first five columns. Display
-            labels assigned by :meth:`set_name` or ``colnames_override`` are
-            presentation-only and never become selectors. ``None`` means *all*
-            columns.
+            labels assigned by :meth:`set_name` are presentation-only and
+            never become selectors. ``None`` means *all* columns.
             Set ``regex=True`` to interpret string selectors as regular
             expression patterns matched against original DataFrame names via
             :func:`re.search`.
@@ -905,7 +894,7 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         regex: bool = False,
-        name: str | Sequence[str],
+        name: str | Sequence[str] | Mapping[str, str],
     ) -> TyTable:
         """
         Rename column(s) for display without touching the underlying DataFrame.
@@ -916,7 +905,7 @@ class TyTable:
         (including ``""``, duplicates, or names that would be awkward as
         Polars column names).
 
-        Two calling modes:
+        Three calling modes:
 
         - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
           selected by ``j``. ``j`` follows the same selector rules as
@@ -928,6 +917,8 @@ class TyTable:
         - **Full-list replace**: ``.set_name(name=[...])`` (``j`` omitted)
           replaces every column display name; ``name`` must be a list whose
           length equals the number of columns.
+        - **Mapping**: ``.set_name(name={source_name: display_name, ...})``
+          renames any subset of columns by exact original DataFrame name.
 
         Selectors always use the original Polars column names, regardless of
         whether they were recorded before or after a display rename. A display
@@ -942,7 +933,8 @@ class TyTable:
             New display name. A ``str`` (with ``j`` given) applies to every
             matched column; a ``list[str]`` (with ``j`` given) must match the
             number of matched columns; a ``list[str]`` with ``j=None`` must
-            match the total column count.
+            match the total column count; a mapping with ``j=None`` assigns
+            display names by exact original DataFrame name.
 
         Returns
         -------
@@ -952,10 +944,12 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``name`` is neither a string nor a sequence of strings.
+            If ``name`` is not a string, a sequence of strings, or a mapping
+            from strings to strings.
         ValueError
             If ``j`` is missing for a scalar name, a selected column is not
-            found, or the number of names does not match the selected columns.
+            found, the number of names does not match the selected columns, or
+            mapping mode is combined with ``j`` or ``regex=True``.
 
         Examples
         --------
@@ -969,8 +963,28 @@ class TyTable:
 
         >>> (tt(df)                              # doctest: +SKIP
         ...  .set_name(name=["Alpha", "Beta"]))
+
+        Rename a subset with a source-to-display mapping:
+
+        >>> (tt(df)                              # doctest: +SKIP
+        ...  .set_name(name={"x": "Alpha"}))
         """
         ncol = len(self._source_colnames)
+
+        if isinstance(name, Mapping):
+            if j is not None:
+                raise ValueError("set_name() mapping mode cannot be combined with j")
+            if regex:
+                raise ValueError("set_name() mapping mode cannot be combined with regex=True")
+            items = list(name.items())
+            if not all(
+                isinstance(source, str) and isinstance(display, str) for source, display in items
+            ):
+                raise TypeError("set_name() mapping must contain only string keys and values")
+            idxs = [self._resolve_j(source)[0] for source, _ in items]
+            for idx, (_, display) in zip(idxs, items, strict=True):
+                self._colnames_display[idx] = display
+            return self
 
         if isinstance(name, str):
             if j is None:
@@ -985,7 +999,7 @@ class TyTable:
 
         if not isinstance(name, Sequence):
             raise TypeError(
-                f"set_name() name must be a string or sequence of strings, "
+                f"set_name() name must be a string, sequence of strings, or mapping, "
                 f"got {type(name).__name__}"
             )
         names = list(name)
