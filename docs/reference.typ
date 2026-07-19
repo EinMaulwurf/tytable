@@ -32,13 +32,7 @@ Start here when you know the task but not the method. Methods marked
 
 === Authoritative selector reference
 
-`.style()`, `.fmt()`, `.plot()`, and `.images()` share `i` and `j`;
-`.style()` and `.fmt()` additionally accept the cell-level `where` selector.
-`.set_name()` shares `j`. Omitting `i` selects every genuine source-data row
-for `.style()`, `.fmt()`, `.plot()`, and `.images()`.
-With `j=None`, every column is selected (`.plot()` and `.images()` require an
-explicit `j`; `.set_name()` instead accepts a full-list replacement or a
-source-to-display mapping).
+`.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries share `i`, `j`, and `regex`; `.style()`, `.fmt()`, and targeted notes additionally accept the cell-level `where` selector. `.set_name()` shares `j` and `regex`. Omitting `i` selects every genuine source-data row for method calls; in a note, at least one of `i`, `j`, or `where` makes it targeted, and an omitted axis covers the corresponding data region. With `j=None`, every column is selected (`.plot()` and `.images()` require an explicit `j`; `.set_name()` instead accepts a full-list replacement or a source-to-display mapping).
 
 #table(
   columns: (0.8fr, 1.45fr, 2.75fr),
@@ -56,7 +50,7 @@ source-to-display mapping).
   [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],
   [`j`], [`"Score"`, `0`], [column name (preferred) or position],
   [`j`], [`["Revenue", "Cost"]`, `range(5)`], [several columns in one directive],
-  [`where`], [`cs.numeric() > 100`], [true body cells in `.style()` / `.fmt()`],
+  [`where`], [`cs.numeric() > 100`], [true body cells in `.style()`, `.fmt()`, or a targeted note],
 )
 
 Non-negative integer `i` values range from zero through the source DataFrame
@@ -126,9 +120,7 @@ options fall into these groups:
 (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed).
 `height` sets row height in `em`; it does not scale the table like
 #link(<resize>)[`.resize()`]. `gutter` accepts points as a number, a unit string,
-or `None`. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`,
-exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an
-explicit string or `None`), `i` (row selector), and `j` (column selector):
+or `None`. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), `where` (cell-level Polars expression), and `regex` (interpret string column selectors as patterns):
 
 ```python
 from tytable import NoteDict, tt
@@ -142,7 +134,7 @@ significance: NoteDict = {
 table = tt(df, notes=[significance, "Source: model output"])
 ```
 
-The annotation is optional: it makes these keys and selector types discoverable to type checkers and IDEs, but an unannotated dictionary behaves identically. When `marker` is absent, a note with `i` or `j` is numbered automatically; an untargeted note remains unmarked.
+The annotation is optional: it makes these keys and selector types discoverable to type checkers and IDEs, but an unannotated dictionary behaves identically. When `marker` is absent, a note with `i`, `j`, or `where` is numbered automatically; an untargeted note remains unmarked.
 
 Application code should normally construct with `tt(...)` and use `TyTable`
 for annotations.

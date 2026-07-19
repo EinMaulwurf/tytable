@@ -110,9 +110,11 @@ class ColGroup:
 
 @dataclass(frozen=True)
 class Note:
-    """A footnote; ``marker`` is auto-assigned when ``i``/``j`` target a cell."""
+    """A footnote; ``marker`` is auto-assigned when its selectors target cells."""
 
     text: str
     marker: str | None = None
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None
     j: int | str | Sequence[int | str] | None = None
+    where: pl.Expr | None = None
+    regex: bool = False

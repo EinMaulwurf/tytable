@@ -80,9 +80,10 @@ def tt(
     notes
         Sequence of footnotes. Each entry may be a plain ``str`` (untargeted
         note) or a :class:`~tytable.NoteDict` with ``text``, ``marker``, ``i``,
-        and ``j`` keys. Notes attached to cells via ``i`` / ``j`` get
-        auto-numbered superscript markers. Targeted notes support data rows,
-        row-group rows, and the column-name header.
+        ``j``, ``where``, and ``regex`` keys. Note selectors behave like the
+        corresponding :meth:`TyTable.fmt` selectors. Notes attached to cells
+        get auto-numbered superscript markers. Targeted notes support data
+        rows, row-group rows, and the column-name header.
     width
         Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
         half), a per-column list of fractions/strings/``None`` (``None`` =
@@ -164,6 +165,8 @@ def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
                     marker=item.get("marker"),
                     i=item.get("i"),
                     j=item.get("j"),
+                    where=item.get("where"),
+                    regex=item.get("regex", False),
                 )
             )
         elif isinstance(item, str):
@@ -174,14 +177,14 @@ def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
 
 
 def _assign_markers(notes: list[Note]) -> list[Note]:
-    """Auto-number targeted notes (those with ``i``/``j``) in document order."""
+    """Auto-number targeted notes in document order."""
     auto = 0
     result: list[Note] = []
     for note in notes:
         if note.marker is not None:
             result.append(note)
             continue
-        if note.i is not None or note.j is not None:
+        if note.i is not None or note.j is not None or note.where is not None:
             auto += 1
             result.append(replace(note, marker=str(auto)))
         else:

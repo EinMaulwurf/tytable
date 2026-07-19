@@ -70,8 +70,7 @@ tt(
 
 ## Row and column selectors
 
-`.style()`, `.fmt()`, `.plot()`, and `.images()` use `i` for rows and `j` for columns. `.style()` and
-`.fmt()` also accept `where` for individual data cells.
+`.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries use `i` for rows and `j` for columns. `.style()`, `.fmt()`, and targeted notes also accept `where` for individual data cells.
 
 ### Rows: `i`
 
@@ -98,10 +97,7 @@ Semantic row names are:
 | `"caption"` | the caption; supported only by `.style()` |
 | `"notes"` | note text; supported only by `.style()` |
 
-Sequences may mix integer and semantic selectors. Not every operation supports every structural
-row: `.style()` supports the full grid plus captions and notes; `.fmt()` supports data, `"header"`,
-and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise
-an error during rendering.
+Sequences may mix integer and semantic selectors. Targeted notes put the same selectors in a `NoteDict` passed to `tt(..., notes=[...])`. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
 
 Rows can also be selected from source values:
 
@@ -111,8 +107,7 @@ table.style(i=pl.Series([True, False, True]), bold=True)
 table.style(i=lambda row: row["Region"] == "North", bold=True)
 ```
 
-Boolean masks must have exactly one Boolean value per source row. Expressions and callables are
-evaluated against the original DataFrame.
+Boolean masks must have exactly one Boolean value per source row. Expressions and callables are evaluated against the original DataFrame. These forms also work as the `i` value in a targeted `NoteDict`.
 
 ### Columns: `j`
 
@@ -124,9 +119,7 @@ table.style(j=["Revenue", "Cost"], align="r")
 table.style(j=0, bold=True)  # positions are supported but less readable
 ```
 
-Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names and
-integer positions. With `regex=True`, string selectors use Python `re.search` against original
-column names:
+Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names and integer positions. With `regex=True`, string selectors use Python `re.search` against original column names; targeted notes accept the same `regex` key:
 
 ```python
 table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
@@ -144,14 +137,15 @@ Rename the Polars DataFrame first if a friendly name should become the true sele
 
 ### Individual cells: `where`
 
-Using both `i` and `j` normally selects their rectangular cross-product. Use `where` with `.style()`
-or `.fmt()` when the condition differs cell by cell:
+Using both `i` and `j` normally selects their rectangular cross-product. Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when the condition differs cell by cell:
 
 ```python
 import polars.selectors as cs
 
 table.style(where=cs.numeric() > 100, bold=True, background="#d7f0ea")
 table.fmt(j=["Revenue", "Cost"], where=cs.numeric() >= 1_000, digits=0)
+high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
+table = tt(df, notes=[high_values])
 ```
 
 The expression is evaluated on the original typed DataFrame. Its Boolean output columns are matched
@@ -302,7 +296,7 @@ table.set_name(name={"annual_revenue_usd": "Revenue", "annual_cost_usd": "Cost"}
 
 ## Notes, layout, and output
 
-Plain strings create untargeted notes. A `NoteDict` can attach a marker to selected cells:
+Plain strings create untargeted notes. A `NoteDict` can attach a marker to cells selected by `i`, `j`, `where`, and `regex` using the same semantics as `.fmt()` and `.style()`:
 
 ```python
 note: NoteDict = {

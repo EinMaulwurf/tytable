@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Give targeted notes the same `where` and `regex` cell-selection semantics as formatting and styling directives.
+
 ## [2.0.1] - 2026-07-19
 
 ### Fixes

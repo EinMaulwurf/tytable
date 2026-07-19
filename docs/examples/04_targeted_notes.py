@@ -1,6 +1,7 @@
 """Targeted notes — automatic numbering, explicit markers, and list selectors."""
 
 import polars as pl
+import polars.selectors as cs
 
 from tytable import NoteDict, tt
 
@@ -19,11 +20,10 @@ actual_note: NoteDict = {
 }
 
 # This constructor form is identical to the annotated dictionary above.
-forecast_note = NoteDict(
-    text="Forecast values are provisional.",
+high_value_note = NoteDict(
+    text="Values above 130 require review.",
     marker="*",
-    i=[0, 1, 2],
-    j="Forecast",
+    where=cs.numeric() > 130,
 )
 
 (
@@ -32,7 +32,7 @@ forecast_note = NoteDict(
         caption="Quarterly revenue (USD thousands)",
         notes=[
             actual_note,
-            forecast_note,
+            high_value_note,
             "Source: Finance planning model.",
         ],
     )

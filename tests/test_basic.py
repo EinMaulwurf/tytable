@@ -92,10 +92,17 @@ def test_construction_api_excludes_removed_parameters():
 
 
 def test_note_dict_is_public_and_describes_note_keys():
-    note: NoteDict = {"text": "Source", "marker": "*", "i": 0, "j": "A"}
+    note = NoteDict(
+        text="Source",
+        marker="*",
+        i=0,
+        j="A",
+        where=pl.col("A") > 0,
+        regex=False,
+    )
 
     assert "NoteDict" in tytable.__all__
-    assert set(NoteDict.__annotations__) == {"text", "marker", "i", "j"}
+    assert set(NoteDict.__annotations__) == {"text", "marker", "i", "j", "where", "regex"}
     assert note["text"] == "Source"
 
 

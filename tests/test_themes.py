@@ -1,8 +1,10 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import TyTable, tt
+from tytable._resolve import build
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
@@ -10,8 +12,6 @@ DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 @pytest.mark.typst
 class TestThemeDefault:
     def test_empty_table_styles_only_visible_header_boundaries(self):
-        from tytable._resolve import build
-
         built = build(tt(pl.DataFrame(schema={"A": pl.Int64})), "typst")
         assert [(line["i"], line["line"], line["line_width"]) for line in built.style_lines] == [
             (0, "t", 0.08),
@@ -52,8 +52,6 @@ class TestThemeStriped:
         assert_snapshot("theme_striped_3rows", out)
 
     def test_stripes_follow_source_rows_across_group_separators(self):
-        from tytable._resolve import build
-
         df = pl.DataFrame({"A": [1, 2, 3]})
         table = tt(df).group(i={"before": 0, "middle": 2}).theme_striped()
         built = build(table, "typst")
@@ -71,8 +69,6 @@ class TestThemeGrid:
         assert_snapshot("theme_grid", out)
 
     def test_grid_targets_structural_and_data_rows(self):
-        from tytable._resolve import build
-
         table = tt(DF).group(i={"group": 1}).group(j={"all": ["A", "B"]}).theme_grid()
         built = build(table, "typst")
         assert {(line["i"], line["j"]) for line in built.style_lines} == {
@@ -281,6 +277,52 @@ class TestFootnotes:
         out = tt(df, notes=[{"text": "First note", "i": [0], "j": [0]}]).render("typst")
         assert "#super[1]" in out
         assert_snapshot("footnote_auto_marker", out)
+
+    def test_targeted_note_where_selects_individual_cells(self):
+        df = pl.DataFrame({"A": [120, 90], "B": [80, 130]})
+        built = build(
+            tt(df, notes=[{"text": "Above 100", "where": cs.numeric() > 100}]).theme_plain(),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["120#super[1]", "80"],
+            ["90", "130#super[1]"],
+        ]
+
+    def test_targeted_note_where_intersects_i_and_j(self):
+        df = pl.DataFrame({"A": [120, 140], "B": [130, 150]})
+        built = build(
+            tt(
+                df,
+                notes=[
+                    {
+                        "text": "Selected high value",
+                        "i": 0,
+                        "j": "A",
+                        "where": cs.numeric() > 100,
+                    }
+                ],
+            ).theme_plain(),
+            "typst",
+        )
+
+        assert built.data_body == [
+            ["120#super[1]", "130"],
+            ["140", "150"],
+        ]
+
+    def test_targeted_note_regex_selects_columns(self):
+        df = pl.DataFrame({"Q1": [10], "Q2": [20], "Total": [30]})
+        built = build(
+            tt(
+                df,
+                notes=[{"text": "Quarter", "i": 0, "j": r"^Q", "regex": True}],
+            ).theme_plain(),
+            "typst",
+        )
+
+        assert built.data_body == [["10#super[1]", "20#super[1]", "30"]]
 
     def test_multiple_targeted_auto_markers(self):
         df = pl.DataFrame({"A": [10, 20], "B": [30, 40]})

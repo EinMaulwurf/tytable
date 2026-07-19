@@ -164,10 +164,16 @@ stable, 0-based source DataFrame rows.
 
 == Select rows and columns <selectors>
 
-Methods that act on part of a table use `i` to select rows and `j` to select
-columns. This includes `.fmt()`, `.style()`, `.plot()`, `.images()`, and targeted
-notes. The small calls below only illustrate selection; #link(<formatting>)[Formatting]
-and #link(<styling>)[Styling] introduce the operations themselves in more detail.
+Methods that act on part of a table use `i` to select rows and `j` to select columns. This includes `.fmt()`, `.style()`, `.plot()`, `.images()`, and targeted notes. A targeted note puts the same selectors in a `NoteDict` passed to `tt(..., notes=[...])`:
+
+```python
+from tytable import NoteDict
+
+important: NoteDict = {"text": "Important value", "i": 0, "j": "Score"}
+table = tt(df, notes=[important])
+```
+
+The small calls below only illustrate selection; #link(<formatting>)[Formatting], #link(<styling>)[Styling], and #link(<target-notes>)[Target notes to cells] introduce the operations themselves in more detail.
 
 === Select rows with `i`
 
@@ -212,9 +218,7 @@ table.style(i=pl.Series([True, False, True]), bold=True)
 table.style(i=lambda row: row["Score"] >= 80, bold=True)
 ```
 
-Boolean masks and Series need exactly one value per source row. Expressions and
-callables are evaluated against the original DataFrame. All four forms work
-with `.style()`, `.fmt()`, `.plot()`, and `.images()`.
+Boolean masks and Series need exactly one value per source row. Expressions and callables are evaluated against the original DataFrame. All four forms work with `.style()`, `.fmt()`, `.plot()`, `.images()`, and the `i` key of a targeted `NoteDict`.
 
 The selector vocabulary is shared, but operations accept only row kinds they
 can represent. `.style()` supports every grid row as well as captions and notes;
@@ -234,11 +238,11 @@ table.style(j=["Name", "Score"], bold=True)
 table.style(j=range(2), bold=True)
 ```
 
-With `regex=True`, strings are regular expressions matched against the original
-column names using Python's `re.search`:
+With `regex=True`, strings are regular expressions matched against the original column names using Python's `re.search`. This works in a `NoteDict` as well as in method calls:
 
 ```python
 table.fmt(j=r"^Q[1-4]$", regex=True, digits=1)
+quarter_note = NoteDict(text="Quarterly value", j=r"^Q[1-4]$", regex=True)
 ```
 
 Names assigned by `.set_name()` are display labels, not selectors. Continue to
@@ -253,11 +257,14 @@ on just the `Score` cell in the second source row:
 table.style(i=1, j="Score", bold=True)
 ```
 
-Use `where` with `.style()` or `.fmt()` when a condition should select
-individual data cells instead of complete rows:
+Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when a condition should select individual data cells instead of complete rows:
 
 ```python
+import polars.selectors as cs
+
 table.style(where=pl.col("Score") >= 80, bold=True)
+high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
+table = tt(df, notes=[high_values])
 ```
 
 A `where` expression is evaluated against the original typed DataFrame. Its
@@ -531,11 +538,11 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 `indent` for notes). Use `output=` to restrict styling to one backend, e.g.
 `output=("typst",)`.
 
-=== Target notes to cells
+=== Target notes to cells <target-notes>
 
-A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i` and `j` follow the #link(<selectors>)[usual selector rules]. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
+A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i`, `j`, `where`, and `regex` follow the #link(<selectors>)[same selector rules as `.fmt()` and `.style()`]. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
 
-If no `marker` is supplied, targeted notes receive superscript numbers in note order. Set `marker` explicitly for a symbol or label such as `"*"`; the same marker appears at every selected cell and beside the footer text. For a cell target, supply `i`; omitting `j` targets every column in those rows. When both selectors contain several entries, tytable uses their normal cross-product, not pairwise row/column coordinates.
+If no `marker` is supplied, targeted notes receive superscript numbers in note order. Set `marker` explicitly for a symbol or label such as `"*"`; the same marker appears at every selected cell and beside the footer text. With `i` and `j`, omitting either axis selects its complete data region; when both selectors contain several entries, tytable uses their normal cross-product, not pairwise row/column coordinates. Use `where` for cell-by-cell selection; in the example, `cs.numeric() > 130` marks only numeric cells whose own value exceeds 130.
 
 #tag("SOURCE")
 #source("examples/04_targeted_notes.py")

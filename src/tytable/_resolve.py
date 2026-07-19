@@ -17,7 +17,7 @@ from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
 from ._groups import merge_row_groups
-from ._indices import RowLayout, resolve_i
+from ._indices import RowLayout, resolve_i, resolve_where
 from ._renderer import OutputFormat
 from ._styling import build_meta_styles, build_style_grid
 from ._utils import format_markup_num
@@ -131,7 +131,7 @@ def _insert_footnote_markers(
         return
 
     for note in notes:
-        if note.i is None and note.j is None:
+        if note.i is None and note.j is None and note.where is None:
             continue
         marker = note.marker
         if marker is None:
@@ -155,15 +155,21 @@ def _insert_footnote_markers(
             allowed={"header", "groupi", "data"},
             method="targeted notes",
         )
-        j_vals = table._resolve_j(j_selector)
+        j_vals = table._resolve_j(j_selector, regex=note.regex)
+        where_cells = (
+            resolve_where(note.where, data=table._data, layout=layout)
+            if note.where is not None
+            else None
+        )
 
         for i in i_vals:
-            if i == layout.header_row:
-                for j in j_vals:
+            for j in j_vals:
+                if where_cells is not None and (i, j) not in where_cells:
+                    continue
+                if i == layout.header_row:
                     colnames_display[j] += marker_text
-            else:
-                ri = layout.body_index(i)
-                for j in j_vals:
+                else:
+                    ri = layout.body_index(i)
                     data_body[ri][j] += marker_text
 
 
