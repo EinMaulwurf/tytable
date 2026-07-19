@@ -66,13 +66,47 @@
 
 #set page(numbering: none)
 
-#align(center)[
-  #text(size: 18pt, weight: "bold")[Contents]
-]
-#v(0.8em)
-#set text(size: 9pt)
-#columns(2, gutter: 1.2cm)[
-  #outline(title: none, indent: 1.2em, depth: 3)
+#set text(size: 10pt)
+#block(width: 100%, height: 100%)[
+  #grid(
+    columns: (1fr,),
+    rows: (auto, 1fr, 10cm, 1fr, 4.5cm, 1fr, 3cm, 1fr),
+    [#align(center)[#text(size: 18pt, weight: "bold")[Contents]]],
+    [],
+    [
+      #columns(2, gutter: 1.2cm)[
+        #outline(
+          title: none,
+          indent: 1.2em,
+          depth: 3,
+          target: selector(heading).after(<learn-guide>, inclusive: true).before(<advanced-guides>, inclusive: false),
+        )
+      ]
+    ],
+    [#align(horizon)[#line(length: 100%, stroke: 0.5pt)]],
+    [
+      #columns(2, gutter: 1.2cm)[
+        #outline(
+          title: none,
+          indent: 1.2em,
+          depth: 3,
+          target: selector(heading).after(<advanced-guides>, inclusive: true).before(<api-reference>, inclusive: false),
+        )
+      ]
+    ],
+    [#align(horizon)[#line(length: 100%, stroke: 0.5pt)]],
+    [
+      #columns(2, gutter: 1.2cm)[
+        #outline(
+          title: none,
+          indent: 1.2em,
+          depth: 3,
+          target: selector(heading).after(<api-reference>, inclusive: true),
+        )
+      ]
+    ],
+    [],
+  )
 ]
 
 #pagebreak()
