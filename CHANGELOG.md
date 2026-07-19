@@ -40,6 +40,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `.set_name(name={"source_name": "Display name"})` instead.
 - Remove the constructor-level `finalize` shortcut from `tt()`; register output callbacks with the
   chainable `.finalize(fn)` method.
+- Make the plotting callback in `.plot(fun=...)` and the image sequence in `.images(paths=...)`
+  required keyword arguments instead of optional parameters rejected at runtime.
 
 ### Documentation
 

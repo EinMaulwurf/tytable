@@ -654,8 +654,8 @@ class TyTable:
         | None = None,
         j: _ColumnSelector = None,
         *,
+        fun: Callable,
         regex: bool = False,
-        fun: Callable | None = None,
         data: Sequence[Any] | None = None,
         height: float | str = 1.0,
         height_px: int = 400,
@@ -709,10 +709,10 @@ class TyTable:
             If ``height_px`` or ``width_px`` is not an integer, or if ``fun``
             returns an unsupported object when the table is rendered.
         ValueError
-            If ``j`` or ``fun`` is missing, a pixel dimension is not positive,
-            ``height`` cannot be parsed, the length of ``data`` differs from
-            the resolved cell count, or a selector is invalid. Cardinality and
-            selector errors are raised at render time.
+            If ``j`` is missing, a pixel dimension is not positive, ``height``
+            cannot be parsed, the length of ``data`` differs from the resolved
+            cell count, or a selector is invalid. Cardinality and selector
+            errors are raised at render time.
         ImportError
             If the table is rendered without the optional ``images``
             dependencies installed.
@@ -723,8 +723,6 @@ class TyTable:
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
-        if fun is None:
-            raise ValueError(".plot() requires fun (plotting function)")
         for name, value in (("height_px", height_px), ("width_px", width_px)):
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an integer, got {value!r}")
@@ -760,8 +758,8 @@ class TyTable:
         | None = None,
         j: _ColumnSelector = None,
         *,
+        paths: Sequence[str],
         regex: bool = False,
-        paths: Sequence[str] | None = None,
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
@@ -797,14 +795,12 @@ class TyTable:
         Raises
         ------
         ValueError
-            If ``j`` or ``paths`` is missing, ``height`` cannot be parsed, or
-            a selector is invalid. A mismatch between the number of paths and
-            resolved cells, and selector errors, are raised at render time.
+            If ``j`` is missing, ``height`` cannot be parsed, or a selector is
+            invalid. A mismatch between the number of paths and resolved cells,
+            and selector errors, are raised at render time.
         """
         if j is None:
             raise ValueError(".images() requires j (column selector)")
-        if paths is None:
-            raise ValueError(".images() requires paths")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
         directive = ImageDirective(

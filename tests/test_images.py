@@ -503,7 +503,7 @@ class TestValidation:
 
     def test_missing_fun(self):
         df = pl.DataFrame({"X": [1]})
-        with pytest.raises(ValueError, match="requires fun"):
+        with pytest.raises(TypeError, match="fun"):
             tt(df).plot(j="X")
 
     @pytest.mark.parametrize("name", ["width_px", "height_px"])
@@ -522,7 +522,7 @@ class TestValidation:
 
     def test_missing_images_paths(self):
         df = pl.DataFrame({"X": [1]})
-        with pytest.raises(ValueError, match="requires paths"):
+        with pytest.raises(TypeError, match="paths"):
             tt(df).images(j="X")
 
     def test_missing_extra_hint(self, monkeypatch):

@@ -28,14 +28,14 @@ def test_api_signature_file_covers_every_reference(tmp_path: Path) -> None:
     }
 
 
-def test_api_signatures_come_from_runtime_defaults() -> None:
+def test_api_signatures_reflect_required_arguments_and_runtime_defaults() -> None:
     plot = format_api_signature(".plot", DOCUMENTED_API["plot"][1])
     images = format_api_signature(".images", DOCUMENTED_API["images"][1])
     render = format_api_signature(".render", DOCUMENTED_API["render"][1])
     save = format_api_signature(".save", DOCUMENTED_API["save"][1])
 
-    assert "fun=None" in plot
-    assert "paths=None" in images
+    assert "*, fun, regex=False" in plot
+    assert "*, paths, regex=False" in images
     assert "static_images='reference'" in render
     assert "static_images='copy'" in save
 
