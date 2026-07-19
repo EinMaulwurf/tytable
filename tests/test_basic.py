@@ -85,6 +85,7 @@ def test_construction_api_excludes_removed_parameters():
     assert "rownames" not in inspect.signature(tt).parameters
     assert "digits" not in inspect.signature(tt).parameters
     assert "colnames_override" not in inspect.signature(tt).parameters
+    assert "finalize" not in inspect.signature(tt).parameters
     assert "rownames" not in inspect.signature(TyTable).parameters
     assert "digits" not in inspect.signature(TyTable).parameters
     assert "colnames_override" not in inspect.signature(TyTable).parameters

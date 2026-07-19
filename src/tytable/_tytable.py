@@ -50,7 +50,6 @@ def tt(
     gutter: float | str | None = 2,
     colnames: bool = True,
     escape: bool = True,
-    finalize: Callable[[str, str], str] | None = None,
 ) -> TyTable:
     """
     Create a :class:`TyTable` from a Polars DataFrame.
@@ -103,10 +102,6 @@ def tt(
         Escape cell text for the target backend (default ``True``). Typst and
         HTML metacharacters are escaped automatically; set ``False`` to pass
         raw markup through.
-    finalize
-        Optional post-render callback ``fn(rendered_string, output) -> str``
-        run after every renderer; equivalent to calling ``.finalize(fn)``.
-
     Returns
     -------
     TyTable
@@ -151,8 +146,6 @@ def tt(
         colnames=colnames,
         escape=escape,
     )
-    if finalize is not None:
-        t.finalize(finalize)
     return t
 
 

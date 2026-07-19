@@ -38,6 +38,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `TyTable`; configure numeric formatting with `.fmt(digits=...)`.
 - Remove `colnames_override` from `tt()` and `TyTable`; rename display headers with
   `.set_name(name={"source_name": "Display name"})` instead.
+- Remove the constructor-level `finalize` shortcut from `tt()`; register output callbacks with the
+  chainable `.finalize(fn)` method.
 
 ### Documentation
 

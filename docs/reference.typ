@@ -120,7 +120,6 @@ options fall into these groups:
   [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
   [Headers], [`colnames`], [show or hide display headers],
   [Values], [`escape`], [global safe-markup policy],
-  [Behaviour], [`finalize`], [initial output callback],
 )
 
 `width` accepts a fraction, a Typst length string, or one entry per column
@@ -147,8 +146,8 @@ The annotation makes these keys and selector types discoverable to type checkers
 and IDEs. When `marker` is absent, a note with `i` or `j` is numbered
 automatically; an untargeted note remains unmarked.
 
-`TyTable(...)` has the same constructor options, but application code should
-normally construct with `tt(...)` and use `TyTable` for annotations.
+Application code should normally construct with `tt(...)` and use `TyTable`
+for annotations.
 
 === Formatting and structure
 
