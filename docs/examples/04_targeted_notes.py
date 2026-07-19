@@ -2,7 +2,7 @@
 
 import polars as pl
 
-from tytable import tt
+from tytable import NoteDict, tt
 
 df = pl.DataFrame(
     {
@@ -12,22 +12,27 @@ df = pl.DataFrame(
     }
 )
 
+actual_note: NoteDict = {
+    "text": "Actual includes a one-time contract.",
+    "i": 0,
+    "j": "Actual",
+}
+
+# This constructor form is identical to the annotated dictionary above.
+forecast_note = NoteDict(
+    text="Forecast values are provisional.",
+    marker="*",
+    i=[0, 1, 2],
+    j="Forecast",
+)
+
 (
     tt(
         df,
         caption="Quarterly revenue (USD thousands)",
         notes=[
-            {
-                "text": "Actual includes a one-time contract.",
-                "i": 0,
-                "j": "Actual",
-            },
-            {
-                "text": "Forecast values are provisional.",
-                "marker": "*",
-                "i": [0, 1, 2],
-                "j": "Forecast",
-            },
+            actual_note,
+            forecast_note,
             "Source: Finance planning model.",
         ],
     )

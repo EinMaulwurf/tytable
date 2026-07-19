@@ -533,16 +533,9 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`,
 
 === Target notes to cells
 
-A plain string in `notes` is an unmarked footer note. Use a dictionary when a
-note should point back to one or more cells. Its `text` value is the footer
-text, while `i` and `j` follow the #link(<selectors>)[usual selector rules].
+A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i` and `j` follow the #link(<selectors>)[usual selector rules]. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
 
-If no `marker` is supplied, targeted notes receive superscript numbers in note
-order. Set `marker` explicitly for a symbol or label such as `"*"`; the same
-marker appears at every selected cell and beside the footer text. For a cell
-target, supply `i`; omitting `j` targets every column in those rows. When both
-selectors contain several entries, tytable uses their normal cross-product,
-not pairwise row/column coordinates.
+If no `marker` is supplied, targeted notes receive superscript numbers in note order. Set `marker` explicitly for a symbol or label such as `"*"`; the same marker appears at every selected cell and beside the footer text. For a cell target, supply `i`; omitting `j` targets every column in those rows. When both selectors contain several entries, tytable uses their normal cross-product, not pairwise row/column coordinates.
 
 #tag("SOURCE")
 #source("examples/04_targeted_notes.py")

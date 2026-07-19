@@ -142,9 +142,7 @@ significance: NoteDict = {
 table = tt(df, notes=[significance, "Source: model output"])
 ```
 
-The annotation makes these keys and selector types discoverable to type checkers
-and IDEs. When `marker` is absent, a note with `i` or `j` is numbered
-automatically; an untargeted note remains unmarked.
+The annotation is optional: it makes these keys and selector types discoverable to type checkers and IDEs, but an unannotated dictionary behaves identically. When `marker` is absent, a note with `i` or `j` is numbered automatically; an untargeted note remains unmarked.
 
 Application code should normally construct with `tt(...)` and use `TyTable`
 for annotations.
