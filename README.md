@@ -103,8 +103,8 @@ make docs
 # → docs/tytable-docs.pdf
 ```
 
-Starting with version 1.0, documented public APIs remain backward compatible throughout
-the 1.x series; breaking changes are reserved for 2.0.
+Documented public APIs remain backward compatible throughout each major release series.
+After version 2.0, further breaking changes are reserved for 3.0.
 
 ## Coming from R tinytable
 
