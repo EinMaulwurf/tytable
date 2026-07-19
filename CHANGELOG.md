@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-19
+
 Version 2 makes selectors, themes, and media handling more predictable while removing redundant ways to configure the same behavior.
 
 ### Features
@@ -267,7 +269,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/EinMaulwurf/tytable/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/EinMaulwurf/tytable/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/EinMaulwurf/tytable/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/EinMaulwurf/tytable/compare/v1.0.0...v1.1.0
