@@ -7,6 +7,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Accept `range` and other selector sequences for row and column selectors while continuing to
+  reject arbitrary iterables whose contents or order may not be stable across deferred renders.
+
 ### Breaking
 
 - Make `default`, `plain`, `striped`, and `grid` replaceable base appearances which are applied

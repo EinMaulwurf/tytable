@@ -132,16 +132,22 @@ def resolve_i(
     if i is None:
         return list(layout.data_rows)
 
-    if isinstance(i, (list, tuple)) and i and any(isinstance(value, bool) for value in i):
-        if not all(isinstance(value, bool) for value in i):
+    sequence = i if isinstance(i, Sequence) and not isinstance(i, (str, bytes, bytearray)) else None
+
+    if (
+        sequence is not None
+        and len(sequence) > 0
+        and any(isinstance(value, bool) for value in sequence)
+    ):
+        if not all(isinstance(value, bool) for value in sequence):
             raise TypeError("boolean row masks cannot mix booleans with other selector types")
         if data is None:
             raise TypeError("boolean row masks require source data")
-        if len(i) != data.height:
+        if len(sequence) != data.height:
             raise ValueError(
-                f"boolean row mask has length {len(i)}, expected {data.height} source rows"
+                f"boolean row mask has length {len(sequence)}, expected {data.height} source rows"
             )
-        return source_to_display([j for j, value in enumerate(i) if value])
+        return source_to_display([j for j, value in enumerate(sequence) if value])
 
     if data is not None:
         if isinstance(i, pl.Expr):
@@ -177,9 +183,9 @@ def resolve_i(
     if isinstance(i, str):
         return layout.resolve_string(i)
 
-    if isinstance(i, (list, tuple)):
+    if sequence is not None:
         rows: list[int] = []
-        for value in i:
+        for value in sequence:
             if isinstance(value, str):
                 rows.extend(layout.resolve_string(value))
             elif isinstance(value, int):
@@ -220,7 +226,7 @@ def resolve_j(
     """Resolve a public column selector to zero-based column indices."""
     if j is None:
         return list(range(len(colnames)))
-    if isinstance(j, (list, tuple)):
+    if isinstance(j, Sequence) and not isinstance(j, (str, bytes, bytearray)):
         result: list[int] = []
         for value in j:
             resolved = _resolve_single_j(value, colnames, regex=regex)

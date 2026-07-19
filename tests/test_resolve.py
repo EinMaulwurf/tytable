@@ -106,6 +106,17 @@ class TestResolveI:
         assert resolve_i([2, "header", 0, 2], layout=layout) == [1, 2, 5]
         assert resolve_i([], layout=layout) == []
 
+    def test_range_sequence(self, layout):
+        assert resolve_i(range(2), layout=layout) == [2, 4]
+        assert resolve_i(range(0), layout=layout) == []
+        with pytest.raises(ValueError, match="position 3 out of range"):
+            resolve_i(range(4), layout=layout)
+
+    @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
+    def test_arbitrary_iterables_are_rejected(self, layout, selector):
+        with pytest.raises(TypeError, match="bad row selector"):
+            resolve_i(selector, layout=layout)
+
     @pytest.mark.parametrize("selector", [-1, 3, 10])
     def test_bad_source_position(self, layout, selector):
         with pytest.raises(ValueError):
@@ -163,6 +174,17 @@ class TestResolveJ:
         assert resolve_j(2, self.COLS) == [2]
         assert resolve_j("value", self.COLS) == [3]
         assert resolve_j(["B", 0, "B"], self.COLS) == [0, 1]
+
+    def test_range_sequence(self):
+        assert resolve_j(range(2), self.COLS) == [0, 1]
+        assert resolve_j(range(0), self.COLS) == []
+        with pytest.raises(ValueError, match="position 4 out of range"):
+            resolve_j(range(5), self.COLS)
+
+    @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
+    def test_arbitrary_iterables_are_rejected(self, selector):
+        with pytest.raises(TypeError, match="bad column selector"):
+            resolve_j(selector, self.COLS)
 
     def test_regex(self):
         assert resolve_j("a", self.COLS, regex=True) == [2, 3]

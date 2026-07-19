@@ -366,8 +366,9 @@ class TyTable:
             ``"header"`` selects the column-name row, ``"groupi"`` selects
             row-group separators, and ``"groupj"`` selects column-group rows;
             ``"caption"`` and ``"notes"`` select non-grid metadata;
-            ``"all"`` selects the complete displayed grid. Lists may mix integer and
-            string selectors. Boolean lists/tuples with exactly one value per
+            ``"all"`` selects the complete displayed grid. Sequences may mix integer
+            and string selectors; for example, ``range(5)`` selects the first five
+            source rows. Boolean sequences with exactly one value per
             source row, Polars expressions, boolean series, and
             ``callable(row) -> bool`` predicates select data rows by value.
             Omitting ``i`` selects all genuine source-data rows. Negative
@@ -375,7 +376,8 @@ class TyTable:
             supported.
         j
             Column selector: an original DataFrame name (``"Score"``), an
-            integer position (``0``), or a ``list`` of any of these. Display
+            integer position (``0``), or a sequence of any of these. For example,
+            ``range(5)`` selects the first five columns. Display
             labels assigned by :meth:`set_name` or ``colnames_override`` are
             presentation-only and never become selectors. ``None`` means *all*
             columns.

@@ -264,8 +264,10 @@ silently ignored.
 == Select columns by name
 
 `j="Score"` is the preferred form; `j=0` selects the first column by position.
-Both `i` and `j` also accept a #emph[list] of strings or integers to target several rows or columns in
-one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "data"]`. `i` additionally
+Both `i` and `j` also accept sequences of strings or integers to target several rows or columns in
+one call: `j=["Q1 Rev", "Q1 Cost"]`, `i=["header", "data"]`, or `j=range(5)`
+for the first five columns. Lists, tuples, and ranges are supported; arbitrary
+iterables such as generators and sets are not. `i` additionally
 accepts Polars expressions, boolean series, and callables for data-driven
 selection (see the *Styling* section).
 
@@ -559,12 +561,17 @@ coordinates.
 #v(0.12em)
 #include "build/04_targeted_notes.typ"
 
-== List selectors
+== Sequence selectors
 
-`i` and `j` accept a list of strings as well as integers, so you can name
+`i` and `j` accept sequences of strings as well as integers, so you can name
 several rows or columns in one call without repeating yourself. A list-of-strings
 `j` selector like `j=["Revenue", "Cost", "Growth %"]` is self-documenting
 and resilient to column reordering — no need to track integer positions.
+
+Ranges are convenient for positional spans: `j=range(5)` selects the first
+five columns, while `i=range(5)` selects the first five source rows. Tuples are
+also accepted. Arbitrary iterables such as generators and sets are rejected so
+deferred selectors remain deterministic across repeated renders.
 
 The same works for `i`: `i=["header", "data"]` styles the column-name row
 and every data row in a single directive.
@@ -1240,7 +1247,7 @@ explicit `j`; `.set_name()` instead enters full-list replacement mode).
   inset: 6pt,
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
-  [`i`], [`0`, `2`, `[0, 2]`], [0-based source DataFrame row(s)],
+  [`i`], [`0`, `2`, `[0, 2]`, `range(5)`], [0-based source DataFrame row(s)],
   [`i`], [`"header"`, `"data"`], [column names or genuine source rows],
   [`i`], [`"all"`], [the complete displayed grid],
   [`i`], [`"groupi"`], [row-group separator rows],
@@ -1249,14 +1256,14 @@ explicit `j`; `.set_name()` instead enters full-list replacement mode).
   [`i`], [`pl.Series(...)`], [boolean mask with one value per source row],
   [`i`], [`lambda row: ...`], [predicate receiving a row dictionary],
   [`j`], [`"Score"`, `0`], [column name (preferred) or position],
-  [`j`], [`["Revenue", "Cost"]`], [several columns in one directive],
+  [`j`], [`["Revenue", "Cost"]`, `range(5)`], [several columns in one directive],
   [`where`], [`cs.numeric() > 100`], [true body cells in `.style()` / `.fmt()`],
 )
 
 Non-negative integer `i` values range from zero through the source DataFrame
 height minus one. Row-group separators never change what an integer selects.
 `"header"` is empty when column names are hidden, and `"groupj"` is empty when
-no column-group rows exist. Lists/tuples may mix integer
+no column-group rows exist. Lists, tuples, and ranges may mix integer
 and string row selectors. `.style()` also accepts `i="caption"` and
 `i="notes"`; these non-grid targets allow only their documented text-oriented
 properties.
@@ -1278,8 +1285,8 @@ names. Names assigned by `.set_name()` or `colnames_override` are display-only
 and never match a selector unless the same string is independently an original
 column name. This makes duplicate and empty display labels legal and
 unambiguous. Directives recorded before and after a rename therefore select the
-same columns. A list preserves its requested order and may repeat an exact
-selector.
+same columns. Sequence selections are deduplicated and resolved into displayed
+column order, so repeated selectors do not target a cell more than once.
 
 If friendly names should become the actual selector names, rename the Polars
 DataFrame before constructing the table. The renamed schema then supplies both
