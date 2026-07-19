@@ -51,6 +51,11 @@ class TestRowGroups:
         assert built.layout.groupi_rows == (1, 4, 7)
         assert [row[0] for row in built.data_body] == ["A", "1", "2", "B", "3", "4", "C", "5"]
 
+    def test_row_groups_from_run_length_tuple(self):
+        built = build(tt(DF).theme_plain().group(i=("A", "B")), "typst")
+        assert built.layout.groupi_rows == (1, 3)
+        assert [row[0] for row in built.data_body] == ["A", "1", "B", "3"]
+
 
 @pytest.mark.typst
 class TestRowGroupPositionFormula:
@@ -89,6 +94,10 @@ class TestColumnGroups:
         assert "table.cell(colspan: 2, align: center)[G]" in out
         assert "[c]," in out
         assert_snapshot("group_col_by_name", out)
+
+    def test_column_group_from_tuple(self):
+        out = tt(DF3).group(j={"Group": (0, 1)}).render("typst")
+        assert "table.cell(colspan: 2, align: center)[Group]" in out
 
     def test_column_group_ungrouped_columns(self):
         out = tt(DF3).group(j={"G": [0, 1]}).render("typst")
@@ -181,7 +190,7 @@ class TestGroupValidation:
             tt(DF).group(j=123)
 
     def test_string_is_not_a_col_group_spec(self):
-        with pytest.raises(TypeError, match=r"group\(j=.*must be a dict"):
+        with pytest.raises(TypeError, match=r"group\(j=.*must be a mapping"):
             tt(DF4).group(j="_")
 
     def test_j_and_delimiter_are_mutually_exclusive(self):
@@ -238,9 +247,9 @@ class TestGroupValidation:
         with pytest.raises(ValueError, match="at least one column"):
             tt(DF3).group(j={"Group": []})
 
-    def test_column_group_columns_must_be_a_list(self):
-        with pytest.raises(TypeError, match="must be a list"):
-            tt(DF3).group(j={"Group": (0, 1)})
+    def test_column_group_columns_must_be_a_sequence(self):
+        with pytest.raises(TypeError, match="must be a sequence"):
+            tt(DF3).group(j={"Group": "ab"})
 
     def test_column_group_label_must_not_be_none(self):
         with pytest.raises(ValueError, match="labels must not be None"):
