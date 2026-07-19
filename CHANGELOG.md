@@ -7,49 +7,28 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Version 2 makes selectors, themes, and media handling more predictable while removing redundant
-ways to configure the same behavior.
+Version 2 makes selectors, themes, and media handling more predictable while removing redundant ways to configure the same behavior.
 
 ### Features
 
-- Accept `range` and other selector sequences for row and column selectors while continuing to
-  reject arbitrary iterables whose contents or order may not be stable across deferred renders.
+- Accept `range` and other selector sequences for row and column selectors while continuing to reject arbitrary iterables whose contents or order may not be stable across deferred renders.
 
 ### Breaking
 
-- Make `default`, `plain`, `striped`, and `grid` replaceable base appearances which are applied
-  before explicit styles regardless of call order. Replace destructive `.theme_empty()` with
-  `.theme_plain()`, remove `.theme(fn)` and the public `THEMES` registry, and rename the independent
-  layout operations to `.rotate()`, `.resize()`, and `.multipage()`.
-- Make omitted row selectors target genuine source-data rows, add `i="data"`, and reserve
-  `i="all"` for the complete grid. Non-negative integers now always address stable 0-based source
-  DataFrame rows; remove negative indices and the ambiguous `i="body"` / `i="~groupi"` names.
-  Resolved row and column selections are deduplicated into canonical displayed row-major order,
-  including targeted notes and media cardinality.
-- Reject structural row kinds that a content operation cannot represent instead of silently
-  ignoring them. Styling still supports the whole grid; formatting and targeted notes support
-  data, row-group, and column-name rows; plots and images support data and row-group rows.
-- Resolve every `j` selector against the original DataFrame column names. Display labels assigned
-  by `.set_name()` are presentation-only, so renaming headers cannot change which columns later
-  directives select and duplicate or empty display labels remain unambiguous.
-- Make `.render()` filesystem-side-effect-free by embedding generated plots, and make `.save()`
-  independently materialize them in a table-specific `<stem>_assets/` directory by default.
-- Make `.save()` copy static `.images()` inputs into its asset directory by default. Add explicit
-  `copy`, `reference`, and `embed` policies so saved tables can be packaged, externally managed,
-  or self-contained, and make `assets=` cover all externalized media.
-- Remove the inert `rownames` and constructor-level `digits` parameters from `tt()` and
-  `TyTable`; configure numeric formatting with `.fmt(digits=...)`.
-- Remove `colnames_override` from `tt()` and `TyTable`; rename display headers with
-  `.set_name(name={"source_name": "Display name"})` instead.
-- Remove the constructor-level `finalize` shortcut from `tt()`; register output callbacks with the
-  chainable `.finalize(fn)` method.
-- Make the plotting callback in `.plot(fun=...)` and the image sequence in `.images(paths=...)`
-  required keyword arguments instead of optional parameters rejected at runtime.
+- Make `default`, `plain`, `striped`, and `grid` replaceable base appearances which are applied before explicit styles regardless of call order. Replace destructive `.theme_empty()` with `.theme_plain()`, remove `.theme(fn)` and the public `THEMES` registry, and rename the independent layout operations to `.rotate()`, `.resize()`, and `.multipage()`.
+- Make omitted row selectors target genuine source-data rows, add `i="data"`, and reserve `i="all"` for the complete grid. Non-negative integers now always address stable 0-based source DataFrame rows; remove negative indices and the ambiguous `i="body"` / `i="~groupi"` names. Resolved row and column selections are deduplicated into canonical displayed row-major order, including targeted notes and media cardinality.
+- Reject structural row kinds that a content operation cannot represent instead of silently ignoring them. Styling still supports the whole grid; formatting and targeted notes support data, row-group, and column-name rows; plots and images support data and row-group rows.
+- Resolve every `j` selector against the original DataFrame column names. Display labels assigned by `.set_name()` are presentation-only, so renaming headers cannot change which columns later directives select and duplicate or empty display labels remain unambiguous.
+- Make `.render()` filesystem-side-effect-free by embedding generated plots, and make `.save()` independently materialize them in a table-specific `<stem>_assets/` directory by default.
+- Make `.save()` copy static `.images()` inputs into its asset directory by default. Add explicit `copy`, `reference`, and `embed` policies so saved tables can be packaged, externally managed, or self-contained, and make `assets=` cover all externalized media.
+- Remove the inert `rownames` and constructor-level `digits` parameters from `tt()` and `TyTable`; configure numeric formatting with `.fmt(digits=...)`.
+- Remove `colnames_override` from `tt()` and `TyTable`; rename display headers with `.set_name(name={"source_name": "Display name"})` instead.
+- Remove the constructor-level `finalize` shortcut from `tt()`; register output callbacks with the chainable `.finalize(fn)` method.
+- Make the plotting callback in `.plot(fun=...)` and the image sequence in `.images(paths=...)` required keyword arguments instead of optional parameters rejected at runtime.
 
 ### Documentation
 
-- Carry the three-part tutorial, advanced-guides, and reference organization forward with the
-  version 2 API, selector semantics, themes, media policies, and rendering contracts.
+- Carry the three-part tutorial, advanced-guides, and reference organization forward with the version 2 API, selector semantics, themes, media policies, and rendering contracts.
 
 ## [1.3.0] - 2026-07-17
 

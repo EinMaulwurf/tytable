@@ -101,6 +101,7 @@ Conventional commits: `type(scope): description`. Types: `feat`, `fix`, `docs`, 
 
 ## Other conventions
 
+- Do not hard-wrap prose in Markdown or Typst source files. Keep each paragraph and each list item on a single source line; source line breaks can create visible whitespace or list artifacts in rendered output.
 - All source modules start with `_` (private). Public API is only what `__init__.py` exports.
 - **Semantic row selection**: `i=0` is the first source-data row, even after grouping inserts
   rows. Use `i="header"`, `i="groupi"`, and `i="groupj"` for structural rows; negative public
