@@ -283,8 +283,8 @@ the named layout operations all return the table, so you chain them.
 == Evaluation is lazy
 
 Styling, formatting, grouping, and plotting are recorded as _intent_ and
-replayed in a fixed order at render time. Row indices always refer to the final,
-visible table.
+replayed in a fixed order at render time. Integer row selectors always refer to
+stable, 0-based source DataFrame rows.
 
 = Renaming columns
 
@@ -1450,8 +1450,8 @@ them:
   directory, gives each unique file a content-hashed name, and copies it under
   `assets`. This is the `.save()` default.
 - `"reference"` emits each path or URL as authored, apart from markup escaping,
-  without checking it. This is the `.render()` default and the compatibility mode
-  for externally managed report assets and remote HTML images.
+  without checking it. This is the `.render()` default and suits externally
+  managed report assets and remote HTML images.
 - `"embed"` reads local PNG, JPEG, GIF, or SVG files and includes their bytes in
   the Typst or HTML fragment. It creates no static-image asset, but can make the
   fragment substantially larger.
@@ -1608,8 +1608,8 @@ HTML resources or assets already managed by a surrounding report project.
   [The optional plotting dependencies are absent.],
   [Install the project with its `images` extra. `.images()` does not need that extra; an `ImportError` there has another source.],
   [A selector raises `TypeError` or `ValueError` during rendering],
-  [Selectors are deferred and no longer match the final names, rows, or source-mask length.],
-  [Check 0-based final visible row positions, exact display column names, regex matches, and one Boolean mask value per source row. Use the authoritative selector reference above.],
+  [A deferred selector has an invalid source row, source column name, regex, structural row kind, or mask length.],
+  [Check stable 0-based source row positions, exact original DataFrame column names, supported structural rows, regex matches, and one Boolean mask value per source row. Use the authoritative selector reference above.],
   [Markup prints literally or breaks output],
   [Escaping is enabled for raw markup, or disabled for untrusted plain text.],
   [Keep the default `escape=True` for ordinary values. Use `escape=False` only for trusted target-native markup; formatting-generated markup is tracked separately.],
