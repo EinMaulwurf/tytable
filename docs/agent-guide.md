@@ -64,7 +64,7 @@ tt(
 - `df` must be a Polars `DataFrame`. It is cloned on construction.
 - `caption` and `label` require `figure=True`, which is the default.
 - `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst
-  lengths such as `"3cm"`, and `None` for automatic width.
+  lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is the row height in `em`, not a table scaling factor.
 - `colnames_override={"source_name": "Display name"}` changes display labels only.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally
