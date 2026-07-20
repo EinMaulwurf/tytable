@@ -314,29 +314,31 @@ Other render-time contracts are the same as for `.render()` above.
   align: (left, left, left),
   inset: 5pt,
   fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
-  table.header(
-    text(weight: "bold")[Symptom],
-    text(weight: "bold")[Likely cause],
-    text(weight: "bold")[What to check],
-  ),
+  table.header(text(weight: "bold")[Symptom], text(weight: "bold")[Likely cause], text(weight: "bold")[What to check]),
   [Typst reports “file not found” or “access denied”],
   [The fragment-relative path is wrong, or the image lies outside the Typst project root.],
   [Resolve the path from the generated `.typ` file, not the parent document. Compile from the intended tree or pass `typst compile --root <dir> …`.],
+
   [`.plot()` raises `ImportError`],
   [The optional plotting dependencies are absent.],
   [Install the project with its `images` extra. `.images()` does not need that extra; an `ImportError` there has another source.],
+
   [A selector raises `TypeError` or `ValueError` during rendering],
   [A deferred selector has an invalid source row, source column name, regex, structural row kind, or mask length.],
   [Check stable 0-based source row positions, exact original DataFrame column names, supported structural rows, regex matches, and one Boolean mask value per source row. Use the authoritative selector reference above.],
+
   [Markup prints literally or breaks output],
   [Escaping is enabled for raw markup, or disabled for untrusted plain text.],
   [Keep the default `escape=True` for ordinary values. Use `escape=False` only for trusted target-native markup; formatting-generated markup is tracked separately.],
+
   [Generated plots are missing from a saved table],
   [The saved fragment moved without its sibling asset directory, or a custom `assets=` path no longer resolves from it.],
   [Keep the fragment and its asset directory together, or use `.save(path, assets=...)` for an explicit placement. Direct `.render()` output embeds plots and needs no generated asset directory.],
+
   [A static image is missing],
   [Copy/embed resolves local inputs from Python's current working directory; reference mode resolves later from the saved fragment or served URL.],
   [Check `static_images`, the working directory used during `.save()`, and the emitted `assets=` location. For Typst, keep referenced files inside the compiler project root.],
+
   [HTML looks different from the compiled document],
   [HTML is a separate CSS/browser rendering, not a preview of Typst's paged layout.],
   [Use HTML for quick content and style checks; compile the Typst fragment for final widths, pagination, repeated headers, figure placement, and exact typography.],

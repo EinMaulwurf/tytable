@@ -297,7 +297,7 @@ Every panel below starts from the same four-row table, including its `Results` c
   inset: 4pt,
   radius: 5pt,
 )[
-  #block(height: 2.1em)[#text(size: 8.5pt)[#raw(label, lang: "python")]]
+  #block(height: 1.5em)[#text(size: 8.5pt)[#raw(label, lang: "python")]]
   #v(2pt)
   #align(center)[#scale(64%, reflow: true)[#result]]
 ]
@@ -309,9 +309,11 @@ Every panel below starts from the same four-row table, including its `Results` c
   selector-card("i=0", [#include "build/20_selector_i0.typ"]),
   selector-card("i=[0, 2]", [#include "build/20_selector_ilist.typ"]),
   selector-card("i=pl.col(\"Score\") > 100", [#include "build/20_selector_iexpr.typ"]),
+
   selector-card("j=\"Sales\"", [#include "build/20_selector_jname.typ"]),
   selector-card("i=1, j=[\"Sales\", \"Cost\"]", [#include "build/20_selector_ij.typ"]),
   selector-card("i=pl.col(\"Score\") > 100,\nj=[\"Sales\", \"Cost\"]", [#include "build/20_selector_crossproduct.typ"]),
+
   selector-card("where=cs.numeric() > 100", [#include "build/20_selector_where.typ"]),
   selector-card("i=\"header\"", [#include "build/20_selector_header.typ"]),
   selector-card("i=[\"groupi\", \"groupj\"]", [#include "build/20_selector_groups.typ"]),
