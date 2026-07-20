@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # hatch-vcs needs tags and history to derive the PDF version
 
       - name: Install Typst
         uses: typst-community/setup-typst@v5
