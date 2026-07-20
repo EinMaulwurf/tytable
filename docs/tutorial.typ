@@ -436,12 +436,7 @@ and scientific numbers, missing-value replacement, and Typst math. Each
 
 === With `.fmt(fn=...)`
 
-For anything the built-ins don't cover, pass a callable to `fn`. It runs
-#emph[column-wise]: tytable hands it the current string values of the selected
-column (as a `list`) and expects a `list` of the same length back. This makes it
-easy to implement transforms that depend on magnitude — for example,
-abbreviating large numbers into a human-readable scale where `201818` becomes
-`"201.8 thousand"` and `2729179` becomes `"2.7 million"`:
+For anything the built-ins don't cover, pass a callable to `fn`. It runs #emph[column-wise] and expects a non-string sequence of the same length back. By default, tytable hands it the current display strings; set `fn_values="typed"` to receive the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Do not combine `digits` and `fn_values="typed"` in the same `.fmt()` call; use the default display-string input when a callback should consume values produced by `digits`:
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")
@@ -450,13 +445,7 @@ abbreviating large numbers into a human-readable scale where `201818` becomes
 #v(0.12em)
 #include "build/10_format_fn.typ"
 
-The #link("https://mizani.readthedocs.io/en/stable/labels.html")[Mizani]
-package is the closest Python equivalent to R's `scales`. Its vectorized label
-callables cover currencies, percentages, scientific notation, dates, and more.
-Because `.fmt(fn=...)` supplies strings, a small typed adapter converts the
-values to numbers first. A following `.fmt(escape=True)` safely escapes symbols
-introduced by the external formatter when required by the output backend, such
-as `$` in Typst:
+The #link("https://mizani.readthedocs.io/en/stable/labels.html")[Mizani] package is the closest Python equivalent to R's `scales`. Its vectorized label callables cover currencies, percentages, scientific notation, dates, and more. With `fn_values="typed"`, the original numeric values can go directly to these callables. A following `.fmt(escape=True)` safely escapes symbols introduced by the external formatter when required by the output backend, such as `$` in Typst:
 
 #tag("SOURCE")
 #source("examples/10_mizani.py")

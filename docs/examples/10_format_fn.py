@@ -5,7 +5,7 @@ import polars as pl
 from tytable import tt
 
 
-def humanize(values: list[str]) -> list[str]:
+def humanize(values: list[int]) -> list[str]:
     """Abbreviate large numbers into a human-readable scale."""
 
     def scale(n: float) -> str:
@@ -15,7 +15,7 @@ def humanize(values: list[str]) -> list[str]:
             return f"{n / 1_000:.1f} thousand"
         return str(int(n))
 
-    return [scale(float(v)) for v in values]
+    return [scale(value) for value in values]
 
 
 df = pl.DataFrame(
@@ -27,6 +27,6 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="City populations, human-readable")
-    .fmt(j="Population", fn=humanize)
+    .fmt(j="Population", fn=humanize, fn_values="typed")
     .save("build/10_format_fn.typ")
 )

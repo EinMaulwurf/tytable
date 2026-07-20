@@ -389,6 +389,33 @@ class TestFn:
         assert "\\#2" in out
         assert "\\#3" in out
 
+    def test_fn_can_receive_typed_values(self):
+        df = pl.DataFrame({"x": [1.25, None, 3.5]})
+        seen = []
+
+        def format_typed(values):
+            seen.extend(values)
+            return ["missing" if value is None else f"{value * 2:.1f}" for value in values]
+
+        out = tt(df).fmt(j="x", fn=format_typed, fn_values="typed").render("typst")
+
+        assert seen == [1.25, None, 3.5]
+        assert "2.5" in out
+        assert "missing" in out
+        assert "7.0" in out
+
+    def test_fn_values_rejects_unknown_value(self):
+        with pytest.raises(ValueError, match="fn_values must be either"):
+            tt(pl.DataFrame({"x": [1]})).fmt(fn=lambda values: values, fn_values="raw")
+
+    def test_typed_fn_values_cannot_be_combined_with_digits(self):
+        with pytest.raises(ValueError, match="digits cannot be combined"):
+            tt(pl.DataFrame({"x": [1.25]})).fmt(
+                digits=2,
+                fn=lambda values: values,
+                fn_values="typed",
+            )
+
     def test_fn_returns_wrong_length(self):
         df = pl.DataFrame({"x": [1.0, 2.0, 3.0]})
         t = tt(df).fmt(j="x", fn=lambda vec: ["only one"])

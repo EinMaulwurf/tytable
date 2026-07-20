@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     import polars as pl
@@ -58,6 +58,7 @@ class FormatDirective:
     replace: dict | str | bool | None = None
     escape: bool | str = False
     fn: Callable | None = None
+    fn_values: Literal["display", "typed"] = "display"
     linebreak: str | None = None
     math: bool = False
     output: tuple[str, ...] | None = None

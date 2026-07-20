@@ -198,7 +198,9 @@ def _apply_fn(
     cells: list[Cell],
     directive: FormatDirective,
     data_body: list[list[str]],
+    typed_body: list[list[Any]],
     colnames_display: list[str],
+    colnames: list[str],
     layout: RowLayout,
 ) -> None:
     """Apply a column-wise transform to the selected cells."""
@@ -209,7 +211,12 @@ def _apply_fn(
         col_to_rows.setdefault(col_idx, []).append(row_idx)
     for col_idx, rows in col_to_rows.items():
         column_cells = [(row_idx, col_idx) for row_idx in sorted(rows)]
-        values = [_cell_value(cell, data_body, colnames_display, layout) for cell in column_cells]
+        if directive.fn_values == "typed":
+            values = [_typed_value(cell, typed_body, colnames, layout) for cell in column_cells]
+        else:
+            values = [
+                _cell_value(cell, data_body, colnames_display, layout) for cell in column_cells
+            ]
         result = directive.fn(values)
         if not isinstance(result, Sequence) or isinstance(result, (str, bytes)):
             raise TypeError(f"fn() must return a non-string sequence, got {type(result).__name__}")
@@ -361,7 +368,15 @@ def apply_formats(
             output,
             layout,
         )
-        _apply_fn(target_cells, d, data_body, colnames_display, layout)
+        _apply_fn(
+            target_cells,
+            d,
+            data_body,
+            typed_body,
+            colnames_display,
+            table._source_colnames,
+            layout,
+        )
         _apply_replacements(
             target_cells,
             d,

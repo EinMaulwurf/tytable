@@ -9,16 +9,16 @@ currency_label = label_currency(prefix="$", precision=0, big_mark=",")
 percent_label = label_percent(precision=1)
 
 
-def format_currency(values: list[str]) -> list[str]:
-    """Adapt tytable's string column to Mizani's numeric label callable."""
+def format_currency(values: list[int]) -> list[str]:
+    """Apply Mizani's numeric label callable to the typed column."""
 
-    return list(currency_label([float(value) for value in values]))
+    return list(currency_label(values))
 
 
-def format_percent(values: list[str]) -> list[str]:
-    """Adapt tytable's string column to Mizani's numeric label callable."""
+def format_percent(values: list[float]) -> list[str]:
+    """Apply Mizani's numeric label callable to the typed column."""
 
-    return list(percent_label([float(value) for value in values]))
+    return list(percent_label(values))
 
 
 data = pl.DataFrame(
@@ -31,8 +31,8 @@ data = pl.DataFrame(
 
 (
     tt(data, caption="Labels formatted with Mizani")
-    .fmt(j="Revenue", fn=format_currency)
-    .fmt(j="Margin", fn=format_percent)
+    .fmt(j="Revenue", fn=format_currency, fn_values="typed")
+    .fmt(j="Margin", fn=format_percent, fn_values="typed")
     .fmt(j=["Revenue", "Margin"], escape=True)
     .save("build/10_mizani.typ")
 )

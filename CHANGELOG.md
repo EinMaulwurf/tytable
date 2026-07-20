@@ -10,6 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Features
 
 - Give targeted notes the same `where` and `regex` cell-selection semantics as formatting and styling directives.
+- Let `.fmt(fn=..., fn_values="typed")` pass original DataFrame values to custom formatting callbacks while preserving display-string callbacks by default.
 
 ## [2.0.1] - 2026-07-19
 

@@ -12,7 +12,7 @@ import pathlib
 import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 import polars as pl
 
@@ -523,6 +523,7 @@ class TyTable:
         replace: dict | str | bool | None = None,
         escape: bool = False,
         fn: Callable | None = None,
+        fn_values: Literal["display", "typed"] = "display",
         linebreak: str | None = None,
         math: bool = False,
         output: tuple[str, ...] | None = None,
@@ -566,9 +567,13 @@ class TyTable:
         escape
             Re-escape cell text for the target backend after other transforms.
         fn
-            Custom column-wise transform ``fn(values: list[str]) -> list[str]``.
-            Called once per selected column with the current string values; the
-            returned list must have the same length.
+            Custom column-wise transform called once per selected column. The
+            returned sequence must have the same length as its input.
+        fn_values
+            Values passed to ``fn``: ``"display"`` (default) passes the current
+            strings, including earlier formatting; ``"typed"`` passes the
+            original Python values from the DataFrame. Typed values cannot be
+            combined with ``digits`` in the same directive.
         linebreak
             Replace this literal marker with a backend-native line break: ``\\ ``
             in Typst and ``<br>`` in HTML. ASCII output leaves the marker intact.
@@ -628,6 +633,10 @@ class TyTable:
             )
         if fn is not None and not callable(fn):
             raise TypeError(f"fn must be callable or None, got {type(fn).__name__}")
+        if fn_values not in {"display", "typed"}:
+            raise ValueError(f"fn_values must be either 'display' or 'typed'; got {fn_values!r}")
+        if digits is not None and fn is not None and fn_values == "typed":
+            raise ValueError("digits cannot be combined with fn when fn_values='typed'")
         self._format_directives.append(
             FormatDirective(
                 i=i,
@@ -639,6 +648,7 @@ class TyTable:
                 replace=replace,
                 escape=escape,
                 fn=fn,
+                fn_values=fn_values,
                 linebreak=linebreak,
                 math=math,
                 output=output,
