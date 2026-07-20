@@ -19,11 +19,10 @@ df = pl.DataFrame(
 
 def base_table() -> TyTable:
     return (
-        tt(df, figure=False, width=1, height=0.75, gutter=0.8)
+        tt(df, figure=False, width=1)
         .group(j={"Results": ["Sales", "Cost", "Score"]})
         .group(i={"Group B": 2})
         .theme_grid()
-        .style(i="all", fontsize=0.82)
         .style(i=["header", "groupi", "groupj"], bold=True)
     )
 
