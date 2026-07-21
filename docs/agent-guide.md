@@ -1,26 +1,19 @@
 # tytable coding guide for agents
 
-This is a compact reference for coding assistants that need to write `tytable` code without prior
-knowledge of the package. It covers the common public API and the selection, styling, and formatting
-rules that are easiest to get wrong. For edge cases, consult the public docstrings in
-`src/tytable/_tytable.py` and the complete rendered manual built from `docs/main.typ`.
+This is a compact reference for coding assistants that need to write `tytable` code without prior knowledge of the package. It covers the common public API and the selection, styling, and formatting rules that are easiest to get wrong. For edge cases, consult the public docstrings in `src/tytable/_tytable.py` and the complete rendered manual built from `docs/main.typ`.
 
-`tytable` turns a Polars `DataFrame` into a Typst table. It can also render HTML previews and a plain
-ASCII representation. Import public objects only from `tytable`:
+`tytable` turns a Polars `DataFrame` into a Typst table. It can also render HTML previews and a plain ASCII representation. Import public objects only from `tytable`:
 
 ```python
 import polars as pl
 from tytable import NoteDict, TyTable, tt
 ```
 
-Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict`
-describes targeted notes. Do not import private modules or construct internal directive classes.
+Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict` describes targeted notes. Do not import private modules or construct internal directive classes.
 
 ## Mental model
 
-Calls such as `.fmt()`, `.style()`, and `.group()` record intent. They do not immediately rewrite a
-rendered grid. The intent is resolved when `.render()` or `.save()` is called, after all groups and
-structural rows are known.
+Calls such as `.fmt()`, `.style()`, and `.group()` record intent. They do not immediately rewrite a rendered grid. The intent is resolved when `.render()` or `.save()` is called, after all groups and structural rows are known.
 
 ```python
 table: TyTable = (
@@ -34,12 +27,9 @@ typst_source: str = table.render()
 table.save("build/quarterly-results.typ")
 ```
 
-Configuration methods mutate the table and return `self`, so they can be chained. `.render()` returns
-a string and `.save()` returns `None`; both are terminal operations. The same table may be rendered
-or saved repeatedly.
+Configuration methods mutate the table and return `self`, so they can be chained. `.render()` returns a string and `.save()` returns `None`; both are terminal operations. The same table may be rendered or saved repeatedly.
 
-Prefer doing substantial data manipulation in Polars before calling `tt()`. Use `.fmt()` for
-presentation-time value transformations and `.style()` for appearance.
+Prefer doing substantial data manipulation in Polars before calling `tt()`. Use `.fmt()` for presentation-time value transformations and `.style()` for appearance.
 
 ## Creating a table
 
@@ -62,11 +52,9 @@ tt(
 
 - `df` must be a Polars `DataFrame`. It is cloned on construction.
 - `caption` and `label` require `figure=True`, which is the default.
-- `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst
-  lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
+- `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is the row height in `em`, not a table scaling factor.
-- `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally
-  supplying raw markup.
+- `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.
 
 ## Row and column selectors
 
@@ -82,8 +70,7 @@ table.style(i=[0, 2], bold=True)   # first and third source-data rows
 table.style(i=range(5), bold=True) # first five source-data rows
 ```
 
-Inserted row-group separators do not change what `i=0`, `i=1`, and so on mean. Negative row indices
-are not supported.
+Inserted row-group separators do not change what `i=0`, `i=1`, and so on mean. Negative row indices are not supported.
 
 Semantic row names are:
 
@@ -125,8 +112,7 @@ Omitting `j` selects every column. Names are case-sensitive. A sequence may cont
 table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
 ```
 
-Display names created by `.set_name()` never become selectors. Continue to select the original
-name:
+Display names created by `.set_name()` never become selectors. Continue to select the original name:
 
 ```python
 table = tt(df).set_name(j="annual_revenue_usd", name="Revenue")
@@ -148,9 +134,7 @@ high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
 table = tt(df, notes=[high_values])
 ```
 
-The expression is evaluated on the original typed DataFrame. Its Boolean output columns are matched
-to source columns by name and intersected with any `i` and `j` selection. `where` cannot target
-headers, group rows, captions, or notes.
+The expression is evaluated on the original typed DataFrame. Its Boolean output columns are matched to source columns by name and intersected with any `i` and `j` selection. `where` cannot target headers, group rows, captions, or notes.
 
 ## Styling
 
@@ -187,16 +171,13 @@ Common style properties are:
 | `line_trim` | optional Typst line-trim specification |
 | `output` | backend tuple such as `("typst",)` |
 
-Text columns default to left alignment and numeric columns to right alignment. Their headers use the
-same dtype-aware defaults. Explicit styles override the defaults. When `j` selects several columns,
-`align` and `alignv` can assign one character per selected column:
+Text columns default to left alignment and numeric columns to right alignment. Their headers use the same dtype-aware defaults. Explicit styles override the defaults. When `j` selects several columns, `align` and `alignv` can assign one character per selected column:
 
 ```python
 table.style(j=["Product", "Revenue", "Growth"], align="lrr")
 ```
 
-Later style directives override earlier directives where their selected cells and properties overlap.
-Themes define the replaceable base appearance; explicit styles remain in effect:
+Later style directives override earlier directives where their selected cells and properties overlap. Themes define the replaceable base appearance; explicit styles remain in effect:
 
 ```python
 table.theme_default()  # booktab-style default
@@ -205,13 +186,11 @@ table.theme_striped()
 table.theme_grid()
 ```
 
-Use `.style(i="header", rotate=90)` to rotate header content. `.rotate(90)` rotates the complete
-table instead.
+Use `.style(i="header", rotate=90)` to rotate header content. `.rotate(90)` rotates the complete table instead.
 
 ## Formatting
 
-Use `.fmt(i=..., j=..., ...)` to change displayed values while retaining the source DataFrame and
-its dtypes:
+Use `.fmt(i=..., j=..., ...)` to change displayed values while retaining the source DataFrame and its dtypes:
 
 ```python
 table = (
@@ -246,10 +225,7 @@ Within one directive, transforms run in this order:
 5. `math`
 6. `escape`
 
-Decimal formatting uses `digits` places after the decimal point. Significant formatting uses that
-many significant figures. Scientific formatting uses that many places after the mantissa's decimal
-point. Numeric source columns remain right-aligned because alignment is inferred from the original
-dtype.
+Decimal formatting uses `digits` places after the decimal point. Significant formatting uses that many significant figures. Scientific formatting uses that many places after the mantissa's decimal point. Numeric source columns remain right-aligned because alignment is inferred from the original dtype.
 
 The `fn` callback is column-wise, not cell-wise. By default it receives current display strings for each selected column and must return a non-string sequence of the same length:
 
@@ -290,8 +266,7 @@ Add spanning column headers with a mapping from labels to original columns:
 table.group(j={"Financial": ["Revenue", "Cost"], "Outcome": ["Score"]})
 ```
 
-`.group(delimiter="_")` can derive hierarchical headers by splitting every original column name on
-the same literal delimiter.
+`.group(delimiter="_")` can derive hierarchical headers by splitting every original column name on the same literal delimiter.
 
 Rename headers for display without altering selectors:
 
@@ -334,29 +309,21 @@ table.save("build/table.typ")
 table.save("build/table.html") # suffix selects HTML
 ```
 
-In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses
-the ASCII renderer. A saved `.typ` fragment can be included in a Typst report with `#include`.
+In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer. A saved `.typ` fragment can be included in a Typst report with `#include`.
 
-`.plot()` generates plots during rendering and requires the optional `images` dependencies.
-`.images()` embeds or references existing files and does not require that extra. See their public
-docstrings or the full manual before generating media code because cell cardinality and asset-policy
-rules are intentionally strict.
+`.plot()` generates plots during rendering and requires the optional `images` dependencies. `.images()` embeds or references existing files and does not require that extra. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
 
 ## Common mistakes
 
 - Do not use 1-based row positions. `i=0` is the first source row.
 - Do not adjust row positions after grouping. Integer selectors always address source rows.
 - Do not use negative row positions.
-- Do not select a display label introduced by `.set_name()`; use the original DataFrame column
-  name.
+- Do not select a display label introduced by `.set_name()`; use the original DataFrame column name.
 - Do not put value options such as `digits` in `.style()`; use `.fmt()`.
 - Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of display strings by default, or original values with `fn_values="typed"`.
 - Do not use `"left"`, `"center"`, or `"right"` for `align`; use `"l"`, `"c"`, or `"r"`.
 - Do not use `where` for structural rows; it selects body cells only.
-- Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with
-  safe escaping.
-- Remember that directives are lazy. Many invalid selectors and incompatible structural targets are
-  reported by `.render()` or `.save()`, not when `.style()` or `.fmt()` is called.
+- Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with safe escaping.
+- Remember that directives are lazy. Many invalid selectors and incompatible structural targets are reported by `.render()` or `.save()`, not when `.style()` or `.fmt()` is called.
 
-When uncertain, preserve the source DataFrame, prefer column names over positions, use separate
-`.fmt()` and `.style()` calls, and render once while developing so lazy validation runs.
+When uncertain, preserve the source DataFrame, prefer column names over positions, use separate `.fmt()` and `.style()` calls, and render once while developing so lazy validation runs.
