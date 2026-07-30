@@ -62,7 +62,7 @@ def test_compile_labelled_figure(tmp_path):
 def test_compile_styled(tmp_path):
     df = pl.DataFrame({"A": [1.5, 2.5], "B": [3.5, 4.5]})
     typ = (
-        tt(df, caption="Styled")
+        tt(df, caption="Styled", column_gutter="0.25em", row_gutter=1)
         .fmt(j="A", digits=2)
         .style(i="header", bold=True, color="white", background="#333")
         .style(

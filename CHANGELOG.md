@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add portable per-cell padding with uniform, vertical/horizontal, or per-side values.
 - Add solid, dashed, dotted, dash-dotted, and removable cell borders with last-writer-wins resolution on shared physical edges.
+- Add explicit Typst `column_gutter` and `row_gutter` controls while preserving the legacy grouped-table `gutter` behavior.
 
 ### Fixes
 

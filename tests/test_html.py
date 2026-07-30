@@ -485,6 +485,45 @@ class TestTypstGutter:
         out = tt(df, gutter=None).group(j={"G": [0, 1]}).render("typst")
         assert "column-gutter" not in out
 
+    def test_explicit_column_gutter_applies_without_groups(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, column_gutter=4).render("typst")
+        assert "column-gutter: 4pt," in out
+
+    def test_explicit_column_gutter_overrides_legacy_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, gutter=2, column_gutter="0.5em").render("typst")
+        assert "column-gutter: 0.5em," in out
+        assert "column-gutter: 2pt," not in out
+
+    def test_explicit_column_gutter_applies_with_backgrounds(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = (
+            tt(df, column_gutter=3)
+            .group(j={"G": [0, 1]})
+            .style(i=0, background="#eee")
+            .render("typst")
+        )
+        assert "column-gutter: 3pt," in out
+
+    def test_row_gutter(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, row_gutter="0.2em").render("typst")
+        assert "row-gutter: 0.2em," in out
+
+    @pytest.mark.parametrize(
+        ("name", "value", "error"),
+        [
+            ("gutter", True, TypeError),
+            ("column_gutter", -1, ValueError),
+            ("row_gutter", False, TypeError),
+        ],
+    )
+    def test_invalid_gutter(self, name, value, error):
+        df = pl.DataFrame({"A": [1]})
+        with pytest.raises(error, match=name):
+            tt(df, **{name: value})
+
 
 @pytest.mark.html
 class TestCaptionNotesStyleHtml:

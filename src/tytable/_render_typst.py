@@ -62,10 +62,12 @@ class TypstRenderOptions:
     or ``"both"``. Positive ``resize_height`` takes precedence over
     ``resize_width``; otherwise a positive width fraction is used.
     ``grid_stroke`` is a trusted Typst stroke expression. ``row_height_em`` is
-    a row height in em. A numeric ``column_gutter`` is in points; a string is a
-    Typst length. The gutter is emitted only for grouped tables without cell
-    backgrounds. ``portable`` is retained as a compatibility option; direct
-    renders now always embed generated plots and saves always materialize them.
+    a row height in em. Numeric column and row gutters are in points; strings
+    are Typst lengths. A legacy column gutter is emitted only for grouped
+    tables without cell backgrounds, while an explicitly configured column
+    gutter is always emitted. ``portable`` is retained as a compatibility
+    option; direct renders now always embed generated plots and saves always
+    materialize them.
 
     The constructor seeds ``figure``, ``multipage``, row height, and gutter.
     Direct layout operations mutate this object. Base appearance options are
@@ -86,6 +88,8 @@ class TypstRenderOptions:
     portable: bool = False
     row_height_em: float | None = None
     column_gutter: float | str | None = 2
+    column_gutter_explicit: bool = False
+    row_gutter: float | str | None = None
 
     def align_to_typst(self) -> str:
         """Return the Typst alignment keyword for ``align_figure``."""
@@ -220,10 +224,17 @@ class TypstRenderer(Renderer):
         """Append column, gutter, stroke, and row-height table options."""
         opts = self._opts
         L.append(f"    columns: ({', '.join(self._columns_spec(built.width, ncol))}),")
-        if built.col_groups and not built.has_background and opts.column_gutter is not None:
+        show_column_gutter = opts.column_gutter_explicit or (
+            built.col_groups and not built.has_background
+        )
+        if show_column_gutter and opts.column_gutter is not None:
             gutter = opts.column_gutter
             unit = "pt" if isinstance(gutter, (int, float)) else ""
             L.append(f"    column-gutter: {gutter}{unit},")
+        if opts.row_gutter is not None:
+            gutter = opts.row_gutter
+            unit = "pt" if isinstance(gutter, (int, float)) else ""
+            L.append(f"    row-gutter: {gutter}{unit},")
         L.append(f"    stroke: {opts.grid_stroke or 'none'},")
         rows = f"{opts.row_height_em}em" if opts.row_height_em is not None else "auto"
         L.append(f"    rows: {rows},")

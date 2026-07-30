@@ -79,12 +79,12 @@ With `regex=True`, every string element of `j` is a Python `re.search` pattern o
   inset: 5pt,
   table.header(text(weight: "bold")[Concern], text(weight: "bold")[Options], text(weight: "bold")[Notes]),
   [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
-  [Layout], [`width`, `height`, `gutter`], [`width=1` fills the line; lists set each column],
+  [Layout], [`width`, `height`, `gutter`, `column_gutter`, `row_gutter`], [`width=1` fills the line; lists set each column],
   [Headers], [`colnames`], [show or hide display headers],
   [Values], [`escape`], [global safe-markup policy],
 )
 
-`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` accepts points as a number, a unit string, or `None`. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), `where` (cell-level Polars expression), and `regex` (interpret string column selectors as patterns):
+`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), `where` (cell-level Polars expression), and `regex` (interpret string column selectors as patterns):
 
 ```python
 from tytable import NoteDict, tt

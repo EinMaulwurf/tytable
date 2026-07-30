@@ -48,6 +48,8 @@ def tt(
     width: float | Sequence[float | str | None] | str | None = None,
     height: float | None = None,
     gutter: float | str | None = 2,
+    column_gutter: float | str | None = None,
+    row_gutter: float | str | None = None,
     colnames: bool = True,
     escape: bool = True,
 ) -> TyTable:
@@ -95,8 +97,15 @@ def tt(
     height
         Row height in ``em`` (Typst). ``None`` = auto rows.
     gutter
-        Typst column gutter. A number is treated as points; a string such as
-        ``"0.1em"`` is passed through. ``None`` suppresses the gutter.
+        Legacy Typst column gutter for grouped tables without cell backgrounds.
+        A number is treated as points; a string such as ``"0.1em"`` is passed
+        through. ``None`` suppresses the legacy gutter.
+    column_gutter
+        Explicit Typst column gutter. When set, overrides ``gutter`` and applies
+        to every table layout, including tables with cell backgrounds.
+    row_gutter
+        Explicit Typst row gutter. A number is treated as points and a string
+        is passed through as a Typst length.
     colnames
         Show the column-name header row (default ``True``).
     escape
@@ -144,6 +153,8 @@ def tt(
         width=width,
         height=height,
         gutter=gutter,
+        column_gutter=column_gutter,
+        row_gutter=row_gutter,
         colnames=colnames,
         escape=escape,
     )
@@ -238,6 +249,16 @@ def _normalize_width(
     return entries
 
 
+def _validate_gutter(name: str, value: float | str | None) -> None:
+    """Validate a Typst row or column gutter."""
+    if value is None or isinstance(value, str):
+        return
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError(f"{name} must be a number, string, or None")
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value!r}")
+
+
 class TyTable:
     """
     A chainable table built from a Polars DataFrame.
@@ -264,6 +285,8 @@ class TyTable:
         width: float | Sequence[float | str | None] | str | None = None,
         height: float | None = None,
         gutter: float | str | None = 2,
+        column_gutter: float | str | None = None,
+        row_gutter: float | str | None = None,
         colnames: bool = True,
         escape: bool = True,
     ) -> None:
@@ -279,6 +302,9 @@ class TyTable:
             If figure metadata or ``width`` is invalid.
         """
         _validate_figure_options(figure, caption, label)
+        _validate_gutter("gutter", gutter)
+        _validate_gutter("column_gutter", column_gutter)
+        _validate_gutter("row_gutter", row_gutter)
         self._data = data.clone()
         self._source_colnames: list[str] = list(data.columns)
         self._colnames_display: list[str] = list(data.columns)
@@ -300,7 +326,9 @@ class TyTable:
         self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
-        self._typst_opts.column_gutter = gutter
+        self._typst_opts.column_gutter_explicit = column_gutter is not None
+        self._typst_opts.column_gutter = column_gutter if column_gutter is not None else gutter
+        self._typst_opts.row_gutter = row_gutter
         self._theme: _themes.BaseTheme = "default"
 
     def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:

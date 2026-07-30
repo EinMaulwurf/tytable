@@ -45,6 +45,8 @@ tt(
     width=None,
     height=None,
     gutter=2,
+    column_gutter=None,
+    row_gutter=None,
     colnames=True,
     escape=True,
 )
@@ -54,6 +56,7 @@ tt(
 - `caption` and `label` require `figure=True`, which is the default.
 - `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is the row height in `em`, not a table scaling factor.
+- `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; numbers are points and strings are Typst lengths.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.
 
 ## Row and column selectors
