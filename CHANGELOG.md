@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add portable per-cell padding with uniform, vertical/horizontal, or per-side values.
 
+### Fixes
+
+- Remove the inert `line_trim` style option, which was accepted but never affected any renderer.
+
 ## [2.1.0] - 2026-07-20
 
 ### Features

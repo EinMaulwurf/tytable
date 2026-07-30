@@ -42,7 +42,6 @@ class StyleDirective:
     line: str | None = None
     line_color: str | None = None
     line_width: float | None = 0.1
-    line_trim: str | None = None
     output: tuple[str, ...] | None = None
 
 

@@ -331,7 +331,6 @@ def build_style_grid(
                             "line": d.line,
                             "line_color": d.line_color or "black",
                             "line_width": d.line_width if d.line_width is not None else 0.1,
-                            "line_trim": d.line_trim,
                         }
                     )
     return grid, lines
@@ -369,7 +368,7 @@ def build_meta_styles(
             raise ValueError(f"j cannot be used with the {d.i!r} selector")
         if d.regex:
             raise ValueError(f"regex cannot be used with the {d.i!r} selector")
-        if d.line is not None or d.line_color is not None or d.line_trim is not None:
+        if d.line is not None or d.line_color is not None:
             raise ValueError(f"line styling cannot be used with the {d.i!r} selector")
         if d.colspan is not None or d.rowspan is not None:
             raise ValueError(f"spans cannot be used with the {d.i!r} selector")

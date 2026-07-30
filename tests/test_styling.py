@@ -577,7 +577,6 @@ class TestMetaStyleSupportMatrix:
             ({"regex": True}, "regex cannot"),
             ({"line": "b"}, "line styling cannot"),
             ({"line_color": "red"}, "line styling cannot"),
-            ({"line_trim": "start"}, "line styling cannot"),
             ({"colspan": 2}, "spans cannot"),
             ({"rowspan": 2}, "spans cannot"),
         ],

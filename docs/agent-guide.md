@@ -169,7 +169,6 @@ Common style properties are:
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
 | `line_color` | named color or hex string |
 | `line_width` | number in `em`; default `0.1` |
-| `line_trim` | optional Typst line-trim specification |
 | `output` | backend tuple such as `("typst",)` |
 
 Text columns default to left alignment and numeric columns to right alignment. Their headers use the same dtype-aware defaults. Explicit styles override the defaults. When `j` selects several columns, `align` and `alignv` can assign one character per selected column:

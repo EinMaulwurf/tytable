@@ -339,7 +339,6 @@ class TyTable:
         line: str | None = None,
         line_color: str | None = None,
         line_width: float | None = 0.1,
-        line_trim: str | None = None,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
         """
@@ -421,8 +420,6 @@ class TyTable:
             Border color (default ``"black"``).
         line_width
             Border width in ``em`` (default ``0.1``).
-        line_trim
-            Optional Typst ``table.hline``/``vline`` trim spec.
         output
             Restrict this directive to the given output backends
             (e.g. ``("typst",)``). ``None`` applies to all.
@@ -506,7 +503,6 @@ class TyTable:
                 line=line,
                 line_color=line_color,
                 line_width=line_width,
-                line_trim=line_trim,
                 output=output,
             )
         )

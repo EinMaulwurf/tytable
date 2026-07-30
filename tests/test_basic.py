@@ -91,6 +91,10 @@ def test_construction_api_excludes_removed_parameters():
     assert "colnames_override" not in inspect.signature(TyTable).parameters
 
 
+def test_style_api_excludes_inert_line_trim():
+    assert "line_trim" not in inspect.signature(TyTable.style).parameters
+
+
 def test_note_dict_is_public_and_describes_note_keys():
     note = NoteDict(
         text="Source",

@@ -51,6 +51,5 @@ def _add_line(
                 "line": sides,
                 "line_color": "black",
                 "line_width": width,
-                "line_trim": None,
             }
         )
