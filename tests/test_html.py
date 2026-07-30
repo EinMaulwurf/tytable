@@ -347,6 +347,22 @@ class TestHtmlBorders:
         body_lines = [ln for ln in out.splitlines() if "<td" in ln and "border" in ln]
         assert any("border-bottom:0.1em" in ln for ln in body_lines)
 
+    @pytest.mark.parametrize(
+        ("line_style", "css_style"),
+        [("solid", "solid"), ("dashed", "dashed"), ("dotted", "dotted"), ("dash-dotted", "dashed")],
+    )
+    def test_portable_line_styles(self, line_style, css_style):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).theme_plain().style(i=0, line="b", line_style=line_style).render("html")
+        assert f"border-bottom:0.1em {css_style} #000000" in out
+
+    def test_line_none_removes_theme_edge(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).style(i="header", line="b", line_style="none").render("html")
+        header = next(line for line in out.splitlines() if "<th " in line)
+        assert "border-bottom:none" in header
+        assert "border-bottom:0.05em" not in header
+
 
 @pytest.mark.html
 class TestHtmlWidth:

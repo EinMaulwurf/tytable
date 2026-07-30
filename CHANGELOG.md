@@ -10,6 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Features
 
 - Add portable per-cell padding with uniform, vertical/horizontal, or per-side values.
+- Add solid, dashed, dotted, dash-dotted, and removable cell borders with last-writer-wins resolution on shared physical edges.
 
 ### Fixes
 

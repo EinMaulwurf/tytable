@@ -366,7 +366,7 @@ By default, text columns and their headers are left-aligned, while columns with 
 
 === Styling cells
 
-Apply per-cell styling through selectors `i` (rows) and `j` (columns). Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`c`/`r`), `alignv` (`t`/`m`/`b`), `indent`, `padding`, `colspan`, `rowspan`, and per-side borders (`line="tblr"` in any combination, with `line_color` / `line_width`). `padding` accepts one value for all sides, two values for vertical and horizontal padding, or four values in top/right/bottom/left order; all values are in `em`.
+Apply per-cell styling through selectors `i` (rows) and `j` (columns). Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`c`/`r`), `alignv` (`t`/`m`/`b`), `indent`, `padding`, `colspan`, `rowspan`, and per-side borders (`line="tblr"` in any combination, with `line_color`, `line_width`, and `line_style`). `padding` accepts one value for all sides, two values for vertical and horizontal padding, or four values in top/right/bottom/left order; all values are in `em`. `line_style` accepts `solid`, `dashed`, `dotted`, `dash-dotted`, or `none`; the last removes selected edges from the base theme. When multiple directives target the same physical edge, the later directive wins.
 
 See #link(<selectors>)[Select rows and columns] for positional, semantic, data-driven, and individual-cell selection.
 

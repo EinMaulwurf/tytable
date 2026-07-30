@@ -3,9 +3,9 @@ The styling engine: selector resolution → batched style grid + line list.
 
 Style directives are resolved in one batched pass into a single
 ``(i, j) -> props`` mapping. Cell properties use per-property
-last-writer-wins semantics, while border instructions remain ordered so that
-multiple edges and strokes can coexist. The pass never scans the grid per
-directive.
+last-writer-wins semantics. Border instructions remain ordered until renderers
+resolve them into last-writer-wins physical grid edges. The pass never scans
+the grid per directive.
 """
 
 from __future__ import annotations
@@ -120,6 +120,7 @@ _ALIGN_V = {
     "bottom": "bottom",
 }
 _LINE_RE = re.compile(r"^[tblr]+$")
+_LINE_STYLES = {"solid", "dashed", "dotted", "dash-dotted", "none"}
 
 StyleValidator = Callable[[str, object], None]
 Padding: TypeAlias = float | tuple[float, float] | tuple[float, float, float, float]
@@ -167,6 +168,13 @@ def _validate_line(name: str, value: object) -> None:
     """Validate a cell-edge line specification."""
     if value is not None and (not isinstance(value, str) or not _LINE_RE.match(value)):
         raise ValueError(f"invalid {name} value: {value!r} (must be a combo of t,b,l,r)")
+
+
+def _validate_line_style(name: str, value: object) -> None:
+    """Validate a portable cell-edge stroke style."""
+    if value is not None and (not isinstance(value, str) or value not in _LINE_STYLES):
+        choices = ", ".join(sorted(_LINE_STYLES))
+        raise ValueError(f"invalid {name} value: {value!r} (expected one of {choices})")
 
 
 def _validate_color(name: str, value: object) -> None:
@@ -230,6 +238,7 @@ _STYLE_VALIDATORS: dict[str, StyleValidator] = {
     "align": _validate_align,
     "alignv": _validate_align,
     "line": _validate_line,
+    "line_style": _validate_line_style,
     "color": _validate_color,
     "background": _validate_color,
     "line_color": _validate_color,
@@ -247,6 +256,7 @@ def _validate_style(
     align: str | None,
     alignv: str | None,
     line: str | None,
+    line_style: str | None,
     color: str | None,
     background: str | None,
     line_color: str | None,
@@ -316,8 +326,8 @@ def build_style_grid(
                     continue
                 cell = grid.setdefault((i, j), {})
                 # A cell can have only one final value for properties such as
-                # color, but borders are drawing commands: retaining every
-                # matching line directive allows independent/overlaid edges.
+                # color. Borders remain ordered commands until each renderer
+                # resolves neighboring cell sides onto physical grid edges.
                 cell.update(active_props)
                 if align_vals is not None:
                     cell["align"] = align_vals[idx]
@@ -329,6 +339,7 @@ def build_style_grid(
                             "i": i,
                             "j": j,
                             "line": d.line,
+                            "line_style": d.line_style or "solid",
                             "line_color": d.line_color or "black",
                             "line_width": d.line_width if d.line_width is not None else 0.1,
                         }
@@ -368,7 +379,7 @@ def build_meta_styles(
             raise ValueError(f"j cannot be used with the {d.i!r} selector")
         if d.regex:
             raise ValueError(f"regex cannot be used with the {d.i!r} selector")
-        if d.line is not None or d.line_color is not None:
+        if d.line is not None or d.line_style is not None or d.line_color is not None:
             raise ValueError(f"line styling cannot be used with the {d.i!r} selector")
         if d.colspan is not None or d.rowspan is not None:
             raise ValueError(f"spans cannot be used with the {d.i!r} selector")
@@ -411,3 +422,30 @@ def compute_covered_cells(
                         continue
                     covered.add((rr, cc))
     return covered
+
+
+def resolve_line_edges(
+    style_lines: list[dict[str, Any]],
+) -> dict[tuple[str, int, int], dict[str, Any]]:
+    """Resolve ordered cell-side commands into last-writer-wins physical grid edges.
+
+    Keys are ``(axis, boundary, segment)``. For a horizontal edge, ``boundary``
+    is its y coordinate and ``segment`` its column; for a vertical edge they
+    are its x coordinate and row. The retained value also records which cell
+    side supplied the winning command so HTML can place the collapsed border.
+    """
+    edges: dict[tuple[str, int, int], dict[str, Any]] = {}
+    for entry in style_lines:
+        i = entry["i"]
+        j = entry["j"]
+        for side in entry["line"]:
+            if side == "t":
+                key = ("h", i, j)
+            elif side == "b":
+                key = ("h", i + 1, j)
+            elif side == "l":
+                key = ("v", j, i)
+            else:
+                key = ("v", j + 1, i)
+            edges[key] = {**entry, "cell_i": i, "cell_j": j, "side": side}
+    return edges

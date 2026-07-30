@@ -49,6 +49,7 @@ def _add_line(
                 "i": row,
                 "j": col,
                 "line": sides,
+                "line_style": "solid",
                 "line_color": "black",
                 "line_width": width,
             }

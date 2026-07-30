@@ -167,6 +167,7 @@ Common style properties are:
 | `rotate` | angle in degrees for selected cell content |
 | `colspan`, `rowspan` | positive integer span |
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
+| `line_style` | `"solid"`, `"dashed"`, `"dotted"`, `"dash-dotted"`, or `"none"` |
 | `line_color` | named color or hex string |
 | `line_width` | number in `em`; default `0.1` |
 | `output` | backend tuple such as `("typst",)` |

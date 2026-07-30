@@ -40,6 +40,7 @@ class StyleDirective:
     rowspan: int | None = None
     rotate: float | None = None
     line: str | None = None
+    line_style: Literal["solid", "dashed", "dotted", "dash-dotted", "none"] | None = None
     line_color: str | None = None
     line_width: float | None = 0.1
     output: tuple[str, ...] | None = None

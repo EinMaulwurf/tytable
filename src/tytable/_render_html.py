@@ -14,7 +14,7 @@ from ._groups import _resolve_col_group_spans
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._style_markup import StyleMarkup, align_to_css
-from ._styling import compute_covered_cells
+from ._styling import compute_covered_cells, resolve_line_edges
 
 
 def _align_to_css(h: str | None, v: str | None) -> str | None:
@@ -48,26 +48,30 @@ def _with_default_alignment(
 
 def _build_border_map(style_lines: list[dict[str, Any]]) -> dict[tuple[int, int], str]:
     """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
-    border_map: dict[tuple[int, int], str] = {}
-    for entry in style_lines:
-        ti = entry["i"]
-        tj = entry["j"]
+    cell_borders: dict[tuple[int, int], dict[str, str]] = {}
+    css_style = {
+        "solid": "solid",
+        "dashed": "dashed",
+        "dotted": "dotted",
+        "dash-dotted": "dashed",
+    }
+    for entry in resolve_line_edges(style_lines).values():
+        ti = entry["cell_i"]
+        tj = entry["cell_j"]
         width = entry.get("line_width", 0.1)
         line_color = color_to_css(entry.get("line_color", "black"))
-        line = entry["line"]
+        line_style = entry.get("line_style", "solid")
+        value = (
+            "none" if line_style == "none" else f"{width}em {css_style[line_style]} {line_color}"
+        )
+        side = {"t": "top", "b": "bottom", "l": "left", "r": "right"}[entry["side"]]
+        cell_borders.setdefault((ti, tj), {})[side] = value
 
-        borders = border_map.setdefault((ti, tj), "")
-        for side in line:
-            if side == "t":
-                borders += f"border-top:{width}em solid {line_color};"
-            elif side == "b":
-                borders += f"border-bottom:{width}em solid {line_color};"
-            elif side == "l":
-                borders += f"border-left:{width}em solid {line_color};"
-            elif side == "r":
-                borders += f"border-right:{width}em solid {line_color};"
-        border_map[(ti, tj)] = borders
-    return border_map
+    order = ("top", "bottom", "left", "right")
+    return {
+        cell: "".join(f"border-{side}:{borders[side]};" for side in order if side in borders)
+        for cell, borders in cell_borders.items()
+    }
 
 
 class HtmlRenderer(Renderer):

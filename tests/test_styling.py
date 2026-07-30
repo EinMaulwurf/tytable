@@ -311,6 +311,10 @@ class TestStyleValidation:
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="z")
 
+    def test_bad_line_style(self):
+        with pytest.raises(ValueError, match="line_style"):
+            tt(DF).style(i=0, line="b", line_style="double")
+
     def test_colspan_must_be_positive(self):
         with pytest.raises(ValueError):
             tt(DF).style(i=0, colspan=0)
@@ -380,6 +384,34 @@ class TestBordersLines:
         out = tt(DF).style(i=0, line="t", line_width=0.5).render("typst")
         assert "0.5em" in out
         assert_snapshot("line_width", out)
+
+    @pytest.mark.parametrize("line_style", ["dashed", "dotted", "dash-dotted"])
+    def test_line_style(self, line_style):
+        out = (
+            tt(DF)
+            .theme_plain()
+            .style(i=0, line="b", line_style=line_style, line_width=0.2, line_color="blue")
+            .render("typst")
+        )
+        assert f'dash: "{line_style}"' in out
+        assert "thickness: 0.2em" in out
+        assert 'paint: rgb("#0000ff")' in out
+
+    def test_line_none_removes_theme_edge(self):
+        out = tt(DF).style(i="header", line="b", line_style="none").render("typst")
+        assert "table.hline(y: 1, start: 0, end: 2, stroke: none)" in out
+        assert "table.hline(y: 1, start: 0, end: 2, stroke: 0.05em + black)" not in out
+
+    def test_later_neighboring_edge_wins(self):
+        out = (
+            tt(DF)
+            .theme_plain()
+            .style(i=0, line="b", line_color="red")
+            .style(i=1, j=0, line="t", line_color="blue")
+            .render("typst")
+        )
+        assert 'y: 2, start: 0, end: 1, stroke: 0.1em + rgb("#0000ff")' in out
+        assert 'y: 2, start: 1, end: 2, stroke: 0.1em + rgb("#ff0000")' in out
 
     def test_chunking_non_consecutive_columns(self):
         df = pl.DataFrame({"A": [1, 4], "B": [2, 5], "C": [3, 6]})
@@ -576,6 +608,7 @@ class TestMetaStyleSupportMatrix:
             ({"j": 0}, "j cannot"),
             ({"regex": True}, "regex cannot"),
             ({"line": "b"}, "line styling cannot"),
+            ({"line_style": "dashed"}, "line styling cannot"),
             ({"line_color": "red"}, "line styling cannot"),
             ({"colspan": 2}, "spans cannot"),
             ({"rowspan": 2}, "spans cannot"),

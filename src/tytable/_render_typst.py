@@ -19,7 +19,7 @@ from ._groups import _resolve_col_group_spans
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._style_markup import StyleMarkup
-from ._styling import align_to_typst, compute_covered_cells
+from ._styling import align_to_typst, compute_covered_cells, resolve_line_edges
 
 
 def _props_to_signature(props: dict[str, Any]) -> str:
@@ -382,23 +382,20 @@ class TypstRenderer(Renderer):
         hlines: dict[tuple[int, str], set[int]] = {}
         vlines: dict[tuple[int, str], set[int]] = {}
 
-        for entry in built.style_lines:
-            ti = entry["i"]
-            tj = entry["j"]
+        for (axis, boundary, segment), entry in resolve_line_edges(built.style_lines).items():
             width = entry.get("line_width", 0.1)
             line_color = entry.get("line_color", "black")
             color_expr = color_to_typst(line_color)
-            stroke = f"{width}em + {color_expr}"
-            line = entry["line"]
+            line_style = entry.get("line_style", "solid")
+            if line_style == "none":
+                stroke = "none"
+            elif line_style == "solid":
+                stroke = f"{width}em + {color_expr}"
+            else:
+                stroke = f'(paint: {color_expr}, thickness: {width}em, dash: "{line_style}")'
 
-            if "t" in line:
-                hlines.setdefault((ti, stroke), set()).add(tj)
-            if "b" in line:
-                hlines.setdefault((ti + 1, stroke), set()).add(tj)
-            if "l" in line:
-                vlines.setdefault((tj, stroke), set()).add(ti)
-            if "r" in line:
-                vlines.setdefault((tj + 1, stroke), set()).add(ti)
+            target = hlines if axis == "h" else vlines
+            target.setdefault((boundary, stroke), set()).add(segment)
 
         hline_entries = []
         for (y, stroke), cols in sorted(hlines.items()):

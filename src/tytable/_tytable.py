@@ -337,6 +337,7 @@ class TyTable:
         rowspan: int | None = None,
         rotate: float | None = None,
         line: str | None = None,
+        line_style: Literal["solid", "dashed", "dotted", "dash-dotted", "none"] | None = None,
         line_color: str | None = None,
         line_width: float | None = 0.1,
         output: tuple[str, ...] | None = None,
@@ -416,6 +417,10 @@ class TyTable:
         line
             Per-side border, any combination of ``t`` (top), ``b`` (bottom),
             ``l`` (left), ``r`` (right) — e.g. ``"tblr"`` or ``"b"``.
+        line_style
+            Border style: ``"solid"``, ``"dashed"``, ``"dotted"``,
+            ``"dash-dotted"``, or ``"none"``. The last value removes selected
+            edges, including edges supplied by a base theme.
         line_color
             Border color (default ``"black"``).
         line_width
@@ -467,6 +472,7 @@ class TyTable:
             align=align,
             alignv=alignv,
             line=line,
+            line_style=line_style,
             color=color,
             background=background,
             line_color=line_color,
@@ -501,6 +507,7 @@ class TyTable:
                 rowspan=rowspan,
                 rotate=rotate,
                 line=line,
+                line_style=line_style,
                 line_color=line_color,
                 line_width=line_width,
                 output=output,
