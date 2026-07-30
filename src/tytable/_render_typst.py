@@ -205,6 +205,11 @@ class TypstRenderer(Renderer):
         L.append("      let style = get-style(x, y)")
         L.append('      if style != none and "background" in style { style.background }')
         L.append("    },")
+        if any("padding" in props for props in built.style_grid.values()):
+            L.append("    inset: (x, y) => {")
+            L.append("      let style = get-style(x, y)")
+            L.append('      if style != none and "padding" in style { style.padding } else { 5pt }')
+            L.append("    },")
         self._emit_lines(L, built)
         self._emit_header(L, built)
         self._emit_body(L, built)

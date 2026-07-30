@@ -11,8 +11,8 @@ directive.
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from ._colors import _is_color_function, _validate_color_string
 from ._indices import resolve_i, resolve_where
@@ -34,6 +34,7 @@ OVERWRITE_PROPS = (
     "background",
     "fontsize",
     "indent",
+    "padding",
     "colspan",
     "rowspan",
     "rotate",
@@ -41,7 +42,7 @@ OVERWRITE_PROPS = (
 
 # Props applicable to the non-grid "caption" / "notes" meta selectors
 # (everything in OVERWRITE_PROPS except the grid-only span controls).
-META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p not in ("colspan", "rowspan"))
+META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p not in ("padding", "colspan", "rowspan"))
 
 _META_STYLE_SUPPORT = {
     "typst": {
@@ -121,6 +122,7 @@ _ALIGN_V = {
 _LINE_RE = re.compile(r"^[tblr]+$")
 
 StyleValidator = Callable[[str, object], None]
+Padding: TypeAlias = float | tuple[float, float] | tuple[float, float, float, float]
 
 
 def align_to_typst(h: str | None, v: str | None) -> str | None:
@@ -197,6 +199,31 @@ def _validate_number(name: str, value: object) -> None:
     """Validate a numeric style property."""
     if value is not None and (not isinstance(value, int | float) or isinstance(value, bool)):
         raise TypeError(f"{name} must be a number, got {type(value).__name__}")
+
+
+def normalize_padding(value: float | Sequence[float] | None) -> Padding | None:
+    """Validate and normalize a public cell-padding specification."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise TypeError("padding must be a number or a sequence of two or four numbers")
+    if isinstance(value, int | float):
+        if value < 0:
+            raise ValueError(f"padding values must be non-negative, got {value!r}")
+        return value
+    if isinstance(value, str) or not isinstance(value, Sequence):
+        raise TypeError("padding must be a number or a sequence of two or four numbers")
+    values = tuple(value)
+    if len(values) not in (2, 4):
+        raise ValueError(f"padding must contain two or four values, got {len(values)}")
+    for item in values:
+        if isinstance(item, bool) or not isinstance(item, int | float):
+            raise TypeError(f"padding values must be numbers, got {item!r}")
+        if item < 0:
+            raise ValueError(f"padding values must be non-negative, got {item!r}")
+    if len(values) == 2:
+        return values[0], values[1]
+    return values[0], values[1], values[2], values[3]
 
 
 _STYLE_VALIDATORS: dict[str, StyleValidator] = {

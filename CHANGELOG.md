@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Add portable per-cell padding with uniform, vertical/horizontal, or per-side values.
+
 ## [2.1.0] - 2026-07-20
 
 ### Features

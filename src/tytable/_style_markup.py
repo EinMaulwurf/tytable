@@ -65,6 +65,8 @@ class StyleMarkup:
             parts.append(f"fontsize: {props['fontsize']}em")
         if "indent" in props and props["indent"] > 0:
             parts.append(f"indent: {props['indent']}em")
+        if "padding" in props:
+            parts.append(f"padding: {self._padding_to_typst(props['padding'])}")
         if "rotate" in props:
             parts.append(f"rotate: {props['rotate']}deg")
         align = align_to_typst(props.get("align"), props.get("alignv"))
@@ -111,8 +113,14 @@ class StyleMarkup:
         self._append_css_value(parts, "color", "color")
         self._append_css_value(parts, "background", "background-color")
         self._append_css_value(parts, "fontsize", "font-size", suffix="em")
+        if "padding" in props:
+            parts.append(f"padding:{self._padding_to_css(props['padding'])}")
         if "indent" in props and props["indent"] > 0:
-            parts.append(f"padding-left:{props['indent']}em")
+            if "padding" in props:
+                left = self._padding_left(props["padding"])
+                parts.append(f"padding-left:calc({left}em + {props['indent']}em)")
+            else:
+                parts.append(f"padding-left:{props['indent']}em")
         if "rotate" in props:
             parts.extend((f"transform:rotate({props['rotate']}deg)", "white-space:nowrap"))
         align = align_to_css(props.get("align"), props.get("alignv"))
@@ -148,6 +156,33 @@ class StyleMarkup:
             if prop in ("color", "background"):
                 value = color_to_css(value)
             parts.append(f"{css_name}:{value}{suffix}")
+
+    @staticmethod
+    def _padding_to_typst(value: float | tuple[float, ...]) -> str:
+        """Translate normalized padding into a Typst inset expression."""
+        if isinstance(value, int | float):
+            return f"{value}em"
+        if len(value) == 2:
+            vertical, horizontal = value
+            return f"(y: {vertical}em, x: {horizontal}em)"
+        top, right, bottom, left = value
+        return f"(top: {top}em, right: {right}em, bottom: {bottom}em, left: {left}em)"
+
+    @staticmethod
+    def _padding_to_css(value: float | tuple[float, ...]) -> str:
+        """Translate normalized padding into a CSS shorthand value."""
+        if isinstance(value, int | float):
+            return f"{value}em"
+        return " ".join(f"{item}em" for item in value)
+
+    @staticmethod
+    def _padding_left(value: float | tuple[float, ...]) -> float:
+        """Return the normalized left padding component."""
+        if isinstance(value, int | float):
+            return value
+        if len(value) == 2:
+            return value[1]
+        return value[3]
 
     def _validate_typst_signature_values(self) -> None:
         for name, value in self.props.items():

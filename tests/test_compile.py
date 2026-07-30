@@ -65,7 +65,7 @@ def test_compile_styled(tmp_path):
         tt(df, caption="Styled")
         .fmt(j="A", digits=2)
         .style(i="header", bold=True, color="white", background="#333")
-        .style(i=0, j="A", align="c", line="tblr")
+        .style(i=0, j="A", align="c", line="tblr", padding=(0.25, 0.5))
         .render("typst")
     )
     _compile(typ, tmp_path)

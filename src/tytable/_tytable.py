@@ -32,7 +32,7 @@ from ._render_ascii import AsciiRenderer
 from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
-from ._styling import _validate_style
+from ._styling import _validate_style, normalize_padding
 from ._types import NoteDict
 
 _ColumnSelector: TypeAlias = int | str | Sequence[int | str] | None
@@ -332,6 +332,7 @@ class TyTable:
         align: str | None = None,
         alignv: str | None = None,
         indent: float | None = None,
+        padding: float | Sequence[float] | None = None,
         colspan: int | None = None,
         rowspan: int | None = None,
         rotate: float | None = None,
@@ -402,6 +403,10 @@ class TyTable:
             strings (e.g. ``"tmb"``) are supported like ``align``.
         indent
             Left indent in ``em``.
+        padding
+            Cell padding in ``em``. A number applies to all sides, a two-item
+            sequence sets ``(vertical, horizontal)``, and a four-item sequence
+            sets ``(top, right, bottom, left)``.
         colspan, rowspan
             Merge the selected cell across ``N`` columns/rows.
         rotate
@@ -460,6 +465,7 @@ class TyTable:
         >>> import polars.selectors as cs
         >>> tt(df).style(where=cs.numeric() > 100, bold=True)  # doctest: +SKIP
         """
+        normalized_padding = normalize_padding(padding)
         _validate_style(
             align=align,
             alignv=alignv,
@@ -493,6 +499,7 @@ class TyTable:
                 align=align,
                 alignv=alignv,
                 indent=indent,
+                padding=normalized_padding,
                 colspan=colspan,
                 rowspan=rowspan,
                 rotate=rotate,

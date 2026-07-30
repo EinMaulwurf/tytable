@@ -35,6 +35,7 @@ class StyleDirective:
     align: str | None = None
     alignv: str | None = None
     indent: float | None = None
+    padding: float | tuple[float, float] | tuple[float, float, float, float] | None = None
     colspan: int | None = None
     rowspan: int | None = None
     rotate: float | None = None

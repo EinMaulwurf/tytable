@@ -115,6 +115,25 @@ class TestHtmlStyle:
         out = tt(df).style(i=0, j=0, fontsize=1.2).render("html")
         assert "font-size:1.2em" in out
 
+    @pytest.mark.parametrize(
+        ("padding", "expected"),
+        [
+            (0.5, "padding:0.5em"),
+            ((0.25, 0.5), "padding:0.25em 0.5em"),
+            ((0.1, 0.2, 0.3, 0.4), "padding:0.1em 0.2em 0.3em 0.4em"),
+        ],
+    )
+    def test_padding(self, padding, expected):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).style(i=0, j=0, padding=padding).render("html")
+        assert expected in out
+
+    def test_padding_and_indent_are_additive(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).style(i=0, j=0, padding=(0.25, 0.5), indent=1).render("html")
+        assert "padding:0.25em 0.5em" in out
+        assert "padding-left:calc(0.5em + 1em)" in out
+
     def test_rotate(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).style(i=0, j=0, rotate=90).render("html")

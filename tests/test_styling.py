@@ -70,6 +70,26 @@ class TestStyleProps:
         out = tt(DF).style(i=0, j=0, indent=0).render("typst")
         assert "indent:" not in out
 
+    @pytest.mark.parametrize(
+        ("padding", "expected"),
+        [
+            (0.5, "padding: 0.5em"),
+            ((0.25, 0.5), "padding: (y: 0.25em, x: 0.5em)"),
+            (
+                (0.1, 0.2, 0.3, 0.4),
+                "padding: (top: 0.1em, right: 0.2em, bottom: 0.3em, left: 0.4em)",
+            ),
+        ],
+    )
+    def test_padding(self, padding, expected):
+        out = tt(DF).theme_plain().style(i=0, j=0, padding=padding).render("typst")
+        assert expected in out
+        assert 'if style != none and "padding" in style { style.padding } else { 5pt }' in out
+
+    def test_padding_not_emitted_when_unused(self):
+        out = tt(DF).theme_plain().render("typst")
+        assert "inset:" not in out
+
     def test_rotate(self):
         out = tt(DF).style(i=0, j=0, rotate=90).render("typst")
         assert "rotate: 90deg" in out
@@ -271,6 +291,7 @@ class TestStyleValidation:
             ("line_width", True, ValueError),
             ("fontsize", True, TypeError),
             ("indent", "1", TypeError),
+            ("padding", True, TypeError),
             ("rotate", False, TypeError),
         ],
     )
@@ -305,6 +326,19 @@ class TestStyleValidation:
     def test_negative_line_width(self):
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="t", line_width=-1)
+
+    @pytest.mark.parametrize(
+        ("padding", "error"),
+        [
+            ((1,), ValueError),
+            ((1, 2, 3), ValueError),
+            ((1, "2"), TypeError),
+            ((1, -1), ValueError),
+        ],
+    )
+    def test_invalid_padding(self, padding, error):
+        with pytest.raises(error, match="padding"):
+            tt(DF).style(i=0, padding=padding)
 
     def test_bad_multi_char_align(self):
         with pytest.raises(ValueError):

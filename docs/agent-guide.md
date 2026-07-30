@@ -163,6 +163,7 @@ Common style properties are:
 | `align` | `"l"`, `"c"`, or `"r"` |
 | `alignv` | `"t"`, `"m"`, or `"b"` |
 | `indent` | number in `em` |
+| `padding` | number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
 | `rotate` | angle in degrees for selected cell content |
 | `colspan`, `rowspan` | positive integer span |
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
