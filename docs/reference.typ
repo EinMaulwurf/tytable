@@ -11,7 +11,7 @@ Use this part for task-based lookup. It collects the complete selector rules, me
 Start here when you know the task but not the method. Methods marked *chainable* mutate the `TyTable` and return `self`; output methods are terminal.
 
 #table(
-  columns: (1.15fr, 1.2fr, 2.65fr),
+  columns: (1.55fr, 2.35fr, 1.1fr),
   align: (left, left, left),
   inset: 6pt,
   stroke: (x, y) => if y == 0 { (bottom: 0.7pt + rgb("#153243")) } else { none },

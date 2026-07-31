@@ -84,7 +84,7 @@ def _parameter_tokens(signature: inspect.Signature) -> list[str]:
 
 
 def format_api_signature(display_name: str, callable_: Callable[..., Any]) -> str:
-    """Format a callable's real parameters as a compact documentation signature."""
+    """Format a callable's real parameters as a readable documentation signature."""
     signature = inspect.signature(callable_)
     tokens = _parameter_tokens(signature)
     return_annotation = _return_annotation(signature.return_annotation)
@@ -93,18 +93,7 @@ def format_api_signature(display_name: str, callable_: Callable[..., Any]) -> st
     if len(one_line) <= 88:
         return one_line
 
-    lines: list[str] = []
-    current = "    "
-    for token in tokens:
-        addition = f"{token},"
-        separator = " " if current.strip() else ""
-        if len(current) + len(separator) + len(addition) > 88 and current.strip():
-            lines.append(current)
-            current = f"    {addition}"
-        else:
-            current += separator + addition
-    if current.strip():
-        lines.append(current)
+    lines = [f"    {token}," for token in tokens]
     return f"{display_name}(\n" + "\n".join(lines) + f"\n){suffix}"
 
 
