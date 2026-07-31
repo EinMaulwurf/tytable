@@ -1,4 +1,4 @@
-#import "_common.typ": source, tag
+#import "_common.typ": docs-table, source, tag
 
 = — Learn tytable <learn-guide>
 
@@ -151,11 +151,10 @@ table.style(i=range(3), bold=True)   # first three source rows
 
 Structural rows have semantic names:
 
-#table(
+#docs-table(
   columns: (auto, 1fr),
-  inset: 5pt,
   align: (left, left),
-  table.header([Selector], [Target]),
+  table.header(strong[Selector], strong[Target]),
   [`"data"`], [all genuine source-data rows],
   [`"header"`], [the column-name row],
   [`"groupi"`], [inserted row-group separator rows],

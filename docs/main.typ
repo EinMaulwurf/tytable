@@ -119,6 +119,10 @@
 #counter(page).update(1)
 #set text(size: 10.5pt)
 
+// Make links identifiable in both color and grayscale without overwhelming the table of contents.
+#show link: set text(fill: rgb("#087e8b"))
+#show link: underline.with(stroke: 0.4pt + rgb("#5aa6ae"), offset: 1.5pt)
+
 #include "tutorial.typ"
 #include "guides.typ"
 #include "reference.typ"

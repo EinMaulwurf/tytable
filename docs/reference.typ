@@ -1,4 +1,4 @@
-#import "_common.typ": api, api_signatures
+#import "_common.typ": api, api_signatures, docs-table
 
 #pagebreak()
 
@@ -10,11 +10,9 @@ Use this part for task-based lookup. It collects the complete selector rules, me
 
 Start here when you know the task but not the method. Methods marked *chainable* mutate the `TyTable` and return `self`; output methods are terminal.
 
-#table(
+#docs-table(
   columns: (1.55fr, 2.35fr, 1.1fr),
   align: (left, left, left),
-  inset: 6pt,
-  stroke: (x, y) => if y == 0 { (bottom: 0.7pt + rgb("#153243")) } else { none },
   table.header(text(weight: "bold")[Task], text(weight: "bold")[Use], text(weight: "bold")[Result]),
   [Create], [`tt(...)`], [`TyTable`],
   [Style cells], [`.style(...)`], [chainable],
@@ -33,11 +31,9 @@ Start here when you know the task but not the method. Methods marked *chainable*
 
 `.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries share `i`, `j`, and `regex`; `.style()`, `.fmt()`, and targeted notes additionally accept the cell-level `where` selector. `.set_name()` shares `j` and `regex`. Omitting `i` selects every genuine source-data row for method calls; in a note, at least one of `i`, `j`, or `where` makes it targeted, and an omitted axis covers the corresponding data region. With `j=None`, every column is selected (`.plot()` and `.images()` require an explicit `j`; `.set_name()` instead accepts a full-list replacement or a source-to-display mapping).
 
-#table(
+#docs-table(
   columns: (0.8fr, 1.45fr, 2.75fr),
   align: (left, left, left),
-  inset: 6pt,
-  fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
   [`i`], [`0`, `2`, `[0, 2]`, `range(5)`], [0-based source DataFrame row(s)],
   [`i`], [`"header"`, `"data"`], [column names or genuine source rows],
@@ -73,10 +69,9 @@ With `regex=True`, every string element of `j` is a Python `re.search` pattern o
 
 `data` is a Polars `DataFrame` and is cloned on construction. The constructor options fall into these groups:
 
-#table(
+#docs-table(
   columns: (1.05fr, 1.9fr, 2.05fr),
   align: (left, left, left),
-  inset: 5pt,
   table.header(text(weight: "bold")[Concern], text(weight: "bold")[Options], text(weight: "bold")[Notes]),
   [Figure], [`figure`, `caption`, `label`, `notes`], [captions and labels require `figure=True`],
   [Layout], [`width`, `height`, `gutter`, `column_gutter`, `row_gutter`], [`width=1` fills the line; lists set each column],
@@ -181,11 +176,9 @@ An unsupported `output` raises `NotImplementedError`. Most selectors are recorde
 Creates parent directories and infers HTML from `.html` / `.htm`; other suffixes produce Typst. `assets` controls all externalized media: generated `.plot()` PNGs and `.images()` inputs copied by the default `static_images="copy"` policy. A relative value is resolved from the output file's directory and is also emitted in the fragment; the default is a table-specific sibling `<path.stem>_assets/` directory. Use `static_images="reference"` to retain authored paths without checks, or `"embed"` to include supported static files in the fragment while generated plots remain external. Each save has an independent destination and does not mutate the table or affect a later `.render()` or `.save()` call. Generated plot names and copied static names contain content hashes to avoid collisions; repeated static content is copied once per save. `save()` can additionally raise `OSError` while creating the destination directory or writing the table or an asset. Static copy/embed can raise contextual `OSError` for unreadable files and `ValueError` for URLs or unsupported embedded formats. Other render-time contracts are the same as for `.render()` above.
 == Troubleshooting
 
-#table(
+#docs-table(
   columns: (1.35fr, 1.65fr, 2fr),
   align: (left, left, left),
-  inset: 5pt,
-  fill: (x, y) => if y > 0 and calc.odd(y) { rgb("#f4f7f8") } else { none },
   table.header(text(weight: "bold")[Symptom], text(weight: "bold")[Likely cause], text(weight: "bold")[What to check]),
   [Typst reports “file not found” or “access denied”],
   [The fragment-relative path is wrong, or the image lies outside the Typst project root.],
@@ -221,12 +214,9 @@ When an error remains unclear, first render the smallest relevant backend direct
 
 If you already use R's `tinytable`, tytable should feel familiar: create a table, then layer on formatting, styling, grouping, and themes. The main adjustments are Python method chaining, 0-based row indices, and selecting columns by name.
 
-#table(
+#docs-table(
   columns: (1fr, 1fr),
   align: (x, y) => (left, left).at(x),
-  table.hline(y: 0, stroke: 0.08em + black),
-  table.hline(y: 1, stroke: 0.05em + black),
-  table.hline(stroke: 0.08em + black),
   table.header(strong[R (`tinytable`)], strong[Python (`tytable`)]),
   [`tt(data)`], [`tt(df)` — Polars DataFrame],
   [`style_tt(x, ...)`], [`.style(...)`],
