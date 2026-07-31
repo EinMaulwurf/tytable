@@ -17,6 +17,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Remove the inert `line_trim` style option, which was accepted but never affected any renderer.
 
+### Documentation
+
+- Format Typst documentation sources with Typstyle before local and CI builds.
+
 ## [2.1.0] - 2026-07-20
 
 ### Features

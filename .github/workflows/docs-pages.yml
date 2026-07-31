@@ -38,6 +38,11 @@ jobs:
         with:
           typst-version: "0.15.0"
 
+      - name: Install Typstyle
+        uses: taiki-e/install-action@v2
+        with:
+          tool: typstyle@0.15.0
+
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
 
