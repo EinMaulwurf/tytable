@@ -17,6 +17,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Remove the inert `line_trim` style option, which was accepted but never affected any renderer.
 
+### Performance
+
+- Prepare replacement mappings and row-group membership once per render phase instead of rebuilding them inside cell loops.
+
 ### Documentation
 
 - Format Typst documentation sources with Typstyle before local and CI builds.

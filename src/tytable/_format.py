@@ -75,7 +75,25 @@ def _matches(o: object, typed: object, s: str) -> bool:
     return typed == o or s == str(o)
 
 
-def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
+def _replacement_items(replace: dict) -> list[tuple[object, object]]:
+    """Flatten a replacement mapping once while preserving its iteration order."""
+    mapping: dict = {}
+    for key, value in replace.items():
+        if isinstance(key, list):
+            for item in key:
+                mapping[item] = value
+        else:
+            mapping[key] = value
+    return list(mapping.items())
+
+
+def _apply_replace(
+    typed_val: object,
+    current_str: str,
+    replace: object,
+    *,
+    replacement_items: list[tuple[object, object]] | None = None,
+) -> str:
     """Apply a ``replace`` spec (``True``, a fill string, or an ``{old: new}`` dict) to one cell."""
     if replace is True:
         if typed_val is None or (isinstance(typed_val, float) and math.isnan(typed_val)):
@@ -86,14 +104,8 @@ def _apply_replace(typed_val: object, current_str: str, replace: object) -> str:
             return replace
         return current_str
     if isinstance(replace, dict):
-        mapping: dict = {}
-        for k, v in replace.items():
-            if isinstance(k, list):
-                for item in k:
-                    mapping[item] = v
-            else:
-                mapping[k] = v
-        for old, new in mapping.items():
+        items = replacement_items if replacement_items is not None else _replacement_items(replace)
+        for old, new in items:
             if _matches(old, typed_val, current_str):
                 return str(new)
     return current_str
@@ -238,11 +250,15 @@ def _apply_replacements(
     """Apply replacement rules to the selected cells."""
     if directive.replace is None:
         return
+    replacement_items = (
+        _replacement_items(directive.replace) if isinstance(directive.replace, dict) else None
+    )
     for cell in cells:
         formatted = _apply_replace(
             _typed_value(cell, typed_body, colnames, layout),
             _cell_value(cell, data_body, colnames_display, layout),
             directive.replace,
+            replacement_items=replacement_items,
         )
         _set_cell_value(cell, formatted, data_body, colnames_display, layout)
 

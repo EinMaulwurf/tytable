@@ -94,6 +94,7 @@ class AsciiRenderer(Renderer):
             lines.append(header)
             lines.append(sep())
 
+        groupi_rows = set(built.layout.groupi_rows)
         for body_idx, row in enumerate(body):
             display_row = built.layout.header_rows + body_idx
             line = (
@@ -104,9 +105,7 @@ class AsciiRenderer(Renderer):
                         max_widths[i],
                         built.style_grid.get((display_row, i), {}).get(
                             "align",
-                            "l"
-                            if display_row in built.layout.groupi_rows
-                            else built.column_alignments[i],
+                            "l" if display_row in groupi_rows else built.column_alignments[i],
                         ),
                     )
                     for i, val in enumerate(row)

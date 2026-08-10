@@ -186,13 +186,14 @@ class HtmlRenderer(Renderer):
         """Append visible body rows, respecting spans and row-group styling."""
         parts.append("<tbody>")
         covered = compute_covered_cells(built.style_grid)
+        groupi_rows = set(built.layout.groupi_rows)
         for r, row in enumerate(built.data_body):
             display_row = built.layout.header_rows + r
+            is_group = display_row in groupi_rows
             cells: list[str] = []
             for c, val in enumerate(row):
                 if (display_row, c) in covered:
                     continue
-                is_group = display_row in built.layout.groupi_rows
                 cell_props = _with_default_alignment(
                     built.style_grid.get((display_row, c), {}),
                     built.column_alignments[c],
