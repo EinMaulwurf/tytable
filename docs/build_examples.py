@@ -50,6 +50,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "finalize": (".finalize", TyTable.finalize),
     "render": (".render", TyTable.render),
     "save": (".save", TyTable.save),
+    "compile": (".compile", TyTable.compile),
 }
 
 

@@ -1,6 +1,7 @@
 """Static regression checks for public collection annotations."""
 
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -30,6 +31,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.style(j=mixed_selector, rotate=90)
     table.plot(j=0, fun=lambda value: value, data=plot_data, xlim=integer_limits)
     table.images(j=0, paths=image_paths)
+    table.compile(Path("table.pdf"), root=Path("."), font_paths=[Path("fonts")])
 
 
 def _accepts_abstract_collection_types(

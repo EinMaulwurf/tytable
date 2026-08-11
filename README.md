@@ -54,8 +54,7 @@ tab.save("report_assets/products.typ")
 tab
 ```
 
-Reusable semantic formatters cover common reporting conventions without custom callbacks. The
-small formatter namespace keeps these helpers out of the main API:
+Reusable semantic formatters cover common reporting conventions without custom callbacks. The small formatter namespace keeps these helpers out of the main API:
 
 ```python
 from tytable import formatters, tt
@@ -67,12 +66,16 @@ table = (
 )
 ```
 
-German separator presets render values such as `1.023,87 €`; custom `decimal_mark` and
-`thousands_mark` values are also supported.
+German separator presets render values such as `1.023,87 €`; custom `decimal_mark` and `thousands_mark` values are also supported.
 
 ![Rendered Product scores table](docs/assets/readme-example.png)
 
-The `.typ` file can be `#include`d in a Typst report and compiled as part of the whole document.
+The `.typ` file can be `#include`d in a Typst report and compiled as part of the whole document. For a standalone artifact, an installed Typst CLI can compile directly without retaining an intermediate source file:
+
+```python
+table.compile("products.pdf")
+table.compile("products.png", ppi=200)
+```
 
 ## Conventions
 

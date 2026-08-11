@@ -1398,6 +1398,130 @@ class TyTable:
         except OSError as e:
             raise OSError(f"could not write table file {str(p)!r}: {e}") from e
 
+    def compile(
+        self,
+        path: str | os.PathLike[str],
+        *,
+        root: str | os.PathLike[str] | None = None,
+        font_paths: str | os.PathLike[str] | Sequence[str | os.PathLike[str]] = (),
+        pages: str | None = None,
+        ppi: int | None = None,
+        static_images: StaticImagePolicy = "embed",
+        executable: str | os.PathLike[str] = "typst",
+    ) -> None:
+        """Compile this table directly to PDF, PNG, or SVG with the Typst CLI.
+
+        Typst source is passed over standard input, so no intermediate ``.typ``
+        file or asset directory is retained. Generated plots are embedded, and
+        static images use ``static_images="embed"`` by default. The existing
+        :meth:`render` contract remains text-only; binary output is always
+        written to ``path``.
+
+        Parameters
+        ----------
+        path
+            Output path ending in ``.pdf``, ``.png``, or ``.svg``. PNG and SVG
+            output spanning several pages requires a Typst page template such
+            as ``"table-{p}.png"``.
+        root
+            Typst project root. Defaults to the Python process's current
+            working directory. It controls authored references when
+            ``static_images="reference"`` and any raw Typst content.
+        font_paths
+            Additional font directories. Relative entries are resolved from
+            the Python process's current working directory.
+        pages
+            Optional Typst page selection such as ``"1,3-5"``.
+        ppi
+            Positive output resolution for PNG. Rejected for PDF and SVG.
+        static_images
+            ``"embed"`` (default) creates a self-contained compilation;
+            ``"reference"`` retains authored paths. ``"copy"`` is unavailable
+            because compilation creates no persistent asset directory.
+        executable
+            Typst CLI executable name or path (default ``"typst"``).
+
+        Raises
+        ------
+        TypeError
+            If ``ppi``, ``pages``, or ``executable`` has an invalid type.
+        ValueError
+            If the output suffix or option combination is invalid.
+        RuntimeError
+            If the Typst executable is missing or compilation fails. Compiler
+            diagnostics are included in the exception message.
+        OSError
+            If the output directory cannot be created or embedded media cannot
+            be read.
+        """
+        import subprocess
+
+        output_path = pathlib.Path(path)
+        output_format = output_path.suffix.lower().removeprefix(".")
+        if output_format not in {"pdf", "png", "svg"}:
+            raise ValueError("compile path must end in .pdf, .png, or .svg")
+        if ppi is not None:
+            if isinstance(ppi, bool) or not isinstance(ppi, int):
+                raise TypeError("ppi must be a positive integer or None")
+            if ppi <= 0:
+                raise ValueError("ppi must be positive")
+            if output_format != "png":
+                raise ValueError("ppi is supported only for PNG output")
+        if pages is not None and not isinstance(pages, str):
+            raise TypeError("pages must be a string or None")
+        if pages == "":
+            raise ValueError("pages must not be empty")
+        if not isinstance(executable, str | os.PathLike):
+            raise TypeError("executable must be a string or path-like object")
+
+        project_root = pathlib.Path.cwd() if root is None else pathlib.Path(root).resolve()
+        if not project_root.is_dir():
+            raise ValueError(f"Typst project root is not a directory: {str(project_root)!r}")
+        absolute_output = output_path.absolute()
+        try:
+            absolute_output.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            raise OSError(
+                f"could not create compiled-output directory {str(absolute_output.parent)!r}: {e}"
+            ) from e
+
+        rendered = self.render("typst", static_images=static_images)
+        command = [str(executable), "compile", "--root", str(project_root)]
+        if font_paths:
+            font_path_items = (
+                [font_paths] if isinstance(font_paths, str | os.PathLike) else font_paths
+            )
+            resolved_fonts = [str(pathlib.Path(item).resolve()) for item in font_path_items]
+            command.extend(("--font-path", os.pathsep.join(resolved_fonts)))
+        if pages is not None:
+            command.extend(("--pages", pages))
+        if ppi is not None:
+            command.extend(("--ppi", str(ppi)))
+        command.extend(("-", str(absolute_output)))
+
+        try:
+            result = subprocess.run(
+                command,
+                input=rendered,
+                capture_output=True,
+                text=True,
+                cwd=project_root,
+                check=False,
+            )
+        except FileNotFoundError as e:
+            raise RuntimeError(
+                f"Typst executable {str(executable)!r} was not found; install Typst or pass "
+                "executable= with its path"
+            ) from e
+        except OSError as e:
+            raise RuntimeError(f"could not run Typst executable {str(executable)!r}: {e}") from e
+
+        if result.returncode != 0:
+            diagnostics = result.stderr.strip() or result.stdout.strip() or "no diagnostics"
+            raise RuntimeError(
+                f"Typst compilation failed with exit code {result.returncode}:\n{diagnostics}"
+            )
+
     def _repr_html_(self) -> str:
         """Jupyter HTML preview — renders the table as HTML inline."""
         return self.render("html")

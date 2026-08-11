@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add reusable number, currency, percentage, and date formatters with German and English separator presets.
 - Add `.clone()` for deriving independently configurable variants from a shared table definition.
+- Add `.compile()` for direct PDF, PNG, and SVG output through an installed Typst CLI.
 
 ## [2.2.0] - 2026-08-11
 

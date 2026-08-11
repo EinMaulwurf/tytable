@@ -563,7 +563,7 @@ catalog_assets/
   plot_....png
 ```
 
-Keep the `.typ` file and its `_assets` folder together when moving or sharing the table. Calling `.save()` does not compile a PDF; it prepares the table fragment and its plot files for Typst.
+Keep the `.typ` file and its `_assets` folder together when moving or sharing the table. `.save()` prepares a fragment for inclusion in a larger Typst report; when the table itself is the complete artifact, `.compile("catalog.pdf")` instead invokes an installed Typst CLI directly and retains no intermediate source file. It can also write PNG or SVG, with `ppi=` controlling PNG resolution.
 
 This is separate from Jupyter's automatic preview. When `table` is the last value in a notebook cell, Jupyter asks tytable for HTML and displays that result. You only need `render("typst")` when your Python code specifically needs the Typst source as a string.
 

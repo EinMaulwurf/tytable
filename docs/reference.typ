@@ -232,6 +232,10 @@ An unsupported `output` raises `NotImplementedError`. Most selectors are recorde
 #api("Save file", api_signatures.at("save"))
 
 Creates parent directories and infers HTML from `.html` / `.htm`; other suffixes produce Typst. `assets` controls all externalized media: generated `.plot()` PNGs and `.images()` inputs copied by the default `static_images="copy"` policy. A relative value is resolved from the output file's directory and is also emitted in the fragment; the default is a table-specific sibling `<path.stem>_assets/` directory. Use `static_images="reference"` to retain authored paths without checks, or `"embed"` to include supported static files in the fragment while generated plots remain external. Each save has an independent destination and does not mutate the table or affect a later `.render()` or `.save()` call. Generated plot names and copied static names contain content hashes to avoid collisions; repeated static content is copied once per save. `save()` can additionally raise `OSError` while creating the destination directory or writing the table or an asset. Static copy/embed can raise contextual `OSError` for unreadable files and `ValueError` for URLs or unsupported embedded formats. Other render-time contracts are the same as for `.render()` above.
+
+#api("Compile artifact", api_signatures.at("compile"))
+
+Uses an installed Typst CLI to write PDF, PNG, or SVG and returns `None`, preserving the text-only `render() -> str` contract. Typst source is sent through standard input, generated plots and static images are embedded by default, and no intermediate source or asset directory remains. `root` defaults to the Python working directory and controls authored references and raw Typst content; `font_paths` adds font directories, `pages` selects output pages, and `ppi` controls PNG resolution. Multi-page PNG/SVG output requires `{p}` in the output filename. A missing executable or nonzero compiler exit raises `RuntimeError` with Typst's diagnostics.
 == Troubleshooting
 
 #docs-table(
