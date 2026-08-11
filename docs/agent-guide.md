@@ -214,6 +214,7 @@ Formatting options are:
 | `num_fmt` | `"decimal"`, `"significant"`, or `"scientific"` |
 | `fn` | column-wise callback returning a sequence of the same length |
 | `fn_values` | callback input: `"display"` strings (default) or original `"typed"` values |
+| `formatter` | reusable typed formatter from `tytable.formatters` |
 | `replace` | `True` blanks missing values, a string fills them, or a dict maps values |
 | `linebreak` | literal marker replaced by a native Typst/HTML line break |
 | `math` | wrap values in Typst math delimiters; no effect in HTML/ASCII |
@@ -247,6 +248,18 @@ table.fmt(j="Share", fn=lambda values: [f"{100 * value:.1f}%" for value in value
 ```
 
 Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Use the default `fn_values="display"` when the callback should consume digit-formatted values.
+
+For common number, currency, percentage, and date conventions, use the separate semantic formatter namespace. A formatter consumes original typed values and cannot be combined with `fn` or `digits` in the same directive:
+
+```python
+from tytable import formatters
+
+table.fmt(j="Revenue", formatter=formatters.currency("EUR", locale="de_DE"))
+table.fmt(j="Margin", formatter=formatters.percent(locale="de_DE", digits=1))
+table.fmt(j="Date", formatter=formatters.date("%d.%m.%Y"))
+```
+
+`locale="de_DE"` selects decimal commas and period grouping (`1.023,87`); `locale="en_US"` selects decimal points and comma grouping. These are intentionally small separator presets rather than a complete CLDR locale implementation. Use `formatters.number(decimal_mark=..., thousands_mark=...)` for another convention.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 

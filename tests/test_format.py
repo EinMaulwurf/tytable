@@ -1,11 +1,74 @@
+from datetime import date
+
 import polars as pl
 import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import tt
+from tytable import formatters, tt
 from tytable._format import _apply_escape, _apply_replace, _matches
 from tytable._resolve import build
+
+
+class TestSemanticFormatters:
+    @pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+    def test_german_number(self, output):
+        df = pl.DataFrame({"value": [1023.87, -12.5, None]})
+
+        rendered = (
+            tt(df)
+            .fmt(j="value", formatter=formatters.number(locale="de_DE", digits=2))
+            .render(output)
+        )
+
+        assert "1.023,87" in rendered
+        assert "-12,50" in rendered
+        assert "—" in rendered
+
+    def test_german_currency_and_percent(self):
+        df = pl.DataFrame({"price": [1023.87], "share": [0.125]})
+
+        rendered = (
+            tt(df)
+            .fmt(j="price", formatter=formatters.currency("EUR", locale="de_DE"))
+            .fmt(j="share", formatter=formatters.percent(locale="de_DE", digits=1))
+            .render("ascii")
+        )
+
+        assert "1.023,87 €" in rendered
+        assert "12,5 %" in rendered
+
+    def test_accounting_compact_and_custom_separators(self):
+        accounting = formatters.number(digits=0, accounting=True)
+        accounting_currency = formatters.currency("USD", digits=0, accounting=True)
+        compact = formatters.number(digits=1, compact=True, decimal_mark=",", thousands_mark=".")
+
+        assert accounting([-1250]) == ["(1,250)"]
+        assert accounting_currency([-1250]) == ["($1,250)"]
+        assert compact([2_500_000]) == ["2,5M"]
+
+    def test_date(self):
+        df = pl.DataFrame({"day": [date(2026, 8, 11), None]})
+        rendered = tt(df).fmt(j="day", formatter=formatters.date("%d.%m.%Y")).render("ascii")
+        assert "11.08.2026" in rendered
+        assert "—" in rendered
+
+    @pytest.mark.parametrize(
+        ("kwargs", "match"),
+        [
+            ({"formatter": "not callable"}, "formatter must be callable"),
+            ({"formatter": formatters.number(), "fn": list}, "formatter and fn"),
+            ({"formatter": formatters.number(), "digits": 2}, "formatter and digits"),
+        ],
+    )
+    def test_formatter_validation(self, kwargs, match):
+        with pytest.raises((TypeError, ValueError), match=match):
+            tt(pl.DataFrame({"value": [1]})).fmt(**kwargs)
+
+    def test_invalid_number_value_has_clear_error(self):
+        table = tt(pl.DataFrame({"value": ["one"]})).fmt(formatter=formatters.number())
+        with pytest.raises(TypeError, match="requires numeric values"):
+            table.render()
 
 
 @pytest.mark.typst

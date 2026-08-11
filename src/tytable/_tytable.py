@@ -562,6 +562,7 @@ class TyTable:
         escape: bool = False,
         fn: Callable | None = None,
         fn_values: Literal["display", "typed"] = "display",
+        formatter: Callable[[Sequence[Any]], Sequence[object]] | None = None,
         linebreak: str | None = None,
         math: bool = False,
         output: tuple[str, ...] | None = None,
@@ -612,6 +613,10 @@ class TyTable:
             strings, including earlier formatting; ``"typed"`` passes the
             original Python values from the DataFrame. Typed values cannot be
             combined with ``digits`` in the same directive.
+        formatter
+            Reusable semantic formatter, such as ``formatters.currency()`` or
+            ``formatters.number(locale="de_DE")``. It receives original typed
+            values and is mutually exclusive with ``fn`` and ``digits``.
         linebreak
             Replace this literal marker with a backend-native line break: ``\\ ``
             in Typst and ``<br>`` in HTML. ASCII output leaves the marker intact.
@@ -671,10 +676,19 @@ class TyTable:
             )
         if fn is not None and not callable(fn):
             raise TypeError(f"fn must be callable or None, got {type(fn).__name__}")
+        if formatter is not None and not callable(formatter):
+            raise TypeError(f"formatter must be callable or None, got {type(formatter).__name__}")
+        if formatter is not None and fn is not None:
+            raise ValueError("formatter and fn cannot be combined in the same .fmt() call")
+        if formatter is not None and digits is not None:
+            raise ValueError("formatter and digits cannot be combined in the same .fmt() call")
         if fn_values not in {"display", "typed"}:
             raise ValueError(f"fn_values must be either 'display' or 'typed'; got {fn_values!r}")
         if digits is not None and fn is not None and fn_values == "typed":
             raise ValueError("digits cannot be combined with fn when fn_values='typed'")
+        if formatter is not None:
+            fn = formatter
+            fn_values = "typed"
         self._format_directives.append(
             FormatDirective(
                 i=i,

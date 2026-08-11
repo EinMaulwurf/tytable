@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Add reusable number, currency, percentage, and date formatters with German and English separator presets.
+
 ## [2.2.0] - 2026-08-11
 
 ### Features

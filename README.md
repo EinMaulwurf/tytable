@@ -54,6 +54,22 @@ tab.save("report_assets/products.typ")
 tab
 ```
 
+Reusable semantic formatters cover common reporting conventions without custom callbacks. The
+small formatter namespace keeps these helpers out of the main API:
+
+```python
+from tytable import formatters, tt
+
+table = (
+    tt(df)
+    .fmt(j="Revenue", formatter=formatters.currency("EUR", locale="de_DE"))
+    .fmt(j="Margin", formatter=formatters.percent(locale="de_DE", digits=1))
+)
+```
+
+German separator presets render values such as `1.023,87 €`; custom `decimal_mark` and
+`thousands_mark` values are also supported.
+
 ![Rendered Product scores table](docs/assets/readme-example.png)
 
 The `.typ` file can be `#include`d in a Typst report and compiled as part of the whole document.

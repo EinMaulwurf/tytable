@@ -161,6 +161,8 @@ Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`, `math`,
 
 `digits`, `num_fmt`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. `fn` receives each selected column as `list[str]` after numeric formatting and must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
+The separate `tytable.formatters` namespace provides reusable `number()`, `currency()`, `percent()`, and `date()` formatters. Pass one as `formatter=`; it receives original typed values and is mutually exclusive with `fn` and `digits`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database; `number()` also accepts explicit `decimal_mark` and `thousands_mark` values.
+
 #api("Group", api_signatures.at("group"))
 
 For row groups, pass `{label: row}` or a list with one group value per data row. For spanning column headers, pass `{label: [columns]}` as `j`, or pass a literal string as `delimiter` to split every column name. `j` and `delimiter` are mutually exclusive.
