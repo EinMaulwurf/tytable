@@ -365,7 +365,7 @@ This example combines all four factories. Notice `1.023,87 €`, the non-breaki
 #v(0.12em)
 #include "build/02_semantic_formatters.typ"
 
-Semantic formatters are column-wise typed callbacks passed to `fn`. They cannot be combined with `digits` in the same `.fmt()` directive, but subsequent directives can still apply replacement, line breaks, math, escaping, or styles. A formatter is reusable across tables:
+A configured formatter can be reused across tables. It cannot be combined with `digits` in the same `.fmt()` directive, but subsequent directives can still apply replacement, line breaks, math, escaping, or styles:
 
 ```python
 from tytable.formatters import currency
@@ -375,9 +375,9 @@ quarter_1 = tt(q1).fmt(j="Revenue", fn=eur)
 quarter_2 = tt(q2).fmt(j="Revenue", fn=eur)
 ```
 
-=== With `.fmt(fn=...)`
+=== With custom callbacks
 
-For anything the built-ins don't cover, pass a callable to `fn`. It runs #emph[column-wise] and expects a non-string sequence of the same length back. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by `digits`:
+The built-in formatters above are ordinary column-wise callbacks. For conventions they do not cover, define your own callable and pass it to `fn`. It must return a non-string sequence of the same length as its input. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by `digits`:
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")
