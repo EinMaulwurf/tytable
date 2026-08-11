@@ -54,7 +54,7 @@ tab.save("report_assets/products.typ")
 tab
 ```
 
-Common number, currency, percentage, and date conventions are available through `tytable.formatters`, including German output such as `1.023,87 €`. See the full guide for options and rendered examples.
+Common number, currency, percentage, and date conventions are available from `tytable.formatters`, including German output such as `1.023,87 €`. Pass them to `.fmt(fn=...)`; see the full guide for options and rendered examples.
 
 ![Rendered Product scores table](docs/assets/readme-example.png)
 

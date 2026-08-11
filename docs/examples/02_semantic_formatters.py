@@ -4,7 +4,9 @@ from datetime import date
 
 import polars as pl
 
-from tytable import formatters, tt
+from tytable import tt
+from tytable.formatters import currency, number, percent
+from tytable.formatters import date as date_formatter
 
 df = pl.DataFrame(
     {
@@ -20,10 +22,10 @@ df = pl.DataFrame(
     tt(df, caption="German report conventions", width=1)
     .fmt(
         j="Revenue",
-        formatter=formatters.currency("EUR", locale="de_DE", accounting=True),
+        fn=currency("EUR", locale="de_DE", accounting=True),
     )
-    .fmt(j="Margin", formatter=formatters.percent(locale="de_DE", digits=1))
-    .fmt(j="Orders", formatter=formatters.number(locale="de_DE", digits=0))
-    .fmt(j="Date", formatter=formatters.date("%d.%m.%Y"))
+    .fmt(j="Margin", fn=percent(locale="de_DE", digits=1))
+    .fmt(j="Orders", fn=number(locale="de_DE", digits=0))
+    .fmt(j="Date", fn=date_formatter("%d.%m.%Y"))
     .save("build/02_semantic_formatters.typ")
 )

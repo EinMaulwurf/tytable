@@ -161,7 +161,7 @@ Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`, `math`,
 
 `digits`, `num_fmt`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. `fn` receives each selected column as `list[str]` after numeric formatting and must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
-Pass a semantic formatter as `formatter=` to consume original typed values; it is mutually exclusive with `fn` and `digits`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
+Import semantic formatters from `tytable.formatters` and pass them to `fn`; callbacks consume original typed values by default and cannot be combined with `digits` unless `fn_values="display"` is selected explicitly. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 

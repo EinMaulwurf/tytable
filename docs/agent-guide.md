@@ -215,8 +215,7 @@ Formatting options are:
 | `digits` | non-negative integer; format numeric values |
 | `num_fmt` | `"decimal"`, `"significant"`, or `"scientific"` |
 | `fn` | column-wise callback returning a sequence of the same length |
-| `fn_values` | callback input: `"display"` strings (default) or original `"typed"` values |
-| `formatter` | reusable typed formatter from `tytable.formatters` |
+| `fn_values` | callback input: original `"typed"` values (default) or current `"display"` strings |
 | `replace` | `True` blanks missing values, a string fills them, or a dict maps values |
 | `linebreak` | literal marker replaced by a native Typst/HTML line break |
 | `math` | wrap values in Typst math delimiters; no effect in HTML/ASCII |
@@ -234,24 +233,24 @@ Within one directive, transforms run in this order:
 
 Decimal formatting uses `digits` places after the decimal point. Significant formatting uses that many significant figures. Scientific formatting uses that many places after the mantissa's decimal point. Numeric source columns remain right-aligned because alignment is inferred from the original dtype.
 
-The `fn` callback is column-wise, not cell-wise. By default it receives current display strings for each selected column and must return a non-string sequence of the same length:
+The `fn` callback is column-wise, not cell-wise. By default it receives the original Python values from the DataFrame for each selected column and must return a non-string sequence of the same length:
 
 ```python
-def add_percent(values: list[str]) -> list[str]:
-    return [f"{100 * float(value):.1f}%" for value in values]
+def add_percent(values: list[float]) -> list[str]:
+    return [f"{100 * value:.1f}%" for value in values]
 
 table.fmt(j="Share", fn=add_percent, escape=True)
 ```
 
-Set `fn_values="typed"` to receive the original Python values from the DataFrame, which is useful for numeric, date, boolean, and null-aware transforms:
+Set `fn_values="display"` when a callback should consume the current display strings, including values produced by an earlier formatting directive:
 
 ```python
-table.fmt(j="Share", fn=lambda values: [f"{100 * value:.1f}%" for value in values], fn_values="typed")
+table.fmt(j="Share", digits=2).fmt(j="Share", fn=lambda values: [f"{value}%" for value in values], fn_values="display")
 ```
 
-Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Use the default `fn_values="display"` when the callback should consume digit-formatted values.
+Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Set `fn_values="display"` explicitly when combining them in one directive.
 
-For common typed formats, import `formatters` from `tytable` and pass `formatter=formatters.number(...)`, `.currency(...)`, `.percent(...)`, or `.date(...)`. `locale="de_DE"` produces German separators; formatters cannot be combined with `fn` or `digits` in the same directive.
+For common typed formats, import `number`, `currency`, `percent`, or `date` from `tytable.formatters` and pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))`. `locale="de_DE"` produces German separators; semantic formatters cannot be combined with `digits` in the same directive.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 
@@ -331,7 +330,7 @@ In Jupyter, leaving the table as the last expression displays its HTML preview. 
 - Do not use negative row positions.
 - Do not select a display label introduced by `.set_name()`; use the original DataFrame column name.
 - Do not put value options such as `digits` in `.style()`; use `.fmt()`.
-- Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of display strings by default, or original values with `fn_values="typed"`.
+- Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of original typed values by default, or current strings with `fn_values="display"`.
 - Do not use `"left"`, `"center"`, or `"right"` for `align`; use `"l"`, `"c"`, or `"r"`.
 - Do not use `where` for structural rows; it selects body cells only.
 - Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with safe escaping.

@@ -27,6 +27,6 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="City populations, human-readable")
-    .fmt(j="Population", fn=humanize, fn_values="typed")
+    .fmt(j="Population", fn=humanize)
     .save("build/10_format_fn.typ")
 )

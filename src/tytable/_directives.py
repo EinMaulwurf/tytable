@@ -59,7 +59,7 @@ class FormatDirective:
     replace: dict | str | bool | None = None
     escape: bool | str = False
     fn: Callable | None = None
-    fn_values: Literal["display", "typed"] = "display"
+    fn_values: Literal["display", "typed"] = "typed"
     linebreak: str | None = None
     math: bool = False
     output: tuple[str, ...] | None = None

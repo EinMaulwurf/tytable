@@ -4,7 +4,7 @@ The public API consists of the :func:`tt` factory, :class:`TyTable`, reusable
 ``formatters``, and note typing helpers.
 """
 
-from . import _formatters as formatters
+from . import formatters
 from ._types import NoteDict
 from ._tytable import TyTable, tt
 

@@ -8,6 +8,8 @@ from tests.helpers import assert_snapshot
 from tytable import formatters, tt
 from tytable._format import _apply_escape, _apply_replace, _matches
 from tytable._resolve import build
+from tytable.formatters import currency, number, percent
+from tytable.formatters import date as date_formatter
 
 
 class TestSemanticFormatters:
@@ -15,11 +17,7 @@ class TestSemanticFormatters:
     def test_german_number(self, output):
         df = pl.DataFrame({"value": [1023.87, -12.5, None]})
 
-        rendered = (
-            tt(df)
-            .fmt(j="value", formatter=formatters.number(locale="de_DE", digits=2))
-            .render(output)
-        )
+        rendered = tt(df).fmt(j="value", fn=number(locale="de_DE", digits=2)).render(output)
 
         assert "1.023,87" in rendered
         assert "-12,50" in rendered
@@ -30,8 +28,8 @@ class TestSemanticFormatters:
 
         rendered = (
             tt(df)
-            .fmt(j="price", formatter=formatters.currency("EUR", locale="de_DE"))
-            .fmt(j="share", formatter=formatters.percent(locale="de_DE", digits=1))
+            .fmt(j="price", fn=currency("EUR", locale="de_DE"))
+            .fmt(j="share", fn=percent(locale="de_DE", digits=1))
             .render("ascii")
         )
 
@@ -39,9 +37,9 @@ class TestSemanticFormatters:
         assert "12,5 %" in rendered
 
     def test_accounting_compact_and_custom_separators(self):
-        accounting = formatters.number(digits=0, accounting=True)
-        accounting_currency = formatters.currency("USD", digits=0, accounting=True)
-        compact = formatters.number(digits=1, compact=True, decimal_mark=",", thousands_mark=".")
+        accounting = number(digits=0, accounting=True)
+        accounting_currency = currency("USD", digits=0, accounting=True)
+        compact = number(digits=1, compact=True, decimal_mark=",", thousands_mark=".")
 
         assert accounting([-1250]) == ["(1,250)"]
         assert accounting_currency([-1250]) == ["($1,250)"]
@@ -49,24 +47,18 @@ class TestSemanticFormatters:
 
     def test_date(self):
         df = pl.DataFrame({"day": [date(2026, 8, 11), None]})
-        rendered = tt(df).fmt(j="day", formatter=formatters.date("%d.%m.%Y")).render("ascii")
+        rendered = tt(df).fmt(j="day", fn=date_formatter("%d.%m.%Y")).render("ascii")
         assert "11.08.2026" in rendered
         assert "—" in rendered
 
-    @pytest.mark.parametrize(
-        ("kwargs", "match"),
-        [
-            ({"formatter": "not callable"}, "formatter must be callable"),
-            ({"formatter": formatters.number(), "fn": list}, "formatter and fn"),
-            ({"formatter": formatters.number(), "digits": 2}, "formatter and digits"),
-        ],
-    )
-    def test_formatter_validation(self, kwargs, match):
-        with pytest.raises((TypeError, ValueError), match=match):
-            tt(pl.DataFrame({"value": [1]})).fmt(**kwargs)
+    def test_namespace_reexports_public_formatters(self):
+        assert formatters.number is number
+        assert formatters.currency is currency
+        assert formatters.percent is percent
+        assert formatters.date is date_formatter
 
     def test_invalid_number_value_has_clear_error(self):
-        table = tt(pl.DataFrame({"value": ["one"]})).fmt(formatter=formatters.number())
+        table = tt(pl.DataFrame({"value": ["one"]})).fmt(fn=number())
         with pytest.raises(TypeError, match="requires numeric values"):
             table.render()
 
@@ -452,7 +444,7 @@ class TestFn:
         assert "\\#2" in out
         assert "\\#3" in out
 
-    def test_fn_can_receive_typed_values(self):
+    def test_fn_receives_typed_values_by_default(self):
         df = pl.DataFrame({"x": [1.25, None, 3.5]})
         seen = []
 
@@ -460,7 +452,7 @@ class TestFn:
             seen.extend(values)
             return ["missing" if value is None else f"{value * 2:.1f}" for value in values]
 
-        out = tt(df).fmt(j="x", fn=format_typed, fn_values="typed").render("typst")
+        out = tt(df).fmt(j="x", fn=format_typed).render("typst")
 
         assert seen == [1.25, None, 3.5]
         assert "2.5" in out
@@ -471,12 +463,11 @@ class TestFn:
         with pytest.raises(ValueError, match="fn_values must be either"):
             tt(pl.DataFrame({"x": [1]})).fmt(fn=lambda values: values, fn_values="raw")
 
-    def test_typed_fn_values_cannot_be_combined_with_digits(self):
+    def test_default_typed_fn_values_cannot_be_combined_with_digits(self):
         with pytest.raises(ValueError, match="digits cannot be combined"):
             tt(pl.DataFrame({"x": [1.25]})).fmt(
                 digits=2,
                 fn=lambda values: values,
-                fn_values="typed",
             )
 
     def test_fn_returns_wrong_length(self):
@@ -528,7 +519,16 @@ class TestFn:
 class TestPipeline:
     def test_pipeline_order_numeric_then_fn(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
-        out = tt(df).fmt(j="v", digits=2, fn=lambda vec: [f"{v}x" for v in vec]).render("typst")
+        out = (
+            tt(df)
+            .fmt(
+                j="v",
+                digits=2,
+                fn=lambda vec: [f"{v}x" for v in vec],
+                fn_values="display",
+            )
+            .render("typst")
+        )
         assert "3.14x" in out
         assert "2.72x" in out
 
@@ -542,7 +542,7 @@ class TestPipeline:
         out = (
             tt(df)
             .fmt(j="v", digits=2)
-            .fmt(j="v", fn=lambda vec: [f"[{v}]" for v in vec])
+            .fmt(j="v", fn=lambda vec: [f"[{v}]" for v in vec], fn_values="display")
             .render("typst")
         )
         assert "\\[3.14\\]" in out

@@ -24,8 +24,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from tytable import TyTable, __version__, formatters, tt
+from tytable import TyTable, __version__, tt
 from tytable._colors import _NAMED_COLORS
+from tytable.formatters import currency, date, number, percent
 
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "examples"
@@ -35,10 +36,10 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "tt": ("tt", tt),
     "style": (".style", TyTable.style),
     "fmt": (".fmt", TyTable.fmt),
-    "formatter_number": ("formatters.number", formatters.number),
-    "formatter_currency": ("formatters.currency", formatters.currency),
-    "formatter_percent": ("formatters.percent", formatters.percent),
-    "formatter_date": ("formatters.date", formatters.date),
+    "formatter_number": ("number", number),
+    "formatter_currency": ("currency", currency),
+    "formatter_percent": ("percent", percent),
+    "formatter_date": ("date", date),
     "group": (".group", TyTable.group),
     "set_name": (".set_name", TyTable.set_name),
     "theme_default": (".theme_default", TyTable.theme_default),

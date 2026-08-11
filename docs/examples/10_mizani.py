@@ -31,8 +31,8 @@ data = pl.DataFrame(
 
 (
     tt(data, caption="Labels formatted with Mizani")
-    .fmt(j="Revenue", fn=format_currency, fn_values="typed")
-    .fmt(j="Margin", fn=format_percent, fn_values="typed")
+    .fmt(j="Revenue", fn=format_currency)
+    .fmt(j="Margin", fn=format_percent)
     .fmt(j=["Revenue", "Margin"], escape=True)
     .save("build/10_mizani.typ")
 )

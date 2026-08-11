@@ -7,9 +7,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking
+
+- In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`, and pass semantic formatters through `fn` instead of the removed `formatter` argument.
+
 ### Features
 
-- Add reusable number, currency, percentage, and date formatters with German and English separator presets.
+- Add reusable number, currency, percentage, and date formatters with German and English separator presets, available as direct imports from `tytable.formatters`.
 - Add `.clone()` for deriving independently configurable variants from a shared table definition.
 - Add `.compile()` for direct PDF, PNG, and SVG output through an installed Typst CLI.
 
