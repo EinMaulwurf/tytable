@@ -41,6 +41,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "theme_striped": (".theme_striped", TyTable.theme_striped),
     "theme_grid": (".theme_grid", TyTable.theme_grid),
     "theme_plain": (".theme_plain", TyTable.theme_plain),
+    "clone": (".clone", TyTable.clone),
     "rotate": (".rotate", TyTable.rotate),
     "resize": (".resize", TyTable.resize),
     "multipage": (".multipage", TyTable.multipage),

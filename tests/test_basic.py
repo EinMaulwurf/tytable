@@ -81,6 +81,34 @@ def test_public_table_class_is_tytable():
     assert not hasattr(tytable, "TinyTable")
 
 
+def test_clone_can_branch_table_configuration_independently():
+    base = tt(pl.DataFrame({"value": [1, 2]})).fmt(j="value", digits=1)
+    variant = (
+        base.clone()
+        .set_name(j="value", name="Amount")
+        .group(i={"Section": 1})
+        .style(i=0, bold=True)
+        .theme_grid()
+        .rotate(45)
+        .finalize(lambda rendered, output: rendered + f"\n{output}-variant")
+    )
+
+    base_output = base.render("typst")
+    variant_output = variant.render("typst")
+
+    assert base._data is not variant._data
+    assert "Amount" not in base_output
+    assert "Section" not in base_output
+    assert "typst-variant" not in base_output
+    assert "Amount" in variant_output
+    assert "Section" in variant_output
+    assert "typst-variant" in variant_output
+    assert base._theme == "default"
+    assert variant._theme == "grid"
+    assert base._typst_opts.rotate_angle is None
+    assert variant._typst_opts.rotate_angle == 45
+
+
 def test_construction_api_excludes_removed_parameters():
     assert "rownames" not in inspect.signature(tt).parameters
     assert "digits" not in inspect.signature(tt).parameters

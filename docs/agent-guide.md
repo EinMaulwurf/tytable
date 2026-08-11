@@ -29,6 +29,14 @@ table.save("build/quarterly-results.typ")
 
 Configuration methods mutate the table and return `self`, so they can be chained. `.render()` returns a string and `.save()` returns `None`; both are terminal operations. The same table may be rendered or saved repeatedly.
 
+Use `.clone()` when several outputs should share a configured base without later chains changing it. The clone owns independent intent collections and a distinct, cheap Polars DataFrame clone; recorded callbacks are reused by reference:
+
+```python
+base = tt(df).fmt(j="Revenue", formatter=formatters.currency("EUR", locale="de_DE"))
+web = base.clone().theme_striped()
+print_version = base.clone().theme_default().multipage()
+```
+
 Prefer doing substantial data manipulation in Polars before calling `tt()`. Use `.fmt()` for presentation-time value transformations and `.style()` for appearance.
 
 ## Creating a table

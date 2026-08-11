@@ -11,6 +11,7 @@ import os
 import pathlib
 import re
 from collections.abc import Callable, Mapping, Sequence
+from copy import copy
 from dataclasses import replace
 from typing import Any, Literal, TypeAlias
 
@@ -1096,6 +1097,38 @@ class TyTable:
         """Use an unstyled base appearance without clearing recorded intent."""
         self._theme = "plain"
         return self
+
+    def clone(self) -> TyTable:
+        """Return an independently configurable copy of this table.
+
+        The cloned table owns a distinct Polars ``DataFrame`` object and
+        independent mutable intent collections. Polars clones share immutable
+        data buffers, so this operation is cheap. Recorded selectors,
+        formatter/plot callbacks, and finalizer callables are reused by
+        reference and should be treated as immutable configuration.
+
+        Returns
+        -------
+        TyTable
+            A table that can be styled, grouped, renamed, or laid out without
+            changing this table.
+        """
+        cloned = copy(self)
+        cloned._data = self._data.clone()
+        cloned._source_colnames = list(self._source_colnames)
+        cloned._colnames_display = list(self._colnames_display)
+        cloned._width = list(self._width) if isinstance(self._width, list) else self._width
+        cloned._style_directives = list(self._style_directives)
+        cloned._format_directives = list(self._format_directives)
+        cloned._plot_directives = list(self._plot_directives)
+        cloned._image_directives = list(self._image_directives)
+        cloned._media_directives = list(self._media_directives)
+        cloned._row_groups = list(self._row_groups)
+        cloned._col_group_rows = [list(row) for row in self._col_group_rows]
+        cloned._notes = list(self._notes)
+        cloned._finalize_hooks = list(self._finalize_hooks)
+        cloned._typst_opts = copy(self._typst_opts)
+        return cloned
 
     def rotate(self, angle: float = 90) -> TyTable:
         """Rotate the complete rendered Typst table.

@@ -181,6 +181,10 @@ With `j`, `name` is one display name or a list matching the selected columns. Wi
 
 This changes only the base appearance; all other recorded intent survives.
 
+#api("Clone a configured table", api_signatures.at("clone"))
+
+Returns an independently configurable table with separate intent collections and a distinct, cheap Polars DataFrame clone. Recorded selector objects and callbacks are reused by reference and should be treated as immutable configuration. Use clones to derive web, print, or alternative-theme variants from one common base.
+
 #api("Rotate", api_signatures.at("rotate"))
 
 Rotates the whole table. Rotate selected cell content with `.style(rotate=...)`.
