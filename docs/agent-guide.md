@@ -29,13 +29,7 @@ table.save("build/quarterly-results.typ")
 
 Configuration methods mutate the table and return `self`, so they can be chained. `.render()` returns a string and `.save()` returns `None`; both are terminal operations. The same table may be rendered or saved repeatedly.
 
-Use `.clone()` when several outputs should share a configured base without later chains changing it. The clone owns independent intent collections and a distinct, cheap Polars DataFrame clone; recorded callbacks are reused by reference:
-
-```python
-base = tt(df).fmt(j="Revenue", formatter=formatters.currency("EUR", locale="de_DE"))
-web = base.clone().theme_striped()
-print_version = base.clone().theme_default().multipage()
-```
+Use `.clone()` to derive independently configurable variants from one table; callback and selector objects are reused by reference.
 
 Prefer doing substantial data manipulation in Polars before calling `tt()`. Use `.fmt()` for presentation-time value transformations and `.style()` for appearance.
 
@@ -257,17 +251,7 @@ table.fmt(j="Share", fn=lambda values: [f"{100 * value:.1f}%" for value in value
 
 Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Use the default `fn_values="display"` when the callback should consume digit-formatted values.
 
-For common number, currency, percentage, and date conventions, use the separate semantic formatter namespace. A formatter consumes original typed values and cannot be combined with `fn` or `digits` in the same directive:
-
-```python
-from tytable import formatters
-
-table.fmt(j="Revenue", formatter=formatters.currency("EUR", locale="de_DE"))
-table.fmt(j="Margin", formatter=formatters.percent(locale="de_DE", digits=1))
-table.fmt(j="Date", formatter=formatters.date("%d.%m.%Y"))
-```
-
-`locale="de_DE"` selects decimal commas and period grouping (`1.023,87`); `locale="en_US"` selects decimal points and comma grouping. These are intentionally small separator presets rather than a complete CLDR locale implementation. Use `formatters.number(decimal_mark=..., thousands_mark=...)` for another convention.
+For common typed formats, import `formatters` from `tytable` and pass `formatter=formatters.number(...)`, `.currency(...)`, `.percent(...)`, or `.date(...)`. `locale="de_DE"` produces German separators; formatters cannot be combined with `fn` or `digits` in the same directive.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 
@@ -334,15 +318,7 @@ table.save("build/table.typ")
 table.save("build/table.html") # suffix selects HTML
 ```
 
-With the Typst CLI installed, `.compile()` writes a standalone PDF, PNG, or SVG while keeping `.render()` text-only. It sends self-contained Typst source over standard input and returns `None`:
-
-```python
-table.compile("build/table.pdf")
-table.compile("build/table.png", ppi=200)
-table.compile("build/page-{p}.svg", pages="1-3")
-```
-
-Static images are embedded by default. Pass `root=` when authored references or raw Typst content need a specific project root, and `font_paths=[...]` for additional font directories.
+With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.
 
 In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer. A saved `.typ` fragment can be included in a Typst report with `#include`.
 

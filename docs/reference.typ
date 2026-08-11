@@ -161,7 +161,23 @@ Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`, `math`,
 
 `digits`, `num_fmt`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. `fn` receives each selected column as `list[str]` after numeric formatting and must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
-The separate `tytable.formatters` namespace provides reusable `number()`, `currency()`, `percent()`, and `date()` formatters. Pass one as `formatter=`; it receives original typed values and is mutually exclusive with `fn` and `digits`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database; `number()` also accepts explicit `decimal_mark` and `thousands_mark` values.
+Pass a semantic formatter as `formatter=` to consume original typed values; it is mutually exclusive with `fn` and `digits`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
+
+#api("Format numbers", api_signatures.at("formatter_number"))
+
+`digits` controls fixed decimal places; `grouping` inserts thousands marks; `accounting` encloses negatives in parentheses; `compact` adds `K`, `M`, `B`, or `T`; `prefix`, `suffix`, and `null` customize surrounding and missing-value text. Locale defaults may be overridden with `decimal_mark` and `thousands_mark`.
+
+#api("Format currencies", api_signatures.at("formatter_currency"))
+
+Known `EUR`, `USD`, `GBP`, and `JPY` codes use their symbols; another code is displayed literally unless `symbol=` overrides it. German locales place the symbol after a non-breaking space, while English/default output places it before the number. `accounting=True` encloses the complete signed value and currency symbol in parentheses.
+
+#api("Format percentages", api_signatures.at("formatter_percent"))
+
+Values are multiplied by `scale=100` by default. German locales add a non-breaking space before `%`; English/default output does not.
+
+#api("Format dates and times", api_signatures.at("formatter_date"))
+
+Accepts Python date, datetime, or time values and applies the `strftime` pattern. Nulls use the configured `null` text; other value types raise `TypeError` during rendering.
 
 #api("Group", api_signatures.at("group"))
 

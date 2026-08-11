@@ -343,6 +343,37 @@ The larger example below puts the built-ins side by side: decimal, significant, 
 #v(0.12em)
 #include "build/02_format.typ"
 
+=== With semantic formatters
+
+Common report formats should not require a custom callback. Import the separate `formatters` namespace and pass a configured formatter to `.fmt(formatter=...)`. The formatter receives original typed values, so numeric columns retain their dtype-based right alignment and date columns remain dates in the source DataFrame.
+
+The built-in factories are:
+
+- `formatters.number()` — fixed decimal places, optional grouping, custom prefix/suffix and null text, accounting parentheses, and compact `K`/`M`/`B`/`T` notation
+- `formatters.currency()` — a currency code or symbol, locale-aware placement, fixed decimals, accounting parentheses, and null text
+- `formatters.percent()` — fraction-to-percentage scaling, fixed decimals, locale-aware spacing, and null text
+- `formatters.date()` — Python `strftime` patterns for date, datetime, and time values
+
+The German preset accepts `"de"`, `"de-DE"`, or `"de_DE"` and uses period grouping plus a decimal comma. The English preset accepts the corresponding `en` names and uses comma grouping plus a decimal point. These are deliberately small report-format presets, not complete CLDR localization: month names still follow Python's `strftime` environment, compact suffixes are `K`/`M`/`B`/`T`, and other number conventions should use explicit `decimal_mark=` and `thousands_mark=` values.
+
+This example combines all four factories. Notice `1.023,87 €`, the non-breaking space before German currency and percentage symbols, accounting parentheses for the negative currency, and the shared em dash for missing values:
+
+#tag("SOURCE")
+#source("examples/02_semantic_formatters.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/02_semantic_formatters.typ"
+
+Semantic formatters are column-wise typed callbacks. They cannot be combined with `fn` or `digits` in the same `.fmt()` directive, but subsequent directives can still apply `replace`, line breaks, math, escaping, or styles. A formatter is reusable across tables:
+
+```python
+eur = formatters.currency("EUR", locale="de_DE", accounting=True)
+
+quarter_1 = tt(q1).fmt(j="Revenue", formatter=eur)
+quarter_2 = tt(q2).fmt(j="Revenue", formatter=eur)
+```
+
 === With `.fmt(fn=...)`
 
 For anything the built-ins don't cover, pass a callable to `fn`. It runs #emph[column-wise] and expects a non-string sequence of the same length back. By default, tytable hands it the current display strings; set `fn_values="typed"` to receive the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Do not combine `digits` and `fn_values="typed"` in the same `.fmt()` call; use the default display-string input when a callback should consume values produced by `digits`:
