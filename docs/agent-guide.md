@@ -239,8 +239,10 @@ The `fn` callback is column-wise, not cell-wise. By default it receives the orig
 def add_percent(values: list[float]) -> list[str]:
     return [f"{100 * value:.1f}%" for value in values]
 
-table.fmt(j="Share", fn=add_percent, escape=True)
+table.fmt(j="Share", fn=add_percent)
 ```
+
+Callback results are covered by the default table-wide escaping. Use `.fmt(escape=True)` only to escape selected cells when the table was constructed with `tt(escape=False)`.
 
 Set `fn_values="display"` when a callback should consume the current display strings, including values produced by an earlier formatting directive:
 

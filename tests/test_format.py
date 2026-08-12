@@ -1,3 +1,4 @@
+import math
 from datetime import date
 
 import polars as pl
@@ -35,6 +36,9 @@ class TestSemanticFormatters:
 
         assert "1.023,87 €" in rendered
         assert "12,5 %" in rendered
+
+    def test_percent_uses_null_text_for_nan(self):
+        assert percent(null="missing")([math.nan]) == ["missing"]
 
     def test_accounting_compact_and_custom_separators(self):
         accounting = number(digits=0, accounting=True)

@@ -315,7 +315,7 @@ For quick, in-table transforms that stay inside the `tt()` chain, without reachi
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}` mapping
 - `linebreak` — choose a literal input marker to replace with a native line break. For example, `linebreak="\n"` translates newline characters to a single `\` in Typst or `<br>` in HTML; use another marker such as `"|"` when that is more convenient for the source data
 - `math` — typeset selected values as Typst equations
-- `escape` — per-cell Typst escaping (on by default via `tt(escape=True)`)
+- `escape` — explicitly escape selected cells after formatting. This is normally unnecessary because `tt(escape=True)` safely escapes the whole table by default; it is useful when table-wide escaping was deliberately disabled
 
 Formatting text and equations does not require disabling safe escaping. This example treats `Formula` as Typst math and uses `|` inside `Detail` to mark where a native line break should appear:
 
@@ -386,7 +386,7 @@ The built-in formatters above are ordinary column-wise callbacks. For convention
 #v(0.12em)
 #include "build/10_format_fn.typ"
 
-The #link("https://mizani.readthedocs.io/en/stable/labels.html")[Mizani] package is the closest Python equivalent to R's `scales`. Its vectorized label callables cover currencies, percentages, scientific notation, dates, and more. The original numeric values can go directly to these callables under the typed default. A following `.fmt(escape=True)` safely escapes symbols introduced by the external formatter when required by the output backend, such as `$` in Typst:
+The #link("https://mizani.readthedocs.io/en/stable/labels.html")[Mizani] package is the closest Python equivalent to R's `scales`. Its vectorized label callables cover currencies, percentages, scientific notation, dates, and more. The original numeric values can go directly to these callables under the typed default, and the default table-wide escaping safely handles symbols they introduce, such as `$` in Typst:
 
 #tag("SOURCE")
 #source("examples/10_mizani.py")

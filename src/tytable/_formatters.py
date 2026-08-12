@@ -195,7 +195,10 @@ def percent(
 
     def formatter(values: Sequence[Any]) -> list[str]:
         scaled = [
-            value if value is None else _decimal(value) * Decimal(str(scale)) for value in values
+            value
+            if value is None or (isinstance(value, float) and math.isnan(value))
+            else _decimal(value) * Decimal(str(scale))
+            for value in values
         ]
         return base(scaled)
 

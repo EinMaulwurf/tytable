@@ -604,7 +604,11 @@ class TyTable:
             them, or a ``{old: new}`` dict maps old (typed values or string
             matches, including ``"null"``, ``"nan"``, ``"inf"``) to new.
         escape
-            Re-escape cell text for the target backend after other transforms.
+            Explicitly escape selected cell text for the target backend after
+            other transforms. This is normally unnecessary because
+            ``tt(escape=True)`` applies safe table-wide escaping by default;
+            use it to escape selected cells when table-wide escaping is
+            disabled.
         fn
             Custom column-wise transform called once per selected column. The
             returned sequence must have the same length as its input.
