@@ -58,13 +58,20 @@ Common number, currency, percentage, and date conventions are available from `ty
 
 ![Rendered Product scores table](docs/assets/readme-example.png)
 
-The `.typ` file can be `#include`d in a Typst report and compiled as part of the whole document. With the Typst CLI installed, `table.compile("products.pdf")` creates a standalone PDF directly.
+Create a standalone PDF, PNG, or SVG directly when the Typst CLI is installed:
+
+```python
+tab.compile("products.pdf")
+tab.compile("products.png", ppi=200)
+```
+
+Use `tab.save("products.typ")` instead when the table will be `#include`d in a larger Typst report. See [Saving and using a table in Typst](https://einmaulwurf.github.io/tytable/tytable-docs.pdf#nameddest=saving-typst) for project roots, fonts, page selection, and image handling.
 
 ## Conventions
 
 - **Semantic row selection**: non-negative `i` values are stable 0-based source DataFrame positions, even after row groups are inserted. Omitting `i` (or using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`, `i="groupj"`, or `i="all"` for explicit structural selections. Styling supports every grid row. Formatting and targeted notes support data, row-group, and column-name rows; plots and images support data and row-group rows. Unsupported structural targets raise a clear error when rendered.
 - **Column selection**: use original DataFrame names (`j="Score"`) or 0-based positions (`j=0`); display names are presentation-only.
-- **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()` methods all return `self`. `.render()` / `.save()` are terminal.
+- **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()` methods all return `self`. `.render()`, `.save()`, and `.compile()` are terminal.
 - **Reusable variants**: `.clone()` creates an independently configurable table while cheaply sharing Polars' immutable data buffers.
 - **Readable defaults**: text columns are left-aligned and numeric columns are right-aligned, including their headers. Explicit `.style(align=...)` calls override these dtype-based defaults.
 - **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded as _intent_ and replayed in a fixed order at render time.

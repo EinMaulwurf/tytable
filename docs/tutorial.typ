@@ -69,7 +69,7 @@ table = tt(data)
 table
 ```
 
-Jupyter shows an HTML preview. In a script, `.save("catalog.typ")` writes the Typst fragment shown above. Saving does not compile a PDF; install the #link("https://typst.app/open-source/")[Typst CLI] before using `typst compile` locally.
+Jupyter shows an HTML preview. In a script, choose the artifact you need: `.save("catalog.typ")` writes a fragment for inclusion in a larger Typst report, while `.compile("catalog.pdf")` creates a standalone PDF directly. Direct compilation requires the #link("https://typst.app/open-source/")[Typst CLI].
 
 === Make one column easier to read
 
@@ -582,10 +582,21 @@ The generated Typst show rule is scoped to figures whose kind is `"tytable"`, so
 
 == Saving and using a table in Typst <saving-typst>
 
-There are two ways to get Typst output, depending on what you want to do next:
+Choose among three output methods based on what you want to do next:
 
 - `table.render("typst")` returns the generated Typst source as a Python string. This is useful for inspecting it, changing it in Python, combining several fragments, or passing it to another tool. Generated `.plot()` images are packed into that string, so there is no separate plot folder to keep track of. The trade-off is that a table with several plots can produce a large string.
 - `table.save("catalog.typ")` writes the Typst source to a file. This is the easy choice for a report. Generated plots are kept as ordinary PNG files next to it, which keeps the `.typ` file small.
+- `table.compile("catalog.pdf")` creates a finished standalone PDF, PNG, or SVG through an installed Typst CLI. It embeds generated plots and static images by default, so no intermediate `.typ` file or asset directory remains.
+
+For a finished artifact, compile directly:
+
+```python
+table.compile("catalog.pdf")
+table.compile("catalog.png", ppi=200)
+table.compile("catalog.svg")
+```
+
+Use `root=` for authored file references or raw Typst content, `font_paths=` for additional fonts, and `pages=` to select pages. PNG output additionally accepts `ppi=`. See the #link(<api-reference>)[API reference] for the complete contract and error behavior.
 
 For example, saving a table containing generated plots creates a pair like this:
 
@@ -595,7 +606,7 @@ catalog_assets/
   plot_....png
 ```
 
-Keep the `.typ` file and its `_assets` folder together when moving or sharing the table. `.save()` prepares a fragment for inclusion in a larger Typst report; when the table itself is the complete artifact, `.compile("catalog.pdf")` instead invokes an installed Typst CLI directly and retains no intermediate source file. It can also write PNG or SVG, with `ppi=` controlling PNG resolution.
+Keep the `.typ` file and its `_assets` folder together when moving or sharing the table.
 
 This is separate from Jupyter's automatic preview. When `table` is the last value in a notebook cell, Jupyter asks tytable for HTML and displays that result. You only need `render("typst")` when your Python code specifically needs the Typst source as a string.
 
