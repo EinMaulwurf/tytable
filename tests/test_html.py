@@ -35,6 +35,11 @@ class TestBasicHtml:
         assert "<caption>My Table</caption>" in out
         assert_snapshot("html_caption", out)
 
+    def test_caption_precedes_colgroup(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, caption="My Table", width=[0.5, 0.5]).render("html")
+        assert out.index("<caption>") < out.index("<colgroup>")
+
     def test_no_colnames(self):
         df = pl.DataFrame({"A": [1, 3]})
         out = tt(df, colnames=False).render("html")

@@ -104,8 +104,8 @@ class HtmlRenderer(Renderer):
         ncol = len(built.colnames_display)
         border_map = _build_border_map(built.style_lines, built.style_grid)
         parts = [self._table_open(built)]
-        self._emit_colgroup(parts, built)
         self._emit_caption(parts, built)
+        self._emit_colgroup(parts, built)
         self._emit_header(parts, built, border_map)
         self._emit_body(parts, built, border_map)
         self._emit_footer(parts, built, ncol)

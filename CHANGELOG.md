@@ -23,6 +23,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Preserve outer HTML borders styled on cells covered by a column or row span.
 - Render `colspan` and `rowspan` styles on HTML column-name header cells.
 - Reject negative `fontsize` and `indent` style values.
+- Emit HTML captions before column-width declarations, as required by HTML table element ordering.
 
 ### Documentation
 

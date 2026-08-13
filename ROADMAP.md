@@ -4,7 +4,6 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 ## Bugs
 
-- [ ] Emit HTML `<caption>` before `<colgroup>`.
 - [ ] Render a sensible ASCII representation for zero-column tables.
 
 ## Small improvements
