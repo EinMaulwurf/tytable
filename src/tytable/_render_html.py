@@ -46,9 +46,20 @@ def _with_default_alignment(
     return {**props, "align": alignment}
 
 
-def _build_border_map(style_lines: list[dict[str, Any]]) -> dict[tuple[int, int], str]:
+def _build_border_map(
+    style_lines: list[dict[str, Any]], style_grid: dict[tuple[int, int], dict[str, Any]]
+) -> dict[tuple[int, int], str]:
     """Collapse ``line=`` directives into a ``{(row, col): "border-top:…;border-left:…;"}`` map."""
     cell_borders: dict[tuple[int, int], dict[str, str]] = {}
+    covered_by: dict[tuple[int, int], tuple[int, int, int, int]] = {}
+    for (row, col), props in style_grid.items():
+        colspan = props.get("colspan", 1)
+        rowspan = props.get("rowspan", 1)
+        if colspan > 1 or rowspan > 1:
+            for covered_row in range(row, row + rowspan):
+                for covered_col in range(col, col + colspan):
+                    if (covered_row, covered_col) != (row, col):
+                        covered_by[(covered_row, covered_col)] = (row, col, rowspan, colspan)
     css_style = {
         "solid": "solid",
         "dashed": "dashed",
@@ -65,6 +76,17 @@ def _build_border_map(style_lines: list[dict[str, Any]]) -> dict[tuple[int, int]
             "none" if line_style == "none" else f"{width}em {css_style[line_style]} {line_color}"
         )
         side = {"t": "top", "b": "bottom", "l": "left", "r": "right"}[entry["side"]]
+        if (ti, tj) in covered_by:
+            row, col, rowspan, colspan = covered_by[(ti, tj)]
+            on_outer_edge = (
+                (side == "top" and ti == row)
+                or (side == "bottom" and ti == row + rowspan - 1)
+                or (side == "left" and tj == col)
+                or (side == "right" and tj == col + colspan - 1)
+            )
+            if not on_outer_edge:
+                continue
+            ti, tj = row, col
         cell_borders.setdefault((ti, tj), {})[side] = value
 
     order = ("top", "bottom", "left", "right")
@@ -80,7 +102,7 @@ class HtmlRenderer(Renderer):
     def render(self, built: BuiltTable) -> str:
         """Produce the full ``<table>…</table>`` HTML (colgroup, thead, tbody, tfoot)."""
         ncol = len(built.colnames_display)
-        border_map = _build_border_map(built.style_lines)
+        border_map = _build_border_map(built.style_lines, built.style_grid)
         parts = [self._table_open(built)]
         self._emit_colgroup(parts, built)
         self._emit_caption(parts, built)

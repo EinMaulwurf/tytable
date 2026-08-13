@@ -329,6 +329,33 @@ class TestAscii:
 
 @pytest.mark.html
 class TestHtmlBorders:
+    def test_colspan_preserves_border_from_covered_cell(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = (
+            tt(df)
+            .theme_plain()
+            .style(i=0, j="A", colspan=2)
+            .style(i=0, j="B", line="br")
+            .render("html")
+        )
+        body_cell = next(line for line in out.splitlines() if "<td" in line)
+        assert "border-bottom:0.1em solid #000000" in body_cell
+        assert "border-right:0.1em solid #000000" in body_cell
+
+    def test_rowspan_preserves_border_from_covered_cell(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = (
+            tt(df)
+            .theme_plain()
+            .style(i=0, j="A", rowspan=2)
+            .style(i=1, j="A", line="blr")
+            .render("html")
+        )
+        body_cell = next(line for line in out.splitlines() if "<td" in line)
+        assert "border-bottom:0.1em solid #000000" in body_cell
+        assert "border-left:0.1em solid #000000" in body_cell
+        assert "border-right:0.1em solid #000000" in body_cell
+
     def test_default_theme_borders_on_correct_rows(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         out = tt(df).render("html")

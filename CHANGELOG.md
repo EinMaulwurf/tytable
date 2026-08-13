@@ -20,6 +20,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Render HTML vertical cell alignment with `vertical-align` instead of combining it with `text-align`.
+- Preserve outer HTML borders styled on cells covered by a column or row span.
 
 ### Documentation
 
