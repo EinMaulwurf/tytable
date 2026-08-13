@@ -164,10 +164,10 @@ Common style properties are:
 | `bold`, `italic`, `underline`, `strikeout` | `bool` |
 | `monospace`, `smallcaps` | `bool` |
 | `color`, `background` | named color or hex string |
-| `fontsize` | number in `em` |
+| `fontsize` | non-negative number in `em` |
 | `align` | `"l"`, `"c"`, or `"r"` |
 | `alignv` | `"t"`, `"m"`, or `"b"` |
-| `indent` | number in `em` |
+| `indent` | non-negative number in `em` |
 | `padding` | number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
 | `rotate` | angle in degrees for selected cell content |
 | `colspan`, `rowspan` | positive integer span |

@@ -209,6 +209,13 @@ def _validate_number(name: str, value: object) -> None:
         raise TypeError(f"{name} must be a number, got {type(value).__name__}")
 
 
+def _validate_non_negative_style_number(name: str, value: object) -> None:
+    """Validate a numeric style property whose unit cannot be negative."""
+    _validate_number(name, value)
+    if isinstance(value, int | float) and value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value!r}")
+
+
 def normalize_padding(value: float | Sequence[float] | None) -> Padding | None:
     """Validate and normalize a public cell-padding specification."""
     if value is None:
@@ -245,8 +252,8 @@ _STYLE_VALIDATORS: dict[str, StyleValidator] = {
     "colspan": _validate_positive_int,
     "rowspan": _validate_positive_int,
     "line_width": _validate_non_negative_number,
-    "fontsize": _validate_number,
-    "indent": _validate_number,
+    "fontsize": _validate_non_negative_style_number,
+    "indent": _validate_non_negative_style_number,
     "rotate": _validate_number,
 }
 

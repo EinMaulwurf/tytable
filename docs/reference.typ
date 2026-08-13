@@ -153,7 +153,7 @@ Application code should normally construct with `tt(...)` and use `TyTable` for 
 
 #api("Style", api_signatures.at("style"))
 
-Combines any properties sharing the same selectors. `where` accepts a Polars expression for cell-level selection. `align` uses `l`/`c`/`r`, `alignv` uses `t`/`m`/`b`, `rotate` is degrees, and `line` is any combination of `t`/`b`/`l`/`r`. With several columns, `align="llr"` assigns one alignment per column. `fontsize`, `indent`, `padding`, and `line_width` are in `em`; `padding` accepts one, two, or four values. `line_style` accepts `solid`, `dashed`, `dotted`, `dash-dotted`, or `none`, and later directives replace earlier styles on the same physical edge. `output` can restrict a directive to a tuple such as `("typst",)`.
+Combines any properties sharing the same selectors. `where` accepts a Polars expression for cell-level selection. `align` uses `l`/`c`/`r`, `alignv` uses `t`/`m`/`b`, `rotate` is degrees, and `line` is any combination of `t`/`b`/`l`/`r`. With several columns, `align="llr"` assigns one alignment per column. `fontsize`, `indent`, `padding`, and `line_width` are non-negative values in `em`; `padding` accepts one, two, or four values. `line_style` accepts `solid`, `dashed`, `dotted`, `dash-dotted`, or `none`, and later directives replace earlier styles on the same physical edge. `output` can restrict a directive to a tuple such as `("typst",)`.
 
 #api("Format", api_signatures.at("fmt"))
 

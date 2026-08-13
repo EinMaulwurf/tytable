@@ -331,6 +331,11 @@ class TestStyleValidation:
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="t", line_width=-1)
 
+    @pytest.mark.parametrize("prop", ["fontsize", "indent"])
+    def test_negative_size_property(self, prop):
+        with pytest.raises(ValueError, match=rf"{prop} must be non-negative"):
+            tt(DF).style(i=0, **{prop: -0.1})
+
     @pytest.mark.parametrize(
         ("padding", "error"),
         [
