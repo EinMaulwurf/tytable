@@ -4,7 +4,6 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 ## Bugs
 
-- [ ] Render HTML `alignv` with `vertical-align` instead of combining it with `text-align`.
 - [ ] Preserve HTML borders applied to cells covered by `colspan` or `rowspan`.
 - [ ] Render or reject `colspan` and `rowspan` on header cells instead of silently ignoring them.
 - [ ] Reject negative `fontsize` and `indent` values.

@@ -123,9 +123,12 @@ class StyleMarkup:
                 parts.append(f"padding-left:{props['indent']}em")
         if "rotate" in props:
             parts.extend((f"transform:rotate({props['rotate']}deg)", "white-space:nowrap"))
-        align = align_to_css(props.get("align"), props.get("alignv"))
+        align = align_to_css(props.get("align"), None)
         if align:
             parts.append(f"text-align:{align}")
+        alignv = align_to_css(None, props.get("alignv"))
+        if alignv:
+            parts.append(f"vertical-align:{alignv}")
         return "; ".join(parts)
 
     def html_inline(self, content: str) -> str:

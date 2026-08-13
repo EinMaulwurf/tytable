@@ -103,6 +103,13 @@ class TestHtmlStyle:
         out = tt(df).style(i=0, j=0, align="c").render("html")
         assert "text-align:center" in out
 
+    def test_alignv_uses_vertical_alignment(self):
+        df = pl.DataFrame({"A": [1, 2]})
+        out = tt(df).style(i=0, j=0, align="c", alignv="m").render("html")
+        assert "text-align:center" in out
+        assert "vertical-align:middle" in out
+        assert "text-align:center middle" not in out
+
     def test_align_per_column(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
         out = tt(df).style(i=0, j=[0, 1, 2], align="lcr").render("html")
