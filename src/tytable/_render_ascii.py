@@ -56,6 +56,13 @@ class AsciiRenderer(Renderer):
         """Produce the box-drawing ASCII table (header + body, columns auto-sized)."""
         headers = [_plain_text(str(c)) for c in built.colnames_display]
         body = [[_plain_text(str(val)) for val in row] for row in built.data_body]
+        lines: list[str] = []
+        if built.caption is not None:
+            lines.extend((_plain_text(built.caption), ""))
+        if not headers:
+            lines.append("(empty table)")
+            self._append_notes(lines, built)
+            return "\n".join(lines)
         max_widths = [min(_display_width(c), self.MAX_CELL_WIDTH) for c in headers]
 
         for row in body:
@@ -68,9 +75,6 @@ class AsciiRenderer(Renderer):
         def format_cell(val: str, width: int, align: str) -> str:
             return _pad(_truncate(val, width), width, align)
 
-        lines: list[str] = []
-        if built.caption is not None:
-            lines.extend((_plain_text(built.caption), ""))
         lines.append(sep())
 
         if built.show_colnames:
@@ -115,9 +119,14 @@ class AsciiRenderer(Renderer):
             lines.append(line)
 
         lines.append(sep())
+        self._append_notes(lines, built)
+        return "\n".join(lines)
+
+    @staticmethod
+    def _append_notes(lines: list[str], built: BuiltTable) -> None:
+        """Append plain-text notes to an ASCII rendering."""
         if built.notes:
             lines.append("")
             for note in built.notes:
                 marker = f"[{note.marker}] " if note.marker is not None else ""
                 lines.append(marker + _plain_text(note.text))
-        return "\n".join(lines)

@@ -321,7 +321,7 @@ table.save("build/table.html") # suffix selects HTML
 
 With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.
 
-In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer. A saved `.typ` fragment can be included in a Typst report with `#include`.
+In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer, which displays a zero-column DataFrame as `(empty table)`. A saved `.typ` fragment can be included in a Typst report with `#include`.
 
 `.plot()` generates plots during rendering and requires the optional `images` dependencies. `.images()` embeds or references existing files and does not require that extra. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
 

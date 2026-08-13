@@ -282,6 +282,10 @@ class TestHtmlOutputGating:
 
 @pytest.mark.html
 class TestAscii:
+    def test_zero_column_table(self):
+        out = tt(pl.DataFrame(), caption="No data", notes=["Nothing to show"]).render("ascii")
+        assert out == "No data\n\n(empty table)\n\nNothing to show"
+
     def test_basic_ascii(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         out = tt(df).theme_plain().render("ascii")

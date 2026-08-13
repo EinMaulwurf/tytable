@@ -24,6 +24,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Render `colspan` and `rowspan` styles on HTML column-name header cells.
 - Reject negative `fontsize` and `indent` style values.
 - Emit HTML captions before column-width declarations, as required by HTML table element ordering.
+- Render zero-column tables as an explicit empty-table message in ASCII output.
 
 ### Documentation
 

@@ -2,10 +2,6 @@
 
 This is the single backlog for unresolved bugs, improvements, and ideas. Completed work belongs in `CHANGELOG.md`, not here.
 
-## Bugs
-
-- [ ] Render a sensible ASCII representation for zero-column tables.
-
 ## Small improvements
 
 - [ ] Add HTML table semantics: scoped column and row headers, accessible column groups, and caption/note relationships.
