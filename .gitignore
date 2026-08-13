@@ -11,12 +11,13 @@ dist/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 tytable_assets/
 report_assets/
 docs/tytable-docs.pdf
 .DS_Store
-TODO.md
-AUDIT_SUGGESTIONS_FINAL.md
+.codex/
+.agents/
 .opencode/
 .vscode/

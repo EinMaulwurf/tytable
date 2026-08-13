@@ -3,7 +3,7 @@ name: Docs site
 # Builds the Typst documentation PDF on every push to main and deploys it to
 # GitHub Pages, so the docs are always current without cutting a release.
 # The versioned, per-release PDF is still attached to each GitHub Release by
-# docs-release.yml.
+# release.yml.
 on:
   push:
     branches: [main]

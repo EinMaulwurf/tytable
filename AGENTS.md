@@ -21,9 +21,7 @@ Pre-commit order: `lint` → `typecheck` → `test`.
 
 ## Release workflow
 
-**Semantic-versioning rule:** Do not include breaking changes to the documented public API in
-minor or patch releases. Preserve compatibility throughout the 1.x series and defer any such
-changes to 2.0.0 (recording them under `Breaking` in `CHANGELOG.md`).
+**Semantic-versioning rule:** Do not include breaking changes to the documented public API in minor or patch releases. Preserve compatibility throughout each major release series and record breaking changes under `Breaking` in `CHANGELOG.md` for the next major release.
 
 1. Keep notable user-facing changes under `Unreleased` in `CHANGELOG.md`. To release, rename that
    section to `[X.Y.Z] - YYYY-MM-DD`, add a new empty `Unreleased` section, update the comparison
