@@ -154,6 +154,21 @@ class TestHtmlStyle:
         assert "transform:rotate(-90deg)" in out
         assert_snapshot("html_style_rotate_header", out)
 
+    def test_header_colspan_is_rendered(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df).theme_plain().style(i="header", j="A", colspan=2).render("html")
+        header = next(line for line in out.splitlines() if "<th " in line)
+        assert '<th style="text-align:right" colspan="2">A</th>' in header
+        assert ">B</th>" not in header
+
+    def test_header_rowspan_is_rendered(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df).theme_plain().style(i="header", j="A", rowspan=2).render("html")
+        assert '<th style="text-align:right" rowspan="2">A</th>' in out
+        body = next(line for line in out.splitlines() if "<td" in line)
+        assert ">1</td>" not in body
+        assert ">2</td>" in body
+
     def test_rotate_not_emitted_when_none(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).theme_plain().render("html")

@@ -4,7 +4,6 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 ## Bugs
 
-- [ ] Render or reject `colspan` and `rowspan` on header cells instead of silently ignoring them.
 - [ ] Reject negative `fontsize` and `indent` values.
 - [ ] Emit HTML `<caption>` before `<colgroup>`.
 - [ ] Render a sensible ASCII representation for zero-column tables.

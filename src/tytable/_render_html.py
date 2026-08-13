@@ -190,13 +190,17 @@ class HtmlRenderer(Renderer):
         display_row = built.layout.header_row
         if display_row is None:
             return ""
+        covered = compute_covered_cells(built.style_grid)
         for j, colname in enumerate(built.colnames_display):
+            if (display_row, j) in covered:
+                continue
             cell_props = _with_default_alignment(
                 built.style_grid.get((display_row, j), {}), built.column_alignments[j]
             )
             border_css = border_map.get((display_row, j), "")
             style = _build_cell_style(cell_props, border_css)
-            cells.append(HtmlRenderer._cell("th", colname, style))
+            attrs = HtmlRenderer._span_attrs(cell_props)
+            cells.append(HtmlRenderer._cell("th", colname, style, attrs))
         return f"<tr>{' '.join(cells)}</tr>"
 
     @staticmethod
