@@ -120,6 +120,17 @@ table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
 table.fmt(j=cs.numeric(), digits=2)
 ```
 
+Use `.show_columns(j, invert=False)` to choose which source columns are rendered without modifying the DataFrame. It accepts the same names, positions, Polars selectors, and mixed sequences as other `j` arguments, always preserves source-column order, and replaces any previous display projection. With `invert=True`, the selected columns are omitted. Hidden columns remain available to row expressions, `where`, and other directives:
+
+```python
+table = (
+    tt(df)
+    .style(i=pl.col("warning"), j="name", color="red")
+    .show_columns(["name", cs.numeric()])
+)
+table.show_columns(["warning", cs.starts_with("_")], invert=True)
+```
+
 Display names created by `.set_name()` never become selectors. Continue to select the original name:
 
 ```python

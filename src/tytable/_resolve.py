@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
-from ._groups import merge_row_groups
+from ._groups import _resolve_col_group_spans, merge_row_groups
 from ._indices import RowLayout, resolve_i, resolve_where
 from ._renderer import OutputFormat
 from ._styling import build_meta_styles, build_style_grid
@@ -46,7 +46,7 @@ class BuiltTable:
     properties. Line entries are ordered because border directives append.
 
     ``column_alignments`` has one
-    ``"l"``/``"r"`` entry per source column. ``width`` is a table fraction,
+    ``"l"``/``"r"`` entry per displayed column. ``width`` is a table fraction,
     Typst length, or per-column sequence; ``height`` is the constructor's
     row-height value in em. ``has_background`` lets the Typst renderer avoid a
     conflicting grouped-table gutter. ``typst_options`` is an invocation-local
@@ -79,8 +79,9 @@ class _BuildState:
     """Mutable, phase-local data contract for :func:`build`.
 
     ``table`` is an isolated shallow working copy whose mutable directive
-    lists can be reordered without changing the user's table. ``ncols`` and
-    ``colnames_display`` retain source-column order. ``data_body`` is the
+    lists can be reordered without changing the user's table. Until the final
+    display projection, ``ncols`` and ``colnames_display`` retain source-column
+    order. ``data_body`` is the
     mutable display matrix; ``typed_body`` is a coordinate-identical matrix of
     original Python values used by formatters and plot callbacks. Row-group
     insertion adds identical separator rows to both matrices before selectors
@@ -238,7 +239,9 @@ def _merge_groups(state: _BuildState) -> None:
         state.table._row_groups,
         state.ncols,
     )
-    state.col_groups = list(state.table._col_group_rows)
+    state.col_groups = _project_col_groups(
+        state.table._col_group_rows, state.table._display_columns
+    )
     state.layout = RowLayout.create(
         source_rows=state.table._data.height,
         column_group_rows=len(state.col_groups),
@@ -328,8 +331,124 @@ def _apply_meta_styles(state: _BuildState) -> tuple[dict[str, Any], dict[str, An
 
 def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _BuildState) -> None:
     """Span each row-group label across the full table width."""
+    if state.ncols == 0:
+        return
     for position in _layout(state).groupi_rows:
-        style_grid.setdefault((position, 0), {})["colspan"] = state.ncols
+        cell = style_grid.setdefault((position, 0), {})
+        cell.setdefault("align", "l")
+        cell["colspan"] = state.ncols
+
+
+def _project_col_groups(
+    rows: list[list[str | None]], selected: list[int]
+) -> list[list[str | None]]:
+    """Project group rows while retaining labels for partially visible spans."""
+    if not rows:
+        return []
+    if selected == list(range(len(rows[0]))):
+        return [list(row) for row in rows]
+    projected_rows: list[list[str | None]] = []
+    selected_positions = {source: display for display, source in enumerate(selected)}
+    for row in rows:
+        projected: list[str | None] = [None] * len(selected)
+        for label, start, span in _resolve_col_group_spans(row):
+            if not label:
+                continue
+            visible = [
+                selected_positions[source]
+                for source in range(start, start + span)
+                if source in selected_positions
+            ]
+            if not visible:
+                continue
+            projected[visible[0]] = label
+            for display_col in visible[1:]:
+                projected[display_col] = ""
+        if any(value not in (None, "") for value in projected):
+            projected_rows.append(projected)
+    return projected_rows
+
+
+def _project_style_grid(
+    grid: dict[tuple[int, int], dict[str, Any]], selected: list[int]
+) -> dict[tuple[int, int], dict[str, Any]]:
+    """Map source-column cell styles and spans onto displayed columns."""
+    col_map = {source: display for display, source in enumerate(selected)}
+    covered: set[tuple[int, int]] = set()
+    for (row, source_col), props in grid.items():
+        colspan = props.get("colspan")
+        rowspan = props.get("rowspan")
+        if source_col not in col_map:
+            continue
+        colspan = colspan if isinstance(colspan, int) else 1
+        rowspan = rowspan if isinstance(rowspan, int) else 1
+        for covered_row in range(row, row + rowspan):
+            for covered_col in range(source_col, source_col + colspan):
+                if (covered_row, covered_col) != (row, source_col):
+                    covered.add((covered_row, covered_col))
+    projected: dict[tuple[int, int], dict[str, Any]] = {}
+
+    for (row, source_col), props in grid.items():
+        if (row, source_col) in covered or source_col not in col_map:
+            continue
+        if not isinstance(props.get("colspan"), int) or props["colspan"] <= 1:
+            projected[(row, col_map[source_col])] = dict(props)
+
+    for (row, source_col), props in grid.items():
+        colspan = props.get("colspan")
+        if source_col not in col_map or not isinstance(colspan, int) or colspan <= 1:
+            continue
+        visible = [
+            col_map[col] for col in range(source_col, source_col + colspan) if col in col_map
+        ]
+        if not visible:
+            continue
+        projected_props = dict(props)
+        if len(visible) > 1:
+            projected_props["colspan"] = len(visible)
+        else:
+            projected_props.pop("colspan", None)
+        projected[(row, col_map[source_col])] = projected_props
+    return projected
+
+
+def _project_columns(
+    state: _BuildState,
+    style_grid: dict[tuple[int, int], dict[str, Any]],
+    style_lines: list[dict[str, Any]],
+) -> tuple[dict[tuple[int, int], dict[str, Any]], list[dict[str, Any]]]:
+    """Apply the table's display-only column projection to resolved output."""
+    selected = state.table._display_columns
+    col_map = {source: display for display, source in enumerate(selected)}
+    layout = _layout(state)
+
+    projected_body: list[list[str]] = []
+    for body_idx, row in enumerate(state.data_body):
+        projected = [row[col] for col in selected]
+        display_row = layout.header_rows + body_idx
+        if display_row in layout.groupi_rows and projected:
+            projected[0] = row[0]
+        projected_body.append(projected)
+    state.data_body = projected_body
+    state.typed_body = [[row[col] for col in selected] for row in state.typed_body]
+    state.colnames_display = [state.colnames_display[col] for col in selected]
+    state.ncols = len(selected)
+
+    projected_lines = []
+    for entry in style_lines:
+        source_col = entry["j"]
+        if source_col in col_map:
+            projected_lines.append({**entry, "j": col_map[source_col]})
+    return _project_style_grid(style_grid, selected), projected_lines
+
+
+def _project_width(
+    width: float | Sequence[float | str | None] | str | None, selected: list[int]
+) -> float | Sequence[float | str | None] | str | None:
+    """Project a per-source-column width specification."""
+    if isinstance(width, Sequence) and not isinstance(width, str):
+        return [width[col] for col in selected]
+    return width
 
 
 def build(
@@ -353,16 +472,18 @@ def build(
     _insert_footnotes(state)
     style_grid, style_lines = _build_style_grid(state)
     style_caption, style_notes = _apply_meta_styles(state)
+    style_grid, style_lines = _project_columns(state, style_grid, style_lines)
     _apply_colspans(style_grid, state)
 
     has_background = any("background" in props for props in style_grid.values())
+    source_alignments = _column_alignments(state.table)
 
     return BuiltTable(
         output=output,
         layout=_layout(state),
         data_body=state.data_body,
         colnames_display=state.colnames_display,
-        column_alignments=_column_alignments(state.table),
+        column_alignments=[source_alignments[col] for col in state.table._display_columns],
         show_colnames=state.show_colnames,
         col_groups=state.col_groups,
         style_grid=style_grid,
@@ -372,7 +493,7 @@ def build(
         has_background=has_background,
         caption=state.table._caption,
         label=state.table._label,
-        width=state.table._width,
+        width=_project_width(state.table._width, state.table._display_columns),
         height=state.table._height,
         notes=state.table._notes,
         typst_options=state.table._typst_opts,

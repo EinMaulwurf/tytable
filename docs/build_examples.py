@@ -42,6 +42,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "formatter_date": ("date", date),
     "group": (".group", TyTable.group),
     "set_name": (".set_name", TyTable.set_name),
+    "show_columns": (".show_columns", TyTable.show_columns),
     "theme_default": (".theme_default", TyTable.theme_default),
     "theme_striped": (".theme_striped", TyTable.theme_striped),
     "theme_grid": (".theme_grid", TyTable.theme_grid),

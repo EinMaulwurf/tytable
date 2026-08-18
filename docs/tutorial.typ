@@ -301,6 +301,22 @@ Because #link(<selectors>)[selectors keep using source-column names], display la
 #v(0.12em)
 #include "build/15_set_name.typ"
 
+== Choosing displayed columns
+
+Use `.show_columns(j, invert=False)` for a display-only column projection. It accepts the same names, integer positions, Polars selectors, and mixed sequences as other `j` arguments. Selected columns keep their original DataFrame order; use Polars before `tt()` when the data itself needs rearranging. With `invert=True`, the selection is omitted instead. A later call replaces the previous display projection.
+
+Hidden columns remain part of the original typed DataFrame, so they can still drive row expressions, `where`, formatting, and other directives. This makes a helper column available for conditional presentation without including it in the rendered table:
+
+```python
+table = (
+  tt(df)
+  .style(i=pl.col("warning"), j="name", color="red")
+  .show_columns(["name", cs.numeric()])
+)
+
+table.show_columns(["warning", cs.starts_with("_")], invert=True)
+```
+
 == Formatting <formatting>
 
 Cell values can be formatted in three complementary ways. Pick whichever suits the column, or mix them across columns in the same table.

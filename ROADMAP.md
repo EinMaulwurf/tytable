@@ -15,7 +15,7 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 These are plausible additions within the package's current scope, not commitments; any or none of them may be implemented.
 
-- [ ] Add `.hide(j=...)` as a deferred column projection so all selectors continue to resolve against source columns; projection must update widths, styles, borders, groups, spans, notes, and media across every renderer.
+- [x] Add `.show_columns(j, invert=False)` as a display-only column projection so all selectors continue to resolve against source columns; preserve source order and update widths, styles, borders, groups, spans, notes, and media across every renderer.
 - [ ] Add `.validate()` and `.explain()` for resolved selections, overridden intent, backend limitations, media cardinality, asset policy, and estimated output size; later add `.lint()` for suspicious but valid tables.
 - [ ] Add CSS classes and custom properties for site integration, responsive layouts, and dark mode.
 - [ ] Add native Typst vector sparklines and data bars without requiring Matplotlib.

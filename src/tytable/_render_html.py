@@ -108,7 +108,7 @@ class HtmlRenderer(Renderer):
         self._emit_colgroup(parts, built)
         self._emit_header(parts, built, border_map)
         self._emit_body(parts, built, border_map)
-        self._emit_footer(parts, built, ncol)
+        self._emit_footer(parts, built, max(ncol, 1))
         parts.append("</table>")
         return "\n".join(parts)
 
@@ -211,6 +211,10 @@ class HtmlRenderer(Renderer):
     ) -> None:
         """Append visible body rows, respecting spans and row-group styling."""
         parts.append("<tbody>")
+        if not built.colnames_display:
+            parts.append("<tr><td>(empty table)</td></tr>")
+            parts.append("</tbody>")
+            return
         covered = compute_covered_cells(built.style_grid)
         groupi_rows = set(built.layout.groupi_rows)
         for r, row in enumerate(built.data_body):

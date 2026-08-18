@@ -29,6 +29,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.group(j={"Mixed": mixed_columns})
     table.style(j=mixed_selector, bold=True)
     table.style(j=cs.numeric(), bold=True)
+    table.show_columns(["a", cs.numeric()]).show_columns("b", invert=True)
     table.fmt(j=["a", cs.numeric()], digits=1)
     table.set_name(j=cs.string(), name="Text")
     table.group(j={"Numeric": cs.numeric()})

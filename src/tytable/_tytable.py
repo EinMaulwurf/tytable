@@ -268,9 +268,10 @@ class TyTable:
     ``.save()`` is called. Integer row selectors always refer to stable,
     0-based source DataFrame positions, even when grouping inserts rows.
 
-    Every mutator method (``.style()``, ``.fmt()``, ``.group()``, the theme
-    methods, ``.plot()``, ``.images()``, ``.finalize()``) returns ``self`` to
-    enable fluent chaining. ``.render()`` and ``.save()`` are terminal.
+    Every mutator method (``.style()``, ``.fmt()``, ``.group()``,
+    ``.show_columns()``, the theme methods, ``.plot()``, ``.images()``,
+    ``.finalize()``) returns ``self`` to enable fluent chaining. ``.render()``
+    and ``.save()`` are terminal.
     """
 
     def __init__(
@@ -307,6 +308,7 @@ class TyTable:
         self._data = data.clone()
         self._source_colnames: list[str] = list(data.columns)
         self._colnames_display: list[str] = list(data.columns)
+        self._display_columns: list[int] = list(range(data.width))
         self._show_colnames = colnames
         self._caption = caption
         self._label = label
@@ -333,6 +335,36 @@ class TyTable:
     def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:
         """Resolve a column selector against stable source-column names."""
         return resolve_j(j, self._data, regex=regex)
+
+    def show_columns(self, j: _ColumnSelectorSpec, *, invert: bool = False) -> TyTable:
+        """Choose which source columns are included in the rendered table.
+
+        This is a display-only projection: it does not modify the underlying
+        DataFrame, and omitted columns remain available to selectors and
+        conditional formatting. ``j`` accepts names, integer source positions,
+        Polars column selectors, or a sequence mixing these forms. Displayed
+        columns always retain their original source order.
+
+        Parameters
+        ----------
+        j
+            Columns to show, or columns to omit when ``invert=True``.
+        invert
+            Show every source column except those selected by ``j``.
+
+        Returns
+        -------
+        TyTable
+            ``self``, for chaining. A later call replaces the previous display
+            projection.
+        """
+        if not isinstance(invert, bool):
+            raise TypeError(f"invert must be a bool, got {type(invert).__name__}")
+        selected = set(self._resolve_j(j))
+        self._display_columns = [
+            idx for idx in range(len(self._source_colnames)) if (idx not in selected) == invert
+        ]
+        return self
 
     def style(
         self,
@@ -1106,6 +1138,7 @@ class TyTable:
         cloned._data = self._data.clone()
         cloned._source_colnames = list(self._source_colnames)
         cloned._colnames_display = list(self._colnames_display)
+        cloned._display_columns = list(self._display_columns)
         cloned._width = list(self._width) if isinstance(self._width, list) else self._width
         cloned._style_directives = list(self._style_directives)
         cloned._format_directives = list(self._format_directives)

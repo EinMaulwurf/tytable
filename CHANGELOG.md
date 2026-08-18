@@ -13,6 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Features
 
+- Add `.show_columns()` for display-only column projection while keeping omitted source columns available to selectors and conditional formatting.
 - Accept Polars column selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` anywhere `j` selects columns.
 - Add reusable number, currency, percentage, and date formatters with German and English separator presets, available as direct imports from `tytable.formatters`.
 - Add `.clone()` for deriving independently configurable variants from a shared table definition.

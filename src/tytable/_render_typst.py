@@ -124,6 +124,8 @@ class TypstRenderer(Renderer):
         width: float | str | Sequence[float | str | None] | None, ncol: int
     ) -> list[str]:
         """Build the Typst ``columns: (…)`` entry list from a user width spec."""
+        if ncol == 0:
+            return []
         if width is None:
             return ["auto"] * ncol
         if isinstance(width, str):
@@ -186,6 +188,14 @@ class TypstRenderer(Renderer):
     def _emit_table(self, L: list[str], built: BuiltTable) -> None:
         """Append the table configuration, header, body, and footer."""
         ncol = len(built.colnames_display)
+        if ncol == 0:
+            L.append("  #table(")
+            L.append("    columns: 1,")
+            L.append("    stroke: none,")
+            L.append("    [(empty table)],")
+            self._emit_footer(L, built, 1)
+            L.append("  )")
+            return
         L.append("  #table(")
         self._emit_table_options(L, built, ncol)
         L.append("    align: (x, y) => {")
