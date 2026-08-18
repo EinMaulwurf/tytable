@@ -111,10 +111,13 @@ table.style(j=["Revenue", "Cost"], align="r")
 table.style(j=0, bold=True)  # positions are supported but less readable
 ```
 
-Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names and integer positions. With `regex=True`, string selectors use Python `re.search` against original column names; targeted notes accept the same `regex` key:
+Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names, integer positions, and Polars selectors. Selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` expand against the original DataFrame schema and work anywhere `j` selects columns, including `.set_name()` and column-group values. Empty selectors are no-ops except in column groups, which must be nonempty and contiguous. With `regex=True`, string selectors use Python `re.search` against original column names; targeted notes accept the same `regex` key:
 
 ```python
+import polars.selectors as cs
+
 table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
+table.fmt(j=cs.numeric(), digits=2)
 ```
 
 Display names created by `.set_name()` never become selectors. Continue to select the original name:

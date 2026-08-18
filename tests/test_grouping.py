@@ -1,4 +1,5 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
@@ -259,6 +260,20 @@ class TestGroupValidation:
         built = build(tt(DF).group(j={}), "typst")
         assert built.col_groups == []
         assert built.layout.header_rows == 1
+
+    def test_column_group_accepts_polars_selector(self):
+        df = pl.DataFrame({"label": ["a"], "q1": [1], "q2": [2.0]})
+        built = build(tt(df).group(j={"Measures": cs.numeric()}), "typst")
+        assert built.col_groups == [[None, "Measures", ""]]
+
+    def test_column_group_selector_must_be_contiguous(self):
+        df = pl.DataFrame({"q1": [1], "label": ["a"], "q2": [2.0]})
+        with pytest.raises(ValueError, match="contiguous"):
+            tt(df).group(j={"Measures": cs.numeric()})
+
+    def test_empty_column_group_selector_is_rejected(self):
+        with pytest.raises(ValueError, match="at least one column"):
+            tt(DF).group(j={"Missing": cs.starts_with("missing")})
 
 
 @pytest.mark.typst

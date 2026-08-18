@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from copy import copy
 from dataclasses import replace
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal
 
 import polars as pl
 
@@ -34,9 +34,7 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style, normalize_padding
-from ._types import NoteDict
-
-_ColumnSelector: TypeAlias = int | str | Sequence[int | str] | None
+from ._types import NoteDict, _ColumnSelector, _ColumnSelectorSpec
 
 
 def tt(
@@ -334,7 +332,7 @@ class TyTable:
 
     def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:
         """Resolve a column selector against stable source-column names."""
-        return resolve_j(j, self._source_colnames, regex=regex)
+        return resolve_j(j, self._data, regex=regex)
 
     def style(
         self,
@@ -392,7 +390,8 @@ class TyTable:
             supported.
         j
             Column selector: an original DataFrame name (``"Score"``), an
-            integer position (``0``), or a sequence of any of these. For example,
+            integer position (``0``), a Polars selector such as
+            ``cs.numeric()``, or a sequence of any of these. For example,
             ``range(5)`` selects the first five columns. Display
             labels assigned by :meth:`set_name` are presentation-only and
             never become selectors. ``None`` means *all* columns.
@@ -874,7 +873,7 @@ class TyTable:
     def group(
         self,
         i: Mapping[str, int] | Sequence[object] | None = None,
-        j: Mapping[str, Sequence[str | int]] | None = None,
+        j: Mapping[str, _ColumnSelectorSpec] | None = None,
         *,
         delimiter: str | None = None,
     ) -> TyTable:
@@ -888,9 +887,9 @@ class TyTable:
             row before the given 0-based data row. A sequence (one entry per
             data row) inserts a separator whenever the value changes.
         j
-            Column groups. A ``{label: [cols]}`` dict adds a spanning header
+            Column groups. A ``{label: columns}`` dict adds a spanning header
             row where each value maps a label to a sequence of column names or
-            positions.
+            positions, or to a Polars column selector.
         delimiter
             Split every original DataFrame column name on this literal string
             and turn the shared parts into hierarchical group labels. For
@@ -929,7 +928,7 @@ class TyTable:
         if i is not None:
             register_row_groups(self, i)
         if j is not None:
-            register_col_groups(self, j, self._source_colnames)
+            register_col_groups(self, j)
         if delimiter is not None:
             register_delimiter_groups(self, delimiter, self._source_colnames)
         return self
@@ -954,8 +953,8 @@ class TyTable:
 
         - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
           selected by ``j``. ``j`` follows the same selector rules as
-          :meth:`style` / :meth:`fmt` (name, integer position, or a
-          list of these). ``regex=True`` enables regex patterns.
+          :meth:`style` / :meth:`fmt` (name, integer position, Polars selector,
+          or a list of these). ``regex=True`` enables regex patterns.
           ``name`` is a single ``str`` (applied to every
           matched column, so duplicates are possible) or a ``list[str]`` with
           one entry per matched column.

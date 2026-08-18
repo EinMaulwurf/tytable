@@ -87,6 +87,9 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`j`],
   [`["Revenue", "Cost"]`, `range(5)`],
   [several columns in one directive],
+  [`j`],
+  [`cs.numeric()`, `cs.starts_with("rev")`],
+  [columns selected from the original Polars schema],
   [`where`],
   [`cs.numeric() > 100`],
   [true body cells in `.style()`, `.fmt()`, or a targeted note],
@@ -96,7 +99,7 @@ Non-negative integer `i` values range from zero through the source DataFrame hei
 
 Data-driven `i` forms have a different coordinate system: a Polars expression, boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is evaluated against the original DataFrame. Masks must be Boolean and have exactly one entry per source row; a boolean mask cannot mix booleans with integer selectors. Matching source rows are mapped around inserted row-group separators. Thus use an integer for a stable source-row position, or a predicate/mask when the target depends on source data values. `where` is also evaluated against the original DataFrame; it must return Boolean columns with original source-column names and the source row count. Its true cells are intersected with `i` and `j`, and it cannot target synthetic headers, group rows, captions, or notes.
 
-Integer `j` values range from zero through the column count minus one. Exact string names are case-sensitive and always refer to original DataFrame column names. Names assigned by `.set_name()` are display-only and never match a selector unless the same string is independently an original column name. This makes duplicate and empty display labels legal and unambiguous. Directives recorded before and after a rename therefore select the same columns. Sequence selections are deduplicated and resolved into displayed column order, so repeated selectors do not target a cell more than once.
+Integer `j` values range from zero through the column count minus one. Exact string names are case-sensitive and always refer to original DataFrame column names. Polars selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` expand against the original source schema and may appear alone or inside a sequence with names and positions. They work in `.style()`, `.fmt()`, `.plot()`, `.images()`, targeted notes, `.set_name()`, and column-group values; an empty selector is an empty selection, except that a column group must be nonempty and contiguous. Arbitrary Polars expressions are not column selectors. Names assigned by `.set_name()` are display-only and never match a selector unless the same string is independently an original column name. This makes duplicate and empty display labels legal and unambiguous. Directives recorded before and after a rename therefore select the same columns. Sequence selections are deduplicated and resolved into displayed column order, so repeated selectors do not target a cell more than once.
 
 If friendly names should become the actual selector names, rename the Polars DataFrame before constructing the table. The renamed schema then supplies both the source identities and the initial display labels:
 

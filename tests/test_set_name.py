@@ -1,4 +1,5 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
@@ -133,6 +134,11 @@ class TestSetNameSelectorSemantics:
     """Display renames never alter stable source-name selectors."""
 
     DF = pl.DataFrame({"x": [1, 3], "y": [2, 4]})
+
+    def test_rename_by_polars_selector(self):
+        table = tt(pl.DataFrame({"label": ["a"], "x": [1], "y": [2.0]}))
+        table.set_name(j=cs.numeric(), name=["X", "Y"])
+        assert table._colnames_display == ["label", "X", "Y"]
 
     def test_style_is_order_independent(self):
         before = build(

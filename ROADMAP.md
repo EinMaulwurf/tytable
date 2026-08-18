@@ -51,7 +51,7 @@ These are plausible additions within the package's current scope, not commitment
 - [ ] Add `.to_dataframe()` returning the resolved, formatted display grid as a Polars frame.
 - [ ] Add `.to_clipboard()` (TSV) and `.to_csv()` (raw data export).
 - [ ] Add standalone full-HTML document rendering so saved previews are shareable files rather than `<table>` fragments.
-- [ ] Accept Polars selectors in `j` and `i` (e.g. `j=cs.numeric()`, `j=pl.selectors.by_dtype(...)`), unifying the selector vocabulary with `where`.
+- [x] Accept Polars selectors in `j` (e.g. `j=cs.numeric()`, `j=pl.selectors.by_dtype(...)`), unifying the column-selector vocabulary with `where`; retain Boolean Polars expressions as the data-driven selector vocabulary for `i`.
 - [ ] Add `.register_theme(name, fn)` so users can define base appearances beyond the four built-ins.
 - [ ] Add dark variants of the built-in themes (Typst-side, complementing the planned HTML dark mode).
 - [ ] Add `.summary()` as a lighter diagnostic sibling to `.explain()` describing the resolved grid, dtypes, null counts, and overrides.

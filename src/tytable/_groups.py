@@ -10,17 +10,32 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+import polars as pl
+import polars.selectors as cs
+
 from ._directives import RowGroup
+from ._indices import resolve_j
+from ._types import _ColumnSelectorSpec
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
 
 
-def _resolve_cols(col_spec: Sequence[str | int], colnames: list[str]) -> list[int]:
+def _resolve_cols(col_spec: _ColumnSelectorSpec, data: pl.DataFrame) -> list[int]:
     """Translate a list of column names/positions into 0-based integer indices."""
+    if cs.is_selector(col_spec):
+        return resolve_j(col_spec, data)
+    if isinstance(col_spec, (str, bytes)) or not isinstance(col_spec, Sequence):
+        raise TypeError(
+            f"column spec must be a sequence or Polars selector, got {type(col_spec).__name__}"
+        )
+
+    colnames = data.columns
     indices = []
     for c in col_spec:
-        if isinstance(c, str):
+        if cs.is_selector(c):
+            indices.extend(resolve_j(c, data))
+        elif isinstance(c, str):
             try:
                 indices.append(colnames.index(c))
             except ValueError:
@@ -34,25 +49,24 @@ def _resolve_cols(col_spec: Sequence[str | int], colnames: list[str]) -> list[in
                 )
             indices.append(c)
         else:
-            raise TypeError(f"column spec must be str or int, got {type(c).__name__}")
+            raise TypeError(
+                f"column spec must be str, int, or Polars selector, got {type(c).__name__}"
+            )
     return indices
 
 
 def _build_col_group_row(
-    j_dict: Mapping[str, Sequence[str | int]], colnames: list[str]
+    j_dict: Mapping[str, _ColumnSelectorSpec], data: pl.DataFrame
 ) -> list[str | None]:
     """Build one column-group header row (label at span start, ``""`` under the span, ``None`` elsewhere)."""
+    colnames = data.columns
     ncol = len(colnames)
     row: list[str | None] = [None] * ncol
     claimed: set[int] = set()
     for label, cols in j_dict.items():
         if label is None:
             raise ValueError("column group labels must not be None")
-        if isinstance(cols, (str, bytes)) or not isinstance(cols, Sequence):
-            raise TypeError(
-                f"columns for column group {label!r} must be a sequence, got {type(cols).__name__}"
-            )
-        indices = _resolve_cols(cols, colnames)
+        indices = _resolve_cols(cols, data)
         if not indices:
             raise ValueError(f"column group {label!r} must select at least one column")
         if len(indices) != len(set(indices)):
@@ -166,14 +180,12 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
     return table
 
 
-def register_col_groups(
-    table: TyTable, j: Mapping[str, Sequence[str | int]], colnames: list[str]
-) -> TyTable:
+def register_col_groups(table: TyTable, j: Mapping[str, _ColumnSelectorSpec]) -> TyTable:
     """Record a column-group header row from a ``{label: [cols]}`` mapping."""
     if isinstance(j, Mapping):
         if not j:
             return table
-        row = _build_col_group_row(j, colnames)
+        row = _build_col_group_row(j, table._data)
         table._col_group_rows.insert(0, row)
     else:
         raise TypeError("group(j=...) must be a mapping")

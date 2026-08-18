@@ -20,7 +20,7 @@ class StyleDirective:
     """A single ``.style()`` call: selectors plus the cell properties to apply."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
-    j: int | str | Sequence[int | str] | None
+    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     where: pl.Expr | None = None
     regex: bool = False
     bold: bool | None = None
@@ -51,7 +51,7 @@ class FormatDirective:
     """A single ``.fmt()`` call: selectors plus value-formatting transforms."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
-    j: int | str | Sequence[int | str] | None
+    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     where: pl.Expr | None = None
     regex: bool = False
     digits: int | None = None
@@ -70,7 +70,7 @@ class PlotDirective:
     """A single ``.plot()`` call."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
-    j: int | str | Sequence[int | str] | None
+    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     fun: Callable
     regex: bool = False
     data: list | None = None
@@ -87,7 +87,7 @@ class ImageDirective:
     """A single ``.images()`` call."""
 
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
-    j: int | str | Sequence[int | str] | None
+    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     images: list[str]
     regex: bool = False
     height: float = 1.0
@@ -117,6 +117,6 @@ class Note:
     text: str
     marker: str | None = None
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None
-    j: int | str | Sequence[int | str] | None = None
+    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None = None
     where: pl.Expr | None = None
     regex: bool = False

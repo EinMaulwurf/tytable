@@ -650,6 +650,14 @@ class TestListSelectors:
         assert "2.7" in out
         assert "1" in out
 
+    def test_column_style_by_polars_selector(self):
+        df = pl.DataFrame({"name": ["a"], "revenue": [1], "cost": [2.0]})
+        built = build(tt(df).theme_plain().style(j=cs.numeric(), bold=True), "typst")
+        assert built.style_grid == {
+            (1, 1): {"bold": True},
+            (1, 2): {"bold": True},
+        }
+
     def test_i_list_of_strings(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
         out = tt(df).style(i=["header", "data"], italic=True).render("typst")

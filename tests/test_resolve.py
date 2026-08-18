@@ -1,4 +1,5 @@
 import polars as pl
+import polars.selectors as cs
 import pytest
 
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
@@ -168,42 +169,59 @@ class TestDataDrivenRows:
 
 class TestResolveJ:
     COLS = ["A", "B", "name", "value"]
+    DF = pl.DataFrame({"A": [1], "B": [2.0], "name": ["x"], "value": [3]})
 
     def test_positions_names_and_lists(self):
-        assert resolve_j(None, self.COLS) == [0, 1, 2, 3]
-        assert resolve_j(2, self.COLS) == [2]
-        assert resolve_j("value", self.COLS) == [3]
-        assert resolve_j(["B", 0, "B"], self.COLS) == [0, 1]
+        assert resolve_j(None, self.DF) == [0, 1, 2, 3]
+        assert resolve_j(2, self.DF) == [2]
+        assert resolve_j("value", self.DF) == [3]
+        assert resolve_j(["B", 0, "B"], self.DF) == [0, 1]
 
     def test_range_sequence(self):
-        assert resolve_j(range(2), self.COLS) == [0, 1]
-        assert resolve_j(range(0), self.COLS) == []
+        assert resolve_j(range(2), self.DF) == [0, 1]
+        assert resolve_j(range(0), self.DF) == []
         with pytest.raises(ValueError, match="position 4 out of range"):
-            resolve_j(range(5), self.COLS)
+            resolve_j(range(5), self.DF)
+
+    def test_polars_selectors(self):
+        assert resolve_j(cs.numeric(), self.DF) == [0, 1, 3]
+        assert resolve_j(cs.string(), self.DF) == [2]
+        assert resolve_j(cs.starts_with("val"), self.DF) == [3]
+        assert resolve_j(cs.by_dtype(pl.Float64), self.DF) == [1]
+
+    def test_polars_selectors_can_be_mixed_with_legacy_selectors(self):
+        assert resolve_j([cs.string(), 0, cs.by_dtype(pl.Int64)], self.DF) == [0, 2, 3]
+
+    def test_empty_polars_selector_is_an_empty_selection(self):
+        assert resolve_j(cs.starts_with("missing"), self.DF) == []
+
+    def test_arbitrary_polars_expressions_are_rejected(self):
+        with pytest.raises(TypeError, match="bad column selector"):
+            resolve_j(pl.col("A") + 1, self.DF)
 
     @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
     def test_arbitrary_iterables_are_rejected(self, selector):
         with pytest.raises(TypeError, match="bad column selector"):
-            resolve_j(selector, self.COLS)
+            resolve_j(selector, self.DF)
 
     def test_regex(self):
-        assert resolve_j("a", self.COLS, regex=True) == [2, 3]
-        assert resolve_j(["A", "am"], self.COLS, regex=True) == [0, 2]
+        assert resolve_j("a", self.DF, regex=True) == [2, 3]
+        assert resolve_j(["A", "am"], self.DF, regex=True) == [0, 2]
 
     @pytest.mark.parametrize("selector", [-1, 4, True, ["A", True], [object()]])
     def test_invalid_selector(self, selector):
         with pytest.raises((TypeError, ValueError)):
-            resolve_j(selector, self.COLS)
+            resolve_j(selector, self.DF)
 
     def test_missing_or_invalid_regex(self):
         with pytest.raises(ValueError, match="column not found"):
-            resolve_j("missing", self.COLS)
+            resolve_j("missing", self.DF)
         with pytest.raises(ValueError, match="matched no columns"):
-            resolve_j("missing", self.COLS, regex=True)
+            resolve_j("missing", self.DF, regex=True)
         with pytest.raises(ValueError, match="invalid regex"):
-            resolve_j("[", self.COLS, regex=True)
+            resolve_j("[", self.DF, regex=True)
         with pytest.raises(ValueError, match="maximum 500"):
-            resolve_j("a" * 501, self.COLS, regex=True)
+            resolve_j("a" * 501, self.DF, regex=True)
 
 
 class TestResolveWhere:

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+import polars.selectors as cs
 
 from tytable import tt
 
@@ -27,6 +28,10 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.group(j={"Named": named_columns})
     table.group(j={"Mixed": mixed_columns})
     table.style(j=mixed_selector, bold=True)
+    table.style(j=cs.numeric(), bold=True)
+    table.fmt(j=["a", cs.numeric()], digits=1)
+    table.set_name(j=cs.string(), name="Text")
+    table.group(j={"Numeric": cs.numeric()})
     table.fmt(j=mixed_selector, digits=1)
     table.style(j=mixed_selector, rotate=90)
     table.plot(j=0, fun=lambda value: value, data=plot_data, xlim=integer_limits)

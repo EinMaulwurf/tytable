@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypeAlias, TypedDict
 
-if TYPE_CHECKING:
-    import polars as pl
+import polars as pl
+
+_ColumnSelectorItem: TypeAlias = int | str | pl.Expr
+_ColumnSelectorSpec: TypeAlias = _ColumnSelectorItem | Sequence[_ColumnSelectorItem]
+_ColumnSelector: TypeAlias = _ColumnSelectorSpec | None
 
 
 class NoteDict(TypedDict, total=False):
@@ -21,6 +24,6 @@ class NoteDict(TypedDict, total=False):
     text: str
     marker: str | None
     i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
-    j: int | str | Sequence[int | str] | None
+    j: _ColumnSelector
     where: pl.Expr | None
     regex: bool

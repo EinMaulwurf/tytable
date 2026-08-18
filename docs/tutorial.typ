@@ -196,6 +196,19 @@ table.style(j=["Name", "Score"], bold=True)
 table.style(j=range(2), bold=True)
 ```
 
+Polars column selectors work anywhere `j` selects columns. They use the original DataFrame schema, so dtype and name-based selections can be composed with Polars' selector vocabulary:
+
+```python
+import polars.selectors as cs
+
+table.fmt(j=cs.numeric(), digits=1)
+table.style(j=cs.starts_with("rev"), bold=True)
+table.set_name(j=cs.string(), name="Label")
+table.group(j={"Measures": cs.by_dtype(pl.Int64, pl.Float64)})
+```
+
+A selector that matches no columns produces an empty selection. Column groups must still select a nonempty contiguous span. Polars selectors belong to `j`; use a one-column Boolean Polars expression for data-driven `i`, reducing multi-column conditions with `pl.any_horizontal` or `pl.all_horizontal`.
+
 With `regex=True`, strings are regular expressions matched against the original column names using Python's `re.search`. This works in a `NoteDict` as well as in method calls:
 
 ```python
