@@ -19,7 +19,7 @@ These are plausible additions within the package's current scope, not commitment
 - [ ] Add `.validate()` and `.explain()` for resolved selections, overridden intent, backend limitations, media cardinality, asset policy, and estimated output size; later add `.lint()` for suspicious but valid tables.
 - [ ] Add CSS classes and custom properties for site integration, responsive layouts, and dark mode.
 - [ ] Add native Typst vector sparklines and data bars without requiring Matplotlib.
-- [ ] Add duration and unit formatters, including SI prefixes and accessible accounting conventions.
+- [x] Add duration and unit formatters, including SI prefixes and accessible accounting conventions.
 - [ ] Accept the DataFrame interchange protocol through `pl.from_dataframe()` while keeping Polars as the internal representation and selector language.
 - [ ] Add semantic row and column roles such as `total`, `measure`, `unit`, and `key`, with matching Typst emphasis and HTML semantics.
 - [ ] Add accessible conditional visual encodings such as scales, thresholds, symbols, and data bars with deliberate fallbacks for each backend.

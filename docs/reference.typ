@@ -164,7 +164,7 @@ Transforms values in this order: `digits`, `fn`, `replace`, `linebreak`, `math`,
 
 `digits`, `num_fmt`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. By default, `fn` receives each selected column as original typed Python values; `fn_values="display"` instead passes the current display strings, including the result of earlier formatting. The callback must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
-Import semantic formatters from `tytable.formatters` and pass them to `fn`. They consume original typed values and should not be combined with `digits`; use the formatter's own `digits` option instead. Custom callbacks can consume the result of `.fmt(digits=...)` by selecting `fn_values="display"`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
+Import semantic formatter factories from `tytable.formatters`, call one with its configuration, and pass the returned formatter to `fn`, as in `.fmt(j="Share", fn=percent(digits=1))`. A custom function that already accepts a sequence of values is passed directly as `fn=my_formatter`; use `fn=my_formatter(...)` only when it too is a factory returning that callable. Formatters consume original typed values and should not be combined with `digits`; use the formatter's own `digits` option instead. Custom callbacks can consume the result of `.fmt(digits=...)` by selecting `fn_values="display"`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
@@ -181,6 +181,14 @@ Values are multiplied by `scale=100` by default. German locales add a non-breaki
 #api("Format dates and times", api_signatures.at("formatter_date"))
 
 Accepts Python date, datetime, or time values and applies the `strftime` pattern. Nulls use the configured `null` text; other value types raise `TypeError` during rendering.
+
+#api("Format durations", api_signatures.at("formatter_duration"))
+
+Accepts numeric values in the configured `input_unit` or Python `timedelta` values. Output uses `HH:MM:SS`, hours may exceed 24, and `digits` controls fractional-second places.
+
+#api("Format values with units", api_signatures.at("formatter_unit"))
+
+Appends `symbol` after a non-breaking space by default while retaining the number formatter's digits, grouping, locale, null, and accounting conventions. `si_prefix=True` scales each finite non-zero value with an SI prefix from yocto (`y`) through yotta (`Y`); set `space=""` when the symbol should touch the number.
 
 #api("Group", api_signatures.at("group"))
 

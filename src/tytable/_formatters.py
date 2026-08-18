@@ -7,10 +7,11 @@ from collections.abc import Callable, Sequence
 from datetime import date as Date
 from datetime import datetime as DateTime
 from datetime import time as Time
+from datetime import timedelta as TimeDelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal
 
-__all__ = ["currency", "date", "number", "percent"]
+__all__ = ["currency", "date", "duration", "number", "percent", "unit"]
 
 _LocaleName = Literal["de", "de-DE", "de_DE", "en", "en-US", "en_US"]
 _LOCALES: dict[str, tuple[str, str]] = {
@@ -22,6 +23,34 @@ _LOCALES: dict[str, tuple[str, str]] = {
     "en_US": (".", ","),
 }
 _CURRENCY_SYMBOLS = {"EUR": "€", "GBP": "£", "JPY": "¥", "USD": "$"}
+_DURATION_FACTORS = {
+    "nanoseconds": Decimal("1e-9"),
+    "microseconds": Decimal("1e-6"),
+    "milliseconds": Decimal("1e-3"),
+    "seconds": Decimal(1),
+    "minutes": Decimal(60),
+    "hours": Decimal(3600),
+    "days": Decimal(86400),
+}
+_SI_PREFIXES = (
+    (Decimal("1e24"), "Y"),
+    (Decimal("1e21"), "Z"),
+    (Decimal("1e18"), "E"),
+    (Decimal("1e15"), "P"),
+    (Decimal("1e12"), "T"),
+    (Decimal("1e9"), "G"),
+    (Decimal("1e6"), "M"),
+    (Decimal("1e3"), "k"),
+    (Decimal("1"), ""),
+    (Decimal("1e-3"), "m"),
+    (Decimal("1e-6"), "µ"),
+    (Decimal("1e-9"), "n"),
+    (Decimal("1e-12"), "p"),
+    (Decimal("1e-15"), "f"),
+    (Decimal("1e-18"), "a"),
+    (Decimal("1e-21"), "z"),
+    (Decimal("1e-24"), "y"),
+)
 
 
 def _separators(
@@ -225,6 +254,124 @@ def date(
                 result.append(value.strftime(pattern))
             else:
                 raise TypeError(f"date formatter requires date/time values, got {value!r}")
+        return result
+
+    return formatter
+
+
+def duration(
+    *,
+    input_unit: Literal[
+        "nanoseconds", "microseconds", "milliseconds", "seconds", "minutes", "hours", "days"
+    ] = "seconds",
+    digits: int = 0,
+    null: str = "—",
+) -> Callable[[Sequence[Any]], list[str]]:
+    """Create a clock-style formatter for numeric durations or ``timedelta`` values.
+
+    Numeric values are interpreted in ``input_unit``. Output uses ``HH:MM:SS``;
+    hours may exceed 24, and ``digits`` controls fractional-second places.
+    """
+    if input_unit not in _DURATION_FACTORS:
+        choices = ", ".join(repr(name) for name in _DURATION_FACTORS)
+        raise ValueError(f"input_unit must be one of {choices}")
+    if isinstance(digits, bool) or not isinstance(digits, int):
+        raise TypeError("digits must be a non-negative integer")
+    if digits < 0:
+        raise ValueError("digits must be non-negative")
+    if not isinstance(null, str):
+        raise TypeError("null must be a string")
+
+    factor = _DURATION_FACTORS[input_unit]
+    quantum = Decimal(1).scaleb(-digits)
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        result: list[str] = []
+        for value in values:
+            if value is None or (isinstance(value, float) and math.isnan(value)):
+                result.append(null)
+                continue
+            if isinstance(value, TimeDelta):
+                seconds = Decimal(value.days * 86400 + value.seconds) + Decimal(
+                    value.microseconds
+                ) / Decimal(1_000_000)
+            else:
+                seconds = _decimal(value) * factor
+            if not seconds.is_finite():
+                result.append(str(seconds).lower())
+                continue
+            rounded = seconds.quantize(quantum)
+            sign = "-" if rounded < 0 else ""
+            magnitude = abs(rounded)
+            hours, remainder = divmod(magnitude, Decimal(3600))
+            minutes, seconds_part = divmod(remainder, Decimal(60))
+            seconds_width = 2 + (digits + 1 if digits else 0)
+            result.append(
+                f"{sign}{int(hours):02d}:{int(minutes):02d}:{seconds_part:0{seconds_width}.{digits}f}"
+            )
+        return result
+
+    return formatter
+
+
+def unit(
+    symbol: str,
+    *,
+    digits: int = 2,
+    locale: _LocaleName | None = None,
+    decimal_mark: str | None = None,
+    thousands_mark: str | None = None,
+    grouping: bool = True,
+    accounting: bool = False,
+    si_prefix: bool = False,
+    space: str = " ",
+    null: str = "—",
+) -> Callable[[Sequence[Any]], list[str]]:
+    """Create a number formatter that appends a unit symbol.
+
+    Set ``si_prefix=True`` to scale each finite non-zero value to an SI prefix
+    from yocto (``y``) through yotta (``Y``).
+    """
+    if not isinstance(symbol, str) or not symbol:
+        raise ValueError("unit symbol must be a non-empty string")
+    if not isinstance(si_prefix, bool):
+        raise TypeError("si_prefix must be a bool")
+    if not isinstance(space, str):
+        raise TypeError("space must be a string")
+
+    # Construct once to share number's validation and locale conventions.
+    plain = number(
+        digits=digits,
+        locale=locale,
+        decimal_mark=decimal_mark,
+        thousands_mark=thousands_mark,
+        grouping=grouping,
+        accounting=accounting,
+        null=null,
+    )
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        result: list[str] = []
+        for value in values:
+            if value is None or (isinstance(value, float) and math.isnan(value)):
+                result.append(null)
+                continue
+            numeric = _decimal(value)
+            scaled = numeric
+            prefix = ""
+            magnitude = abs(numeric)
+            if si_prefix and numeric.is_finite() and magnitude:
+                for threshold, candidate in _SI_PREFIXES:
+                    if magnitude >= threshold:
+                        scaled = numeric / threshold
+                        prefix = candidate
+                        break
+            rendered = plain([scaled])[0]
+            suffix = f"{space}{prefix}{symbol}"
+            if accounting and rendered.startswith("(") and rendered.endswith(")"):
+                result.append(f"({rendered[1:-1]}{suffix})")
+            else:
+                result.append(f"{rendered}{suffix}")
         return result
 
     return formatter

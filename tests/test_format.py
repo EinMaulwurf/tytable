@@ -1,5 +1,5 @@
 import math
-from datetime import date
+from datetime import date, timedelta
 
 import polars as pl
 import polars.selectors as cs
@@ -9,7 +9,7 @@ from tests.helpers import assert_snapshot
 from tytable import formatters, tt
 from tytable._format import _apply_escape, _apply_replace, _matches
 from tytable._resolve import build
-from tytable.formatters import currency, number, percent
+from tytable.formatters import currency, duration, number, percent, unit
 from tytable.formatters import date as date_formatter
 
 
@@ -55,11 +55,33 @@ class TestSemanticFormatters:
         assert "11.08.2026" in rendered
         assert "—" in rendered
 
+    def test_duration_accepts_numbers_and_timedeltas(self):
+        formatter = duration(input_unit="minutes", digits=1)
+
+        assert formatter([1.5, -61, None]) == ["00:01:30.0", "-01:01:00.0", "—"]
+        assert duration(digits=3)([timedelta(days=1, microseconds=125_000)]) == ["24:00:00.125"]
+
+    def test_duration_rounding_carries_between_clock_fields(self):
+        assert duration(digits=1)([3599.96]) == ["01:00:00.0"]
+
+    def test_unit_locale_si_prefix_and_accounting(self):
+        formatter = unit("m", digits=1, locale="de_DE", si_prefix=True)
+
+        assert formatter([1500, 0.002, 0, None]) == ["1,5 km", "2,0 mm", "0,0 m", "—"]
+        assert unit("kg", digits=0, accounting=True)([-1250]) == ["(1,250 kg)"]
+
+    @pytest.mark.parametrize("factory", [duration, lambda: unit("m")])
+    def test_new_formatters_reject_non_numeric_values(self, factory):
+        with pytest.raises(TypeError, match="requires numeric values"):
+            factory()(["one"])
+
     def test_namespace_reexports_public_formatters(self):
         assert formatters.number is number
         assert formatters.currency is currency
         assert formatters.percent is percent
         assert formatters.date is date_formatter
+        assert formatters.duration is duration
+        assert formatters.unit is unit
 
     def test_invalid_number_value_has_clear_error(self):
         table = tt(pl.DataFrame({"value": ["one"]})).fmt(fn=number())

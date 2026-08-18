@@ -15,7 +15,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add `.show_columns()` for display-only column projection while keeping omitted source columns available to selectors and conditional formatting.
 - Accept Polars column selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` anywhere `j` selects columns.
-- Add reusable number, currency, percentage, and date formatters with German and English separator presets, available as direct imports from `tytable.formatters`.
+- Add reusable number, currency, percentage, date, duration, and unit formatters with German and English separator presets, available as direct imports from `tytable.formatters`.
 - Add `.clone()` for deriving independently configurable variants from a shared table definition.
 - Add `.compile()` for direct PDF, PNG, and SVG output through an installed Typst CLI.
 
@@ -30,7 +30,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Documentation
 
-- Add a rendered guide to semantic number, currency, percentage, and date formatters while keeping quick references concise.
+- Add a rendered guide to semantic number, currency, percentage, date, duration, and unit formatters while keeping quick references concise, including the distinction between callbacks and formatter factories.
 
 ## [2.2.0] - 2026-08-11
 

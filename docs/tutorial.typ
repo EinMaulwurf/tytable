@@ -382,6 +382,8 @@ The built-in factories are:
 - `currency()` — a currency code or symbol, locale-aware placement, fixed decimals, accounting parentheses, and null text
 - `percent()` — fraction-to-percentage scaling, fixed decimals, locale-aware spacing, and null text
 - `date()` — Python `strftime` patterns for date, datetime, and time values
+- `duration()` — numeric durations or Python `timedelta` values rendered as `HH:MM:SS`
+- `unit()` — locale-aware numbers with a unit symbol and optional automatic SI prefixes
 
 The German preset accepts `"de"`, `"de-DE"`, or `"de_DE"` and uses period grouping plus a decimal comma. The English preset accepts the corresponding `en` names and uses comma grouping plus a decimal point. These are deliberately small report-format presets, not complete CLDR localization: month names still follow Python's `strftime` environment, compact suffixes are `K`/`M`/`B`/`T`, and other number conventions should use explicit `decimal_mark=` and `thousands_mark=` values.
 
@@ -406,7 +408,7 @@ quarter_2 = tt(q2).fmt(j="Revenue", fn=eur)
 
 === With custom callbacks
 
-The built-in formatters above are ordinary column-wise callbacks. For conventions they do not cover, define your own callable and pass it to `fn`. It must return a non-string sequence of the same length as its input. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by `digits`:
+Calling a built-in such as `unit("kg")` returns an ordinary column-wise callback. For a custom function that already accepts the values, pass the function itself as `fn=my_formatter`; write `fn=my_formatter(...)` only when the custom function is also a configurable factory returning that callback. In either case, the callback must return a non-string sequence of the same length as its input. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by `digits`:
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")

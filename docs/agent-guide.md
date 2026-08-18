@@ -266,7 +266,7 @@ table.fmt(j="Share", digits=2).fmt(j="Share", fn=lambda values: [f"{value}%" for
 
 Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Set `fn_values="display"` explicitly when combining them in one directive.
 
-For common typed formats, import `number`, `currency`, `percent`, or `date` from `tytable.formatters` and pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))`. `locale="de_DE"` produces German separators; semantic formatters cannot be combined with `digits` in the same directive.
+For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters` and pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` or `table.fmt(j="Mass", fn=unit("kg"))`. These built-ins are factories: calling one returns the callback expected by `fn`. Pass a custom callback directly as `fn=my_formatter`; use `fn=my_formatter(...)` only when it is also a factory returning a callback. `locale="de_DE"` produces German separators; semantic formatters cannot be combined with `digits` in the same directive.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 
