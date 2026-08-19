@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+Version 3 makes tytable more DataFrame-native: formatting operates on typed source values, selectors understand Polars schemas, and display-only transformations preserve stable source identities.
+
 ### Breaking
 
 - In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`, and pass semantic formatters through `fn` instead of the removed `formatter` argument.
