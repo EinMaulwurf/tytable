@@ -71,7 +71,7 @@ These are broader or less-settled directions that would require more evidence an
 - [ ] Explore `tt.diff(before, after, keys=...)` with explicit contracts for duplicate keys, tolerances, missing values, and schema changes.
 - [ ] Consider serializable table specifications only for a versioned declarative subset that excludes arbitrary callbacks, expressions, plots, and finalizers.
 - [ ] Consider a small CSV/JSON/Parquet-to-Typst CLI and Quarto integration without duplicating the Python API as flags.
-- [ ] Revisit decimal-point alignment if Typst gains native support or offline package deployment becomes practical.
+- [ ] Wait for native Typst support before adding decimal-point alignment; track [typst/typst#170](https://github.com/typst/typst/issues/170) for column alignment, [typst/typst#3269](https://github.com/typst/typst/issues/3269) for number formatting, and [typst/typst#1093](https://github.com/typst/typst/issues/1093) for locale-aware number formatting. The [Zero package](https://typst.app/universe/package/zero/) demonstrates a package-level solution, but tytable should avoid a Typst Universe runtime dependency so generated output remains suitable for airgapped environments; revisit once the required upstream APIs are stable.
 - [ ] Reassess GPL-3.0-only licensing if broader corporate adoption becomes a project goal and copyright ownership permits a change.
 - [ ] Evaluate statistical model-summary tables (coefficients, standard errors or confidence intervals, significance stars, goodness-of-fit footer) for statsmodels-style outputs as the publication-ready niche Typst currently lacks.
 - [ ] Evaluate an exploratory HTML mode with a tiny dependency-free sortable and filterable preview while keeping static output unchanged.
