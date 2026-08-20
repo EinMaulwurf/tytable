@@ -16,6 +16,14 @@ class _RegexSelector:
     pattern: str
 
 
+@dataclass(frozen=True, slots=True)
+class _ColGroupSelector:
+    """Select source columns belonging to a registered column group."""
+
+    label: str
+    level: int
+
+
 def regex(pattern: str) -> _RegexSelector:
     """Select source columns matched by a Python ``re.search`` pattern.
 
@@ -27,7 +35,25 @@ def regex(pattern: str) -> _RegexSelector:
     return _RegexSelector(pattern=pattern)
 
 
-_ColumnSelectorItem: TypeAlias = int | str | pl.Expr | _RegexSelector
+def colgroup(*, label: str, level: int) -> _ColGroupSelector:
+    """Select source columns in groups with an exact label at one level.
+
+    Level zero is the first-created, innermost grouping level. Every group
+    with the requested nonempty label at that level contributes its member
+    columns.
+    """
+    if not isinstance(label, str):
+        raise TypeError(f"colgroup label must be a string, got {type(label).__name__}")
+    if not label.strip():
+        raise ValueError("colgroup label must not be empty")
+    if isinstance(level, bool) or not isinstance(level, int):
+        raise TypeError(f"colgroup level must be an integer, got {type(level).__name__}")
+    if level < 0:
+        raise ValueError(f"colgroup level must be non-negative, got {level}")
+    return _ColGroupSelector(label=label, level=level)
+
+
+_ColumnSelectorItem: TypeAlias = int | str | pl.Expr | _RegexSelector | _ColGroupSelector
 _ColumnSelectorSpec: TypeAlias = _ColumnSelectorItem | Sequence[_ColumnSelectorItem]
 _ColumnSelector: TypeAlias = _ColumnSelectorSpec | None
 
@@ -46,6 +72,13 @@ class _GroupISelector:
     label: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _RowGroupSelector:
+    """Select source-data rows belonging to registered row groups."""
+
+    label: str
+
+
 def groupi(*, label: str | None = None) -> _GroupISelector:
     """Select row-group separator rows, optionally by exact registered label.
 
@@ -55,6 +88,17 @@ def groupi(*, label: str | None = None) -> _GroupISelector:
     if label is not None and not isinstance(label, str):
         raise TypeError(f"groupi label must be a string, got {type(label).__name__}")
     return _GroupISelector(label=label)
+
+
+def rowgroup(*, label: str) -> _RowGroupSelector:
+    """Select source-data rows belonging to every group with an exact label.
+
+    Each matching run begins after its separator and ends before the next
+    separator. Repeated labels combine their source-data rows.
+    """
+    if not isinstance(label, str):
+        raise TypeError(f"rowgroup label must be a string, got {type(label).__name__}")
+    return _RowGroupSelector(label=label)
 
 
 def groupj(*, level: int | None = None) -> _GroupJSelector:
@@ -73,7 +117,7 @@ def groupj(*, level: int | None = None) -> _GroupJSelector:
     return _GroupJSelector(level=level)
 
 
-_RowSelectorItem: TypeAlias = int | str | _GroupISelector
+_RowSelectorItem: TypeAlias = int | str | _GroupISelector | _RowGroupSelector
 _RowSelector: TypeAlias = (
     _RowSelectorItem
     | Sequence[_RowSelectorItem]

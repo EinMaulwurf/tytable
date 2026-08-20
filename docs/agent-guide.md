@@ -6,7 +6,7 @@ This is a compact reference for coding assistants that need to write `tytable` c
 
 ```python
 import polars as pl
-from tytable import NoteDict, TyTable, groupi, groupj, regex, tt
+from tytable import NoteDict, TyTable, colgroup, groupi, groupj, regex, rowgroup, tt
 ```
 
 Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict` describes targeted notes. Do not import private modules or construct internal directive classes.
@@ -85,15 +85,16 @@ Semantic row names are:
 | `"header"` | the column-name row |
 | `"groupi"` or `groupi()` | all inserted row-group separator rows |
 | `groupi(label="A")` | every row-group separator with the exact registered label `"A"` |
+| `rowgroup(label="A")` | source-data rows belonging to every row group labelled `"A"` |
 | `"groupj"` or `groupj()` | all spanning column-group header rows |
 | `groupj(level=n)` | one nested column-group header level; level 0 is first-created and innermost |
 | `"all"` | the complete displayed grid |
 | `"caption"` | the caption; supported only by `.style()` |
 | `"notes"` | note text; supported only by `.style()` |
 
-Import `groupi` and `groupj` from `tytable` for typed structural selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`; repeated labels all match, later formatting of the displayed label does not change the selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering the chosen original source column. Selecting several member columns covered by the same header styles that cell once. A hidden member column does not select a group cell that survives over another visible member, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
+Import `groupi`, `rowgroup`, and `groupj` from `tytable` for typed group selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`, while `rowgroup(label="A")` selects the source-data rows after each matching separator up to the next separator. Repeated labels all match, later formatting of the displayed label does not change selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering the chosen original source column. Selecting several member columns covered by the same header styles that cell once. A hidden member column does not select a group cell that survives over another visible member, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
 
-Sequences may mix integer and semantic selectors, including `groupi(label=...)` and `groupj(level=...)`. Targeted notes put the ordinary row selectors, including `groupi(...)`, in a `NoteDict` passed to `tt(..., notes=[...])`; typed `groupj()` selectors are styling-only. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
+Sequences may mix integer and semantic selectors, including `groupi(label=...)`, `rowgroup(label=...)`, and `groupj(level=...)`. Targeted notes put the ordinary row selectors, including `groupi(...)` and `rowgroup(...)`, in a `NoteDict` passed to `tt(..., notes=[...])`; typed `groupj()` selectors are styling-only. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
 
 Rows can also be selected from source values:
 
@@ -115,7 +116,7 @@ table.style(j=["Revenue", "Cost"], align="r")
 table.style(j=0, bold=True)  # positions are supported but less readable
 ```
 
-Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names, integer positions, `regex(pattern)`, and Polars selectors. All resolve against the original DataFrame schema and work anywhere `j` selects columns, including `.set_name()`, `.show_columns()`, targeted notes, and column-group values. `regex(pattern)` uses Python `re.search`, limits patterns to 500 characters, and raises `ValueError` for an invalid pattern or no matches. Polars selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, `cs.by_dtype(...)`, and `cs.matches(...)` produce an empty selection when nothing matches; column groups still require a nonempty contiguous result.
+Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names, integer positions, `regex(pattern)`, `colgroup(label=..., level=...)`, and Polars selectors. All resolve against the original DataFrame schema and work anywhere `j` selects columns, including `.set_name()`, `.show_columns()`, targeted notes, and later column-group values. `colgroup` matches every registered group with the exact label at the required stable level and combines their source columns; missing labels or levels raise `ValueError`. `regex(pattern)` uses Python `re.search`, limits patterns to 500 characters, and raises `ValueError` for an invalid pattern or no matches. Polars selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, `cs.by_dtype(...)`, and `cs.matches(...)` produce an empty selection when nothing matches; column groups still require a nonempty contiguous result.
 
 ```python
 import polars.selectors as cs
@@ -124,10 +125,11 @@ from tytable import regex
 table.fmt(j=regex(r"^(Revenue|Cost)$"), digits=0)
 table.style(j=["Total", regex(r"^Q")], bold=True)
 table.fmt(j=cs.numeric(), digits=2)
+table.fmt(j=colgroup(label="Results", level=0), digits=1)
 table.show_columns(cs.matches(r"^(Revenue|Cost)$"))
 ```
 
-Use `.show_columns(j, invert=False)` to choose which source columns are rendered without modifying the DataFrame. It accepts the same names, positions, regex selectors, Polars selectors, and mixed sequences as other `j` arguments, always preserves source-column order, and replaces any previous display projection. With `invert=True`, the selected columns are omitted. Hidden columns remain available to row expressions, `where`, and other directives:
+Use `.show_columns(j, invert=False)` to choose which source columns are rendered without modifying the DataFrame. It accepts the same names, positions, regex selectors, column-group selectors, Polars selectors, and mixed sequences as other `j` arguments, always preserves source-column order, and replaces any previous display projection. With `invert=True`, the selected columns are omitted. Hidden columns remain available to row expressions, `where`, and other directives:
 
 ```python
 table = (

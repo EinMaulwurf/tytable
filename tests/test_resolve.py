@@ -2,7 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import groupi, groupj, regex
+from tytable import colgroup, groupi, groupj, regex, rowgroup
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
 
 
@@ -116,6 +116,22 @@ class TestRowLayout:
         with pytest.raises(ValueError, match="matched no groups"):
             resolve_i(groupi(label="missing"), layout=grouped)
 
+    def test_rowgroup_label_resolution_matches_every_registered_run(self):
+        grouped = RowLayout.create(
+            source_rows=5,
+            column_group_rows=0,
+            has_header=True,
+            group_body_rows={0, 3, 6},
+            groupi_labels=["A", "B", "A"],
+        )
+
+        assert resolve_i(rowgroup(label="A"), layout=grouped) == [2, 3, 8]
+        assert resolve_i(rowgroup(label="B"), layout=grouped) == [5, 6]
+        assert resolve_i([rowgroup(label="B"), 0], layout=grouped) == [2, 5, 6]
+
+        with pytest.raises(ValueError, match="matched no groups"):
+            resolve_i(rowgroup(label="missing"), layout=grouped)
+
 
 class TestResolveI:
     def test_default_and_named_selectors(self, layout):
@@ -162,6 +178,11 @@ class TestResolveI:
     def test_groupi_label_must_be_a_string(self, label):
         with pytest.raises(TypeError, match="must be a string"):
             groupi(label=label)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("label", [True, 1, ["A"]])
+    def test_rowgroup_label_must_be_a_string(self, label):
+        with pytest.raises(TypeError, match="must be a string"):
+            rowgroup(label=label)  # type: ignore[arg-type]
 
     @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
     def test_arbitrary_iterables_are_rejected(self, layout, selector):
@@ -257,6 +278,52 @@ class TestResolveJ:
     def test_regex(self):
         assert resolve_j(regex("a"), self.DF) == [2, 3]
         assert resolve_j(["A", regex("am")], self.DF) == [0, 2]
+
+    def test_colgroup_matches_repeated_labels_at_one_level(self):
+        rows = [
+            ["Outer", "", "", ""],
+            ["Measure", "", "Measure", ""],
+        ]
+
+        assert resolve_j(colgroup(label="Measure", level=0), self.DF, column_group_rows=rows) == [
+            0,
+            1,
+            2,
+            3,
+        ]
+        assert resolve_j(colgroup(label="Outer", level=1), self.DF, column_group_rows=rows) == [
+            0,
+            1,
+            2,
+            3,
+        ]
+
+    def test_colgroup_reports_missing_labels_and_levels(self):
+        rows = [["Measure", "", None, None]]
+
+        with pytest.raises(ValueError, match="matched no groups at level 0"):
+            resolve_j(colgroup(label="Missing", level=0), self.DF, column_group_rows=rows)
+        with pytest.raises(ValueError, match="level 1 is out of range"):
+            resolve_j(colgroup(label="Measure", level=1), self.DF, column_group_rows=rows)
+
+    @pytest.mark.parametrize("label", [True, 1, ["A"]])
+    def test_colgroup_label_must_be_a_string(self, label):
+        with pytest.raises(TypeError, match="must be a string"):
+            colgroup(label=label, level=0)  # type: ignore[arg-type]
+
+    @pytest.mark.parametrize("label", ["", "   "])
+    def test_colgroup_label_must_not_be_empty(self, label):
+        with pytest.raises(ValueError, match="must not be empty"):
+            colgroup(label=label, level=0)
+
+    @pytest.mark.parametrize("level", [True, 1.5, "0"])
+    def test_colgroup_level_must_be_an_integer(self, level):
+        with pytest.raises(TypeError, match="must be an integer"):
+            colgroup(label="A", level=level)  # type: ignore[arg-type]
+
+    def test_colgroup_level_must_be_non_negative(self):
+        with pytest.raises(ValueError, match="non-negative"):
+            colgroup(label="A", level=-1)
 
     @pytest.mark.parametrize("selector", [-1, 4, True, ["A", True], [object()]])
     def test_invalid_selector(self, selector):

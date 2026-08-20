@@ -163,6 +163,8 @@ Structural rows have semantic names:
   [inserted row-group separator rows],
   [`groupi(label="A")`],
   [every row-group separator registered with label `"A"`],
+  [`rowgroup(label="A")`],
+  [source-data rows belonging to every row group labelled `"A"`],
   [`"groupj"`],
   [all spanning column-group header rows],
   [`groupj(level=0)`],
@@ -175,9 +177,9 @@ Structural rows have semantic names:
   [all footer notes; `.style()` only],
 )
 
-Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi(label="A")` selects every row-group separator registered with that exact label; repeated labels all match, and later formatting of the displayed label does not change the selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within a selected column-group header row, `j` selects the spanning group cell that covers the chosen source column. Selecting several columns covered by the same group cell still targets that cell only once.
+Import `groupi`, `rowgroup`, and `groupj` from `tytable` for typed group selectors. `groupi(label="A")` selects every row-group separator registered with that exact label, while `rowgroup(label="A")` selects the source-data rows after each matching separator and before the next separator. Repeated labels all match, and later formatting of the displayed label does not change selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within a selected column-group header row, `j` selects the spanning group cell that covers the chosen source column. Selecting several columns covered by the same group cell still targets that cell only once.
 
-Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and may also contain typed selectors such as `groupi(label="A")`; `.style()` additionally accepts `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
+Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and may also contain typed selectors such as `groupi(label="A")` and `rowgroup(label="A")`; `.style()` additionally accepts `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
 
 Rows may also be selected from their source values:
 
@@ -202,16 +204,17 @@ table.style(j=["Name", "Score"], bold=True)
 table.style(j=range(2), bold=True)
 ```
 
-Polars column selectors and tytable's `regex(pattern)` work anywhere `j` selects columns. They use the original DataFrame schema, so dtype and name-based selections can be composed:
+Polars column selectors, tytable's `regex(pattern)`, and `colgroup(label=..., level=...)` work anywhere `j` selects columns. They use the original DataFrame schema, so dtype, name-based, and registered-group selections can be composed:
 
 ```python
 import polars.selectors as cs
-from tytable import regex
+from tytable import colgroup, regex
 
 table.fmt(j=cs.numeric(), digits=1)
 table.style(j=cs.starts_with("rev"), bold=True)
 table.set_name(j=cs.string(), name="Label")
 table.group(j={"Measures": cs.by_dtype(pl.Int64, pl.Float64)})
+table.fmt(j=colgroup(label="Measures", level=0), digits=1)
 table.show_columns(regex(r"^Q[1-4]$"))
 ```
 
@@ -225,6 +228,8 @@ quarter_note = NoteDict(text="Quarterly value", j=regex(r"^Q[1-4]$"))
 ```
 
 Polars also provides `cs.matches(pattern)` using its own regex engine. It follows the normal Polars selector behavior and returns an empty selection when nothing matches, which is useful when an optional set of columns is expected.
+
+`colgroup(label="Results", level=0)` selects the source columns belonging to every exactly matching registered group at that stable level. Both arguments are required. Repeated labels at one level are combined, while a missing label or level raises `ValueError`. The selector uses the complete registered grouping after `.show_columns()` and can be used when defining a later column-group level.
 
 Names assigned by `.set_name()` are display labels, not selectors. Continue to use the original DataFrame name after renaming a header.
 
@@ -296,9 +301,16 @@ Every panel below starts from the same four-row table, including its `Results` c
   selector-card("j=regex(r\"^S\")", [#include "build/20_selector_regex.typ"]),
   selector-card("i=groupi(label=\"Group B\")", [#include "build/20_selector_groupi_label.typ"]),
   selector-card("i=groupj(level=0), j=\"Sales\"", [#include "build/20_selector_groupj_level.typ"]),
+
+  selector-card("i=rowgroup(label=\"Group B\")", [#include "build/20_selector_rowgroup.typ"]),
+  selector-card("j=colgroup(label=\"Results\",\n  level=0)", [#include "build/20_selector_colgroup.typ"]),
+  selector-card(
+    "i=rowgroup(label=\"Group B\"),\nj=colgroup(label=\"Results\", level=0)",
+    [#include "build/20_selector_member_groups.typ"],
+  ),
 )
 
-The middle-right panel highlights four cells because `i` selects two rows and `j` selects two columns: the selectors form a 2 × 2 cross-product, regardless of the values in `Sales` and `Cost`. The third-row `where` example instead tests cells individually and highlights only numeric values over 100. The last row demonstrates fail-loud regular-expression matching, selection of a row-group separator by label, and selection of a particular column-group level together with one of its member columns.
+The middle-right panel highlights four cells because `i` selects two rows and `j` selects two columns: the selectors form a 2 × 2 cross-product, regardless of the values in `Sales` and `Cost`. The third-row `where` example instead tests cells individually and highlights only numeric values over 100. The fourth row demonstrates fail-loud regular-expression matching, selection of a row-group separator by label, and selection of a particular column-group level together with one of its member columns. The final row selects the data members of row and column groups separately, then combines them as a cross-product.
 
 == Renaming columns
 
@@ -306,7 +318,7 @@ The middle-right panel highlights four cells because `i` selects two rows and `j
 
 Three calling modes:
 
-- *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`. `j` follows the #link(<selectors>)[column selector rules] (name, integer position, `regex(pattern)`, a Polars selector, or a mixed list). `name` is a single `str` (applied to every matched column) or a `list[str]` with one entry per match.
+- *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`. `j` follows the #link(<selectors>)[column selector rules] (name, integer position, `regex(pattern)`, `colgroup(label=..., level=...)`, a Polars selector, or a mixed list). `name` is a single `str` (applied to every matched column) or a `list[str]` with one entry per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column header at once — the list length must equal the column count.
 - *Mapping*: `.set_name(name={source: display, ...})` renames any subset using exact original DataFrame column names as keys.
 
@@ -321,7 +333,7 @@ Because #link(<selectors>)[selectors keep using source-column names], display la
 
 == Choosing displayed columns
 
-Use `.show_columns(j, invert=False)` for a display-only column projection. It accepts the same names, integer positions, regex selectors, Polars selectors, and mixed sequences as other `j` arguments. Selected columns keep their original DataFrame order; use Polars before `tt()` when the data itself needs rearranging. With `invert=True`, the selection is omitted instead. A later call replaces the previous display projection.
+Use `.show_columns(j, invert=False)` for a display-only column projection. It accepts the same names, integer positions, regex selectors, column-group selectors, Polars selectors, and mixed sequences as other `j` arguments. Selected columns keep their original DataFrame order; use Polars before `tt()` when the data itself needs rearranging. With `invert=True`, the selection is omitted instead. A later call replaces the previous display projection.
 
 Hidden columns remain part of the original typed DataFrame, so they can still drive row expressions, `where`, formatting, and other directives. This makes a helper column available for conditional presentation without including it in the rendered table:
 
@@ -529,7 +541,7 @@ Grouping adds visual hierarchy by placing spanning labels above related columns 
 
 === Column groups
 
-Column groups add #emph[spanning header rows] above the regular column names, so you can label clusters of related columns. The simplest way is to pass an explicit delimiter: `.group(delimiter="_")` splits every column name on that string and turns the shared prefix into a group. In the example below the dataframe has four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the underscore split yields two groups — `Q1` spanning the first two columns and `Q2` spanning the last two. For full control you can instead pass a dict mapping each label to its column positions, e.g. `.group(j={"Group A": [0, 1], "Group B": [2, 3]})`. These spanning header rows are then addressable through the special selector `i="groupj"`, for example to style every column-group label in one call.
+Column groups add #emph[spanning header rows] above the regular column names, so you can label clusters of related columns. The simplest way is to pass an explicit delimiter: `.group(delimiter="_")` splits every column name on that string and turns the shared prefix into a group. In the example below the dataframe has four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the underscore split yields two groups — `Q1` spanning the first two columns and `Q2` spanning the last two. For full control you can instead pass a dict mapping each label to its column positions, e.g. `.group(j={"Group A": [0, 1], "Group B": [2, 3]})`. These spanning header rows are addressable through `i="groupj"` or `i=groupj(level=...)`; use `j=colgroup(label=..., level=...)` to select the source columns belonging to matching groups.
 
 Each explicit group must select at least one column. Its list must be a left-to-right contiguous span with no duplicate columns, and spans within the same dictionary may not overlap; different groups may leave ungrouped columns between their spans. Column names and positions may be mixed. An empty `j={}` is a no-op, while a `None` label is rejected (other labels are converted to text).
 
@@ -537,7 +549,7 @@ The delimiter is a literal, non-empty string which must occur in every display c
 
 === Row groups
 
-Row groups insert a #emph[labelled separator row] before a given data row, visually breaking the table into sections. Pass `i` as a `{label: row}` dict where `row` is the 0-based data row the divider should precede. The example calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of the second data row. All separator rows are addressable through `i="groupi"` or `i=groupi()`, while `i=groupi(label="Division B")` selects every separator registered with that exact label.
+Row groups insert a #emph[labelled separator row] before a given data row, visually breaking the table into sections. Pass `i` as a `{label: row}` dict where `row` is the 0-based data row the divider should precede. The example calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of the second data row. All separator rows are addressable through `i="groupi"` or `i=groupi()`, while `i=groupi(label="Division B")` selects every separator registered with that exact label. Use `i=rowgroup(label="Division B")` instead to select the source-data rows after each matching separator and before the next separator.
 
 A row-group dictionary position may range from `0` (before the first source row) through the source row count (after the last source row); two labels in one dictionary cannot use the same position. A run-length list must contain exactly one non-`None` value per source row. It inserts a label before the first row and whenever the value changes, so repeated non-adjacent values form separate runs. The empty list is valid only for an empty table and creates no groups. An empty dictionary is also a no-op. Group labels may otherwise be any value and are converted to text.
 

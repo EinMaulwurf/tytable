@@ -337,7 +337,7 @@ class TyTable:
 
     def _resolve_j(self, j: _ColumnSelector) -> list[int]:
         """Resolve a column selector against stable source-column names."""
-        return resolve_j(j, self._data)
+        return resolve_j(j, self._data, column_group_rows=self._col_group_rows)
 
     def show_columns(self, j: _ColumnSelectorSpec, *, invert: bool = False) -> TyTable:
         """Choose which source columns are included in the rendered table.
@@ -346,7 +346,8 @@ class TyTable:
         DataFrame, and omitted columns remain available to selectors and
         conditional formatting. ``j`` accepts names, integer source positions,
         ``regex(pattern)``, Polars column selectors, or a sequence mixing these
-        forms. Displayed columns always retain their original source order.
+        forms, including ``colgroup(label=..., level=...)``. Displayed columns
+        always retain their original source order.
 
         Parameters
         ----------
@@ -408,18 +409,19 @@ class TyTable:
             ``"header"`` selects the column-name row, ``"groupi"`` or
             ``groupi()`` selects every row-group separator, and
             ``groupi(label="A")`` selects every separator with that exact
-            registered label. ``"groupj"`` selects every column-group row;
-            ``groupj(level=n)`` selects one nested column-group level,
-            numbered from the first-created innermost level at zero;
-            ``"caption"`` and ``"notes"`` select non-grid metadata;
-            ``"all"`` selects the complete displayed grid. Sequences may mix integer
-            and string selectors; for example, ``range(5)`` selects the first five
-            source rows. Boolean sequences with exactly one value per
-            source row, Polars expressions, boolean series, and
-            ``callable(row) -> bool`` predicates select data rows by value.
-            Omitting ``i`` selects all genuine source-data rows. Negative
-            integers and the former ``"body"`` / ``"~groupi"`` names are not
-            supported.
+            registered label. ``rowgroup(label="A")`` selects the source-data
+            rows belonging to every matching group. ``"groupj"`` selects
+            every column-group row; ``groupj(level=n)`` selects one nested
+            column-group level, numbered from the first-created innermost
+            level at zero; ``"caption"`` and ``"notes"`` select non-grid
+            metadata; ``"all"`` selects the complete displayed grid.
+            Sequences may mix integer and string selectors; for example,
+            ``range(5)`` selects the first five source rows. Boolean sequences
+            with exactly one value per source row, Polars expressions, boolean
+            series, and ``callable(row) -> bool`` predicates select data rows
+            by value. Omitting ``i`` selects all genuine source-data rows.
+            Negative integers and the former ``"body"`` / ``"~groupi"`` names
+            are not supported.
         j
             Column selector: an original DataFrame name (``"Score"``), an
             integer position (``0``), a Polars selector such as
@@ -429,7 +431,9 @@ class TyTable:
             never become selectors. On a column-group header row, a selected
             source column targets the spanning group cell covering it.
             ``None`` means *all* columns. Use ``regex(pattern)`` for Python
-            regular-expression matching against original DataFrame names.
+            regular-expression matching against original DataFrame names, or
+            ``colgroup(label="A", level=n)`` for the source columns belonging
+            to matching registered column groups.
         where
             Polars expression selecting individual body cells. Each boolean
             output column is matched to the source column with the same name;
@@ -892,7 +896,8 @@ class TyTable:
         j
             Column groups. A ``{label: columns}`` dict adds a spanning header
             row where each value maps a label to a sequence of column names or
-            positions, or to a Polars column selector.
+            positions, a Polars column selector, ``regex(pattern)``, or
+            ``colgroup(label=..., level=...)`` referring to an existing level.
         delimiter
             Split every original DataFrame column name on this literal string
             and turn the shared parts into hierarchical group labels. For
@@ -956,7 +961,8 @@ class TyTable:
         - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
           selected by ``j``. ``j`` follows the same selector rules as
           :meth:`style` / :meth:`fmt` (name, integer position, Polars selector,
-          or a list of these, including ``regex(pattern)`` selectors).
+          or a list of these, including ``regex(pattern)`` and
+          ``colgroup(label=..., level=...)`` selectors).
           ``name`` is a single ``str`` (applied to every
           matched column, so duplicates are possible) or a ``list[str]`` with
           one entry per matched column.

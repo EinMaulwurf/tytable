@@ -72,6 +72,9 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`groupi(label="A")`],
   [row-group separators with the exact registered label `"A"`],
   [`i`],
+  [`rowgroup(label="A")`],
+  [source-data rows belonging to row groups labelled `"A"`],
+  [`i`],
   [`"groupj"`],
   [all column-group header rows],
   [`i`],
@@ -98,12 +101,15 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`j`],
   [`regex(r"^Q\d+$")`],
   [columns matched by a fail-loud Python regular expression],
+  [`j`],
+  [`colgroup(label="Results", level=0)`],
+  [source columns belonging to matching registered column groups],
   [`where`],
   [`cs.numeric() > 100`],
   [true body cells in `.style()`, `.fmt()`, or a targeted note],
 )
 
-Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi()` selects every row-group separator, while `groupi(label="A")` selects every separator whose original registered label is exactly `"A"`; repeated labels all match, later formatting of the displayed label does not affect selection, and a missing label raises `ValueError`. Use `groupj(level=n)` with `.style()` to select one nested column-group header level. Level 0 is the first-created, innermost level nearest the ordinary column names; every later `.group(j=...)` call creates the next outer level above it. Levels retain these identities when `.show_columns()` removes an empty header level. Lists and tuples may mix typed group selectors with integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
+Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Import `groupi`, `rowgroup`, and `groupj` from `tytable` for typed group selectors. `groupi()` selects every row-group separator, while `groupi(label="A")` selects every separator whose original registered label is exactly `"A"`. `rowgroup(label="A")` selects the source-data rows after each matching separator and before the next separator. Repeated labels all match, later formatting of the displayed label does not affect selection, and a missing label raises `ValueError`; a separator after the final source row has an empty member selection. Use `groupj(level=n)` with `.style()` to select one nested column-group header level. Level 0 is the first-created, innermost level nearest the ordinary column names; every later `.group(j=...)` call creates the next outer level above it. Levels retain these identities when `.show_columns()` removes an empty header level. Lists and tuples may mix typed group selectors with integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
 
 Data-driven `i` forms have a different coordinate system: a Polars expression, boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is evaluated against the original DataFrame. Masks must be Boolean and have exactly one entry per source row; a boolean mask cannot mix booleans with integer selectors. Matching source rows are mapped around inserted row-group separators. Thus use an integer for a stable source-row position, or a predicate/mask when the target depends on source data values. `where` is also evaluated against the original DataFrame; it must return Boolean columns with original source-column names and the source row count. Its true cells are intersected with `i` and `j`, and it cannot target synthetic headers, group rows, captions, or notes.
 
@@ -118,7 +124,7 @@ df = df.rename({"annual_revenue_usd": "Revenue"})
 table = tt(df).fmt(j="Revenue", digits=0)
 ```
 
-Import `regex` from `tytable` and use `regex(pattern)` for Python `re.search` matching over original DataFrame column names, not display labels or a full match. Each pattern is limited to 500 characters and must match at least one column; invalid patterns and no-match patterns raise `ValueError`. A sequence may freely mix exact names, positions, regex selectors, and Polars selectors, and its result is de-duplicated into source-column order. Polars also provides `cs.matches(pattern)` using its own regex engine; like other Polars selectors, it produces an empty selection when nothing matches. Regex selectors apply only to `j`, not `i` or `where`.
+Import `regex` and `colgroup` from `tytable`. Use `regex(pattern)` for Python `re.search` matching over original DataFrame column names, not display labels or a full match. Each pattern is limited to 500 characters and must match at least one column; invalid patterns and no-match patterns raise `ValueError`. Use `colgroup(label="Results", level=0)` to select the original source columns belonging to every exactly matching registered group at one stable level. Both arguments are required and the label must be nonempty; repeated labels at that level are combined, while missing labels and levels raise `ValueError`. Column-group selectors continue to resolve against the complete registered grouping after `.show_columns()` and may define a later column-group level. A sequence may freely mix exact names, positions, regex selectors, column-group selectors, and Polars selectors, and its result is de-duplicated into source-column order. Polars also provides `cs.matches(pattern)` using its own regex engine; like other Polars selectors, it produces an empty selection when nothing matches. Regex and column-group selectors apply only to `j`, not `i` or `where`.
 
 === Creating a table
 
@@ -210,7 +216,7 @@ With `j`, `name` is one display name or a list matching the selected columns. Wi
 
 #api("Choose displayed columns", api_signatures.at("show_columns"))
 
-Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, regex selectors, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, groups, spans, styles, notes, and media are projected with the displayed columns for every renderer.
+Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, regex selectors, column-group selectors, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, groups, spans, styles, notes, and media are projected with the displayed columns for every renderer.
 
 #api("Use default appearance", api_signatures.at("theme_default"))
 

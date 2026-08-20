@@ -79,6 +79,8 @@ def test_public_table_class_is_tytable():
     assert "TyTable" in tytable.__all__
     assert "groupi" in tytable.__all__
     assert "groupj" in tytable.__all__
+    assert "rowgroup" in tytable.__all__
+    assert "colgroup" in tytable.__all__
     assert "regex" in tytable.__all__
     assert "TinyTable" not in tytable.__all__
     assert not hasattr(tytable, "TinyTable")

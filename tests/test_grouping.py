@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import groupi, groupj, regex, tt
+from tytable import colgroup, groupi, groupj, regex, rowgroup, tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
 from tytable._styling import resolve_line_edges
@@ -83,6 +83,29 @@ class TestRowGroups:
 
         assert built.data_body[0][0] == "Displayed"
         assert built.style_grid[(1, 0)]["italic"] is True
+
+    def test_rowgroup_label_styles_data_rows_in_every_matching_run(self):
+        df = pl.DataFrame({"value": [1, 2, 3, 4, 5]})
+        built = build(
+            tt(df)
+            .theme_plain()
+            .group(i=["A", "A", "B", "B", "A"])
+            .style(i=rowgroup(label="A"), bold=True),
+            "typst",
+        )
+
+        assert [
+            row for row in built.layout.data_rows if built.style_grid.get((row, 0), {}).get("bold")
+        ] == [2, 3, 8]
+
+    def test_rowgroup_at_end_can_select_an_empty_run(self):
+        df = pl.DataFrame({"value": [1, 2]})
+        built = build(
+            tt(df).theme_plain().group(i={"End": 2}).style(i=rowgroup(label="End"), bold=True),
+            "typst",
+        )
+
+        assert all("bold" not in props for props in built.style_grid.values())
 
 
 @pytest.mark.typst
@@ -241,6 +264,43 @@ class TestColumnGroups:
         )
 
         assert all("color" not in props for props in built.style_grid.values())
+
+    def test_colgroup_selects_members_by_exact_label_and_level(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Inner": ["a", "b"], "Other": ["c", "d"]})
+            .group(j={"Outer": ["a", "b", "c", "d"]})
+            .style(j=colgroup(label="Inner", level=0), bold=True),
+            "typst",
+        )
+
+        for row in built.layout.data_rows:
+            assert built.style_grid[(row, 0)]["bold"] is True
+            assert built.style_grid[(row, 1)]["bold"] is True
+            assert "bold" not in built.style_grid.get((row, 2), {})
+            assert "bold" not in built.style_grid.get((row, 3), {})
+
+    def test_colgroup_uses_original_groups_after_projection(self):
+        table = (
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Pair": ["a", "b"]})
+            .show_columns(colgroup(label="Pair", level=0))
+        )
+
+        assert build(table, "typst").colnames_display == ["a", "b"]
+
+    def test_colgroup_can_define_a_later_group_level(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Pair": ["a", "b"]})
+            .group(j={"Outer": colgroup(label="Pair", level=0)}),
+            "typst",
+        )
+
+        assert built.col_groups == [["Outer", "", None, None], ["Pair", "", None, None]]
 
 
 @pytest.mark.typst

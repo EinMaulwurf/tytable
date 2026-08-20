@@ -5,7 +5,7 @@ The public API consists of the :func:`tt` factory, :class:`TyTable`, reusable
 """
 
 from . import formatters
-from ._types import NoteDict, groupi, groupj, regex
+from ._types import NoteDict, colgroup, groupi, groupj, regex, rowgroup
 from ._tytable import TyTable, tt
 
 try:
@@ -18,4 +18,14 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "0.0.0"
 
-__all__ = ["tt", "TyTable", "NoteDict", "formatters", "groupi", "groupj", "regex"]
+__all__ = [
+    "tt",
+    "TyTable",
+    "NoteDict",
+    "formatters",
+    "groupi",
+    "groupj",
+    "rowgroup",
+    "colgroup",
+    "regex",
+]

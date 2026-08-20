@@ -11,10 +11,12 @@ import polars as pl
 import polars.selectors as cs
 
 from tytable._types import (
+    _ColGroupSelector,
     _ColumnSelector,
     _GroupISelector,
     _GroupJSelector,
     _RegexSelector,
+    _RowGroupSelector,
     _StyleRowSelector,
 )
 
@@ -188,6 +190,31 @@ class RowLayout:
             raise ValueError(f"row-group label matched no groups: {selector.label!r}")
         return matches
 
+    def resolve_rowgroup(self, selector: _RowGroupSelector) -> list[int]:
+        """Resolve data rows in every run with an exact registered label."""
+        group_positions = sorted(self.group_body_rows)
+        matching_runs = [
+            (
+                position,
+                group_positions[index + 1] if index + 1 < len(group_positions) else self.body_rows,
+            )
+            for index, (position, label) in enumerate(
+                zip(group_positions, self.groupi_labels, strict=True)
+            )
+            if label == selector.label
+        ]
+        if not matching_runs:
+            raise ValueError(f"row-group label matched no groups: {selector.label!r}")
+
+        selected: list[int] = []
+        for position, next_position in matching_runs:
+            selected.extend(
+                self.header_rows + body_row
+                for body_row in self.source_body_rows
+                if position < body_row < next_position
+            )
+        return sorted(set(selected))
+
 
 def resolve_i(
     i: _StyleRowSelector,
@@ -260,6 +287,9 @@ def resolve_i(
     if isinstance(i, _GroupISelector):
         return layout.resolve_groupi(i)
 
+    if isinstance(i, _RowGroupSelector):
+        return layout.resolve_rowgroup(i)
+
     if sequence is not None:
         rows: list[int] = []
         for value in sequence:
@@ -269,6 +299,8 @@ def resolve_i(
                 rows.extend(layout.resolve_groupj(value))
             elif isinstance(value, _GroupISelector):
                 rows.extend(layout.resolve_groupi(value))
+            elif isinstance(value, _RowGroupSelector):
+                rows.extend(layout.resolve_rowgroup(value))
             elif isinstance(value, int):
                 if isinstance(value, bool):
                     raise TypeError(
@@ -301,6 +333,8 @@ def _validate_source_row(row: int, source_rows: int) -> None:
 def resolve_j(
     j: _ColumnSelector,
     data: pl.DataFrame,
+    *,
+    column_group_rows: Sequence[Sequence[str | None]] = (),
 ) -> list[int]:
     """Resolve a public column selector to zero-based column indices."""
     colnames = data.columns
@@ -311,24 +345,29 @@ def resolve_j(
     if isinstance(j, Sequence) and not isinstance(j, (str, bytes, bytearray)):
         result: list[int] = []
         for value in j:
-            resolved = _resolve_single_j(value, data)
+            resolved = _resolve_single_j(value, data, column_group_rows=column_group_rows)
             for idx in resolved:
                 if idx not in result:
                     result.append(idx)
         return sorted(result)
-    if isinstance(j, (int, str, _RegexSelector)):
-        return _resolve_single_j(j, data)
+    if isinstance(j, (int, str, _RegexSelector, _ColGroupSelector)):
+        return _resolve_single_j(j, data, column_group_rows=column_group_rows)
     raise TypeError(f"bad column selector: {j!r}")
 
 
-def _resolve_single_j(value: object, data: pl.DataFrame) -> list[int]:
+def _resolve_single_j(
+    value: object,
+    data: pl.DataFrame,
+    *,
+    column_group_rows: Sequence[Sequence[str | None]],
+) -> list[int]:
     colnames = data.columns
     if cs.is_selector(value):
         return _resolve_selector_j(value, data)
     if isinstance(value, bool):
         raise TypeError(
-            "column selector elements must be integers, strings, regex selectors, or Polars "
-            "selectors, got bool"
+            "column selector elements must be integers, strings, regex selectors, column-group "
+            "selectors, or Polars selectors, got bool"
         )
     if isinstance(value, int):
         if value < 0 or value >= len(colnames):
@@ -338,14 +377,49 @@ def _resolve_single_j(value: object, data: pl.DataFrame) -> list[int]:
         return [value]
     if isinstance(value, _RegexSelector):
         return _resolve_regex(value.pattern, colnames)
+    if isinstance(value, _ColGroupSelector):
+        return _resolve_colgroup(value, column_group_rows)
     if isinstance(value, str):
         if value in colnames:
             return [colnames.index(value)]
         raise ValueError(f"column not found: {value!r}")
     raise TypeError(
-        "column selector elements must be integers, strings, regex selectors, or Polars "
-        f"selectors, got {type(value).__name__}"
+        "column selector elements must be integers, strings, regex selectors, column-group "
+        f"selectors, or Polars selectors, got {type(value).__name__}"
     )
+
+
+def _resolve_colgroup(
+    selector: _ColGroupSelector,
+    column_group_rows: Sequence[Sequence[str | None]],
+) -> list[int]:
+    if selector.level >= len(column_group_rows):
+        raise ValueError(
+            f"column-group level {selector.level} is out of range for "
+            f"{len(column_group_rows)} level(s)"
+        )
+
+    row = column_group_rows[-selector.level - 1]
+    selected: list[int] = []
+    column = 0
+    while column < len(row):
+        value = row[column]
+        label = "" if value is None else value
+        start = column
+        column += 1
+        if label.strip():
+            while (
+                column < len(row) and row[column] is not None and (row[column] or "").strip() == ""
+            ):
+                column += 1
+        if label == selector.label:
+            selected.extend(range(start, column))
+
+    if not selected:
+        raise ValueError(
+            f"column-group label {selector.label!r} matched no groups at level {selector.level}"
+        )
+    return selected
 
 
 def _resolve_selector_j(selector: pl.Expr, data: pl.DataFrame) -> list[int]:

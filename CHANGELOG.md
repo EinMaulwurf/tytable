@@ -16,6 +16,7 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 
 ### Features
 
+- Add `rowgroup(label=...)` for selecting the source-data rows belonging to exact row-group labels, and `colgroup(label=..., level=...)` for selecting the source columns belonging to exact labels at stable column-group levels.
 - Add composable `regex(pattern)` selectors anywhere `j` selects source columns, including display projection and column-group specifications.
 - Add `groupi(label=...)` for selecting every row-group separator with an exact registered label, while `groupi()` selects every row-group separator.
 - Add `groupj(level=...)` for styling one stable nested column-group header level, with level zero assigned to the first-created innermost level, and make `j` select the spanning group-header cell covering each chosen source column.
