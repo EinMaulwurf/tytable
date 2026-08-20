@@ -6,7 +6,7 @@ This is a compact reference for coding assistants that need to write `tytable` c
 
 ```python
 import polars as pl
-from tytable import NoteDict, TyTable, groupj, tt
+from tytable import NoteDict, TyTable, groupi, groupj, regex, tt
 ```
 
 Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict` describes targeted notes. Do not import private modules or construct internal directive classes.
@@ -91,7 +91,7 @@ Semantic row names are:
 | `"caption"` | the caption; supported only by `.style()` |
 | `"notes"` | note text; supported only by `.style()` |
 
-Import `groupi` and `groupj` from `tytable` for typed structural selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`; repeated labels all match, later formatting of the displayed label does not change the selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering that original source column, so either `j="bank"` or `j="insurance"` selects a `Financials` header spanning those columns. Selecting several member columns styles that header cell once. A hidden member column does not select the surviving group cell, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
+Import `groupi` and `groupj` from `tytable` for typed structural selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`; repeated labels all match, later formatting of the displayed label does not change the selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering the chosen original source column. Selecting several member columns covered by the same header styles that cell once. A hidden member column does not select a group cell that survives over another visible member, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
 
 Sequences may mix integer and semantic selectors, including `groupi(label=...)` and `groupj(level=...)`. Targeted notes put the ordinary row selectors, including `groupi(...)`, in a `NoteDict` passed to `tt(..., notes=[...])`; typed `groupj()` selectors are styling-only. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
 
@@ -149,7 +149,7 @@ Rename the Polars DataFrame first if a friendly name should become the true sele
 
 ### Individual cells: `where`
 
-Using both `i` and `j` normally selects their rectangular cross-product. Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when the condition differs cell by cell:
+Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when the condition differs cell by cell:
 
 ```python
 import polars.selectors as cs
@@ -161,6 +161,14 @@ table = tt(df, notes=[high_values])
 ```
 
 The expression is evaluated on the original typed DataFrame. Its Boolean output columns are matched to source columns by name and intersected with any `i` and `j` selection. `where` cannot target headers, group rows, captions, or notes.
+
+### Combining `i`, `j`, and `where`
+
+Using both `i` and `j` selects their rectangular cross-product. Adding `where` intersects that rectangle with the cells where the expression is true:
+
+```python
+table.style(i=pl.col("Active"), j=["Revenue", "Cost"], where=cs.numeric() > 100, bold=True)
+```
 
 ## Styling
 

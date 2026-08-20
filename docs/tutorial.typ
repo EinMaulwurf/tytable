@@ -175,7 +175,7 @@ Structural rows have semantic names:
   [all footer notes; `.style()` only],
 )
 
-Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi(label="A")` selects every row-group separator registered with that exact label; repeated labels all match, and later formatting of the displayed label does not change the selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within such a row, `j` selects the spanning group cell covering that source column, so `i=groupj(level=0), j="insurance"` selects a `Financials` header spanning `bank` and `insurance`.
+Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi(label="A")` selects every row-group separator registered with that exact label; repeated labels all match, and later formatting of the displayed label does not change the selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within a selected column-group header row, `j` selects the spanning group cell that covers the chosen source column. Selecting several columns covered by the same group cell still targets that cell only once.
 
 Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and may also contain typed selectors such as `groupi(label="A")`; `.style()` additionally accepts `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
 
@@ -228,15 +228,9 @@ Polars also provides `cs.matches(pattern)` using its own regex engine. It follow
 
 Names assigned by `.set_name()` are display labels, not selectors. Continue to use the original DataFrame name after renaming a header.
 
-=== Combine rows and columns, or select individual cells
+=== Select individual cells with `where`
 
-Combining `i` and `j` selects their rectangular cross-product. This call acts on just the `Score` cell in the second source row:
-
-```python
-table.style(i=1, j="Score", bold=True)
-```
-
-Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when a condition should select individual data cells instead of complete rows:
+Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when a condition should select individual data cells instead of complete rows or columns:
 
 ```python
 import polars.selectors as cs
@@ -246,15 +240,25 @@ high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
 table = tt(df, notes=[high_values])
 ```
 
-A `where` expression is evaluated against the original typed DataFrame. Its Boolean output columns are matched to source columns by name and intersected with any `i` and `j` selection:
+A `where` expression is evaluated against the original typed DataFrame. It preserves its Boolean output columns so each true value maps to one source cell. Each output column name must match a source column, and false or null values select nothing. `where` cannot target headers, group rows, captions, or notes.
+
+=== Combine `i`, `j`, and `where`
+
+Combining `i` and `j` selects their rectangular cross-product. This call acts on just the `Score` cell in the second source row:
+
+```python
+table.style(i=1, j="Score", bold=True)
+```
+
+When `where` is present, its true cells are intersected with that cross-product:
 
 ```text
 (rows selected by i × columns selected by j) ∩ true cells selected by where
 ```
 
-An `i` expression must resolve to one Boolean value per source row; use `pl.any_horizontal` or `pl.all_horizontal` to reduce a multi-column condition. A `where` expression instead preserves its Boolean output columns so each true value maps to one source cell. Each output column name must match a source column, and false or null values select nothing.
+An `i` expression must resolve to one Boolean value per source row; use `pl.any_horizontal` or `pl.all_horizontal` to reduce a multi-column condition. A `where` expression can retain multiple Boolean columns because it addresses cells rather than whole rows.
 
-Both forms always see the original typed values and original column names, including after `.set_name()`. `where` cannot target headers, group rows, captions, or notes.
+Both forms always see the original typed values and original column names, including after `.set_name()`.
 
 === Selectors at a glance
 
@@ -288,9 +292,13 @@ Every panel below starts from the same four-row table, including its `Results` c
   selector-card("where=cs.numeric() > 100", [#include "build/20_selector_where.typ"]),
   selector-card("i=\"header\"", [#include "build/20_selector_header.typ"]),
   selector-card("i=[\"groupi\", \"groupj\"]", [#include "build/20_selector_groups.typ"]),
+
+  selector-card("j=regex(r\"^S\")", [#include "build/20_selector_regex.typ"]),
+  selector-card("i=groupi(label=\"Group B\")", [#include "build/20_selector_groupi_label.typ"]),
+  selector-card("i=groupj(level=0), j=\"Sales\"", [#include "build/20_selector_groupj_level.typ"]),
 )
 
-The middle-right panel highlights four cells because `i` selects two rows and `j` selects two columns: the selectors form a 2 × 2 cross-product, regardless of the values in `Sales` and `Cost`. The lower-left `where` example instead tests cells individually and highlights only numeric values over 100.
+The middle-right panel highlights four cells because `i` selects two rows and `j` selects two columns: the selectors form a 2 × 2 cross-product, regardless of the values in `Sales` and `Cost`. The third-row `where` example instead tests cells individually and highlights only numeric values over 100. The last row demonstrates fail-loud regular-expression matching, selection of a row-group separator by label, and selection of a particular column-group level together with one of its member columns.
 
 == Renaming columns
 

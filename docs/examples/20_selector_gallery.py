@@ -5,7 +5,7 @@ from collections.abc import Callable
 import polars as pl
 import polars.selectors as cs
 
-from tytable import TyTable, tt
+from tytable import TyTable, groupi, groupj, regex, tt
 
 df = pl.DataFrame(
     {
@@ -55,6 +55,15 @@ examples: list[tuple[str, Callable[[TyTable], TyTable]]] = [
     (
         "groups",
         lambda table: table.style(i=["groupi", "groupj"], background="#c6efce"),
+    ),
+    ("regex", lambda table: table.style(j=regex(r"^S"), background="#c6efce")),
+    (
+        "groupi_label",
+        lambda table: table.style(i=groupi(label="Group B"), background="#c6efce"),
+    ),
+    (
+        "groupj_level",
+        lambda table: table.style(i=groupj(level=0), j="Sales", background="#c6efce"),
     ),
 ]
 
