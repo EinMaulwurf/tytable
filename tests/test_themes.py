@@ -3,8 +3,9 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import TyTable, regex, tt
+from tytable import TyTable, tt
 from tytable._resolve import build
+from tytable.selectors import regex
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 

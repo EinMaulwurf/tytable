@@ -5,7 +5,8 @@ from collections.abc import Callable
 import polars as pl
 import polars.selectors as cs
 
-from tytable import TyTable, colgroup, groupi, groupj, regex, rowgroup, tt
+from tytable import TyTable, tt
+from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 df = pl.DataFrame(
     {

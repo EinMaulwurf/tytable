@@ -2,8 +2,9 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import regex, tt
+from tytable import tt
 from tytable._resolve import build
+from tytable.selectors import regex
 
 
 def test_show_columns_accepts_mixed_selectors_in_source_order():

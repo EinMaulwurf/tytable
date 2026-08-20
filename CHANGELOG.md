@@ -11,7 +11,7 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 
 ### Breaking
 
-- Replace the `regex=True` argument on `.style()`, `.fmt()`, `.plot()`, `.images()`, and `.set_name()`, and the `regex` key in targeted `NoteDict` entries, with the explicit `regex(pattern)` column selector. Import it with `from tytable import regex`, then change calls such as `j=r"^Q", regex=True` to `j=regex(r"^Q")`; mixed selections can use forms such as `j=["Total", regex(r"^Q")]`. The selector retains Python `re.search` semantics, the 500-character limit, and errors for invalid patterns or patterns that match no source columns.
+- Replace the `regex=True` argument on `.style()`, `.fmt()`, `.plot()`, `.images()`, and `.set_name()`, and the `regex` key in targeted `NoteDict` entries, with the explicit `regex(pattern)` column selector. Import it with `from tytable.selectors import regex`, then change calls such as `j=r"^Q", regex=True` to `j=regex(r"^Q")`; mixed selections can use forms such as `j=["Total", regex(r"^Q")]`. The selector retains Python `re.search` semantics, the 500-character limit, and errors for invalid patterns or patterns that match no source columns.
 - In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`, and pass semantic formatters through `fn` instead of the removed `formatter` argument.
 
 ### Features
@@ -22,6 +22,7 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 - Add `groupj(level=...)` for styling one stable nested column-group header level, with level zero assigned to the first-created innermost level, and make `j` select the spanning group-header cell covering each chosen source column.
 - Add `.show_columns()` for display-only column projection while keeping omitted source columns available to selectors and conditional formatting.
 - Accept Polars column selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` anywhere `j` selects columns.
+- Add reusable selectors for regular expressions and semantic row and column groups, available as direct imports from `tytable.selectors`.
 - Add reusable number, currency, percentage, date, duration, and unit formatters with German and English separator presets, available as direct imports from `tytable.formatters`.
 - Add `.clone()` for deriving independently configurable variants from a shared table definition.
 - Add `.compile()` for direct PDF, PNG, and SVG output through an installed Typst CLI.

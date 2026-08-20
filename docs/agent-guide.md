@@ -2,11 +2,12 @@
 
 This is a compact reference for coding assistants that need to write `tytable` code without prior knowledge of the package. It covers the common public API and the selection, styling, and formatting rules that are easiest to get wrong. For edge cases, consult the public docstrings in `src/tytable/_tytable.py` and the complete rendered manual built from `docs/main.typ`.
 
-`tytable` turns a Polars `DataFrame` into a Typst table. It can also render HTML previews and a plain ASCII representation. Import public objects only from `tytable`:
+`tytable` turns a Polars `DataFrame` into a Typst table. It can also render HTML previews and a plain ASCII representation. Import core objects from `tytable` and selector factories from `tytable.selectors`:
 
 ```python
 import polars as pl
-from tytable import NoteDict, TyTable, colgroup, groupi, groupj, regex, rowgroup, tt
+from tytable import NoteDict, TyTable, tt
+from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 ```
 
 Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict` describes targeted notes. Do not import private modules or construct internal directive classes.
@@ -92,7 +93,7 @@ Semantic row names are:
 | `"caption"` | the caption; supported only by `.style()` |
 | `"notes"` | note text; supported only by `.style()` |
 
-Import `groupi`, `rowgroup`, and `groupj` from `tytable` for typed group selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`, while `rowgroup(label="A")` selects the source-data rows after each matching separator up to the next separator. Repeated labels all match, later formatting of the displayed label does not change selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering the chosen original source column. Selecting several member columns covered by the same header styles that cell once. A hidden member column does not select a group cell that survives over another visible member, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
+Import `groupi`, `rowgroup`, and `groupj` from `tytable.selectors` for typed group selection. `groupi(label="A")` selects every row-group separator whose original registered label is exactly `"A"`, while `rowgroup(label="A")` selects the source-data rows after each matching separator up to the next separator. Repeated labels all match, later formatting of the displayed label does not change selection, and a missing label raises `ValueError`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering the chosen original source column. Selecting several member columns covered by the same header styles that cell once. A hidden member column does not select a group cell that survives over another visible member, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
 
 Sequences may mix integer and semantic selectors, including `groupi(label=...)`, `rowgroup(label=...)`, and `groupj(level=...)`. Targeted notes put the ordinary row selectors, including `groupi(...)` and `rowgroup(...)`, in a `NoteDict` passed to `tt(..., notes=[...])`; typed `groupj()` selectors are styling-only. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
 
@@ -120,7 +121,7 @@ Omitting `j` selects every column. Names are case-sensitive. A sequence may cont
 
 ```python
 import polars.selectors as cs
-from tytable import regex
+from tytable.selectors import colgroup, regex
 
 table.fmt(j=regex(r"^(Revenue|Cost)$"), digits=0)
 table.style(j=["Total", regex(r"^Q")], bold=True)

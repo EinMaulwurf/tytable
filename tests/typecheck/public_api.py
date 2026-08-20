@@ -7,7 +7,8 @@ from typing import Any
 import polars as pl
 import polars.selectors as cs
 
-from tytable import colgroup, groupi, groupj, regex, rowgroup, tt
+from tytable import tt
+from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 
 def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:

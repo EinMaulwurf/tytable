@@ -3,8 +3,9 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import regex, tt
+from tytable import tt
 from tytable._resolve import build
+from tytable.selectors import regex
 
 
 @pytest.mark.typst

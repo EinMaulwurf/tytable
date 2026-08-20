@@ -3,10 +3,11 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import colgroup, groupi, groupj, regex, rowgroup, tt
+from tytable import tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
 from tytable._styling import resolve_line_edges
+from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 DF3 = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]})

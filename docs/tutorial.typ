@@ -177,7 +177,7 @@ Structural rows have semantic names:
   [all footer notes; `.style()` only],
 )
 
-Import `groupi`, `rowgroup`, and `groupj` from `tytable` for typed group selectors. `groupi(label="A")` selects every row-group separator registered with that exact label, while `rowgroup(label="A")` selects the source-data rows after each matching separator and before the next separator. Repeated labels all match, and later formatting of the displayed label does not change selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within a selected column-group header row, `j` selects the spanning group cell that covers the chosen source column. Selecting several columns covered by the same group cell still targets that cell only once.
+Import `groupi`, `rowgroup`, and `groupj` from `tytable.selectors` for typed group selectors. `groupi(label="A")` selects every row-group separator registered with that exact label, while `rowgroup(label="A")` selects the source-data rows after each matching separator and before the next separator. Repeated labels all match, and later formatting of the displayed label does not change selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within a selected column-group header row, `j` selects the spanning group cell that covers the chosen source column. Selecting several columns covered by the same group cell still targets that cell only once.
 
 Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and may also contain typed selectors such as `groupi(label="A")` and `rowgroup(label="A")`; `.style()` additionally accepts `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
 
@@ -208,7 +208,7 @@ Polars column selectors, tytable's `regex(pattern)`, and `colgroup(label=..., le
 
 ```python
 import polars.selectors as cs
-from tytable import colgroup, regex
+from tytable.selectors import colgroup, regex
 
 table.fmt(j=cs.numeric(), digits=1)
 table.style(j=cs.starts_with("rev"), bold=True)

@@ -2,8 +2,8 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import colgroup, groupi, groupj, regex, rowgroup
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
+from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 
 @pytest.fixture
