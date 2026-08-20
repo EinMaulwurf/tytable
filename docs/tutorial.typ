@@ -161,6 +161,8 @@ Structural rows have semantic names:
   [the column-name row],
   [`"groupi"`],
   [inserted row-group separator rows],
+  [`groupi(label="A")`],
+  [every row-group separator registered with label `"A"`],
   [`"groupj"`],
   [all spanning column-group header rows],
   [`groupj(level=0)`],
@@ -173,9 +175,9 @@ Structural rows have semantic names:
   [all footer notes; `.style()` only],
 )
 
-Import `groupj` from `tytable` when nested column-group header levels need separate styling. The first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within such a row, `j` selects the spanning group cell covering that source column, so `i=groupj(level=0), j="insurance"` selects a `Financials` header spanning `bank` and `insurance`.
+Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi(label="A")` selects every row-group separator registered with that exact label; repeated labels all match, and later formatting of the displayed label does not change the selection. For nested column-group levels, the first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within such a row, `j` selects the spanning group cell covering that source column, so `i=groupj(level=0), j="insurance"` selects a `Financials` header spanning `bank` and `insurance`.
 
-Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and `.style()` sequences may also contain `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
+Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and may also contain typed selectors such as `groupi(label="A")`; `.style()` additionally accepts `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
 
 Rows may also be selected from their source values:
 
@@ -523,7 +525,7 @@ The delimiter is a literal, non-empty string which must occur in every display c
 
 === Row groups
 
-Row groups insert a #emph[labelled separator row] before a given data row, visually breaking the table into sections. Pass `i` as a `{label: row}` dict where `row` is the 0-based data row the divider should precede. The example calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of the second data row. That separator row is then addressable through the special selector `i="groupi"` — used here to render its label bold on a light grey background.
+Row groups insert a #emph[labelled separator row] before a given data row, visually breaking the table into sections. Pass `i` as a `{label: row}` dict where `row` is the 0-based data row the divider should precede. The example calls `.group(i={"Division B": 1})` to place a "Division B" divider in front of the second data row. All separator rows are addressable through `i="groupi"` or `i=groupi()`, while `i=groupi(label="Division B")` selects every separator registered with that exact label.
 
 A row-group dictionary position may range from `0` (before the first source row) through the source row count (after the last source row); two labels in one dictionary cannot use the same position. A run-length list must contain exactly one non-`None` value per source row. It inserts a label before the first row and whenever the value changes, so repeated non-adjacent values form separate runs. The empty list is valid only for an empty table and creates no groups. An empty dictionary is also a no-op. Group labels may otherwise be any value and are converted to text.
 

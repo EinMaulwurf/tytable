@@ -34,7 +34,7 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style, normalize_padding
-from ._types import NoteDict, _ColumnSelector, _ColumnSelectorSpec, _StyleRowSelector
+from ._types import NoteDict, _ColumnSelector, _ColumnSelectorSpec, _RowSelector, _StyleRowSelector
 
 
 def tt(
@@ -403,9 +403,11 @@ class TyTable:
         i
             Row selector: non-negative integers are 0-based source DataFrame
             positions and ``"data"`` selects every genuine source row.
-            ``"header"`` selects the column-name row, ``"groupi"`` selects
-            row-group separators, and ``"groupj"`` selects every column-group
-            row. ``groupj(level=n)`` selects one nested column-group level,
+            ``"header"`` selects the column-name row, ``"groupi"`` or
+            ``groupi()`` selects every row-group separator, and
+            ``groupi(label="A")`` selects every separator with that exact
+            registered label. ``"groupj"`` selects every column-group row;
+            ``groupj(level=n)`` selects one nested column-group level,
             numbered from the first-created innermost level at zero;
             ``"caption"`` and ``"notes"`` select non-grid metadata;
             ``"all"`` selects the complete displayed grid. Sequences may mix integer
@@ -575,13 +577,7 @@ class TyTable:
 
     def fmt(
         self,
-        i: int
-        | str
-        | Sequence[int | str]
-        | pl.Expr
-        | pl.Series
-        | Callable[[dict], bool]
-        | None = None,
+        i: _RowSelector = None,
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
@@ -730,13 +726,7 @@ class TyTable:
 
     def plot(
         self,
-        i: int
-        | str
-        | Sequence[int | str]
-        | pl.Expr
-        | pl.Series
-        | Callable[[dict], bool]
-        | None = None,
+        i: _RowSelector = None,
         j: _ColumnSelector = None,
         *,
         fun: Callable,
@@ -834,13 +824,7 @@ class TyTable:
 
     def images(
         self,
-        i: int
-        | str
-        | Sequence[int | str]
-        | pl.Expr
-        | pl.Series
-        | Callable[[dict], bool]
-        | None = None,
+        i: _RowSelector = None,
         j: _ColumnSelector = None,
         *,
         paths: Sequence[str],

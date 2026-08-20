@@ -10,7 +10,7 @@ from typing import Literal
 import polars as pl
 import polars.selectors as cs
 
-from tytable._types import _ColumnSelector, _GroupJSelector, _StyleRowSelector
+from tytable._types import _ColumnSelector, _GroupISelector, _GroupJSelector, _StyleRowSelector
 
 _MAX_REGEX_PATTERN_LENGTH = 500
 RowKind = Literal["groupj", "header", "groupi", "data"]
@@ -26,6 +26,7 @@ class RowLayout:
     column_group_levels: int
     has_header: bool
     group_body_rows: frozenset[int]
+    groupi_labels: tuple[str | None, ...]
     source_body_rows: tuple[int, ...]
 
     @classmethod
@@ -38,11 +39,17 @@ class RowLayout:
         column_group_levels: int | None = None,
         has_header: bool,
         group_body_rows: set[int],
+        groupi_labels: Sequence[str] | None = None,
     ) -> RowLayout:
         body_rows = source_rows + len(group_body_rows)
         source_body_rows = tuple(r for r in range(body_rows) if r not in group_body_rows)
         if len(source_body_rows) != source_rows:
             raise ValueError("row-group positions do not describe a valid body layout")
+        resolved_groupi_labels: tuple[str | None, ...] = (
+            (None,) * len(group_body_rows) if groupi_labels is None else tuple(groupi_labels)
+        )
+        if len(resolved_groupi_labels) != len(group_body_rows):
+            raise ValueError("groupi labels must contain one entry per row-group separator")
         resolved_levels = (
             tuple(reversed(range(column_group_rows)))
             if groupj_levels is None
@@ -64,6 +71,7 @@ class RowLayout:
             column_group_levels=total_levels,
             has_header=has_header,
             group_body_rows=frozenset(group_body_rows),
+            groupi_labels=resolved_groupi_labels,
             source_body_rows=source_body_rows,
         )
 
@@ -161,6 +169,19 @@ class RowLayout:
             if level == selector.level
         ]
 
+    def resolve_groupi(self, selector: _GroupISelector) -> list[int]:
+        """Resolve a typed row-group selector against original registered labels."""
+        if selector.label is None:
+            return list(self.groupi_rows)
+        matches = [
+            display_row
+            for display_row, label in zip(self.groupi_rows, self.groupi_labels, strict=True)
+            if label == selector.label
+        ]
+        if not matches:
+            raise ValueError(f"row-group label matched no groups: {selector.label!r}")
+        return matches
+
 
 def resolve_i(
     i: _StyleRowSelector,
@@ -230,6 +251,9 @@ def resolve_i(
     if isinstance(i, _GroupJSelector):
         return layout.resolve_groupj(i)
 
+    if isinstance(i, _GroupISelector):
+        return layout.resolve_groupi(i)
+
     if sequence is not None:
         rows: list[int] = []
         for value in sequence:
@@ -237,6 +261,8 @@ def resolve_i(
                 rows.extend(layout.resolve_string(value))
             elif isinstance(value, _GroupJSelector):
                 rows.extend(layout.resolve_groupj(value))
+            elif isinstance(value, _GroupISelector):
+                rows.extend(layout.resolve_groupi(value))
             elif isinstance(value, int):
                 if isinstance(value, bool):
                     raise TypeError(

@@ -69,6 +69,8 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`i`],
   [`"groupi"`],
   [row-group separator rows],
+  [`groupi(label="A")`],
+  [row-group separators with the exact registered label `"A"`],
   [`i`],
   [`"groupj"`],
   [all column-group header rows],
@@ -98,7 +100,7 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [true body cells in `.style()`, `.fmt()`, or a targeted note],
 )
 
-Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Import `groupj` from `tytable` and use `groupj(level=n)` with `.style()` to select one nested column-group header level. Level 0 is the first-created, innermost level nearest the ordinary column names; every later `.group(j=...)` call creates the next outer level above it. Levels retain these identities when `.show_columns()` removes an empty header level. Lists and tuples may mix `groupj(level=...)` with integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
+Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Import `groupi` and `groupj` from `tytable` for typed structural selectors. `groupi()` selects every row-group separator, while `groupi(label="A")` selects every separator whose original registered label is exactly `"A"`; repeated labels all match, later formatting of the displayed label does not affect selection, and a missing label raises `ValueError`. Use `groupj(level=n)` with `.style()` to select one nested column-group header level. Level 0 is the first-created, innermost level nearest the ordinary column names; every later `.group(j=...)` call creates the next outer level above it. Levels retain these identities when `.show_columns()` removes an empty header level. Lists and tuples may mix typed group selectors with integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
 
 Data-driven `i` forms have a different coordinate system: a Polars expression, boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is evaluated against the original DataFrame. Masks must be Boolean and have exactly one entry per source row; a boolean mask cannot mix booleans with integer selectors. Matching source rows are mapped around inserted row-group separators. Thus use an integer for a stable source-row position, or a predicate/mask when the target depends on source data values. `where` is also evaluated against the original DataFrame; it must return Boolean columns with original source-column names and the source row count. Its true cells are intersected with `i` and `j`, and it cannot target synthetic headers, group rows, captions, or notes.
 

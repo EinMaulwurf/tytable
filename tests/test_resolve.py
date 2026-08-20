@@ -2,7 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import groupj
+from tytable import groupi, groupj
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
 
 
@@ -100,6 +100,22 @@ class TestRowLayout:
         with pytest.raises(ValueError, match="out of range"):
             resolve_i(groupj(level=3), layout=nested)
 
+    def test_groupi_label_resolution_matches_every_registered_label(self):
+        grouped = RowLayout.create(
+            source_rows=3,
+            column_group_rows=0,
+            has_header=True,
+            group_body_rows={0, 2, 4},
+            groupi_labels=["A", "B", "A"],
+        )
+
+        assert resolve_i(groupi(), layout=grouped) == [1, 3, 5]
+        assert resolve_i(groupi(label="A"), layout=grouped) == [1, 5]
+        assert resolve_i([groupi(label="B"), 2], layout=grouped) == [3, 6]
+
+        with pytest.raises(ValueError, match="matched no groups"):
+            resolve_i(groupi(label="missing"), layout=grouped)
+
 
 class TestResolveI:
     def test_default_and_named_selectors(self, layout):
@@ -141,6 +157,11 @@ class TestResolveI:
     def test_groupj_level_must_be_non_negative(self):
         with pytest.raises(ValueError, match="non-negative"):
             groupj(level=-1)
+
+    @pytest.mark.parametrize("label", [True, 1, ["A"]])
+    def test_groupi_label_must_be_a_string(self, label):
+        with pytest.raises(TypeError, match="must be a string"):
+            groupi(label=label)  # type: ignore[arg-type]
 
     @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
     def test_arbitrary_iterables_are_rejected(self, layout, selector):

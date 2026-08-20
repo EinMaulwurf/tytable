@@ -11,7 +11,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from tytable._types import _StyleRowSelector
+from tytable._types import _RowSelector, _StyleRowSelector
 
 if TYPE_CHECKING:
     import polars as pl
@@ -52,7 +52,7 @@ class StyleDirective:
 class FormatDirective:
     """A single ``.fmt()`` call: selectors plus value-formatting transforms."""
 
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    i: _RowSelector
     j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     where: pl.Expr | None = None
     regex: bool = False
@@ -71,7 +71,7 @@ class FormatDirective:
 class PlotDirective:
     """A single ``.plot()`` call."""
 
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    i: _RowSelector
     j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     fun: Callable
     regex: bool = False
@@ -88,7 +88,7 @@ class PlotDirective:
 class ImageDirective:
     """A single ``.images()`` call."""
 
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    i: _RowSelector
     j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     images: list[str]
     regex: bool = False
@@ -118,7 +118,7 @@ class Note:
 
     text: str
     marker: str | None = None
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None = None
+    i: _RowSelector = None
     j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None = None
     where: pl.Expr | None = None
     regex: bool = False

@@ -250,6 +250,7 @@ def _merge_groups(state: _BuildState) -> None:
         column_group_levels=len(state.table._col_group_rows),
         has_header=state.show_colnames,
         group_body_rows=set(row_group_positions),
+        groupi_labels=[row_group_positions[row] for row in sorted(row_group_positions)],
     )
 
 

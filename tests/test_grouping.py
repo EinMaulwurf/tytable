@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import groupj, tt
+from tytable import groupi, groupj, tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
 from tytable._styling import resolve_line_edges
@@ -57,6 +57,32 @@ class TestRowGroups:
         built = build(tt(DF).theme_plain().group(i=("A", "B")), "typst")
         assert built.layout.groupi_rows == (1, 3)
         assert [row[0] for row in built.data_body] == ["A", "1", "B", "3"]
+
+    def test_groupi_label_styles_every_exact_match(self):
+        df = pl.DataFrame({"value": [1, 2, 3]})
+        built = build(
+            tt(df).theme_plain().group(i=["A", "B", "A"]).style(i=groupi(label="A"), bold=True),
+            "typst",
+        )
+
+        assert built.layout.groupi_labels == ("A", "B", "A")
+        assert built.style_grid[(1, 0)]["bold"] is True
+        assert "bold" not in built.style_grid.get((3, 0), {})
+        assert built.style_grid[(5, 0)]["bold"] is True
+
+    def test_groupi_label_uses_registered_label_before_formatting(self):
+        df = pl.DataFrame({"value": [1]})
+        built = build(
+            tt(df)
+            .theme_plain()
+            .group(i={"Original": 0})
+            .fmt(i="groupi", replace={"Original": "Displayed"})
+            .style(i=groupi(label="Original"), italic=True),
+            "typst",
+        )
+
+        assert built.data_body[0][0] == "Displayed"
+        assert built.style_grid[(1, 0)]["italic"] is True
 
 
 @pytest.mark.typst

@@ -20,6 +20,24 @@ class _GroupJSelector:
     level: int | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _GroupISelector:
+    """Select every row-group separator or those with one registered label."""
+
+    label: str | None = None
+
+
+def groupi(*, label: str | None = None) -> _GroupISelector:
+    """Select row-group separator rows, optionally by exact registered label.
+
+    Omitting ``label`` selects every row-group separator, like the ``"groupi"``
+    string selector. When labels repeat, every exact match is selected.
+    """
+    if label is not None and not isinstance(label, str):
+        raise TypeError(f"groupi label must be a string, got {type(label).__name__}")
+    return _GroupISelector(label=label)
+
+
 def groupj(*, level: int | None = None) -> _GroupJSelector:
     """Select column-group header rows, optionally at one nesting level.
 
@@ -36,7 +54,16 @@ def groupj(*, level: int | None = None) -> _GroupJSelector:
     return _GroupJSelector(level=level)
 
 
-_StyleRowSelectorItem: TypeAlias = int | str | _GroupJSelector
+_RowSelectorItem: TypeAlias = int | str | _GroupISelector
+_RowSelector: TypeAlias = (
+    _RowSelectorItem
+    | Sequence[_RowSelectorItem]
+    | pl.Expr
+    | pl.Series
+    | Callable[[dict], bool]
+    | None
+)
+_StyleRowSelectorItem: TypeAlias = _RowSelectorItem | _GroupJSelector
 _StyleRowSelector: TypeAlias = (
     _StyleRowSelectorItem
     | Sequence[_StyleRowSelectorItem]
@@ -58,7 +85,7 @@ class NoteDict(TypedDict, total=False):
 
     text: str
     marker: str | None
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    i: _RowSelector
     j: _ColumnSelector
     where: pl.Expr | None
     regex: bool
