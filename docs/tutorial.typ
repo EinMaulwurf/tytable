@@ -162,7 +162,9 @@ Structural rows have semantic names:
   [`"groupi"`],
   [inserted row-group separator rows],
   [`"groupj"`],
-  [spanning column-group header rows],
+  [all spanning column-group header rows],
+  [`groupj(level=0)`],
+  [the first-created, innermost column-group header level],
   [`"all"`],
   [the complete displayed grid],
   [`"caption"`],
@@ -171,7 +173,9 @@ Structural rows have semantic names:
   [all footer notes; `.style()` only],
 )
 
-Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`. Lists, tuples, and ranges are supported; generators and sets are not.
+Import `groupj` from `tytable` when nested column-group header levels need separate styling. The first `.group(j=...)` call creates level 0 nearest the ordinary column names; later calls add increasing outer levels above it. Within such a row, `j` selects the spanning group cell covering that source column, so `i=groupj(level=0), j="insurance"` selects a `Financials` header spanning `bank` and `insurance`.
+
+Sequences may mix positions and semantic names, such as `i=[0, 2, "header"]`, and `.style()` sequences may also contain `groupj(level=...)`. Lists, tuples, and ranges are supported; generators and sets are not.
 
 Rows may also be selected from their source values:
 

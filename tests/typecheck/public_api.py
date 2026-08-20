@@ -7,7 +7,7 @@ from typing import Any
 import polars as pl
 import polars.selectors as cs
 
-from tytable import tt
+from tytable import groupj, tt
 
 
 def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
@@ -29,6 +29,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.group(j={"Mixed": mixed_columns})
     table.style(j=mixed_selector, bold=True)
     table.style(j=cs.numeric(), bold=True)
+    table.style(i=groupj(level=0), j="a", bold=True)
     table.show_columns(["a", cs.numeric()]).show_columns("b", invert=True)
     table.fmt(j=["a", cs.numeric()], digits=1)
     table.set_name(j=cs.string(), name="Text")

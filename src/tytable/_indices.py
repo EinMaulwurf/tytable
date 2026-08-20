@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
 import polars as pl
 import polars.selectors as cs
 
-from tytable._types import _ColumnSelector
+from tytable._types import _ColumnSelector, _GroupJSelector, _StyleRowSelector
 
 _MAX_REGEX_PATTERN_LENGTH = 500
 RowKind = Literal["groupj", "header", "groupi", "data"]
@@ -22,6 +22,8 @@ class RowLayout:
 
     source_rows: int
     column_group_rows: int
+    groupj_levels: tuple[int, ...]
+    column_group_levels: int
     has_header: bool
     group_body_rows: frozenset[int]
     source_body_rows: tuple[int, ...]
@@ -32,6 +34,8 @@ class RowLayout:
         *,
         source_rows: int,
         column_group_rows: int,
+        groupj_levels: Sequence[int] | None = None,
+        column_group_levels: int | None = None,
         has_header: bool,
         group_body_rows: set[int],
     ) -> RowLayout:
@@ -39,9 +43,25 @@ class RowLayout:
         source_body_rows = tuple(r for r in range(body_rows) if r not in group_body_rows)
         if len(source_body_rows) != source_rows:
             raise ValueError("row-group positions do not describe a valid body layout")
+        resolved_levels = (
+            tuple(reversed(range(column_group_rows)))
+            if groupj_levels is None
+            else tuple(groupj_levels)
+        )
+        if len(resolved_levels) != column_group_rows:
+            raise ValueError("groupj levels must contain one entry per displayed column-group row")
+        total_levels = column_group_rows if column_group_levels is None else column_group_levels
+        if total_levels < column_group_rows:
+            raise ValueError("column-group level count cannot be smaller than its displayed rows")
+        if len(set(resolved_levels)) != len(resolved_levels) or any(
+            level < 0 or level >= total_levels for level in resolved_levels
+        ):
+            raise ValueError("groupj levels must be unique valid semantic level indices")
         return cls(
             source_rows=source_rows,
             column_group_rows=column_group_rows,
+            groupj_levels=resolved_levels,
+            column_group_levels=total_levels,
             has_header=has_header,
             group_body_rows=frozenset(group_body_rows),
             source_body_rows=source_body_rows,
@@ -62,6 +82,12 @@ class RowLayout:
     @property
     def groupj_rows(self) -> tuple[int, ...]:
         return tuple(range(self.column_group_rows))
+
+    def groupj_level(self, display_row: int) -> int:
+        """Return the stable semantic level for a displayed column-group row."""
+        if display_row < 0 or display_row >= self.column_group_rows:
+            raise ValueError(f"display row {display_row} is not a column-group row")
+        return self.groupj_levels[display_row]
 
     @property
     def header_row(self) -> int | None:
@@ -120,9 +146,24 @@ class RowLayout:
             return list(range(self.total_rows))
         raise ValueError(f"unknown row selector: {selector!r}")
 
+    def resolve_groupj(self, selector: _GroupJSelector) -> list[int]:
+        """Resolve a typed column-group selector without renumbering hidden levels."""
+        if selector.level is None:
+            return list(self.groupj_rows)
+        if selector.level >= self.column_group_levels:
+            raise ValueError(
+                f"column-group level {selector.level} is out of range for "
+                f"{self.column_group_levels} level(s)"
+            )
+        return [
+            display_row
+            for display_row, level in enumerate(self.groupj_levels)
+            if level == selector.level
+        ]
+
 
 def resolve_i(
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None,
+    i: _StyleRowSelector,
     *,
     layout: RowLayout,
     data: pl.DataFrame | None = None,
@@ -186,11 +227,16 @@ def resolve_i(
     if isinstance(i, str):
         return layout.resolve_string(i)
 
+    if isinstance(i, _GroupJSelector):
+        return layout.resolve_groupj(i)
+
     if sequence is not None:
         rows: list[int] = []
         for value in sequence:
             if isinstance(value, str):
                 rows.extend(layout.resolve_string(value))
+            elif isinstance(value, _GroupJSelector):
+                rows.extend(layout.resolve_groupj(value))
             elif isinstance(value, int):
                 if isinstance(value, bool):
                     raise TypeError(

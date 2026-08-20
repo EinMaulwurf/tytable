@@ -106,6 +106,7 @@ class _BuildState:
     colnames_display: list[str]
     show_colnames: bool
     col_groups: list[list[str | None]] = field(default_factory=list)
+    col_group_levels: list[int] = field(default_factory=list)
     layout: RowLayout | None = None
     escaped_cells: set[tuple[int, int]] = field(default_factory=set)
     image_cells: set[tuple[int, int]] = field(default_factory=set)
@@ -239,12 +240,14 @@ def _merge_groups(state: _BuildState) -> None:
         state.table._row_groups,
         state.ncols,
     )
-    state.col_groups = _project_col_groups(
+    state.col_groups, state.col_group_levels = _project_col_groups(
         state.table._col_group_rows, state.table._display_columns
     )
     state.layout = RowLayout.create(
         source_rows=state.table._data.height,
         column_group_rows=len(state.col_groups),
+        groupj_levels=state.col_group_levels,
+        column_group_levels=len(state.table._col_group_rows),
         has_header=state.show_colnames,
         group_body_rows=set(row_group_positions),
     )
@@ -339,17 +342,29 @@ def _apply_colspans(style_grid: dict[tuple[int, int], dict[str, Any]], state: _B
         cell["colspan"] = state.ncols
 
 
+def _apply_col_group_spans(
+    style_grid: dict[tuple[int, int], dict[str, Any]], state: _BuildState
+) -> None:
+    """Record rendered column-group spans for coverage and border resolution."""
+    for display_row, row in enumerate(state.col_groups):
+        for _label, start, span in _resolve_col_group_spans(row):
+            if span > 1:
+                style_grid.setdefault((display_row, start), {})["colspan"] = span
+
+
 def _project_col_groups(
     rows: list[list[str | None]], selected: list[int]
-) -> list[list[str | None]]:
+) -> tuple[list[list[str | None]], list[int]]:
     """Project group rows while retaining labels for partially visible spans."""
     if not rows:
-        return []
+        return [], []
+    levels = list(reversed(range(len(rows))))
     if selected == list(range(len(rows[0]))):
-        return [list(row) for row in rows]
+        return [list(row) for row in rows], levels
     projected_rows: list[list[str | None]] = []
+    projected_levels: list[int] = []
     selected_positions = {source: display for display, source in enumerate(selected)}
-    for row in rows:
+    for row, level in zip(rows, levels, strict=True):
         projected: list[str | None] = [None] * len(selected)
         for label, start, span in _resolve_col_group_spans(row):
             if not label:
@@ -366,7 +381,8 @@ def _project_col_groups(
                 projected[display_col] = ""
         if any(value not in (None, "") for value in projected):
             projected_rows.append(projected)
-    return projected_rows
+            projected_levels.append(level)
+    return projected_rows, projected_levels
 
 
 def _project_style_grid(
@@ -473,6 +489,7 @@ def build(
     style_grid, style_lines = _build_style_grid(state)
     style_caption, style_notes = _apply_meta_styles(state)
     style_grid, style_lines = _project_columns(state, style_grid, style_lines)
+    _apply_col_group_spans(style_grid, state)
     _apply_colspans(style_grid, state)
 
     has_background = any("background" in props for props in style_grid.values())

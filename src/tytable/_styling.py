@@ -15,9 +15,11 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from ._colors import _is_color_function, _validate_color_string
+from ._groups import _resolve_col_group_spans
 from ._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
+    from ._directives import StyleDirective
     from ._indices import RowLayout
     from ._tytable import TyTable
 
@@ -303,6 +305,7 @@ def build_style_grid(
     from ._themes import apply_base_theme
 
     apply_base_theme(table, layout, table._data.width, grid, lines)
+    groupj_cells = _groupj_cell_map(table, layout)
 
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
@@ -328,30 +331,93 @@ def build_style_grid(
         alignv_vals = _expand_align(d.alignv, len(j_vals), _ALIGN_V, "alignv")
 
         for i in i_vals:
+            resolved_cells: dict[int, tuple[tuple[int, ...], str | None, str | None]] = {}
             for idx, j in enumerate(j_vals):
                 if where_cells is not None and (i, j) not in where_cells:
                     continue
-                cell = grid.setdefault((i, j), {})
+                target_j = j
+                members: tuple[int, ...] = (j,)
+                if layout.kind(i) == "groupj":
+                    group_cell = groupj_cells.get((i, j))
+                    if group_cell is None:
+                        continue
+                    target_j, members = group_cell
+                align = align_vals[idx] if align_vals is not None else None
+                alignv = alignv_vals[idx] if alignv_vals is not None else None
+                previous = resolved_cells.get(target_j)
+                if previous is not None:
+                    _, previous_align, previous_alignv = previous
+                    if previous_align != align or previous_alignv != alignv:
+                        raise ValueError(
+                            "per-column alignment assigns conflicting values to one "
+                            "column-group header cell"
+                        )
+                    continue
+                resolved_cells[target_j] = (members, align, alignv)
+
+            for target_j, (members, align, alignv) in resolved_cells.items():
+                cell = grid.setdefault((i, target_j), {})
                 # A cell can have only one final value for properties such as
                 # color. Borders remain ordered commands until each renderer
                 # resolves neighboring cell sides onto physical grid edges.
                 cell.update(active_props)
-                if align_vals is not None:
-                    cell["align"] = align_vals[idx]
-                if alignv_vals is not None:
-                    cell["alignv"] = alignv_vals[idx]
+                if align is not None:
+                    cell["align"] = align
+                if alignv is not None:
+                    cell["alignv"] = alignv
                 if has_line:
-                    lines.append(
-                        {
-                            "i": i,
-                            "j": j,
-                            "line": d.line,
-                            "line_style": d.line_style or "solid",
-                            "line_color": d.line_color or "black",
-                            "line_width": d.line_width if d.line_width is not None else 0.1,
-                        }
-                    )
+                    _append_cell_lines(lines, d, i=i, members=members)
     return grid, lines
+
+
+def _groupj_cell_map(
+    table: TyTable, layout: RowLayout
+) -> dict[tuple[int, int], tuple[int, tuple[int, ...]]]:
+    """Map visible source columns to their spanning header cell and visible members."""
+    visible = set(table._display_columns)
+    result: dict[tuple[int, int], tuple[int, tuple[int, ...]]] = {}
+    for display_row in layout.groupj_rows:
+        level = layout.groupj_level(display_row)
+        source_row = table._col_group_rows[-level - 1]
+        for _label, start, span in _resolve_col_group_spans(source_row):
+            members = tuple(col for col in range(start, start + span) if col in visible)
+            if not members:
+                continue
+            target = members[0]
+            for col in members:
+                result[(display_row, col)] = (target, members)
+    return result
+
+
+def _append_cell_lines(
+    lines: list[dict[str, Any]], directive: StyleDirective, *, i: int, members: tuple[int, ...]
+) -> None:
+    """Append borders for one resolved cell, expanding horizontal span edges."""
+    if directive.line is None:
+        return
+    sides_by_column: dict[int, list[str]] = {}
+    for side in directive.line:
+        if side in "tb":
+            targets = members
+        elif side == "l":
+            targets = members[:1]
+        else:
+            targets = members[-1:]
+        for column in targets:
+            sides = sides_by_column.setdefault(column, [])
+            if side not in sides:
+                sides.append(side)
+    for column, sides in sides_by_column.items():
+        lines.append(
+            {
+                "i": i,
+                "j": column,
+                "line": "".join(sides),
+                "line_style": directive.line_style or "solid",
+                "line_color": directive.line_color or "black",
+                "line_width": directive.line_width if directive.line_width is not None else 0.1,
+            }
+        )
 
 
 def build_meta_styles(

@@ -34,7 +34,7 @@ from ._render_html import HtmlRenderer
 from ._render_typst import TypstRenderer, TypstRenderOptions
 from ._renderer import OutputFormat, Renderer
 from ._styling import _validate_style, normalize_padding
-from ._types import NoteDict, _ColumnSelector, _ColumnSelectorSpec
+from ._types import NoteDict, _ColumnSelector, _ColumnSelectorSpec, _StyleRowSelector
 
 
 def tt(
@@ -368,13 +368,7 @@ class TyTable:
 
     def style(
         self,
-        i: int
-        | str
-        | Sequence[int | str]
-        | pl.Expr
-        | pl.Series
-        | Callable[[dict], bool]
-        | None = None,
+        i: _StyleRowSelector = None,
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
@@ -410,7 +404,9 @@ class TyTable:
             Row selector: non-negative integers are 0-based source DataFrame
             positions and ``"data"`` selects every genuine source row.
             ``"header"`` selects the column-name row, ``"groupi"`` selects
-            row-group separators, and ``"groupj"`` selects column-group rows;
+            row-group separators, and ``"groupj"`` selects every column-group
+            row. ``groupj(level=n)`` selects one nested column-group level,
+            numbered from the first-created innermost level at zero;
             ``"caption"`` and ``"notes"`` select non-grid metadata;
             ``"all"`` selects the complete displayed grid. Sequences may mix integer
             and string selectors; for example, ``range(5)`` selects the first five
@@ -426,7 +422,9 @@ class TyTable:
             ``cs.numeric()``, or a sequence of any of these. For example,
             ``range(5)`` selects the first five columns. Display
             labels assigned by :meth:`set_name` are presentation-only and
-            never become selectors. ``None`` means *all* columns.
+            never become selectors. On a column-group header row, a selected
+            source column targets the spanning group cell covering it.
+            ``None`` means *all* columns.
             Set ``regex=True`` to interpret string selectors as regular
             expression patterns matched against original DataFrame names via
             :func:`re.search`.

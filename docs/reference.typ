@@ -71,7 +71,10 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [row-group separator rows],
   [`i`],
   [`"groupj"`],
-  [column-group header rows],
+  [all column-group header rows],
+  [`i`],
+  [`groupj(level=0)`],
+  [one nested column-group header level],
   [`i`],
   [`pl.col("Score") > 80`],
   [Polars expression evaluated on source data],
@@ -95,11 +98,13 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [true body cells in `.style()`, `.fmt()`, or a targeted note],
 )
 
-Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Lists, tuples, and ranges may mix integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
+Non-negative integer `i` values range from zero through the source DataFrame height minus one. Row-group separators never change what an integer selects. `"header"` is empty when column names are hidden, and `"groupj"` is empty when no column-group rows exist. Import `groupj` from `tytable` and use `groupj(level=n)` with `.style()` to select one nested column-group header level. Level 0 is the first-created, innermost level nearest the ordinary column names; every later `.group(j=...)` call creates the next outer level above it. Levels retain these identities when `.show_columns()` removes an empty header level. Lists and tuples may mix `groupj(level=...)` with integer and string row selectors. `.style()` also accepts `i="caption"` and `i="notes"`; these non-grid targets allow only their documented text-oriented properties.
 
 Data-driven `i` forms have a different coordinate system: a Polars expression, boolean list/tuple, boolean `pl.Series`, or `callable(row_dict) -> bool` is evaluated against the original DataFrame. Masks must be Boolean and have exactly one entry per source row; a boolean mask cannot mix booleans with integer selectors. Matching source rows are mapped around inserted row-group separators. Thus use an integer for a stable source-row position, or a predicate/mask when the target depends on source data values. `where` is also evaluated against the original DataFrame; it must return Boolean columns with original source-column names and the source row count. Its true cells are intersected with `i` and `j`, and it cannot target synthetic headers, group rows, captions, or notes.
 
 Integer `j` values range from zero through the column count minus one. Exact string names are case-sensitive and always refer to original DataFrame column names. Polars selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` expand against the original source schema and may appear alone or inside a sequence with names and positions. They work in `.style()`, `.fmt()`, `.plot()`, `.images()`, targeted notes, `.set_name()`, `.show_columns()`, and column-group values; an empty selector is an empty selection, except that a column group must be nonempty and contiguous. Arbitrary Polars expressions are not column selectors. Names assigned by `.set_name()` are display-only and never match a selector unless the same string is independently an original column name. This makes duplicate and empty display labels legal and unambiguous. Directives recorded before and after a rename therefore select the same columns. Sequence selections are deduplicated and resolved into displayed column order, so repeated selectors do not target a cell more than once.
+
+On a column-group header row selected by `"groupj"` or `groupj(level=...)`, `j` selects the spanning header cell covering each chosen visible source column. If `Financials` spans `bank` and `insurance`, either member selects `Financials`, while selecting both styles that cell once. Without a level qualifier, a source column selects its covering group cell at every column-group level. Per-column alignment values that assign conflicting alignments to the same spanning cell are rejected. A member hidden by `.show_columns()` does not select the group cell that survives over another visible member.
 
 If friendly names should become the actual selector names, rename the Polars DataFrame before constructing the table. The renamed schema then supplies both the source identities and the initial display labels:
 
@@ -137,7 +142,7 @@ With `regex=True`, every string element of `j` is a Python `re.search` pattern o
 `width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), `where` (cell-level Polars expression), and `regex` (interpret string column selectors as patterns):
 
 ```python
-from tytable import NoteDict, tt
+from tytable import NoteDict, groupj, tt
 
 significance: NoteDict = {
     "text": "Statistically significant",

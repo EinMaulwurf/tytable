@@ -11,6 +11,8 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
+from tytable._types import _StyleRowSelector
+
 if TYPE_CHECKING:
     import polars as pl
 
@@ -19,7 +21,7 @@ if TYPE_CHECKING:
 class StyleDirective:
     """A single ``.style()`` call: selectors plus the cell properties to apply."""
 
-    i: int | str | Sequence[int | str] | pl.Expr | pl.Series | Callable[[dict], bool] | None
+    i: _StyleRowSelector
     j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
     where: pl.Expr | None = None
     regex: bool = False

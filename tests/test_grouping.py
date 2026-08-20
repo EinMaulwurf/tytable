@@ -3,9 +3,10 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import tt
+from tytable import groupj, tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
+from tytable._styling import resolve_line_edges
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 DF3 = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "c": [7, 8, 9], "d": [10, 11, 12]})
@@ -110,6 +111,110 @@ class TestColumnGroups:
         assert "table.cell(align: center)[Only]" in out
         assert "table.cell(colspan:" not in out
         assert "[Only]" in out
+
+    def test_nested_group_levels_are_numbered_from_innermost(self):
+        table = (
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Inner left": ["a", "b"], "Inner right": ["c", "d"]})
+            .group(j={"Outer": ["a", "b", "c", "d"]})
+            .style(i=groupj(level=0), j="b", color="blue")
+            .style(i=groupj(level=0), j="c", color="red")
+            .style(i=groupj(level=1), bold=True)
+        )
+
+        built = build(table, "html")
+
+        assert built.layout.groupj_levels == (1, 0)
+        assert built.style_grid[(0, 0)]["bold"] is True
+        assert built.style_grid[(1, 0)]["color"] == "blue"
+        assert built.style_grid[(1, 2)]["color"] == "red"
+        assert "color:#0000ff" in table.render("html")
+        assert "color:#ff0000" in table.render("html")
+
+    def test_groupj_string_selects_every_covering_group_cell(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Inner": ["a", "b"]})
+            .group(j={"Outer": ["a", "b", "c"]})
+            .style(i="groupj", j="b", italic=True),
+            "typst",
+        )
+
+        assert built.style_grid[(0, 0)]["italic"] is True
+        assert built.style_grid[(1, 0)]["italic"] is True
+
+    def test_groupj_member_columns_deduplicate_to_the_spanning_cell(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Group": ["a", "b"]})
+            .style(i=groupj(level=0), j=["a", "b"], background="#eeeeee"),
+            "html",
+        )
+
+        assert built.style_grid[(0, 0)]["background"] == "#eeeeee"
+        assert (0, 1) not in built.style_grid
+
+    def test_groupj_rejects_conflicting_alignment_for_one_spanning_cell(self):
+        table = (
+            tt(DF3)
+            .group(j={"Group": ["a", "b"]})
+            .style(i=groupj(level=0), j=["a", "b"], align="lr")
+        )
+
+        with pytest.raises(ValueError, match="conflicting values"):
+            table.render("html")
+
+    def test_groupj_border_covers_the_complete_spanning_cell(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Group": ["a", "b"]})
+            .style(i=groupj(level=0), j="b", line="tblr", line_color="blue"),
+            "typst",
+        )
+
+        edges = resolve_line_edges(built.style_lines)
+        assert {key for key in edges if key[0] == "h"} == {
+            ("h", 0, 0),
+            ("h", 0, 1),
+            ("h", 1, 0),
+            ("h", 1, 1),
+        }
+        assert ("v", 0, 0) in edges
+        assert ("v", 2, 0) in edges
+
+    def test_groupj_levels_keep_their_identity_when_projection_removes_a_level(self):
+        table = (
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Inner": ["a", "b"]})
+            .group(j={"Outer": ["c", "d"]})
+            .style(i=groupj(level=0), bold=True)
+            .style(i=groupj(level=1), italic=True)
+            .show_columns(["a", "b"])
+        )
+
+        built = build(table, "typst")
+
+        assert built.layout.groupj_levels == (0,)
+        assert built.layout.column_group_levels == 2
+        assert built.style_grid[(0, 0)]["bold"] is True
+        assert all("italic" not in props for props in built.style_grid.values())
+
+    def test_groupj_style_on_a_hidden_member_does_not_target_the_surviving_group(self):
+        built = build(
+            tt(DF3)
+            .theme_plain()
+            .group(j={"Group": ["a", "b"]})
+            .style(i=groupj(level=0), j="b", color="blue")
+            .show_columns("a"),
+            "html",
+        )
+
+        assert all("color" not in props for props in built.style_grid.values())
 
 
 @pytest.mark.typst
@@ -281,6 +386,20 @@ class TestDelimiterGrouping:
     def test_delimiter_single_level(self):
         out = tt(DF4).group(delimiter="_").render("typst")
         assert_snapshot("group_delim", out)
+
+    def test_delimiter_levels_are_numbered_from_innermost(self):
+        built = build(
+            tt(DF4)
+            .theme_plain()
+            .group(delimiter="_")
+            .style(i=groupj(level=0), j="Q1_b", color="blue")
+            .style(i=groupj(level=1), j="Q1_b", bold=True),
+            "typst",
+        )
+
+        assert built.layout.groupj_levels == (1, 0)
+        assert built.style_grid[(0, 0)]["bold"] is True
+        assert built.style_grid[(1, 1)]["color"] == "blue"
 
     def test_delimiter_uses_source_names_after_display_rename(self):
         built = build(

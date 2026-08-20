@@ -2,6 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
+from tytable import groupj
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
 
 
@@ -80,6 +81,25 @@ class TestRowLayout:
         with pytest.raises(ValueError, match=r"x cannot target.*'groupj'"):
             layout.require_supported([0, 2], allowed={"data"}, method="x")
 
+    def test_groupj_level_resolution_uses_semantic_levels(self):
+        nested = RowLayout.create(
+            source_rows=1,
+            column_group_rows=2,
+            groupj_levels=[2, 0],
+            column_group_levels=3,
+            has_header=True,
+            group_body_rows=set(),
+        )
+
+        assert resolve_i(groupj(), layout=nested) == [0, 1]
+        assert resolve_i(groupj(level=0), layout=nested) == [1]
+        assert resolve_i(groupj(level=1), layout=nested) == []
+        assert resolve_i(groupj(level=2), layout=nested) == [0]
+        assert resolve_i([groupj(level=0), "header"], layout=nested) == [1, 2]
+
+        with pytest.raises(ValueError, match="out of range"):
+            resolve_i(groupj(level=3), layout=nested)
+
 
 class TestResolveI:
     def test_default_and_named_selectors(self, layout):
@@ -112,6 +132,15 @@ class TestResolveI:
         assert resolve_i(range(0), layout=layout) == []
         with pytest.raises(ValueError, match="position 3 out of range"):
             resolve_i(range(4), layout=layout)
+
+    @pytest.mark.parametrize("value", [True, 1.5, "1"])
+    def test_groupj_level_must_be_an_integer(self, value):
+        with pytest.raises(TypeError, match="must be an integer"):
+            groupj(level=value)  # type: ignore[arg-type]
+
+    def test_groupj_level_must_be_non_negative(self):
+        with pytest.raises(ValueError, match="non-negative"):
+            groupj(level=-1)
 
     @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
     def test_arbitrary_iterables_are_rejected(self, layout, selector):

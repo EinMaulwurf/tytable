@@ -6,7 +6,7 @@ This is a compact reference for coding assistants that need to write `tytable` c
 
 ```python
 import polars as pl
-from tytable import NoteDict, TyTable, tt
+from tytable import NoteDict, TyTable, groupj, tt
 ```
 
 Use `tt(df)` to construct tables. `TyTable` is mainly useful as a type annotation, and `NoteDict` describes targeted notes. Do not import private modules or construct internal directive classes.
@@ -84,12 +84,15 @@ Semantic row names are:
 | omitted, `None`, or `"data"` | all genuine source-data rows |
 | `"header"` | the column-name row |
 | `"groupi"` | inserted row-group separator rows |
-| `"groupj"` | spanning column-group header rows |
+| `"groupj"` or `groupj()` | all spanning column-group header rows |
+| `groupj(level=n)` | one nested column-group header level; level 0 is first-created and innermost |
 | `"all"` | the complete displayed grid |
 | `"caption"` | the caption; supported only by `.style()` |
 | `"notes"` | note text; supported only by `.style()` |
 
-Sequences may mix integer and semantic selectors. Targeted notes put the same selectors in a `NoteDict` passed to `tt(..., notes=[...])`. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
+Import `groupj` from `tytable`. Repeated `.group(j=...)` calls create nested header levels: the first call is level 0 nearest the ordinary column names, and each later call adds the next outer level above it. On a selected group-header level, `j` identifies the spanning cell covering that original source column, so either `j="bank"` or `j="insurance"` selects a `Financials` header spanning those columns. Selecting several member columns styles that header cell once. A hidden member column does not select the surviving group cell, and a level removed entirely by `.show_columns()` remains absent rather than renumbering another level.
+
+Sequences may mix integer and semantic selectors, including `groupj(level=...)`. Targeted notes put the ordinary row selectors in a `NoteDict` passed to `tt(..., notes=[...])`; typed `groupj()` selectors are styling-only. Not every operation supports every structural row: `.style()` supports the full grid plus captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported selections raise an error during rendering.
 
 Rows can also be selected from source values:
 

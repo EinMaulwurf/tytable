@@ -69,7 +69,7 @@ Use `tab.save("products.typ")` instead when the table will be `#include`d in a l
 
 ## Conventions
 
-- **Semantic row selection**: non-negative `i` values are stable 0-based source DataFrame positions, even after row groups are inserted. Omitting `i` (or using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`, `i="groupj"`, or `i="all"` for explicit structural selections. Styling supports every grid row. Formatting and targeted notes support data, row-group, and column-name rows; plots and images support data and row-group rows. Unsupported structural targets raise a clear error when rendered.
+- **Semantic row selection**: non-negative `i` values are stable 0-based source DataFrame positions, even after row groups are inserted. Omitting `i` (or using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`, `i="groupj"`, or `i="all"` for explicit structural selections; `groupj(level=0)` selects the first-created, innermost column-group header level. Styling supports every grid row. Formatting and targeted notes support data, row-group, and column-name rows; plots and images support data and row-group rows. Unsupported structural targets raise a clear error when rendered.
 - **Column selection**: use original DataFrame names (`j="Score"`) or 0-based positions (`j=0`); display names are presentation-only.
 - **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()` methods all return `self`. `.render()`, `.save()`, and `.compile()` are terminal.
 - **Reusable variants**: `.clone()` creates an independently configurable table while cheaply sharing Polars' immutable data buffers.

@@ -15,6 +15,7 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 
 ### Features
 
+- Add `groupj(level=...)` for styling one stable nested column-group header level, with level zero assigned to the first-created innermost level, and make `j` select the spanning group-header cell covering each chosen source column.
 - Add `.show_columns()` for display-only column projection while keeping omitted source columns available to selectors and conditional formatting.
 - Accept Polars column selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` anywhere `j` selects columns.
 - Add reusable number, currency, percentage, date, duration, and unit formatters with German and English separator presets, available as direct imports from `tytable.formatters`.

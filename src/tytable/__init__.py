@@ -1,11 +1,11 @@
 """Public exports for :mod:`tytable`.
 
 The public API consists of the :func:`tt` factory, :class:`TyTable`, reusable
-``formatters``, and note typing helpers.
+``formatters``, structural selectors, and note typing helpers.
 """
 
 from . import formatters
-from ._types import NoteDict
+from ._types import NoteDict, groupj
 from ._tytable import TyTable, tt
 
 try:
@@ -18,4 +18,4 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "0.0.0"
 
-__all__ = ["tt", "TyTable", "NoteDict", "formatters"]
+__all__ = ["tt", "TyTable", "NoteDict", "formatters", "groupj"]
