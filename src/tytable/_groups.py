@@ -15,7 +15,7 @@ import polars.selectors as cs
 
 from ._directives import RowGroup
 from ._indices import resolve_j
-from ._types import _ColumnSelectorSpec
+from ._types import _ColumnSelectorSpec, _RegexSelector
 
 if TYPE_CHECKING:
     from ._tytable import TyTable
@@ -23,17 +23,18 @@ if TYPE_CHECKING:
 
 def _resolve_cols(col_spec: _ColumnSelectorSpec, data: pl.DataFrame) -> list[int]:
     """Translate a list of column names/positions into 0-based integer indices."""
-    if cs.is_selector(col_spec):
+    if cs.is_selector(col_spec) or isinstance(col_spec, _RegexSelector):
         return resolve_j(col_spec, data)
     if isinstance(col_spec, (str, bytes)) or not isinstance(col_spec, Sequence):
         raise TypeError(
-            f"column spec must be a sequence or Polars selector, got {type(col_spec).__name__}"
+            "column spec must be a sequence, regex selector, or Polars selector, "
+            f"got {type(col_spec).__name__}"
         )
 
     colnames = data.columns
     indices = []
     for c in col_spec:
-        if cs.is_selector(c):
+        if cs.is_selector(c) or isinstance(c, _RegexSelector):
             indices.extend(resolve_j(c, data))
         elif isinstance(c, str):
             try:
@@ -50,7 +51,8 @@ def _resolve_cols(col_spec: _ColumnSelectorSpec, data: pl.DataFrame) -> list[int
             indices.append(c)
         else:
             raise TypeError(
-                f"column spec must be str, int, or Polars selector, got {type(c).__name__}"
+                "column spec must be str, int, regex selector, or Polars selector, "
+                f"got {type(c).__name__}"
             )
     return indices
 

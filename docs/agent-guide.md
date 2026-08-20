@@ -115,16 +115,19 @@ table.style(j=["Revenue", "Cost"], align="r")
 table.style(j=0, bold=True)  # positions are supported but less readable
 ```
 
-Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names, integer positions, and Polars selectors. Selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, and `cs.by_dtype(...)` expand against the original DataFrame schema and work anywhere `j` selects columns, including `.set_name()` and column-group values. Empty selectors are no-ops except in column groups, which must be nonempty and contiguous. With `regex=True`, string selectors use Python `re.search` against original column names; targeted notes accept the same `regex` key:
+Omitting `j` selects every column. Names are case-sensitive. A sequence may contain names, integer positions, `regex(pattern)`, and Polars selectors. All resolve against the original DataFrame schema and work anywhere `j` selects columns, including `.set_name()`, `.show_columns()`, targeted notes, and column-group values. `regex(pattern)` uses Python `re.search`, limits patterns to 500 characters, and raises `ValueError` for an invalid pattern or no matches. Polars selectors such as `cs.numeric()`, `cs.string()`, `cs.starts_with(...)`, `cs.by_dtype(...)`, and `cs.matches(...)` produce an empty selection when nothing matches; column groups still require a nonempty contiguous result.
 
 ```python
 import polars.selectors as cs
+from tytable import regex
 
-table.fmt(j=r"^(Revenue|Cost)$", regex=True, digits=0)
+table.fmt(j=regex(r"^(Revenue|Cost)$"), digits=0)
+table.style(j=["Total", regex(r"^Q")], bold=True)
 table.fmt(j=cs.numeric(), digits=2)
+table.show_columns(cs.matches(r"^(Revenue|Cost)$"))
 ```
 
-Use `.show_columns(j, invert=False)` to choose which source columns are rendered without modifying the DataFrame. It accepts the same names, positions, Polars selectors, and mixed sequences as other `j` arguments, always preserves source-column order, and replaces any previous display projection. With `invert=True`, the selected columns are omitted. Hidden columns remain available to row expressions, `where`, and other directives:
+Use `.show_columns(j, invert=False)` to choose which source columns are rendered without modifying the DataFrame. It accepts the same names, positions, regex selectors, Polars selectors, and mixed sequences as other `j` arguments, always preserves source-column order, and replaces any previous display projection. With `invert=True`, the selected columns are omitted. Hidden columns remain available to row expressions, `where`, and other directives:
 
 ```python
 table = (
@@ -306,7 +309,7 @@ table.set_name(name={"annual_revenue_usd": "Revenue", "annual_cost_usd": "Cost"}
 
 ## Notes, layout, and output
 
-Plain strings create untargeted notes. A `NoteDict` can attach a marker to cells selected by `i`, `j`, `where`, and `regex` using the same semantics as `.fmt()` and `.style()`:
+Plain strings create untargeted notes. A `NoteDict` can attach a marker to cells selected by `i`, `j`, and `where` using the same semantics as `.fmt()` and `.style()`; put `regex(pattern)` directly in `j` when needed:
 
 ```python
 note: NoteDict = {

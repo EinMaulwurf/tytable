@@ -202,25 +202,29 @@ table.style(j=["Name", "Score"], bold=True)
 table.style(j=range(2), bold=True)
 ```
 
-Polars column selectors work anywhere `j` selects columns. They use the original DataFrame schema, so dtype and name-based selections can be composed with Polars' selector vocabulary:
+Polars column selectors and tytable's `regex(pattern)` work anywhere `j` selects columns. They use the original DataFrame schema, so dtype and name-based selections can be composed:
 
 ```python
 import polars.selectors as cs
+from tytable import regex
 
 table.fmt(j=cs.numeric(), digits=1)
 table.style(j=cs.starts_with("rev"), bold=True)
 table.set_name(j=cs.string(), name="Label")
 table.group(j={"Measures": cs.by_dtype(pl.Int64, pl.Float64)})
+table.show_columns(regex(r"^Q[1-4]$"))
 ```
 
-A selector that matches no columns produces an empty selection. Column groups must still select a nonempty contiguous span. Polars selectors belong to `j`; use a one-column Boolean Polars expression for data-driven `i`, reducing multi-column conditions with `pl.any_horizontal` or `pl.all_horizontal`.
+A Polars selector that matches no columns produces an empty selection. Column groups must still select a nonempty contiguous span. Polars selectors belong to `j`; use a one-column Boolean Polars expression for data-driven `i`, reducing multi-column conditions with `pl.any_horizontal` or `pl.all_horizontal`.
 
-With `regex=True`, strings are regular expressions matched against the original column names using Python's `re.search`. This works in a `NoteDict` as well as in method calls:
+`regex(pattern)` matches original column names using Python's `re.search`, limits patterns to 500 characters, and raises `ValueError` for invalid patterns or no matches. It composes with exact names and other selectors, and works in a `NoteDict` as well as in method calls:
 
 ```python
-table.fmt(j=r"^Q[1-4]$", regex=True, digits=1)
-quarter_note = NoteDict(text="Quarterly value", j=r"^Q[1-4]$", regex=True)
+table.fmt(j=["Total", regex(r"^Q[1-4]$")], digits=1)
+quarter_note = NoteDict(text="Quarterly value", j=regex(r"^Q[1-4]$"))
 ```
+
+Polars also provides `cs.matches(pattern)` using its own regex engine. It follows the normal Polars selector behavior and returns an empty selection when nothing matches, which is useful when an optional set of columns is expected.
 
 Names assigned by `.set_name()` are display labels, not selectors. Continue to use the original DataFrame name after renaming a header.
 
@@ -294,7 +298,7 @@ The middle-right panel highlights four cells because `i` selects two rows and `j
 
 Three calling modes:
 
-- *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`. `j` follows the #link(<selectors>)[column selector rules] (name, integer position, a list, or a regex with `regex=True`). `name` is a single `str` (applied to every matched column) or a `list[str]` with one entry per match.
+- *Per-column*: `.set_name(j, name=...)` renames the column(s) selected by `j`. `j` follows the #link(<selectors>)[column selector rules] (name, integer position, `regex(pattern)`, a Polars selector, or a mixed list). `name` is a single `str` (applied to every matched column) or a `list[str]` with one entry per match.
 - *Full-list replace*: `.set_name(name=[...])` (omit `j`) replaces every column header at once — the list length must equal the column count.
 - *Mapping*: `.set_name(name={source: display, ...})` renames any subset using exact original DataFrame column names as keys.
 
@@ -309,7 +313,7 @@ Because #link(<selectors>)[selectors keep using source-column names], display la
 
 == Choosing displayed columns
 
-Use `.show_columns(j, invert=False)` for a display-only column projection. It accepts the same names, integer positions, Polars selectors, and mixed sequences as other `j` arguments. Selected columns keep their original DataFrame order; use Polars before `tt()` when the data itself needs rearranging. With `invert=True`, the selection is omitted instead. A later call replaces the previous display projection.
+Use `.show_columns(j, invert=False)` for a display-only column projection. It accepts the same names, integer positions, regex selectors, Polars selectors, and mixed sequences as other `j` arguments. Selected columns keep their original DataFrame order; use Polars before `tt()` when the data itself needs rearranging. With `invert=True`, the selection is omitted instead. A later call replaces the previous display projection.
 
 Hidden columns remain part of the original typed DataFrame, so they can still drive row expressions, `where`, formatting, and other directives. This makes a helper column available for conditional presentation without including it in the rendered table:
 
@@ -500,7 +504,7 @@ The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`, `mo
 
 === Target notes to cells <target-notes>
 
-A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i`, `j`, `where`, and `regex` follow the #link(<selectors>)[same selector rules as `.fmt()` and `.style()`]. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
+A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i`, `j`, and `where` follow the #link(<selectors>)[same selector rules as `.fmt()` and `.style()`]; use `regex(pattern)` directly as `j` when matching column names. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
 
 If no `marker` is supplied, targeted notes receive superscript numbers in note order. Set `marker` explicitly for a symbol or label such as `"*"`; the same marker appears at every selected cell and beside the footer text. With `i` and `j`, omitting either axis selects its complete data region; when both selectors contain several entries, tytable uses their normal cross-product, not pairwise row/column coordinates. Use `where` for cell-by-cell selection; in the example, `cs.numeric() > 130` marks only numeric cells whose own value exceeds 130.
 

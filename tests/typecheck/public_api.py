@@ -7,7 +7,7 @@ from typing import Any
 import polars as pl
 import polars.selectors as cs
 
-from tytable import groupi, groupj, tt
+from tytable import groupi, groupj, regex, tt
 
 
 def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
@@ -32,6 +32,9 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.style(i=groupj(level=0), j="a", bold=True)
     table.style(i=groupi(label="First"), bold=True)
     table.fmt(i=groupi(label="First"), replace=True)
+    table.style(j=["a", regex("^b")], bold=True)
+    table.show_columns(regex("^a"))
+    table.group(j={"Matched": regex("^a")})
     table.show_columns(["a", cs.numeric()]).show_columns("b", invert=True)
     table.fmt(j=["a", cs.numeric()], digits=1)
     table.set_name(j=cs.string(), name="Text")

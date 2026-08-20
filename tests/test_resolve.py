@@ -2,7 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import groupi, groupj
+from tytable import groupi, groupj, regex
 from tytable._indices import RowLayout, resolve_i, resolve_j, resolve_where
 
 
@@ -255,8 +255,8 @@ class TestResolveJ:
             resolve_j(selector, self.DF)
 
     def test_regex(self):
-        assert resolve_j("a", self.DF, regex=True) == [2, 3]
-        assert resolve_j(["A", "am"], self.DF, regex=True) == [0, 2]
+        assert resolve_j(regex("a"), self.DF) == [2, 3]
+        assert resolve_j(["A", regex("am")], self.DF) == [0, 2]
 
     @pytest.mark.parametrize("selector", [-1, 4, True, ["A", True], [object()]])
     def test_invalid_selector(self, selector):
@@ -267,11 +267,15 @@ class TestResolveJ:
         with pytest.raises(ValueError, match="column not found"):
             resolve_j("missing", self.DF)
         with pytest.raises(ValueError, match="matched no columns"):
-            resolve_j("missing", self.DF, regex=True)
+            resolve_j(regex("missing"), self.DF)
         with pytest.raises(ValueError, match="invalid regex"):
-            resolve_j("[", self.DF, regex=True)
+            resolve_j(regex("["), self.DF)
         with pytest.raises(ValueError, match="maximum 500"):
-            resolve_j("a" * 501, self.DF, regex=True)
+            resolve_j(regex("a" * 501), self.DF)
+
+    def test_regex_pattern_must_be_a_string(self):
+        with pytest.raises(TypeError, match="must be a string"):
+            regex(1)  # type: ignore[arg-type]
 
 
 class TestResolveWhere:

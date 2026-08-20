@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import tt
+from tytable import regex, tt
 from tytable._resolve import build
 
 
@@ -35,7 +35,7 @@ class TestSetNamePerColumn:
     def test_rename_by_regex(self):
         df = pl.DataFrame({"col_a": [1], "col_b": [2], "other": [3]})
         t = tt(df).theme_plain()
-        t.set_name(j="col_", regex=True, name="matched")
+        t.set_name(j=regex("col_"), name="matched")
         assert t._colnames_display == ["matched", "matched", "other"]
 
     def test_single_str_applies_to_all_matched(self):
@@ -181,7 +181,7 @@ class TestSetNameSelectorSemantics:
     def test_regex_searches_source_names_after_rename(self):
         df = pl.DataFrame({"revenue_q1": [1], "cost_q1": [2]})
         built = build(
-            tt(df).theme_plain().set_name(name=["", ""]).style(j="^revenue", regex=True, bold=True),
+            tt(df).theme_plain().set_name(name=["", ""]).style(j=regex("^revenue"), bold=True),
             "typst",
         )
         assert built.style_grid[(1, 0)]["bold"] is True
@@ -297,8 +297,3 @@ class TestSetNameMapping:
         t = tt(pl.DataFrame({"x": [1]})).theme_plain()
         with pytest.raises(ValueError, match="cannot be combined with j"):
             t.set_name(j="x", name={"x": "X"})
-
-    def test_mapping_rejects_regex(self):
-        t = tt(pl.DataFrame({"x": [1]})).theme_plain()
-        with pytest.raises(ValueError, match="cannot be combined with regex=True"):
-            t.set_name(regex=True, name={"x": "X"})

@@ -81,7 +81,7 @@ def tt(
     notes
         Sequence of footnotes. Each entry may be a plain ``str`` (untargeted
         note) or a :class:`~tytable.NoteDict` with ``text``, ``marker``, ``i``,
-        ``j``, ``where``, and ``regex`` keys. Note selectors behave like the
+        ``j``, and ``where`` keys. Note selectors behave like the
         corresponding :meth:`TyTable.fmt` selectors. Notes attached to cells
         get auto-numbered superscript markers. Targeted notes support data
         rows, row-group rows, and the column-name header.
@@ -169,6 +169,10 @@ def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
         if isinstance(item, Note):
             result.append(item)
         elif isinstance(item, dict):
+            if "regex" in item:
+                raise TypeError(
+                    "NoteDict does not accept a 'regex' key; use j=regex(pattern) instead"
+                )
             result.append(
                 Note(
                     text=item.get("text", ""),
@@ -176,7 +180,6 @@ def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
                     i=item.get("i"),
                     j=item.get("j"),
                     where=item.get("where"),
-                    regex=item.get("regex", False),
                 )
             )
         elif isinstance(item, str):
@@ -332,9 +335,9 @@ class TyTable:
         self._typst_opts.row_gutter = row_gutter
         self._theme: _themes.BaseTheme = "default"
 
-    def _resolve_j(self, j: _ColumnSelector, *, regex: bool = False) -> list[int]:
+    def _resolve_j(self, j: _ColumnSelector) -> list[int]:
         """Resolve a column selector against stable source-column names."""
-        return resolve_j(j, self._data, regex=regex)
+        return resolve_j(j, self._data)
 
     def show_columns(self, j: _ColumnSelectorSpec, *, invert: bool = False) -> TyTable:
         """Choose which source columns are included in the rendered table.
@@ -342,8 +345,8 @@ class TyTable:
         This is a display-only projection: it does not modify the underlying
         DataFrame, and omitted columns remain available to selectors and
         conditional formatting. ``j`` accepts names, integer source positions,
-        Polars column selectors, or a sequence mixing these forms. Displayed
-        columns always retain their original source order.
+        ``regex(pattern)``, Polars column selectors, or a sequence mixing these
+        forms. Displayed columns always retain their original source order.
 
         Parameters
         ----------
@@ -372,7 +375,6 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
-        regex: bool = False,
         bold: bool | None = None,
         italic: bool | None = None,
         underline: bool | None = None,
@@ -426,10 +428,8 @@ class TyTable:
             labels assigned by :meth:`set_name` are presentation-only and
             never become selectors. On a column-group header row, a selected
             source column targets the spanning group cell covering it.
-            ``None`` means *all* columns.
-            Set ``regex=True`` to interpret string selectors as regular
-            expression patterns matched against original DataFrame names via
-            :func:`re.search`.
+            ``None`` means *all* columns. Use ``regex(pattern)`` for Python
+            regular-expression matching against original DataFrame names.
         where
             Polars expression selecting individual body cells. Each boolean
             output column is matched to the source column with the same name;
@@ -438,10 +438,6 @@ class TyTable:
             row/column cross-product behavior. Expressions are evaluated
             against the original DataFrame and cannot target headers, group
             labels, captions, or notes.
-        regex
-            When ``True``, string ``j`` selectors (including elements of a
-            list) are treated as :func:`re.search` patterns instead of exact
-            column names.
         bold, italic, underline, strikeout, monospace, smallcaps
             Boolean text decorations.
         color
@@ -549,7 +545,6 @@ class TyTable:
                 i=i,
                 j=j,
                 where=where,
-                regex=regex,
                 bold=bold,
                 italic=italic,
                 underline=underline,
@@ -581,7 +576,6 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
-        regex: bool = False,
         digits: int | None = None,
         num_fmt: str = "decimal",
         replace: dict | str | bool | None = None,
@@ -710,7 +704,6 @@ class TyTable:
                 i=i,
                 j=j,
                 where=where,
-                regex=regex,
                 digits=digits,
                 num_fmt=num_fmt,
                 replace=replace,
@@ -730,7 +723,6 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         fun: Callable,
-        regex: bool = False,
         data: Sequence[Any] | None = None,
         height: float | str = 1.0,
         height_px: int = 400,
@@ -808,7 +800,6 @@ class TyTable:
         directive = PlotDirective(
             i=i,
             j=j,
-            regex=regex,
             fun=fun,
             data=list(data) if data is not None else None,
             color=color,
@@ -828,7 +819,6 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         paths: Sequence[str],
-        regex: bool = False,
         height: float | str = 1.0,
         output: tuple[str, ...] | None = None,
     ) -> TyTable:
@@ -875,7 +865,6 @@ class TyTable:
         directive = ImageDirective(
             i=i,
             j=j,
-            regex=regex,
             images=list(paths),
             height=height,
             output=output,
@@ -951,7 +940,6 @@ class TyTable:
         self,
         j: _ColumnSelector = None,
         *,
-        regex: bool = False,
         name: str | Sequence[str] | Mapping[str, str],
     ) -> TyTable:
         """
@@ -968,7 +956,7 @@ class TyTable:
         - **Per-column**: ``.set_name(j, name=...)`` renames the column(s)
           selected by ``j``. ``j`` follows the same selector rules as
           :meth:`style` / :meth:`fmt` (name, integer position, Polars selector,
-          or a list of these). ``regex=True`` enables regex patterns.
+          or a list of these, including ``regex(pattern)`` selectors).
           ``name`` is a single ``str`` (applied to every
           matched column, so duplicates are possible) or a ``list[str]`` with
           one entry per matched column.
@@ -1007,7 +995,7 @@ class TyTable:
         ValueError
             If ``j`` is missing for a scalar name, a selected column is not
             found, the number of names does not match the selected columns, or
-            mapping mode is combined with ``j`` or ``regex=True``.
+            mapping mode is combined with ``j``.
 
         Examples
         --------
@@ -1032,8 +1020,6 @@ class TyTable:
         if isinstance(name, Mapping):
             if j is not None:
                 raise ValueError("set_name() mapping mode cannot be combined with j")
-            if regex:
-                raise ValueError("set_name() mapping mode cannot be combined with regex=True")
             items = list(name.items())
             if not all(
                 isinstance(source, str) and isinstance(display, str) for source, display in items
@@ -1050,7 +1036,7 @@ class TyTable:
                     "set_name(name=str) requires a column selector j; "
                     "pass a list to replace all column names."
                 )
-            idxs = self._resolve_j(j, regex=regex)
+            idxs = self._resolve_j(j)
             for k in idxs:
                 self._colnames_display[k] = name
             return self
@@ -1072,7 +1058,7 @@ class TyTable:
             self._colnames_display = names
             return self
 
-        idxs = self._resolve_j(j, regex=regex)
+        idxs = self._resolve_j(j)
         if len(names) != len(idxs):
             raise ValueError(
                 f"set_name() got {len(names)} name(s) for {len(idxs)} selected column(s)"

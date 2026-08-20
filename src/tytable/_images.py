@@ -318,7 +318,7 @@ def execute_plots(
         )
         method = ".images()" if isinstance(d, ImageDirective) else ".plot()"
         layout.require_supported(i_vals, allowed={"groupi", "data"}, method=method)
-        j_vals = table._resolve_j(d.j, regex=d.regex)
+        j_vals = table._resolve_j(d.j)
 
         target_cells = [(i, layout.body_index(i), j) for i in i_vals for j in j_vals]
         supplied = d.images if isinstance(d, ImageDirective) else d.data

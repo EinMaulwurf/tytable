@@ -2,7 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
-from tytable import tt
+from tytable import regex, tt
 from tytable._resolve import build
 
 
@@ -20,6 +20,14 @@ def test_show_columns_accepts_mixed_selectors_in_source_order():
 
     assert built.colnames_display == ["name", "score", "rank"]
     assert built.data_body == [["Ada", "2.5", "1"], ["Lin", "3.5", "2"]]
+
+
+def test_show_columns_accepts_regex_selector():
+    df = pl.DataFrame({"Q1": [1], "Q2": [2], "Total": [3]})
+
+    built = build(tt(df).show_columns(regex(r"^Q")), "ascii")
+
+    assert built.colnames_display == ["Q1", "Q2"]
 
 
 def test_show_columns_invert_hides_the_combined_selection():

@@ -319,7 +319,7 @@ def build_style_grid(
             layout=layout,
             data=table._data,
         )
-        j_vals = table._resolve_j(d.j, regex=d.regex)
+        j_vals = table._resolve_j(d.j)
         where_cells = (
             resolve_where(d.where, data=table._data, layout=layout) if d.where is not None else None
         )
@@ -450,8 +450,6 @@ def build_meta_styles(
             raise ValueError(f"where cannot be used with the {d.i!r} selector")
         if d.j is not None:
             raise ValueError(f"j cannot be used with the {d.i!r} selector")
-        if d.regex:
-            raise ValueError(f"regex cannot be used with the {d.i!r} selector")
         if d.line is not None or d.line_style is not None or d.line_color is not None:
             raise ValueError(f"line styling cannot be used with the {d.i!r} selector")
         if d.colspan is not None or d.rowspan is not None:

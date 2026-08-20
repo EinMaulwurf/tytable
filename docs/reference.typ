@@ -51,7 +51,7 @@ Start here when you know the task but not the method. Methods marked *chainable*
 
 === Authoritative selector reference
 
-`.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries share `i`, `j`, and `regex`; `.style()`, `.fmt()`, and targeted notes additionally accept the cell-level `where` selector. `.set_name()` shares `j` and `regex`. Omitting `i` selects every genuine source-data row for method calls; in a note, at least one of `i`, `j`, or `where` makes it targeted, and an omitted axis covers the corresponding data region. With `j=None`, every column is selected (`.plot()` and `.images()` require an explicit `j`; `.set_name()` instead accepts a full-list replacement or a source-to-display mapping).
+`.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries share `i` and `j`; `.style()`, `.fmt()`, and targeted notes additionally accept the cell-level `where` selector. `.set_name()` and `.show_columns()` share `j`. Omitting `i` selects every genuine source-data row for method calls; in a note, at least one of `i`, `j`, or `where` makes it targeted, and an omitted axis covers the corresponding data region. With `j=None`, every column is selected (`.plot()` and `.images()` require an explicit `j`; `.set_name()` instead accepts a full-list replacement or a source-to-display mapping).
 
 #docs-table(
   columns: (0.8fr, 1.45fr, 2.75fr),
@@ -95,6 +95,9 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`j`],
   [`cs.numeric()`, `cs.starts_with("rev")`],
   [columns selected from the original Polars schema],
+  [`j`],
+  [`regex(r"^Q\d+$")`],
+  [columns matched by a fail-loud Python regular expression],
   [`where`],
   [`cs.numeric() > 100`],
   [true body cells in `.style()`, `.fmt()`, or a targeted note],
@@ -115,7 +118,7 @@ df = df.rename({"annual_revenue_usd": "Revenue"})
 table = tt(df).fmt(j="Revenue", digits=0)
 ```
 
-With `regex=True`, every string element of `j` is a Python `re.search` pattern over original DataFrame column names, not display labels or a full match. Each pattern is limited to 500 characters and must match at least one column; invalid patterns and no-match patterns raise `ValueError`. Matches from a regex list are de-duplicated in first-match order. Integer elements keep their normal meaning. Regex applies only to `j`, not `i` or `where`.
+Import `regex` from `tytable` and use `regex(pattern)` for Python `re.search` matching over original DataFrame column names, not display labels or a full match. Each pattern is limited to 500 characters and must match at least one column; invalid patterns and no-match patterns raise `ValueError`. A sequence may freely mix exact names, positions, regex selectors, and Polars selectors, and its result is de-duplicated into source-column order. Polars also provides `cs.matches(pattern)` using its own regex engine; like other Polars selectors, it produces an empty selection when nothing matches. Regex selectors apply only to `j`, not `i` or `where`.
 
 === Creating a table
 
@@ -141,10 +144,10 @@ With `regex=True`, every string element of `j` is a Python `re.search` pattern o
   [global safe-markup policy],
 )
 
-`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), `where` (cell-level Polars expression), and `regex` (interpret string column selectors as patterns):
+`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
 
 ```python
-from tytable import NoteDict, groupj, tt
+from tytable import NoteDict, tt
 
 significance: NoteDict = {
     "text": "Statistically significant",
@@ -207,7 +210,7 @@ With `j`, `name` is one display name or a list matching the selected columns. Wi
 
 #api("Choose displayed columns", api_signatures.at("show_columns"))
 
-Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, groups, spans, styles, notes, and media are projected with the displayed columns for every renderer.
+Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, regex selectors, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, groups, spans, styles, notes, and media are projected with the displayed columns for every renderer.
 
 #api("Use default appearance", api_signatures.at("theme_default"))
 

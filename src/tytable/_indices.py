@@ -10,7 +10,13 @@ from typing import Literal
 import polars as pl
 import polars.selectors as cs
 
-from tytable._types import _ColumnSelector, _GroupISelector, _GroupJSelector, _StyleRowSelector
+from tytable._types import (
+    _ColumnSelector,
+    _GroupISelector,
+    _GroupJSelector,
+    _RegexSelector,
+    _StyleRowSelector,
+)
 
 _MAX_REGEX_PATTERN_LENGTH = 500
 RowKind = Literal["groupj", "header", "groupi", "data"]
@@ -295,8 +301,6 @@ def _validate_source_row(row: int, source_rows: int) -> None:
 def resolve_j(
     j: _ColumnSelector,
     data: pl.DataFrame,
-    *,
-    regex: bool = False,
 ) -> list[int]:
     """Resolve a public column selector to zero-based column indices."""
     colnames = data.columns
@@ -307,23 +311,24 @@ def resolve_j(
     if isinstance(j, Sequence) and not isinstance(j, (str, bytes, bytearray)):
         result: list[int] = []
         for value in j:
-            resolved = _resolve_single_j(value, data, regex=regex)
+            resolved = _resolve_single_j(value, data)
             for idx in resolved:
                 if idx not in result:
                     result.append(idx)
         return sorted(result)
-    if isinstance(j, (int, str)):
-        return _resolve_single_j(j, data, regex=regex)
+    if isinstance(j, (int, str, _RegexSelector)):
+        return _resolve_single_j(j, data)
     raise TypeError(f"bad column selector: {j!r}")
 
 
-def _resolve_single_j(value: object, data: pl.DataFrame, *, regex: bool) -> list[int]:
+def _resolve_single_j(value: object, data: pl.DataFrame) -> list[int]:
     colnames = data.columns
     if cs.is_selector(value):
         return _resolve_selector_j(value, data)
     if isinstance(value, bool):
         raise TypeError(
-            "column selector elements must be integers, strings, or Polars selectors, got bool"
+            "column selector elements must be integers, strings, regex selectors, or Polars "
+            "selectors, got bool"
         )
     if isinstance(value, int):
         if value < 0 or value >= len(colnames):
@@ -331,15 +336,15 @@ def _resolve_single_j(value: object, data: pl.DataFrame, *, regex: bool) -> list
                 f"column selector position {value} out of range for {len(colnames)} column(s)"
             )
         return [value]
+    if isinstance(value, _RegexSelector):
+        return _resolve_regex(value.pattern, colnames)
     if isinstance(value, str):
-        if regex:
-            return _resolve_regex(value, colnames)
         if value in colnames:
             return [colnames.index(value)]
         raise ValueError(f"column not found: {value!r}")
     raise TypeError(
-        "column selector elements must be integers, strings, or Polars selectors, "
-        f"got {type(value).__name__}"
+        "column selector elements must be integers, strings, regex selectors, or Polars "
+        f"selectors, got {type(value).__name__}"
     )
 
 

@@ -79,6 +79,7 @@ def test_public_table_class_is_tytable():
     assert "TyTable" in tytable.__all__
     assert "groupi" in tytable.__all__
     assert "groupj" in tytable.__all__
+    assert "regex" in tytable.__all__
     assert "TinyTable" not in tytable.__all__
     assert not hasattr(tytable, "TinyTable")
 
@@ -125,6 +126,11 @@ def test_style_api_excludes_inert_line_trim():
     assert "line_trim" not in inspect.signature(TyTable.style).parameters
 
 
+@pytest.mark.parametrize("method", ["style", "fmt", "plot", "images", "set_name"])
+def test_column_selector_apis_exclude_regex_flag(method):
+    assert "regex" not in inspect.signature(getattr(TyTable, method)).parameters
+
+
 def test_note_dict_is_public_and_describes_note_keys():
     note = NoteDict(
         text="Source",
@@ -132,12 +138,16 @@ def test_note_dict_is_public_and_describes_note_keys():
         i=0,
         j="A",
         where=pl.col("A") > 0,
-        regex=False,
     )
 
     assert "NoteDict" in tytable.__all__
-    assert set(NoteDict.__annotations__) == {"text", "marker", "i", "j", "where", "regex"}
+    assert set(NoteDict.__annotations__) == {"text", "marker", "i", "j", "where"}
     assert note["text"] == "Source"
+
+
+def test_targeted_note_rejects_regex_key():
+    with pytest.raises(TypeError, match="use j=regex"):
+        tt(pl.DataFrame({"Q1": [1]}), notes=[{"text": "Quarter", "regex": True}])
 
 
 @pytest.mark.typst

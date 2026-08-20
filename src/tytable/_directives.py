@@ -7,11 +7,11 @@ and replayed at render time by :func:`tytable._resolve.build`.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
-from tytable._types import _RowSelector, _StyleRowSelector
+from tytable._types import _ColumnSelector, _RowSelector, _StyleRowSelector
 
 if TYPE_CHECKING:
     import polars as pl
@@ -22,9 +22,8 @@ class StyleDirective:
     """A single ``.style()`` call: selectors plus the cell properties to apply."""
 
     i: _StyleRowSelector
-    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
+    j: _ColumnSelector
     where: pl.Expr | None = None
-    regex: bool = False
     bold: bool | None = None
     italic: bool | None = None
     underline: bool | None = None
@@ -53,9 +52,8 @@ class FormatDirective:
     """A single ``.fmt()`` call: selectors plus value-formatting transforms."""
 
     i: _RowSelector
-    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
+    j: _ColumnSelector
     where: pl.Expr | None = None
-    regex: bool = False
     digits: int | None = None
     num_fmt: str | None = "decimal"
     replace: dict | str | bool | None = None
@@ -72,9 +70,8 @@ class PlotDirective:
     """A single ``.plot()`` call."""
 
     i: _RowSelector
-    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
+    j: _ColumnSelector
     fun: Callable
-    regex: bool = False
     data: list | None = None
     color: str = "black"
     xlim: list[float] | None = None
@@ -89,9 +86,8 @@ class ImageDirective:
     """A single ``.images()`` call."""
 
     i: _RowSelector
-    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None
+    j: _ColumnSelector
     images: list[str]
-    regex: bool = False
     height: float = 1.0
     output: tuple[str, ...] | None = None
 
@@ -119,6 +115,5 @@ class Note:
     text: str
     marker: str | None = None
     i: _RowSelector = None
-    j: int | str | pl.Expr | Sequence[int | str | pl.Expr] | None = None
+    j: _ColumnSelector = None
     where: pl.Expr | None = None
-    regex: bool = False

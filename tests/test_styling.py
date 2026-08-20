@@ -611,7 +611,6 @@ class TestMetaStyleSupportMatrix:
         "kwargs,message",
         [
             ({"j": 0}, "j cannot"),
-            ({"regex": True}, "regex cannot"),
             ({"line": "b"}, "line styling cannot"),
             ({"line_style": "dashed"}, "line styling cannot"),
             ({"line_color": "red"}, "line styling cannot"),

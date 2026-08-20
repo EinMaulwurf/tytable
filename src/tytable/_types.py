@@ -8,7 +8,26 @@ from typing import TypeAlias, TypedDict
 
 import polars as pl
 
-_ColumnSelectorItem: TypeAlias = int | str | pl.Expr
+
+@dataclass(frozen=True, slots=True)
+class _RegexSelector:
+    """Select source columns whose names match a Python regular expression."""
+
+    pattern: str
+
+
+def regex(pattern: str) -> _RegexSelector:
+    """Select source columns matched by a Python ``re.search`` pattern.
+
+    Invalid patterns, patterns longer than 500 characters, and patterns that
+    match no source columns raise :class:`ValueError` when resolved.
+    """
+    if not isinstance(pattern, str):
+        raise TypeError(f"regex pattern must be a string, got {type(pattern).__name__}")
+    return _RegexSelector(pattern=pattern)
+
+
+_ColumnSelectorItem: TypeAlias = int | str | pl.Expr | _RegexSelector
 _ColumnSelectorSpec: TypeAlias = _ColumnSelectorItem | Sequence[_ColumnSelectorItem]
 _ColumnSelector: TypeAlias = _ColumnSelectorSpec | None
 
@@ -78,7 +97,7 @@ class NoteDict(TypedDict, total=False):
     """Dictionary form of a table note accepted by :func:`tytable.tt`.
 
     ``text`` is the footer text and ``marker`` is an optional explicit marker.
-    ``i``, ``j``, ``where``, and ``regex`` use the same selector semantics as
+    ``i``, ``j``, and ``where`` use the same selector semantics as
     :meth:`tytable.TyTable.fmt`; when a target is present and ``marker`` is
     omitted, tytable assigns a number.
     """
@@ -88,4 +107,3 @@ class NoteDict(TypedDict, total=False):
     i: _RowSelector
     j: _ColumnSelector
     where: pl.Expr | None
-    regex: bool

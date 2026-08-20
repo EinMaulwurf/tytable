@@ -361,7 +361,7 @@ def apply_formats(
             layout=layout,
             data=table._data,
         )
-        j_vals = table._resolve_j(d.j, regex=d.regex)
+        j_vals = table._resolve_j(d.j)
 
         target_cells = _resolve_target_cells(i_vals, j_vals, layout)
         if d.where is not None:

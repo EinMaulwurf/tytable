@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import groupi, groupj, tt
+from tytable import groupi, groupj, regex, tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
 from tytable._styling import resolve_line_edges
@@ -396,6 +396,10 @@ class TestGroupValidation:
         df = pl.DataFrame({"label": ["a"], "q1": [1], "q2": [2.0]})
         built = build(tt(df).group(j={"Measures": cs.numeric()}), "typst")
         assert built.col_groups == [[None, "Measures", ""]]
+
+    def test_column_group_accepts_regex_selector(self):
+        built = build(tt(DF4).group(j={"First quarter": regex(r"^Q1_")}), "typst")
+        assert built.col_groups == [["First quarter", "", None, None]]
 
     def test_column_group_selector_must_be_contiguous(self):
         df = pl.DataFrame({"q1": [1], "label": ["a"], "q2": [2.0]})

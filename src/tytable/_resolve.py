@@ -157,7 +157,7 @@ def _insert_footnote_markers(
             allowed={"header", "groupi", "data"},
             method="targeted notes",
         )
-        j_vals = table._resolve_j(j_selector, regex=note.regex)
+        j_vals = table._resolve_j(j_selector)
         where_cells = (
             resolve_where(note.where, data=table._data, layout=layout)
             if note.where is not None

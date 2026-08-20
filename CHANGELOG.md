@@ -7,14 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-Version 3 makes tytable more DataFrame-native: formatting operates on typed source values, selectors understand Polars schemas, and display-only transformations preserve stable source identities.
+Version 3 makes tytable more DataFrame-native: formatting operates on typed source values, selectors compose across source schemas and structural groups, and display-only transformations preserve stable source identities.
 
 ### Breaking
 
+- Replace the `regex=True` argument on `.style()`, `.fmt()`, `.plot()`, `.images()`, and `.set_name()`, and the `regex` key in targeted `NoteDict` entries, with the explicit `regex(pattern)` column selector. Import it with `from tytable import regex`, then change calls such as `j=r"^Q", regex=True` to `j=regex(r"^Q")`; mixed selections can use forms such as `j=["Total", regex(r"^Q")]`. The selector retains Python `re.search` semantics, the 500-character limit, and errors for invalid patterns or patterns that match no source columns.
 - In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`, and pass semantic formatters through `fn` instead of the removed `formatter` argument.
 
 ### Features
 
+- Add composable `regex(pattern)` selectors anywhere `j` selects source columns, including display projection and column-group specifications.
 - Add `groupi(label=...)` for selecting every row-group separator with an exact registered label, while `groupi()` selects every row-group separator.
 - Add `groupj(level=...)` for styling one stable nested column-group header level, with level zero assigned to the first-created innermost level, and make `j` select the spanning group-header cell covering each chosen source column.
 - Add `.show_columns()` for display-only column projection while keeping omitted source columns available to selectors and conditional formatting.

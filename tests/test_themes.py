@@ -3,7 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
-from tytable import TyTable, tt
+from tytable import TyTable, regex, tt
 from tytable._resolve import build
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
@@ -317,7 +317,7 @@ class TestFootnotes:
         built = build(
             tt(
                 df,
-                notes=[{"text": "Quarter", "i": 0, "j": r"^Q", "regex": True}],
+                notes=[{"text": "Quarter", "i": 0, "j": regex(r"^Q")}],
             ).theme_plain(),
             "typst",
         )
