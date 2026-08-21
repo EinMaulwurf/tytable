@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-21
+
 Version 3 makes tytable more DataFrame-native: formatting operates on typed source values, selectors compose across source schemas and structural groups, and display-only transformations preserve stable source identities.
 
 ### Breaking
@@ -337,7 +339,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/EinMaulwurf/tytable/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/EinMaulwurf/tytable/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/EinMaulwurf/tytable/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/EinMaulwurf/tytable/compare/v2.0.0...v2.0.1
