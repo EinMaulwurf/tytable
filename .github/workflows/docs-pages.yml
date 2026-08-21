@@ -56,7 +56,7 @@ jobs:
         run: |
           mkdir -p _site
           cp docs/tytable-docs.pdf _site/tytable-docs.pdf
-          cp docs/site/index.html _site/index.html
+          sed "s|tytable-docs.pdf|tytable-docs.pdf?v=${GITHUB_SHA}|g" docs/site/index.html > _site/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

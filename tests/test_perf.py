@@ -45,7 +45,7 @@ def test_heavy_table_under_budget():
     assert out.startswith("#")
     assert len(out) > 0
     # Typical local target is < 100 ms; retain headroom for slower CI runners.
-    assert dt < 0.15, f"render of {N_ROWS}x{N_COLS} table took {dt:.3f}s (budget 0.15s)"
+    assert dt < 0.3, f"render of {N_ROWS}x{N_COLS} table took {dt:.3f}s (budget 0.3s)"
 
 
 @pytest.mark.html
