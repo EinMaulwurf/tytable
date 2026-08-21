@@ -409,6 +409,15 @@ class TestGroupValidation:
         with pytest.raises(ValueError, match="multiple row groups"):
             tt(DF).group(i={"First": 1, "Second": 1})
 
+    @pytest.mark.parametrize("second", [{"Second": 0}, ["Second", "Second"]])
+    def test_row_groups_cannot_share_a_position_across_calls(self, second):
+        table = tt(DF).group(i={"First": 0})
+
+        with pytest.raises(ValueError, match="multiple row groups cannot use position 0"):
+            table.group(i=second)
+
+        assert [(group.label, group.position) for group in table._row_groups] == [("First", 0)]
+
     @pytest.mark.parametrize("groups", [{None: 0}, ["A", None]])
     def test_row_group_labels_must_not_be_none(self, groups):
         with pytest.raises(ValueError, match="labels must not be None"):
@@ -447,6 +456,11 @@ class TestGroupValidation:
     def test_column_group_label_must_not_be_none(self):
         with pytest.raises(ValueError, match="labels must not be None"):
             tt(DF3).group(j={None: [0, 1]})
+
+    @pytest.mark.parametrize("label", ["", "   "])
+    def test_column_group_label_must_not_be_empty(self, label):
+        with pytest.raises(ValueError, match="labels must not be empty"):
+            tt(DF3).group(j={label: [0, 1]})
 
     def test_empty_column_group_spec_is_a_noop(self):
         built = build(tt(DF).group(j={}), "typst")

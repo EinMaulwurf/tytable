@@ -918,8 +918,10 @@ class TyTable:
         ValueError
             If both ``j`` and ``delimiter`` are provided, a column is missing,
             groups overlap or are noncontiguous, a row-group list has the
-            wrong length, a label is ``None``, or a delimiter cannot split
-            every column name consistently. Empty specifications are no-ops.
+            wrong length, row groups reuse a source-row position, a label is
+            ``None`` or an empty column-group label, or a delimiter cannot
+            split every column name consistently. Empty specifications are
+            no-ops.
         IndexError
             If a row- or column-group integer position is out of range.
 

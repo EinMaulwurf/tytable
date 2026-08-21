@@ -29,6 +29,8 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 
 ### Fixes
 
+- Reject row groups that reuse a source-row position across chained `.group(i=...)` calls.
+- Reject empty and whitespace-only column-group labels so every registered label is selectable with `colgroup(...)`.
 - Render HTML vertical cell alignment with `vertical-align` instead of combining it with `text-align`.
 - Preserve outer HTML borders styled on cells covered by a column or row span.
 - Render `colspan` and `rowspan` styles on HTML column-name header cells.

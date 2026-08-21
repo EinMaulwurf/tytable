@@ -76,6 +76,9 @@ def _build_col_group_row(
     for label, cols in j_dict.items():
         if label is None:
             raise ValueError("column group labels must not be None")
+        display_label = str(label)
+        if not display_label.strip():
+            raise ValueError("column group labels must not be empty")
         indices = _resolve_cols(cols, data, column_group_rows)
         if not indices:
             raise ValueError(f"column group {label!r} must select at least one column")
@@ -91,7 +94,7 @@ def _build_col_group_row(
             )
         claimed.update(indices)
         start = indices[0]
-        row[start] = str(label)
+        row[start] = display_label
         for ci in indices[1:]:
             row[ci] = ""
     return row
@@ -150,8 +153,8 @@ def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]
 
 def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) -> TyTable:
     """Record row-group separators from a mapping or a run-length sequence."""
+    groups: list[RowGroup] = []
     if isinstance(i, Mapping):
-        positions: set[int] = set()
         for label, pos in i.items():
             if label is None:
                 raise ValueError("row group labels must not be None")
@@ -163,12 +166,9 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
                 raise IndexError(
                     f"row group position {pos} is out of range for {table._data.height} rows"
                 )
-            if pos in positions:
-                raise ValueError(f"multiple row groups cannot use position {pos}")
-            positions.add(pos)
         pairs = sorted(i.items(), key=lambda x: x[1])
         for label, pos in pairs:
-            table._row_groups.append(RowGroup(label=str(label), position=pos))
+            groups.append(RowGroup(label=str(label), position=pos))
     elif not isinstance(i, (str, bytes)) and isinstance(i, Sequence):
         if len(i) != table._data.height:
             raise ValueError(
@@ -180,13 +180,20 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
         pos = 0
         for idx, val in enumerate(i):
             if idx > 0 and val != prev:
-                table._row_groups.append(RowGroup(label=str(prev), position=pos))
+                groups.append(RowGroup(label=str(prev), position=pos))
                 pos = idx
             prev = val
         if pos < len(i):
-            table._row_groups.append(RowGroup(label=str(prev), position=pos))
+            groups.append(RowGroup(label=str(prev), position=pos))
     else:
         raise TypeError("group(i=...) must be a mapping or sequence")
+
+    positions = {group.position for group in table._row_groups}
+    for group in groups:
+        if group.position in positions:
+            raise ValueError(f"multiple row groups cannot use position {group.position}")
+        positions.add(group.position)
+    table._row_groups.extend(groups)
     return table
 
 
