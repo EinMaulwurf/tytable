@@ -54,7 +54,7 @@ Start here when you know the task but not the method. Methods marked *chainable*
 `.style()`, `.fmt()`, `.plot()`, `.images()`, and targeted `NoteDict` entries share `i` and `j`; `.style()`, `.fmt()`, and targeted notes additionally accept the cell-level `where` selector. `.set_name()` and `.show_columns()` share `j`. Omitting `i` selects every genuine source-data row for method calls; in a note, at least one of `i`, `j`, or `where` makes it targeted, and an omitted axis covers the corresponding data region. With `j=None`, every column is selected (`.plot()` and `.images()` require an explicit `j`; `.set_name()` instead accepts a full-list replacement or a source-to-display mapping).
 
 #docs-table(
-  columns: (0.8fr, 1.45fr, 2.75fr),
+  columns: (auto, 1.5fr, 1fr),
   align: (left, left, left),
   table.header(text(weight: "bold")[Selector], text(weight: "bold")[Example], text(weight: "bold")[Meaning]),
   [`i`],
@@ -69,6 +69,7 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [`i`],
   [`"groupi"`],
   [row-group separator rows],
+  [`i`],
   [`groupi(label="A")`],
   [row-group separators with the exact registered label `"A"`],
   [`i`],
