@@ -12,7 +12,7 @@ Version 3 makes tytable more DataFrame-native: formatting operates on typed sour
 ### Breaking
 
 - Replace the `regex=True` argument on `.style()`, `.fmt()`, `.plot()`, `.images()`, and `.set_name()`, and the `regex` key in targeted `NoteDict` entries, with the explicit `regex(pattern)` column selector. Import it with `from tytable.selectors import regex`, then change calls such as `j=r"^Q", regex=True` to `j=regex(r"^Q")`; mixed selections can use forms such as `j=["Total", regex(r"^Q")]`. The selector retains Python `re.search` semantics, the 500-character limit, and errors for invalid patterns or patterns that match no source columns.
-- In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`, and pass semantic formatters through `fn` instead of the removed `formatter` argument.
+- In 3.0, make `.fmt(fn=...)` receive original typed DataFrame values by default. Pass `fn_values="display"` when a callback should consume current display strings or the result of `digits`. Earlier 3.0 development builds briefly exposed a separate `formatter` argument; pass semantic formatters through `fn` instead.
 
 ### Features
 

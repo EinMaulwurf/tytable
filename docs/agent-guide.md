@@ -369,5 +369,6 @@ In Jupyter, leaving the table as the last expression displays its HTML preview. 
 - Do not use `where` for structural rows; it selects body cells only.
 - Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with safe escaping.
 - Remember that directives are lazy. Many invalid selectors and incompatible structural targets are reported by `.render()` or `.save()`, not when `.style()` or `.fmt()` is called.
+- `.set_name()`, `.show_columns()`, and `.group(j=...)` resolve their column selectors immediately. Register a column group before using `colgroup(...)` with one of these methods.
 
 When uncertain, preserve the source DataFrame, prefer column names over positions, use separate `.fmt()` and `.style()` calls, and render once while developing so lazy validation runs.
