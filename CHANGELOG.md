@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-08-22
+
+### Fixes
+
+- Restore the documented 0.3-second performance-test budget so normal CI runner variance does not fail an otherwise successful test matrix.
+
+### Documentation
+
+- Correct the authoritative selector table after a missing cell shifted later entries into the wrong columns, and rebalance its column widths.
+- Give each deployed Pages PDF a revision-specific URL so browsers do not display a stale embedded manual after an update.
+
 ## [3.0.0] - 2026-08-21
 
 Version 3 makes tytable more DataFrame-native: formatting operates on typed source values, selectors compose across source schemas and structural groups, and display-only transformations preserve stable source identities.
@@ -339,7 +350,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/EinMaulwurf/tytable/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/EinMaulwurf/tytable/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/EinMaulwurf/tytable/compare/v2.0.1...v2.1.0
