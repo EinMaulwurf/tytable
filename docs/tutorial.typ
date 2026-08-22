@@ -127,16 +127,9 @@ Evaluation is lazy: Styling, formatting, grouping, and plotting are recorded as 
 
 == Select rows and columns <selectors>
 
-Methods that act on part of a table use `i` to select rows and `j` to select columns. This includes `.fmt()`, `.style()`, `.plot()`, `.images()`, and targeted notes. A targeted note puts the same selectors in a `NoteDict` passed to `tt(..., notes=[...])`:
+Methods that act on part of a table use `i` to select rows and `j` to select columns. These methods include `.fmt()`, `.style()`, `.plot()`, and `.images()`.
 
-```python
-from tytable import NoteDict
-
-important: NoteDict = {"text": "Important value", "i": 0, "j": "Score"}
-table = tt(df, notes=[important])
-```
-
-The small calls below only illustrate selection; #link(<formatting>)[Formatting], #link(<styling>)[Styling], and #link(<target-notes>)[Target notes to cells] introduce the operations themselves in more detail.
+The small calls in this section only illustrate selection. #link(<formatting>)[Formatting] and #link(<styling>)[Styling] describe the operations in more detail.
 
 === Select rows with `i`
 
@@ -190,7 +183,7 @@ table.style(i=pl.Series([True, False, True]), bold=True)
 table.style(i=lambda row: row["Score"] >= 80, bold=True)
 ```
 
-Boolean masks and Series need exactly one value per source row. Expressions and callables are evaluated against the original DataFrame. All four forms work with `.style()`, `.fmt()`, `.plot()`, `.images()`, and the `i` key of a targeted `NoteDict`.
+Boolean masks and Series need exactly one value per source row. Expressions and callables are evaluated against the original DataFrame. All four forms work with `.style()`, `.fmt()`, `.plot()`, and `.images()`.
 
 The selector vocabulary is shared, but operations accept only row kinds they can represent. `.style()` supports every grid row as well as captions and notes; `.fmt()` and targeted notes support data, `"header"`, and `"groupi"`; `.plot()` and `.images()` support data and `"groupi"`. Unsupported structural selections raise an error during rendering.
 
@@ -220,11 +213,10 @@ table.show_columns(regex(r"^Q[1-4]$"))
 
 A Polars selector that matches no columns produces an empty selection. Column groups must still select a nonempty contiguous span. Polars selectors belong to `j`; use a one-column Boolean Polars expression for data-driven `i`, reducing multi-column conditions with `pl.any_horizontal` or `pl.all_horizontal`.
 
-`regex(pattern)` matches original column names using Python's `re.search`, limits patterns to 500 characters, and raises `ValueError` for invalid patterns or no matches. It composes with exact names and other selectors, and works in a `NoteDict` as well as in method calls:
+`regex(pattern)` matches original column names using Python's `re.search`, limits patterns to 500 characters, and raises `ValueError` for invalid patterns or no matches. It composes with exact names and other selectors:
 
 ```python
 table.fmt(j=["Total", regex(r"^Q[1-4]$")], digits=1)
-quarter_note = NoteDict(text="Quarterly value", j=regex(r"^Q[1-4]$"))
 ```
 
 Polars also provides `cs.matches(pattern)` using its own regex engine. It follows the normal Polars selector behavior and returns an empty selection when nothing matches, which is useful when an optional set of columns is expected.
@@ -235,14 +227,10 @@ Names assigned by `.set_name()` are display labels, not selectors. Continue to u
 
 === Select individual cells with `where`
 
-Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when a condition should select individual data cells instead of complete rows or columns:
+Use `where` with `.style()` or `.fmt()` when a condition should select individual data cells instead of complete rows or columns:
 
 ```python
-import polars.selectors as cs
-
 table.style(where=pl.col("Score") >= 80, bold=True)
-high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
-table = tt(df, notes=[high_values])
 ```
 
 A `where` expression is evaluated against the original typed DataFrame. It preserves its Boolean output columns so each true value maps to one source cell. Each output column name must match a source column, and false or null values select nothing. `where` cannot target headers, group rows, captions, or notes.
@@ -501,32 +489,48 @@ Long labels can make otherwise small numeric columns unnecessarily wide. Select 
 #v(0.12em)
 #include "build/03_rotated_headers.typ"
 
-=== Caption and notes
+== Captions and figures
 
-The special selectors `i="caption"` and `i="notes"` style the table caption and footnotes. These are not grid cells, so the styling is applied as inline text markup — Typst `text(...)` / `#strong[...]` / `#smallcaps[...]`, or HTML `<span>` plus `<b>` / `<i>` / … — rather than through the cell style grid. This mirrors R tinytable's `style_tt(i="caption", …)` / `i="notes", …`.
+Typst output uses a `figure` by default. Pass `caption="Product scores"` to add a caption to the figure.
 
-Typst output is wrapped in a `figure` by default. Pass `label="product-scores"` to attach `<product-scores>` to that figure, then reference the numbered table with `@product-scores` in the surrounding Typst document. Pass `figure=False` when an unnumbered table without figure semantics is more appropriate. Because captions and numbered labels are figure features, combining `figure=False` with either `caption` or `label` raises `ValueError`.
+Pass `label="product-scores"` to attach `<product-scores>` to that figure. Then use `@product-scores` to reference the numbered table in the surrounding Typst document.
+
+Pass `figure=False` to make an unnumbered table without figure semantics. Captions and labels are figure features. Thus, `figure=False` with `caption` or `label` raises `ValueError`.
 
 ```python
 (
-    tt(
-        df,
-        caption="Product scores",
-        label="product-scores",
-        notes=["Source: Q3 report"],
-    )
+    tt(df, caption="Product scores", label="product-scores")
     .style(i="caption", bold=True, color="#c0392b", fontsize=1.2)
-    .style(i="notes", italic=True, color="blue", align="c")
 )
 ```
 
-The text-level properties apply: `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `fontsize` (plus `align`, `background`, and `indent` for notes). Use `output=` to restrict styling to one backend, e.g. `output=("typst",)`.
+The special selector `i="caption"` styles the caption. A caption is not a grid cell, so the renderer applies inline text markup.
+
+Caption styles support `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, and `fontsize`. Use `output=` to restrict a style to one backend.
+
+== Notes <notes>
+
+Notes add footer text to a table. They can give a source, explain a value, or point to selected cells.
+
+=== Add footer notes
+
+Pass plain strings in `notes` to add unmarked footer notes:
+
+```python
+table = tt(df, notes=["Source: Q3 report", "Values are in USD."])
+```
+
+The renderer shows these notes in their list order.
 
 === Target notes to cells <target-notes>
 
-A plain string in `notes` is an unmarked footer note. Use a dictionary when a note should point back to one or more cells. Its `text` value is the footer text, while `i`, `j`, and `where` follow the #link(<selectors>)[same selector rules as `.fmt()` and `.style()`]; use `regex(pattern)` directly as `j` when matching column names. `NoteDict`, exported from `tytable`, is an optional typing convenience that helps type checkers and IDEs validate and suggest the available keys. The example shows both `note: NoteDict = {...}` and `note = NoteDict(...)`; they are identical at runtime and both create ordinary dictionaries.
+Use a dictionary when a note must point to one or more cells. Its `text` value is the footer text. The `i`, `j`, and `where` keys follow the #link(<selectors>)[selector rules]. You can use `regex(pattern)` directly in `j`.
 
-If no `marker` is supplied, targeted notes receive superscript numbers in note order. Set `marker` explicitly for a symbol or label such as `"*"`; the same marker appears at every selected cell and beside the footer text. With `i` and `j`, omitting either axis selects its complete data region; when both selectors contain several entries, tytable uses their normal cross-product, not pairwise row/column coordinates. Use `where` for cell-by-cell selection; in the example, `cs.numeric() > 130` marks only numeric cells whose own value exceeds 130.
+`NoteDict`, exported from `tytable`, is an optional type annotation. It helps type checkers and IDEs identify the available keys. An annotated dictionary and `NoteDict(...)` have identical runtime behavior. Both forms create ordinary dictionaries.
+
+If `marker` is absent, targeted notes receive superscript numbers in note order. Set `marker` to a symbol or label, such as `"*"`, to use an explicit marker. The same marker appears in each selected cell and next to the footer text.
+
+If you omit `i` or `j`, the note selects the complete data region for that axis. Multiple row and column selectors form a cross-product. They do not form row and column pairs. Use `where` for cell-level selection. In this example, `cs.numeric() > 130` marks only numeric cells with values greater than 130.
 
 #tag("SOURCE")
 #source("examples/04_targeted_notes.py")
@@ -534,6 +538,16 @@ If no `marker` is supplied, targeted notes receive superscript numbers in note o
 #tag("RESULT")
 #v(0.12em)
 #include "build/04_targeted_notes.typ"
+
+=== Style notes
+
+Use `i="notes"` to style all footer notes:
+
+```python
+table.style(i="notes", italic=True, color="blue", align="c")
+```
+
+Notes are not grid cells, so the renderer applies inline text markup. Note styles support `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `fontsize`, `align`, `background`, and `indent`. Use `output=` to restrict a style to one backend.
 
 == Grouping
 
