@@ -70,7 +70,7 @@
 #block(width: 100%, height: 100%)[
   #grid(
     columns: (1fr,),
-    rows: (auto, 1fr, 10.6cm, 1fr, 4.5cm, 1fr, 2.4cm, 1fr),
+    rows: (auto, 1fr, 12cm, 1fr, 4.6cm, 1fr, 2.6cm, 1fr),
     [#align(center)[#text(size: 18pt, weight: "bold")[Contents]]],
     [],
     [
