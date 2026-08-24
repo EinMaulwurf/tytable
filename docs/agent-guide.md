@@ -353,6 +353,7 @@ ascii_text = table.render("ascii")
 
 table.save("build/table.typ")
 table.save("build/table.html") # suffix selects HTML
+table.save("build/table.txt")  # suffix selects ASCII
 ```
 
 With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.

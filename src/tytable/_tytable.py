@@ -1418,9 +1418,9 @@ class TyTable:
         Render the table and write it to ``path``.
 
         The output format is inferred from the file suffix: ``.typ`` produces
-        Typst, while ``.html`` and ``.htm`` produce HTML. Other suffixes are
-        rejected. Use :meth:`compile` for PDF, PNG, or SVG output. Parent
-        directories are created automatically.
+        Typst, ``.html`` and ``.htm`` produce HTML, and ``.txt`` produces ASCII.
+        Other suffixes are rejected. Use :meth:`compile` for PDF, PNG, or SVG
+        output. Parent directories are created automatically.
 
         Parameters
         ----------
@@ -1466,14 +1466,21 @@ class TyTable:
         --------
         >>> tt(df).save("build/report.typ")               # doctest: +SKIP
         >>> tt(df).save("build/report.html")              # doctest: +SKIP
+        >>> tt(df).save("build/report.txt")               # doctest: +SKIP
         >>> tt(df).save("build/tables/x.typ",             # doctest: +SKIP
         ...            assets="../assets/x")
         """
         p = pathlib.Path(path)
         suffix = p.suffix.lower()
-        if suffix not in {".typ", ".html", ".htm"}:
+        formats: dict[str, OutputFormat] = {
+            ".typ": "typst",
+            ".html": "html",
+            ".htm": "html",
+            ".txt": "ascii",
+        }
+        if suffix not in formats:
             raise ValueError(
-                "save path must end in .typ, .html, or .htm; "
+                "save path must end in .typ, .html, .htm, or .txt; "
                 "use .compile() for .pdf, .png, or .svg output"
             )
         policy = validate_static_image_policy(static_images)
@@ -1482,7 +1489,7 @@ class TyTable:
         except OSError as e:
             raise OSError(f"could not create table directory {str(p.parent)!r}: {e}") from e
 
-        out: OutputFormat = "html" if suffix in (".html", ".htm") else "typst"
+        out = formats[suffix]
         assets_path = (
             pathlib.Path(assets) if assets is not None else pathlib.Path(f"{p.stem}_assets")
         )

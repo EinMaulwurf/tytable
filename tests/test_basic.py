@@ -226,7 +226,9 @@ def test_unicode_text_survives_all_renderers(output):
         assert value in rendered
 
 
-@pytest.mark.parametrize(("suffix", "output"), [(".typ", "typst"), (".html", "html")])
+@pytest.mark.parametrize(
+    ("suffix", "output"), [(".typ", "typst"), (".html", "html"), (".txt", "ascii")]
+)
 def test_save_plain_output(tmp_path, suffix, output):
     table = tt(pl.DataFrame({"A": [1], "B": [2]})).theme_plain()
     expected = table.render(output)
@@ -235,11 +237,11 @@ def test_save_plain_output(tmp_path, suffix, output):
     assert destination.read_text(encoding="utf-8") == expected
 
 
-@pytest.mark.parametrize("suffix", ["", ".txt", ".pdf", ".png", ".svg"])
+@pytest.mark.parametrize("suffix", ["", ".pdf", ".png", ".svg"])
 def test_save_rejects_unsupported_suffix(tmp_path, suffix):
     destination = tmp_path / f"output{suffix}"
 
-    with pytest.raises(ValueError, match=r"save path must end in \.typ, \.html, or \.htm"):
+    with pytest.raises(ValueError, match=r"save path must end in \.typ, \.html, \.htm, or \.txt"):
         tt(pl.DataFrame({"A": [1]})).save(str(destination))
 
     assert not destination.exists()
