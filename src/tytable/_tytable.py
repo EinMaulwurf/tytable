@@ -1315,9 +1315,10 @@ class TyTable:
         """
         Render the table and write it to ``path``.
 
-        The output format is inferred from the file suffix: ``.html`` /
-        ``.htm`` produce HTML, everything else (typically ``.typ``) produces
-        Typst. Parent directories are created automatically.
+        The output format is inferred from the file suffix: ``.typ`` produces
+        Typst, while ``.html`` and ``.htm`` produce HTML. Other suffixes are
+        rejected. Use :meth:`compile` for PDF, PNG, or SVG output. Parent
+        directories are created automatically.
 
         Parameters
         ----------
@@ -1349,9 +1350,10 @@ class TyTable:
             returns an unsupported object, or a plot callback returns an
             unsupported object.
         ValueError
-            If a recorded selector, formatting transform, media cardinality,
-            or style is invalid. Group specifications are validated earlier,
-            when :meth:`group` is called.
+            If the path suffix is unsupported, or if a recorded selector,
+            formatting transform, media cardinality, or style is invalid.
+            Group specifications are validated earlier, when :meth:`group` is
+            called.
         ImportError
             If a ``.plot()`` directive is present but the optional ``images``
             dependencies are not installed.
@@ -1366,13 +1368,18 @@ class TyTable:
         ...            assets="../assets/x")
         """
         p = pathlib.Path(path)
+        suffix = p.suffix.lower()
+        if suffix not in {".typ", ".html", ".htm"}:
+            raise ValueError(
+                "save path must end in .typ, .html, or .htm; "
+                "use .compile() for .pdf, .png, or .svg output"
+            )
         policy = validate_static_image_policy(static_images)
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             raise OSError(f"could not create table directory {str(p.parent)!r}: {e}") from e
 
-        suffix = p.suffix.lower()
         out: OutputFormat = "html" if suffix in (".html", ".htm") else "typst"
         assets_path = (
             pathlib.Path(assets) if assets is not None else pathlib.Path(f"{p.stem}_assets")

@@ -15,6 +15,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Let `currency()` forward numeric options, control symbol position, and use known currency digits when `digits=None`.
 - Add IEC binary prefixes to `unit()`, human-readable output to `duration()`, and timezone conversion to `date()`.
 
+### Fixes
+
+- Reject unsupported `.save()` suffixes instead of writing Typst source to files such as PDF or text files. Use `.compile()` for PDF, PNG, or SVG output.
+
 ### Deprecated
 
 - Version 4.0 will remove `.fmt(digits=..., num_fmt=...)`. Version 3.x continues to support it. Semantic formatters from `tytable.formatters` replace it in new code.

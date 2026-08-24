@@ -223,6 +223,16 @@ def test_save_plain_output(tmp_path, suffix, output):
     assert destination.read_text(encoding="utf-8") == expected
 
 
+@pytest.mark.parametrize("suffix", ["", ".txt", ".pdf", ".png", ".svg"])
+def test_save_rejects_unsupported_suffix(tmp_path, suffix):
+    destination = tmp_path / f"output{suffix}"
+
+    with pytest.raises(ValueError, match=r"save path must end in \.typ, \.html, or \.htm"):
+        tt(pl.DataFrame({"A": [1]})).save(str(destination))
+
+    assert not destination.exists()
+
+
 def test_build_rejects_unknown_output():
     table = tt(pl.DataFrame({"A": [1]})).theme_plain()
     with pytest.raises(NotImplementedError, match="output='markdown' not implemented"):
