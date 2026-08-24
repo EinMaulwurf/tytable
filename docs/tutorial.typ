@@ -499,7 +499,7 @@ When `j` selects several columns, `align` and `alignv` also accept a #emph[per-c
 
 #include "build/colors.typ"
 
-Hex forms may include or omit `#` and contain 3, 4, 6, or 8 hexadecimal digits; four- and eight-digit forms include alpha. These names and hex forms are portable to Typst and HTML. Safe Typst constructors `rgb(...)`, `luma(...)`, `oklab(...)`, `oklch(...)`, `hsl(...)`, and `hsv(...)` are also accepted, but HTML cannot translate them. Restrict a directive using one of those constructors with `output=("typst",)`. ASCII ignores color styling.
+Hex forms may include or omit `#` and contain 3, 4, 6, or 8 hexadecimal digits; four- and eight-digit forms include alpha. These names and hex forms are portable to Typst and HTML. Safe Typst constructors `rgb(...)`, `luma(...)`, `oklab(...)`, `oklch(...)`, `hsl(...)`, and `hsv(...)` are also accepted, but HTML cannot translate them. Restrict a directive using one of those constructors with `output="typst"`. ASCII ignores color styling.
 
 === Rotated headers for compact columns
 

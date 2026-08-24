@@ -245,6 +245,33 @@ def test_render_rejects_unknown_output():
         table.render("markdown")
 
 
+def test_directive_output_accepts_one_backend_or_sequence():
+    table = (
+        tt(pl.DataFrame({"A": [1]}))
+        .theme_plain()
+        .style(bold=True, output="html")
+        .fmt(fn=lambda values: ["changed"] * len(values), output=["html", "ascii", "html"])
+    )
+
+    assert table._style_directives[0].output == ("html",)
+    assert table._format_directives[0].output == ("html", "ascii")
+    assert "changed" not in table.render("typst")
+    assert 'style="font-weight:bold; text-align:right">changed</td>' in table.render("html")
+    assert "changed" in table.render("ascii")
+
+
+@pytest.mark.parametrize("output", [(), [], "markdown", ["typst", "markdown"]])
+def test_directive_output_rejects_empty_or_unknown_filters(output):
+    with pytest.raises(ValueError, match="output"):
+        tt(pl.DataFrame({"A": [1]})).style(bold=True, output=output)
+
+
+@pytest.mark.parametrize("output", [1, ["html", 1]])
+def test_directive_output_rejects_invalid_types(output):
+    with pytest.raises(TypeError, match="output"):
+        tt(pl.DataFrame({"A": [1]})).fmt(output=output)
+
+
 def test_save_adds_context_to_table_write_failure(tmp_path):
     destination = tmp_path / "output.typ"
     destination.mkdir()

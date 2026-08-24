@@ -207,7 +207,7 @@ Common style properties are:
 | `line_style` | `"solid"`, `"dashed"`, `"dotted"`, `"dash-dotted"`, or `"none"` |
 | `line_color` | named color or hex string |
 | `line_width` | number in `em`; default `0.1` |
-| `output` | backend tuple such as `("typst",)` |
+| `output` | one backend or a sequence, such as `"typst"` or `("typst", "html")` |
 
 Text columns default to left alignment and numeric columns to right alignment. Their headers use the same dtype-aware defaults. Explicit styles override the defaults. When `j` selects several columns, `align` and `alignv` can assign one character per selected column:
 
@@ -252,7 +252,7 @@ Formatting options are:
 | `linebreak` | literal marker replaced by a native Typst/HTML line break |
 | `math` | wrap values in Typst math delimiters; no effect in HTML/ASCII |
 | `escape` | escape selected text after the other transforms |
-| `output` | backend tuple such as `("typst",)` |
+| `output` | one backend or a sequence, such as `"typst"` or `("typst", "html")` |
 
 Within one directive, transforms run in this order:
 

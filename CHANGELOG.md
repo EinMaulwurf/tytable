@@ -18,6 +18,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Reject unsupported `.save()` suffixes instead of writing Typst source to files such as PDF or text files. Use `.compile()` for PDF, PNG, or SVG output.
+- Accept one backend name or a sequence in directive `output` filters. Validate and normalize the filter when the directive is registered.
 
 ### Deprecated
 

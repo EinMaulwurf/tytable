@@ -496,6 +496,14 @@ class TestPortable:
 
 @pytest.mark.images
 class TestValidation:
+    def test_media_output_filters_are_normalized(self):
+        df = pl.DataFrame({"X": [1]})
+        plot_table = tt(df).plot(j="X", fun=lambda value: value, output=["typst", "ascii"])
+        image_table = tt(df).images(j="X", paths=["image.svg"], output="html")
+
+        assert plot_table._plot_directives[0].output == ("typst", "ascii")
+        assert image_table._image_directives[0].output == ("html",)
+
     def test_missing_j(self):
         df = pl.DataFrame({"X": [1]})
         with pytest.raises(ValueError, match="requires j"):

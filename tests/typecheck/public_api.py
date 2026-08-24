@@ -45,6 +45,8 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.group(j={"Numeric": cs.numeric()})
     table.fmt(j=mixed_selector, digits=1)
     table.style(j=mixed_selector, rotate=90)
+    table.style(output="typst", bold=True)
+    table.fmt(output=["html", "ascii"])
     table.plot(j=0, fun=lambda value: value, data=plot_data, xlim=integer_limits)
     table.images(j=0, paths=image_paths)
     table.compile(Path("table.pdf"), root=Path("."), font_paths=[Path("fonts")])

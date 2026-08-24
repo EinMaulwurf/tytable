@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable, Mapping, Sequence
 from copy import copy
 from dataclasses import replace
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import polars as pl
 
@@ -261,6 +261,30 @@ def _validate_gutter(name: str, value: float | str | None) -> None:
         raise ValueError(f"{name} must be non-negative, got {value!r}")
 
 
+def _normalize_output_filter(
+    output: OutputFormat | Sequence[OutputFormat] | None,
+) -> tuple[OutputFormat, ...] | None:
+    """Validate and normalize a directive output filter."""
+    if output is None:
+        return None
+    values: tuple[str, ...]
+    if isinstance(output, str):
+        values = (output,)
+    elif isinstance(output, Sequence):
+        values = tuple(output)
+    else:
+        raise TypeError("output must be a backend name, a sequence of backend names, or None")
+    if not values:
+        raise ValueError("output must select at least one backend")
+    supported = {"typst", "html", "ascii"}
+    for value in values:
+        if not isinstance(value, str):
+            raise TypeError(f"output backend names must be strings, got {value!r}")
+        if value not in supported:
+            raise ValueError(f"output backend must be 'typst', 'html', or 'ascii'; got {value!r}")
+    return cast(tuple[OutputFormat, ...], tuple(dict.fromkeys(values)))
+
+
 class TyTable:
     """
     A chainable table built from a Polars DataFrame.
@@ -396,7 +420,7 @@ class TyTable:
         line_style: Literal["solid", "dashed", "dotted", "dash-dotted", "none"] | None = None,
         line_color: str | None = None,
         line_width: float | None = 0.1,
-        output: tuple[str, ...] | None = None,
+        output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
         Apply per-cell styling via row/column selectors.
@@ -528,6 +552,7 @@ class TyTable:
         >>> tt(df).style(where=cs.numeric() > 100, bold=True)  # doctest: +SKIP
         """
         normalized_padding = normalize_padding(padding)
+        normalized_output = _normalize_output_filter(output)
         _validate_style(
             align=align,
             alignv=alignv,
@@ -542,7 +567,7 @@ class TyTable:
             fontsize=fontsize,
             indent=indent,
             rotate=rotate,
-            output=output,
+            output=normalized_output,
         )
         self._style_directives.append(
             StyleDirective(
@@ -569,7 +594,7 @@ class TyTable:
                 line_style=line_style,
                 line_color=line_color,
                 line_width=line_width,
-                output=output,
+                output=normalized_output,
             )
         )
         return self
@@ -588,7 +613,7 @@ class TyTable:
         fn_values: Literal["display", "typed"] = "typed",
         linebreak: str | None = None,
         math: bool = False,
-        output: tuple[str, ...] | None = None,
+        output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
         Apply value formatting to selected cells.
@@ -703,6 +728,7 @@ class TyTable:
             raise ValueError(f"fn_values must be either 'display' or 'typed'; got {fn_values!r}")
         if digits is not None and fn is not None and fn_values == "typed":
             raise ValueError("digits cannot be combined with fn when fn_values='typed'")
+        normalized_output = _normalize_output_filter(output)
         self._format_directives.append(
             FormatDirective(
                 i=i,
@@ -716,7 +742,7 @@ class TyTable:
                 fn_values=fn_values,
                 linebreak=linebreak,
                 math=math,
-                output=output,
+                output=normalized_output,
             )
         )
         return self
@@ -733,7 +759,7 @@ class TyTable:
         width_px: int = 1200,
         color: str = "black",
         xlim: Sequence[float] | None = None,
-        output: tuple[str, ...] | None = None,
+        output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
         Embed a generated plot in each selected cell.
@@ -801,6 +827,7 @@ class TyTable:
                 raise ValueError(f"{name} must be positive, got {value!r}")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
+        normalized_output = _normalize_output_filter(output)
         directive = PlotDirective(
             i=i,
             j=j,
@@ -811,7 +838,7 @@ class TyTable:
             height=height,
             height_px=height_px,
             width_px=width_px,
-            output=output,
+            output=normalized_output,
         )
         self._plot_directives.append(directive)
         self._media_directives.append(directive)
@@ -824,7 +851,7 @@ class TyTable:
         *,
         paths: Sequence[str],
         height: float | str = 1.0,
-        output: tuple[str, ...] | None = None,
+        output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
         Embed existing image files into the selected cells.
@@ -866,12 +893,13 @@ class TyTable:
             raise ValueError(".images() requires j (column selector)")
         if isinstance(height, str):
             height = float(height.replace("em", "").strip())
+        normalized_output = _normalize_output_filter(output)
         directive = ImageDirective(
             i=i,
             j=j,
             images=list(paths),
             height=height,
-            output=output,
+            output=normalized_output,
         )
         self._image_directives.append(directive)
         self._media_directives.append(directive)
