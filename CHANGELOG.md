@@ -18,6 +18,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Deprecated
 
 - Version 4.0 will remove `.fmt(digits=..., num_fmt=...)`. Version 3.x continues to support it. Semantic formatters from `tytable.formatters` replace it in new code.
+- Version 4.0 will rename `.plot(fun=...)` to `.plot(fn=...)`. It will also validate callbacks for `.fmt()`, `.plot()`, and `.finalize()` when each method is called.
 
 ## [3.0.1] - 2026-08-22
 
