@@ -127,6 +127,18 @@ def test_construction_api_excludes_removed_parameters():
     assert "colnames_override" not in inspect.signature(TyTable).parameters
 
 
+@pytest.mark.parametrize("height", [True, "1em", object()])
+def test_constructor_rejects_non_numeric_height(height):
+    with pytest.raises(TypeError, match="height must be a number or None"):
+        tt(pl.DataFrame({"A": [1]}), height=height)
+
+
+@pytest.mark.parametrize("height", [-1, float("nan"), float("inf")])
+def test_constructor_rejects_invalid_numeric_height(height):
+    with pytest.raises(ValueError, match="height must be"):
+        tt(pl.DataFrame({"A": [1]}), height=height)
+
+
 def test_style_api_excludes_inert_line_trim():
     assert "line_trim" not in inspect.signature(TyTable.style).parameters
 

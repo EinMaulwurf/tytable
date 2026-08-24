@@ -58,7 +58,7 @@ tt(
 - `df` must be a Polars `DataFrame`. It is cloned on construction.
 - `caption` and `label` require `figure=True`, which is the default.
 - `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
-- `height` is the row height in `em`, not a table scaling factor.
+- `height` is a finite, non-negative row height in `em`, not a table scaling factor.
 - `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; numbers are points and strings are Typst lengths.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.
 
@@ -342,6 +342,8 @@ table.multipage(repeat_headers=True)         # allow page breaks and repeat head
 table.rotate(90)                             # rotate the complete table
 ```
 
+These methods validate scalar options immediately. Rotation angles must be finite, resize targets must be positive, and `repeat_headers` must be a Boolean.
+
 Render directly or save a fragment:
 
 ```python
@@ -357,7 +359,7 @@ With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or 
 
 In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer, which displays a zero-column DataFrame as `(empty table)`. A saved `.typ` fragment can be included in a Typst report with `#include`.
 
-`.plot()` generates plots during rendering and requires the optional `images` dependencies. `.images()` embeds or references existing files and does not require that extra. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
+`.plot()` generates plots during rendering and requires the optional `images` dependencies. `.images()` embeds or references existing files and does not require that extra. Their `height` option must be a positive, finite number or an `em` string. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
 
 ## Common mistakes
 

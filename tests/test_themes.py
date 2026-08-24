@@ -117,6 +117,19 @@ class TestThemeRotate:
         assert "rotate: 45deg" in out
         assert "#rotate(45deg, reflow: true" not in out
 
+    def test_accepts_negative_whole_table_angle(self):
+        assert "#rotate(-45deg" in tt(DF).rotate(-45).render("typst")
+
+    @pytest.mark.parametrize("angle", [True, "90", object()])
+    def test_rejects_non_numeric_whole_table_angle(self, angle):
+        with pytest.raises(TypeError, match="angle must be a number"):
+            tt(DF).rotate(angle)
+
+    @pytest.mark.parametrize("angle", [float("nan"), float("inf")])
+    def test_rejects_non_finite_whole_table_angle(self, angle):
+        with pytest.raises(ValueError, match="angle must be finite"):
+            tt(DF).rotate(angle)
+
 
 @pytest.mark.typst
 class TestThemeResize:
@@ -174,6 +187,22 @@ class TestThemeResize:
         with pytest.raises(ValueError, match="resize_width"):
             t.render("typst")
 
+    @pytest.mark.parametrize(
+        ("kwargs", "error", "message"),
+        [
+            ({"width": 0}, ValueError, "width must be positive"),
+            ({"width": float("inf")}, ValueError, "width must be finite"),
+            ({"width": "wide"}, TypeError, "width must be a number"),
+            ({"height": 0}, ValueError, "height must be positive"),
+            ({"height": float("nan")}, ValueError, "height must be finite"),
+            ({"direction": "sideways"}, ValueError, "direction must be"),
+            ({"direction": 1}, TypeError, "direction must be a string"),
+        ],
+    )
+    def test_public_resize_rejects_invalid_options(self, kwargs, error, message):
+        with pytest.raises(error, match=message):
+            tt(DF).resize(**kwargs)
+
 
 @pytest.mark.typst
 class TestThemeMultipage:
@@ -199,6 +228,10 @@ class TestThemeMultipage:
         assert "repeat: true" in header
         assert "All columns" in header
         assert "[A],[B]" in header
+
+    def test_repeat_headers_must_be_bool(self):
+        with pytest.raises(TypeError, match="repeat_headers must be a bool"):
+            tt(DF).multipage(repeat_headers=1)
 
 
 @pytest.mark.typst

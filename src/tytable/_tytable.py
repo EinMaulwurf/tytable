@@ -7,6 +7,7 @@ replayed in a fixed order when ``.render()`` / ``.save()`` is called.
 
 from __future__ import annotations
 
+import math
 import os
 import pathlib
 import re
@@ -119,9 +120,10 @@ def tt(
     Raises
     ------
     TypeError
-        If ``width`` or one of its entries has an unsupported type.
+        If ``width``, one of its entries, or ``height`` has an unsupported
+        type.
     ValueError
-        If figure metadata or ``width`` is invalid.
+        If figure metadata, ``width``, or ``height`` is invalid.
 
     Examples
     --------
@@ -261,6 +263,48 @@ def _validate_gutter(name: str, value: float | str | None) -> None:
         raise ValueError(f"{name} must be non-negative, got {value!r}")
 
 
+def _validate_number(
+    name: str,
+    value: object,
+    *,
+    allow_none: bool = False,
+    allow_negative: bool = False,
+    positive: bool = False,
+) -> None:
+    """Validate a finite public numeric option."""
+    if value is None and allow_none:
+        return
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        suffix = " or None" if allow_none else ""
+        raise TypeError(f"{name} must be a number{suffix}, got {value!r}")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value!r}")
+    if positive and value <= 0:
+        raise ValueError(f"{name} must be positive, got {value!r}")
+    if not positive and not allow_negative and value < 0:
+        raise ValueError(f"{name} must be non-negative, got {value!r}")
+
+
+def _normalize_media_height(height: float | str) -> float:
+    """Validate a positive media height and return its numeric em value."""
+    if isinstance(height, bool):
+        raise TypeError(f"height must be a number or em string, got {height!r}")
+    if isinstance(height, str):
+        value = height.strip()
+        if value.endswith("em"):
+            value = value[:-2].strip()
+        try:
+            normalized = float(value)
+        except ValueError as exc:
+            raise ValueError(f"height must be a number or em string, got {height!r}") from exc
+    elif isinstance(height, int | float):
+        normalized = float(height)
+    else:
+        raise TypeError(f"height must be a number or em string, got {height!r}")
+    _validate_number("height", normalized, positive=True)
+    return normalized
+
+
 def _normalize_output_filter(
     output: OutputFormat | Sequence[OutputFormat] | None,
 ) -> tuple[OutputFormat, ...] | None:
@@ -324,14 +368,16 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``width`` or one of its entries has an unsupported type.
+            If ``width``, one of its entries, or ``height`` has an unsupported
+            type.
         ValueError
-            If figure metadata or ``width`` is invalid.
+            If figure metadata, ``width``, or ``height`` is invalid.
         """
         _validate_figure_options(figure, caption, label)
         _validate_gutter("gutter", gutter)
         _validate_gutter("column_gutter", column_gutter)
         _validate_gutter("row_gutter", row_gutter)
+        _validate_number("height", height, allow_none=True)
         self._data = data.clone()
         self._source_colnames: list[str] = list(data.columns)
         self._colnames_display: list[str] = list(data.columns)
@@ -803,13 +849,14 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``height_px`` or ``width_px`` is not an integer, or if ``fun``
-            returns an unsupported object when the table is rendered.
+            If ``height`` has an unsupported type, if ``height_px`` or
+            ``width_px`` is not an integer, or if ``fun`` returns an
+            unsupported object when the table is rendered.
         ValueError
-            If ``j`` is missing, a pixel dimension is not positive, ``height``
-            cannot be parsed, the length of ``data`` differs from the resolved
-            cell count, or a selector is invalid. Cardinality and selector
-            errors are raised at render time.
+            If ``j`` is missing, a dimension is not positive, ``height`` cannot
+            be parsed, the length of ``data`` differs from the resolved cell
+            count, or a selector is invalid. Cardinality and selector errors
+            are raised at render time.
         ImportError
             If the table is rendered without the optional ``images``
             dependencies installed.
@@ -825,8 +872,7 @@ class TyTable:
                 raise TypeError(f"{name} must be an integer, got {value!r}")
             if value <= 0:
                 raise ValueError(f"{name} must be positive, got {value!r}")
-        if isinstance(height, str):
-            height = float(height.replace("em", "").strip())
+        height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
         directive = PlotDirective(
             i=i,
@@ -884,15 +930,17 @@ class TyTable:
 
         Raises
         ------
+        TypeError
+            If ``height`` has an unsupported type.
         ValueError
-            If ``j`` is missing, ``height`` cannot be parsed, or a selector is
-            invalid. A mismatch between the number of paths and resolved cells,
-            and selector errors, are raised at render time.
+            If ``j`` is missing, ``height`` is not positive or cannot be
+            parsed, or a selector is invalid. A mismatch between the number of
+            paths and resolved cells, and selector errors, are raised at render
+            time.
         """
         if j is None:
             raise ValueError(".images() requires j (column selector)")
-        if isinstance(height, str):
-            height = float(height.replace("em", "").strip())
+        height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
         directive = ImageDirective(
             i=i,
@@ -1163,11 +1211,20 @@ class TyTable:
         ----------
         angle
             Rotation in degrees (default ``90``).
+
         Returns
         -------
         TyTable
             ``self``, for chaining.
+
+        Raises
+        ------
+        TypeError
+            If ``angle`` is not numeric.
+        ValueError
+            If ``angle`` is not finite.
         """
+        _validate_number("angle", angle, allow_negative=True)
         self._typst_opts.rotate_angle = angle
         return self
 
@@ -1198,9 +1255,19 @@ class TyTable:
 
         Raises
         ------
+        TypeError
+            If a size is not numeric or ``direction`` is not a string.
         ValueError
-            If the resize configuration is invalid; raised when rendering.
+            If a size is not positive or ``direction`` is invalid.
         """
+        if not isinstance(direction, str):
+            raise TypeError(f"direction must be a string, got {type(direction).__name__}")
+        if direction not in {"down", "up", "both"}:
+            raise ValueError(f"direction must be 'down', 'up', or 'both', got {direction!r}")
+        if height is not None:
+            _validate_number("height", height, positive=True)
+        else:
+            _validate_number("width", width, allow_none=True, positive=True)
         self._typst_opts.resize_width = width
         self._typst_opts.resize_height = height
         self._typst_opts.resize_direction = direction
@@ -1220,12 +1287,19 @@ class TyTable:
         TyTable
             ``self``, for chaining.
 
+        Raises
+        ------
+        TypeError
+            If ``repeat_headers`` is not a Boolean.
+
         Notes
         -----
         Typst figures are unbreakable by default. This operation makes only
         figures with tytable's custom figure kind breakable, so other figures
         in the surrounding document are unaffected.
         """
+        if not isinstance(repeat_headers, bool):
+            raise TypeError(f"repeat_headers must be a bool, got {type(repeat_headers).__name__}")
         self._typst_opts.multipage = True
         self._typst_opts.repeat_headers = repeat_headers
         return self

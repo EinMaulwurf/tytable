@@ -151,7 +151,7 @@ Import `regex` and `colgroup` from `tytable.selectors`. Use `regex(pattern)` for
   [global safe-markup policy],
 )
 
-`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
+`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets a finite, non-negative row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
 
 ```python
 from tytable import NoteDict, tt
@@ -241,19 +241,19 @@ Returns an independently configurable table with separate intent collections and
 
 #api("Rotate", api_signatures.at("rotate"))
 
-Rotates the whole table. Rotate selected cell content with `.style(rotate=...)`.
+Rotates the whole table by a finite angle. Rotate selected cell content with `.style(rotate=...)`.
 
 #api("Resize", api_signatures.at("resize"))
 
-Scales Typst output by width or height. `direction` is `"down"`, `"up"`, or `"both"`.
+Scales Typst output by a positive width or height. `direction` is `"down"`, `"up"`, or `"both"`. The method validates these options when called.
 
 #api("Span pages", api_signatures.at("multipage"))
 
-Makes the Typst figure breakable. Header and column-group rows repeat on each page unless `repeat_headers=False`.
+Makes the Typst figure breakable. Header and column-group rows repeat on each page unless `repeat_headers=False`. The `repeat_headers` option must be a Boolean.
 
 === Plots and images
 
-Only generated plots require the optional `images` extra. `.images()` handles existing files using only the Python standard library. Media is materialized when the table renders or saves, not when the directive is recorded.
+Only generated plots require the optional `images` extra. `.images()` handles existing files using only the Python standard library. Media is materialized when the table renders or saves, not when the directive is recorded. Media height must be a positive, finite number or an `em` string.
 
 For both methods, tytable resolves `i` and `j` at render time and walks the selection row-major: each resolved row in order, then each resolved column in order. `.images(paths=...)` always requires exactly one path per selected cell. When `.plot(data=...)` is supplied, it likewise requires exactly one item per selected cell; without `data`, the callback receives each selected cell's typed DataFrame value. Empty selections therefore require an empty supplied list. Too few or too many items raise `ValueError` before plotting dependencies are loaded or callbacks run.
 

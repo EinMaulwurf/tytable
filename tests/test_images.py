@@ -528,6 +528,32 @@ class TestValidation:
         with pytest.raises(TypeError, match=rf"{name} must be an integer"):
             tt(df).plot(j="X", fun=_sparkline, **{name: value})
 
+    @pytest.mark.parametrize("method", ["plot", "images"])
+    @pytest.mark.parametrize("height", [0, -1, "0em", "-1em", float("nan"), float("inf")])
+    def test_media_height_must_be_positive_and_finite(self, method, height):
+        df = pl.DataFrame({"X": [1]})
+        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+
+        with pytest.raises(ValueError, match="height must be"):
+            getattr(tt(df), method)(j="X", height=height, **kwargs)
+
+    @pytest.mark.parametrize("method", ["plot", "images"])
+    @pytest.mark.parametrize("height", [True, object()])
+    def test_media_height_must_be_numeric(self, method, height):
+        df = pl.DataFrame({"X": [1]})
+        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+
+        with pytest.raises(TypeError, match="height must be a number or em string"):
+            getattr(tt(df), method)(j="X", height=height, **kwargs)
+
+    @pytest.mark.parametrize("method", ["plot", "images"])
+    def test_media_height_rejects_invalid_em_string(self, method):
+        df = pl.DataFrame({"X": [1]})
+        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+
+        with pytest.raises(ValueError, match="height must be a number or em string"):
+            getattr(tt(df), method)(j="X", height="1emem", **kwargs)
+
     def test_missing_images_paths(self):
         df = pl.DataFrame({"X": [1]})
         with pytest.raises(TypeError, match="paths"):
