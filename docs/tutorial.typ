@@ -396,12 +396,12 @@ Common report formats should not require a custom callback. Import formatter fac
 
 The built-in factories are:
 
-- `number()` — fixed decimal places, optional grouping, custom prefix/suffix and null text, accounting parentheses, and compact `K`/`M`/`B`/`T` notation
-- `currency()` — a currency code or symbol, locale-aware placement, fixed decimals, accounting parentheses, and null text
+- `number()` — fixed decimal places, fixed scaling, optional grouping, custom prefix/suffix and null text, accounting parentheses, and compact `K`/`M`/`B`/`T` notation
+- `currency()` — a currency code or symbol, locale-aware placement, fixed decimals, fixed scaling, accounting parentheses, and null text
 - `percent()` — fraction-to-percentage scaling, fixed decimals, locale-aware spacing, and null text
 - `date()` — Python `strftime` patterns for date, datetime, and time values
 - `duration()` — numeric durations or Python `timedelta` values rendered as `HH:MM:SS`
-- `unit()` — locale-aware numbers with a unit symbol and optional automatic SI prefixes
+- `unit()` — locale-aware numbers with fixed scaling, a unit symbol, and optional automatic SI prefixes
 
 The German preset accepts `"de"`, `"de-DE"`, or `"de_DE"` and uses period grouping plus a decimal comma. The English preset accepts the corresponding `en` names and uses comma grouping plus a decimal point. These are deliberately small report-format presets, not complete CLDR localization: month names still follow Python's `strftime` environment, compact suffixes are `K`/`M`/`B`/`T`, and other number conventions should use explicit `decimal_mark=` and `thousands_mark=` values.
 

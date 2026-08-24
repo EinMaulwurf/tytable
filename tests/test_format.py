@@ -40,6 +40,36 @@ class TestSemanticFormatters:
     def test_percent_uses_null_text_for_nan(self):
         assert percent(null="missing")([math.nan]) == ["missing"]
 
+    def test_number_scale_is_applied_before_formatting(self):
+        formatter = number(digits=1, scale=1 / 1e6, suffix=" million")
+
+        assert formatter([2_500_000, -750_000, None]) == [
+            "2.5 million",
+            "-0.8 million",
+            "—",
+        ]
+
+    def test_percent_scales_fractions_by_default(self):
+        assert percent(digits=1)([0.6281]) == ["62.8%"]
+
+    def test_currency_and_unit_accept_scale(self):
+        assert currency("USD", digits=1, scale=1 / 1e6)([2_500_000]) == ["$2.5"]
+        assert unit("g", digits=1, scale=1000)([1.25]) == ["1,250.0 g"]
+        assert unit("g", digits=1, scale=1000, si_prefix=True)([1.25]) == ["1.2 kg"]
+
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            lambda: number(scale=True),
+            lambda: currency(scale="million"),
+            lambda: percent(scale=None),
+            lambda: unit("m", scale="kilo"),
+        ],
+    )
+    def test_scale_rejects_non_numeric_values(self, factory):
+        with pytest.raises(TypeError, match="scale must be numeric"):
+            factory()
+
     def test_accounting_compact_and_custom_separators(self):
         accounting = number(digits=0, accounting=True)
         accounting_currency = currency("USD", digits=0, accounting=True)

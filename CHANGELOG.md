@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Add a `scale` option to the `number`, `currency`, and `unit` formatters. The existing `percent` formatter continues to use `scale=100` by default.
+
 ## [3.0.1] - 2026-08-22
 
 ### Fixes

@@ -80,6 +80,12 @@ def _decimal(value: object) -> Decimal:
         raise ValueError(f"cannot format numeric value {value!r}") from exc
 
 
+def _scale_factor(scale: object) -> Decimal:
+    if isinstance(scale, bool) or not isinstance(scale, int | float | Decimal):
+        raise TypeError("scale must be numeric")
+    return Decimal(str(scale))
+
+
 def _format_number(
     value: object,
     *,
@@ -129,6 +135,7 @@ def number(
     grouping: bool = True,
     accounting: bool = False,
     compact: bool = False,
+    scale: int | float | Decimal = 1,
     prefix: str = "",
     suffix: str = "",
     null: str = "—",
@@ -137,8 +144,9 @@ def number(
 
     ``locale="de_DE"`` uses a decimal comma and period grouping, producing
     values such as ``"1.023,87"``. The supported locale names are deliberately
-    small separator presets rather than a complete CLDR implementation; pass
-    ``decimal_mark`` and ``thousands_mark`` for other conventions.
+    small separator presets rather than a complete CLDR implementation. Use
+    ``decimal_mark`` and ``thousands_mark`` for other conventions. The formatter
+    multiplies values by ``scale`` before formatting.
     """
     if isinstance(digits, bool) or not isinstance(digits, int):
         raise TypeError("digits must be a non-negative integer")
@@ -154,6 +162,7 @@ def number(
     if not all(isinstance(value, str) for value in (prefix, suffix, null)):
         raise TypeError("prefix, suffix, and null must be strings")
     decimal, thousands = _separators(locale, decimal_mark, thousands_mark)
+    scale_factor = _scale_factor(scale)
 
     def formatter(values: Sequence[Any]) -> list[str]:
         result: list[str] = []
@@ -162,7 +171,7 @@ def number(
                 result.append(null)
                 continue
             formatted = _format_number(
-                value,
+                _decimal(value) * scale_factor,
                 digits=digits,
                 decimal_mark=decimal,
                 thousands_mark=thousands,
@@ -186,6 +195,7 @@ def currency(
     locale: _LocaleName | None = None,
     symbol: str | None = None,
     accounting: bool = False,
+    scale: int | float | Decimal = 1,
     null: str = "—",
 ) -> Callable[[Sequence[Any]], list[str]]:
     """Create a currency formatter with locale-appropriate symbol placement."""
@@ -199,6 +209,7 @@ def currency(
         digits=digits,
         locale=locale,
         accounting=accounting,
+        scale=scale,
         prefix="" if german else currency_symbol,
         suffix=f" {currency_symbol}" if german else "",
         null=null,
@@ -209,29 +220,17 @@ def percent(
     *,
     digits: int = 1,
     locale: _LocaleName | None = None,
-    scale: float = 100,
+    scale: int | float | Decimal = 100,
     null: str = "—",
 ) -> Callable[[Sequence[Any]], list[str]]:
     """Create a percentage formatter; fractions are multiplied by ``scale``."""
-    if isinstance(scale, bool) or not isinstance(scale, int | float | Decimal):
-        raise TypeError("scale must be numeric")
-    base = number(
+    return number(
         digits=digits,
         locale=locale,
+        scale=scale,
         suffix=" %" if locale in {"de", "de-DE", "de_DE"} else "%",
         null=null,
     )
-
-    def formatter(values: Sequence[Any]) -> list[str]:
-        scaled = [
-            value
-            if value is None or (isinstance(value, float) and math.isnan(value))
-            else _decimal(value) * Decimal(str(scale))
-            for value in values
-        ]
-        return base(scaled)
-
-    return formatter
 
 
 def date(
@@ -324,13 +323,14 @@ def unit(
     grouping: bool = True,
     accounting: bool = False,
     si_prefix: bool = False,
+    scale: int | float | Decimal = 1,
     space: str = " ",
     null: str = "—",
 ) -> Callable[[Sequence[Any]], list[str]]:
     """Create a number formatter that appends a unit symbol.
 
-    Set ``si_prefix=True`` to scale each finite non-zero value to an SI prefix
-    from yocto (``y``) through yotta (``Y``).
+    The formatter multiplies values by ``scale`` first. Set ``si_prefix=True``
+    to select an SI prefix from yocto (``y``) through yotta (``Y``).
     """
     if not isinstance(symbol, str) or not symbol:
         raise ValueError("unit symbol must be a non-empty string")
@@ -338,6 +338,7 @@ def unit(
         raise TypeError("si_prefix must be a bool")
     if not isinstance(space, str):
         raise TypeError("space must be a string")
+    scale_factor = _scale_factor(scale)
 
     # Construct once to share number's validation and locale conventions.
     plain = number(
@@ -356,7 +357,7 @@ def unit(
             if value is None or (isinstance(value, float) and math.isnan(value)):
                 result.append(null)
                 continue
-            numeric = _decimal(value)
+            numeric = _decimal(value) * scale_factor
             scaled = numeric
             prefix = ""
             magnitude = abs(numeric)

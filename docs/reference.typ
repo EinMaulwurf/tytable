@@ -185,15 +185,15 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
-`digits` controls fixed decimal places; `grouping` inserts thousands marks; `accounting` encloses negatives in parentheses; `compact` adds `K`, `M`, `B`, or `T`; `prefix`, `suffix`, and `null` customize surrounding and missing-value text. Locale defaults may be overridden with `decimal_mark` and `thousands_mark`.
+`digits` controls fixed decimal places. `grouping` inserts thousands marks. `accounting` encloses negatives in parentheses. `compact` adds `K`, `M`, `B`, or `T`. `prefix`, `suffix`, and `null` customize surrounding and missing-value text. `scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. You can override locale defaults with `decimal_mark` and `thousands_mark`.
 
 #api("Format currencies", api_signatures.at("formatter_currency"))
 
-Known `EUR`, `USD`, `GBP`, and `JPY` codes use their symbols; another code is displayed literally unless `symbol=` overrides it. German locales place the symbol after a non-breaking space, while English/default output places it before the number. `accounting=True` encloses the complete signed value and currency symbol in parentheses.
+Known `EUR`, `USD`, `GBP`, and `JPY` codes use their symbols. The formatter displays another code literally unless `symbol=` overrides it. German locales put the symbol after a non-breaking space. English and default output put the symbol before the number. `accounting=True` encloses the complete signed value and currency symbol in parentheses. `scale` multiplies each value before formatting.
 
 #api("Format percentages", api_signatures.at("formatter_percent"))
 
-Values are multiplied by `scale=100` by default. German locales add a non-breaking space before `%`; English/default output does not.
+Values are multiplied by `scale=100` by default, so `percent(digits=1)` displays `0.6281` as `62.8%`. Set `scale=1` for values that are already percentages. German locales add a non-breaking space before `%`; English/default output does not.
 
 #api("Format dates and times", api_signatures.at("formatter_date"))
 
@@ -205,7 +205,7 @@ Accepts numeric values in the configured `input_unit` or Python `timedelta` valu
 
 #api("Format values with units", api_signatures.at("formatter_unit"))
 
-Appends `symbol` after a non-breaking space by default while retaining the number formatter's digits, grouping, locale, null, and accounting conventions. `si_prefix=True` scales each finite non-zero value with an SI prefix from yocto (`y`) through yotta (`Y`); set `space=""` when the symbol should touch the number.
+The formatter appends `symbol` after a non-breaking space by default. It retains the number formatter's digits, grouping, locale, null, and accounting conventions. `scale` multiplies each value before unit and SI-prefix formatting. `si_prefix=True` selects an SI prefix from yocto (`y`) through yotta (`Y`) for each finite non-zero value. Set `space=""` if the symbol must touch the number.
 
 #api("Group", api_signatures.at("group"))
 
