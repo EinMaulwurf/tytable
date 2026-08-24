@@ -10,6 +10,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Features
 
 - Add a `scale` option to the `number`, `currency`, and `unit` formatters. The existing `percent` formatter continues to use `scale=100` by default.
+- Add flexible decimal places, named rounding modes, negative-zero cleanup, special-value labels, and five notation modes to semantic numeric formatters.
+- Add custom compact labels and promote compact or SI values when rounding crosses the next prefix boundary.
+- Let `currency()` forward numeric options, control symbol position, and use known currency digits when `digits=None`.
+- Add IEC binary prefixes to `unit()`, human-readable output to `duration()`, and timezone conversion to `date()`.
+
+### Deprecated
+
+- Version 4.0 will remove `.fmt(digits=..., num_fmt=...)`. Version 3.x continues to support it. Semantic formatters from `tytable.formatters` replace it in new code.
 
 ## [3.0.1] - 2026-08-22
 

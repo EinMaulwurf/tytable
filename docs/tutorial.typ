@@ -396,14 +396,37 @@ Common report formats should not require a custom callback. Import formatter fac
 
 The built-in factories are:
 
-- `number()` — fixed decimal places, fixed scaling, optional grouping, custom prefix/suffix and null text, accounting parentheses, and compact `K`/`M`/`B`/`T` notation
-- `currency()` — a currency code or symbol, locale-aware placement, fixed decimals, fixed scaling, accounting parentheses, and null text
-- `percent()` — fraction-to-percentage scaling, fixed decimals, locale-aware spacing, and null text
-- `date()` — Python `strftime` patterns for date, datetime, and time values
-- `duration()` — numeric durations or Python `timedelta` values rendered as `HH:MM:SS`
-- `unit()` — locale-aware numbers with fixed scaling, a unit symbol, and optional automatic SI prefixes
+- `number()` — flexible decimal places, five notation modes, named rounding modes, scaling, grouping, custom compact labels, and special-value text
+- `currency()` — numeric options plus a currency code or symbol, locale-aware placement, optional known currency digits, and accounting parentheses
+- `percent()` — numeric options plus fraction-to-percentage scaling and locale-aware symbol spacing
+- `date()` — Python `strftime` patterns and optional timezone conversion for timezone-aware datetimes
+- `duration()` — clock or human-readable output for numeric durations and Python `timedelta` values
+- `unit()` — numeric options plus a unit symbol and optional automatic SI or IEC binary prefixes
 
 The German preset accepts `"de"`, `"de-DE"`, or `"de_DE"` and uses period grouping plus a decimal comma. The English preset accepts the corresponding `en` names and uses comma grouping plus a decimal point. These are deliberately small report-format presets, not complete CLDR localization: month names still follow Python's `strftime` environment, compact suffixes are `K`/`M`/`B`/`T`, and other number conventions should use explicit `decimal_mark=` and `thousands_mark=` values.
+
+These examples show the extended options:
+
+```python
+from tytable.formatters import currency, date, duration, number, unit
+
+number(digits=2, min_digits=0, rounding="half_up")([1, 1.205])
+# ["1", "1.21"]
+
+number(digits=1, compact=True, compact_labels={3: " thousand", 6: " million"})([2_500_000])
+# ["2.5 million"]
+
+currency("JPY", digits=None)([1250])
+# ["¥1,250"]
+
+unit("B", digits=1, min_digits=0, iec_prefix=True)([1_048_576])
+# ["1 MiB"]
+
+duration(style="human")([9000])
+# ["2h 30m"]
+
+date("%Y-%m-%d %H:%M", timezone="Europe/Berlin")
+```
 
 This example combines all four factories. Notice `1.023,87 €`, the non-breaking space before German currency and percentage symbols, accounting parentheses for the negative currency, and the shared em dash for missing values:
 

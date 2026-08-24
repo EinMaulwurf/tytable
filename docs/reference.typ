@@ -185,27 +185,33 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
-`digits` controls fixed decimal places. `grouping` inserts thousands marks. `accounting` encloses negatives in parentheses. `compact` adds `K`, `M`, `B`, or `T`. `prefix`, `suffix`, and `null` customize surrounding and missing-value text. `scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. You can override locale defaults with `decimal_mark` and `thousands_mark`.
+`notation` accepts `"fixed"`, `"significant"`, `"scientific"`, `"engineering"`, or `"compact"`. The legacy `compact=True` option selects compact notation. In fixed, compact, scientific, and engineering notation, `digits` sets the maximum decimal places. `min_digits` sets the minimum and defaults to `digits`. Significant notation uses `digits` significant figures. `grouping` inserts thousands marks. You can override locale defaults with `decimal_mark` and `thousands_mark`.
+
+`scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. `rounding` accepts `"half_even"`, `"half_up"`, `"half_down"`, `"up"`, `"down"`, `"ceiling"`, or `"floor"`. The formatter removes a negative sign when a value rounds to zero. Set `normalize_negative_zero=False` to retain the sign.
+
+`compact_labels` maps positive powers of ten to labels. For example, `{3: " thousand", 6: " million"}` supplies long labels. Compact notation promotes a rounded `1000 thousand` value to `1 million`. `accounting` encloses negatives in parentheses. `prefix` and `suffix` add text around finite values. `null` formats nulls and NaNs by default. Set `nan` to format NaNs separately. The `inf` and `negative_inf` options format infinities.
 
 #api("Format currencies", api_signatures.at("formatter_currency"))
 
-Known `EUR`, `USD`, `GBP`, and `JPY` codes use their symbols. The formatter displays another code literally unless `symbol=` overrides it. German locales put the symbol after a non-breaking space. English and default output put the symbol before the number. `accounting=True` encloses the complete signed value and currency symbol in parentheses. `scale` multiplies each value before formatting.
+Known `EUR`, `USD`, `GBP`, and `JPY` codes use their symbols. The formatter displays another code literally unless `symbol=` overrides it. `symbol_position` accepts `"auto"`, `"prefix"`, or `"suffix"`. German locales use suffix placement in automatic mode. English and default output use prefix placement.
+
+The formatter accepts the number options for precision, notation, separators, grouping, accounting, compact labels, scaling, rounding, and special values. `digits=2` remains the default. Set `digits=None` to use known currency digits, such as zero digits for JPY and three for KWD.
 
 #api("Format percentages", api_signatures.at("formatter_percent"))
 
-Values are multiplied by `scale=100` by default, so `percent(digits=1)` displays `0.6281` as `62.8%`. Set `scale=1` for values that are already percentages. German locales add a non-breaking space before `%`; English/default output does not.
+Values are multiplied by `scale=100` by default, so `percent(digits=1)` displays `0.6281` as `62.8%`. Set `scale=1` for values that are already percentages. The formatter accepts the number options for precision, notation, separators, grouping, accounting, rounding, negative zero, and special values. German locales add a non-breaking space before `%`. English and default output do not.
 
 #api("Format dates and times", api_signatures.at("formatter_date"))
 
-Accepts Python date, datetime, or time values and applies the `strftime` pattern. Nulls use the configured `null` text; other value types raise `TypeError` during rendering.
+The formatter accepts Python date, datetime, or time values and applies the `strftime` pattern. `timezone` accepts an IANA name or a `tzinfo` object. Timezone conversion requires timezone-aware datetime values. Dates do not require conversion. Time-only values cannot use conversion. Nulls use the configured `null` text.
 
 #api("Format durations", api_signatures.at("formatter_duration"))
 
-Accepts numeric values in the configured `input_unit` or Python `timedelta` values. Output uses `HH:MM:SS`, hours may exceed 24, and `digits` controls fractional-second places.
+The formatter accepts numeric values in `input_unit` or Python `timedelta` values. The default `style="clock"` uses `HH:MM:SS`, and hours can exceed 24. `style="human"` uses values such as `1d 3h 30m`. `digits`, `min_digits`, `rounding`, and `normalize_negative_zero` control seconds. The `null`, `nan`, `inf`, and `negative_inf` options control special values.
 
 #api("Format values with units", api_signatures.at("formatter_unit"))
 
-The formatter appends `symbol` after a non-breaking space by default. It retains the number formatter's digits, grouping, locale, null, and accounting conventions. `scale` multiplies each value before unit and SI-prefix formatting. `si_prefix=True` selects an SI prefix from yocto (`y`) through yotta (`Y`) for each finite non-zero value. Set `space=""` if the symbol must touch the number.
+The formatter appends `symbol` after a non-breaking space by default. It accepts the number options for precision, notation, separators, grouping, accounting, scaling, rounding, and special values. `si_prefix=True` selects SI prefixes from yocto (`y`) through yotta (`Y`). `iec_prefix=True` selects binary prefixes from kibi (`Ki`) through yobi (`Yi`). The formatter promotes values when rounding crosses the next prefix boundary. SI, IEC, and compact prefixes cannot be combined. Set `space=""` if the symbol must touch the number.
 
 #api("Group", api_signatures.at("group"))
 

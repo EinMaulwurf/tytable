@@ -1,5 +1,6 @@
 import math
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 import polars as pl
 import polars.selectors as cs
@@ -68,6 +69,113 @@ class TestSemanticFormatters:
     )
     def test_scale_rejects_non_numeric_values(self, factory):
         with pytest.raises(TypeError, match="scale must be numeric"):
+            factory()
+
+    def test_flexible_precision_and_negative_zero(self):
+        formatter = number(digits=3, min_digits=0)
+
+        assert formatter([1, 1.2, 1.2346, -0.0001]) == ["1", "1.2", "1.235", "0"]
+        assert number(digits=2, normalize_negative_zero=False)([-0.001]) == ["-0.00"]
+
+    def test_named_rounding_modes(self):
+        assert number(digits=0, rounding="half_even")([2.5, 3.5]) == ["2", "4"]
+        assert number(digits=0, rounding="half_up")([2.5, -2.5]) == ["3", "-3"]
+        assert number(digits=0, rounding="floor")([2.9, -2.1]) == ["2", "-3"]
+
+    def test_special_numeric_value_labels(self):
+        formatter = number(nan="NA", inf="∞", negative_inf="−∞")
+
+        assert formatter([math.nan, Decimal("NaN"), math.inf, -math.inf, None]) == [
+            "NA",
+            "NA",
+            "∞",
+            "−∞",
+            "—",
+        ]
+        assert number(null="missing")([math.nan]) == ["missing"]
+
+    def test_number_notations(self):
+        assert number(digits=3, notation="significant")([1234, 0.01234]) == [
+            "1,230",
+            "0.0123",
+        ]
+        assert number(digits=2, min_digits=0, notation="scientific")([12345]) == ["1.23e+4"]
+        assert number(digits=2, min_digits=0, notation="engineering")([12345]) == ["12.34e+3"]
+        assert number(digits=1, min_digits=0, notation="scientific", locale="de_DE")([0.012]) == [
+            "1,2e-2"
+        ]
+
+    def test_compact_labels_and_rounding_boundary(self):
+        formatter = number(
+            digits=1,
+            compact=True,
+            compact_labels={3: " thousand", 6: " million"},
+        )
+
+        assert formatter([2_500_000, 999_949, 999_950]) == [
+            "2.5 million",
+            "999.9 thousand",
+            "1.0 million",
+        ]
+
+    def test_currency_forwards_number_options(self):
+        assert currency("JPY", digits=None)([12.4]) == ["¥12"]
+        assert currency(
+            "USD",
+            digits=1,
+            min_digits=0,
+            grouping=False,
+            decimal_mark=",",
+            thousands_mark="",
+            symbol_position="suffix",
+        )([1234.5]) == ["1234,5 $"]
+        assert currency("USD", digits=1, compact=True)([2_500_000]) == ["$2.5M"]
+
+    def test_percent_forwards_number_options(self):
+        formatter = percent(digits=2, min_digits=0, rounding="half_up")
+
+        assert formatter([0.625, -0.00001]) == ["62.5%", "0%"]
+
+    def test_unit_iec_prefix_and_prefix_rollover(self):
+        formatter = unit("B", digits=1, min_digits=0, iec_prefix=True)
+
+        assert formatter([1024, 1_048_576]) == ["1 KiB", "1 MiB"]
+        assert unit("g", digits=1, si_prefix=True)([999_949, 999_950]) == [
+            "999.9 kg",
+            "1.0 Mg",
+        ]
+
+    def test_human_duration_and_shared_numeric_options(self):
+        formatter = duration(style="human", digits=1, min_digits=0)
+
+        assert formatter([90_061.5, 90, 0]) == ["1d 1h 1m 1.5s", "1m 30s", "0s"]
+        assert duration(digits=0, rounding="half_up")([59.5]) == ["00:01:00"]
+        assert duration(digits=2, min_digits=0)([1.2]) == ["00:00:01.2"]
+        assert duration(nan="NA", inf="forever")([math.nan, math.inf]) == ["NA", "forever"]
+
+    def test_date_timezone_conversion(self):
+        formatter = date_formatter("%Y-%m-%d %H:%M", timezone="America/New_York")
+
+        assert formatter([datetime(2026, 1, 1, tzinfo=timezone.utc)]) == ["2025-12-31 19:00"]
+        with pytest.raises(ValueError, match="timezone-aware"):
+            formatter([datetime(2026, 1, 1)])
+
+    @pytest.mark.parametrize(
+        ("factory", "message"),
+        [
+            (lambda: number(digits=1, min_digits=2), "must not exceed"),
+            (lambda: number(rounding="nearest"), "rounding must be one of"),
+            (lambda: number(notation="binary"), "notation must be"),
+            (lambda: number(compact_labels={0: "ones"}), "positive integers"),
+            (lambda: number(compact=True, notation="scientific"), "cannot be combined"),
+            (lambda: currency(symbol_position="left"), "symbol_position must be"),
+            (lambda: unit("B", si_prefix=True, iec_prefix=True), "cannot both be true"),
+            (lambda: duration(style="words"), "style must be"),
+            (lambda: date_formatter(timezone=1), "timezone must be"),
+        ],
+    )
+    def test_extended_formatter_options_are_validated(self, factory, message):
+        with pytest.raises((TypeError, ValueError), match=message):
             factory()
 
     def test_accounting_compact_and_custom_separators(self):

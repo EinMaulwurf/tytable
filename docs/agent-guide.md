@@ -286,6 +286,8 @@ Typed callback input cannot be combined with `digits` in the same `.fmt()` call 
 
 For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators. Semantic formatters cannot be combined with `digits` in the same directive.
 
+Numeric formatters accept `min_digits`, `notation`, `rounding`, `normalize_negative_zero`, `nan`, `inf`, and `negative_inf`. The `number()` formatter also accepts custom `compact_labels`. The `currency()` formatter forwards numeric options and accepts `symbol_position`. `digits=None` selects known currency digits. The `unit()` formatter accepts `si_prefix=True` or `iec_prefix=True`. `duration(style="human")` produces output such as `1d 3h 30m`. The `date()` formatter accepts `timezone` for timezone-aware datetimes.
+
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 
 ## Grouping and display names
