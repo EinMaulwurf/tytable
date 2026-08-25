@@ -174,6 +174,36 @@ def test_targeted_note_rejects_regex_key():
         tt(pl.DataFrame({"Q1": [1]}), notes=[{"text": "Quarter", "regex": True}])
 
 
+@pytest.mark.parametrize("notes", ["one note", b"one note", 1, object()])
+def test_notes_reject_scalar_or_non_sequence_input(notes):
+    with pytest.raises(TypeError, match="notes must be a sequence"):
+        tt(pl.DataFrame({"A": [1]}), notes=notes)
+
+
+@pytest.mark.parametrize("note", [1, object(), ["nested"]])
+def test_notes_reject_unsupported_entries(note):
+    with pytest.raises(TypeError, match=r"notes\[0\] must be a string or NoteDict"):
+        tt(pl.DataFrame({"A": [1]}), notes=[note])
+
+
+def test_notes_reject_unknown_notedict_keys():
+    with pytest.raises(TypeError, match=r"unknown NoteDict key.*'extra'"):
+        tt(pl.DataFrame({"A": [1]}), notes=[{"text": "Note", "extra": True}])
+
+
+@pytest.mark.parametrize(
+    ("note", "message"),
+    [
+        ({"text": 1}, r"notes\[0\]\.text must be a string"),
+        ({"marker": 1}, r"notes\[0\]\.marker must be a string or None"),
+        ({"where": True}, r"notes\[0\]\.where must be a Polars expression or None"),
+    ],
+)
+def test_notes_validate_immediate_field_types(note, message):
+    with pytest.raises(TypeError, match=message):
+        tt(pl.DataFrame({"A": [1]}), notes=[note])
+
+
 @pytest.mark.typst
 class TestByteExact:
     def test_byte_exact_acceptance(self):

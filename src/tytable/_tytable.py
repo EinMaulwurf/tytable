@@ -164,10 +164,13 @@ def tt(
 
 def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
     """Coerce a heterogeneous ``notes`` list into ``Note`` dataclass instances."""
+    if isinstance(raw, (str, bytes, bytearray)) or not isinstance(raw, Sequence):
+        raise TypeError("notes must be a sequence of strings or NoteDict entries")
     if not raw:
         return []
     result = []
-    for item in raw:
+    allowed_keys = {"text", "marker", "i", "j", "where"}
+    for index, item in enumerate(raw):
         if isinstance(item, Note):
             result.append(item)
         elif isinstance(item, dict):
@@ -175,19 +178,34 @@ def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
                 raise TypeError(
                     "NoteDict does not accept a 'regex' key; use j=regex(pattern) instead"
                 )
+            unknown_keys = set(item).difference(allowed_keys)
+            if unknown_keys:
+                unknown = ", ".join(repr(key) for key in sorted(unknown_keys, key=repr))
+                raise TypeError(f"notes[{index}] contains unknown NoteDict key(s): {unknown}")
+            text = item.get("text", "")
+            marker = item.get("marker")
+            where = item.get("where")
+            if not isinstance(text, str):
+                raise TypeError(f"notes[{index}].text must be a string")
+            if marker is not None and not isinstance(marker, str):
+                raise TypeError(f"notes[{index}].marker must be a string or None")
+            if where is not None and not isinstance(where, pl.Expr):
+                raise TypeError(f"notes[{index}].where must be a Polars expression or None")
             result.append(
                 Note(
-                    text=item.get("text", ""),
-                    marker=item.get("marker"),
+                    text=text,
+                    marker=marker,
                     i=item.get("i"),
                     j=item.get("j"),
-                    where=item.get("where"),
+                    where=where,
                 )
             )
         elif isinstance(item, str):
             result.append(Note(text=item))
         else:
-            result.append(Note(text=str(item)))
+            raise TypeError(
+                f"notes[{index}] must be a string or NoteDict, got {type(item).__name__}"
+            )
     return _assign_markers(result)
 
 
@@ -407,7 +425,7 @@ class TyTable:
         self._media_directives: list[PlotDirective | ImageDirective] = []
         self._row_groups: list[RowGroup] = []
         self._col_group_rows: list[list[str | None]] = []
-        self._notes: list[Note] = _normalize_notes(notes or [])
+        self._notes: list[Note] = _normalize_notes(notes if notes is not None else [])
         self._finalize_hooks: list[Callable[[str, str], str]] = []
         self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
