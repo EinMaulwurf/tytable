@@ -139,6 +139,13 @@ def test_constructor_rejects_invalid_numeric_height(height):
         tt(pl.DataFrame({"A": [1]}), height=height)
 
 
+@pytest.mark.parametrize("name", ["figure", "colnames", "escape"])
+@pytest.mark.parametrize("value", [0, 1, "true", None])
+def test_constructor_rejects_non_boolean_options(name, value):
+    with pytest.raises(TypeError, match=rf"{name} must be a bool"):
+        tt(pl.DataFrame({"A": [1]}), **{name: value})
+
+
 def test_style_api_excludes_inert_line_trim():
     assert "line_trim" not in inspect.signature(TyTable.style).parameters
 

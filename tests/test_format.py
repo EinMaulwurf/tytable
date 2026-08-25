@@ -574,6 +574,11 @@ class TestMath:
         with pytest.raises(TypeError, match="math must be a bool"):
             tt(df).fmt(math="yes")  # type: ignore[arg-type]
 
+    @pytest.mark.parametrize("escape", [0, 1, "yes", None])
+    def test_escape_requires_bool(self, escape):
+        with pytest.raises(TypeError, match="escape must be a bool"):
+            tt(pl.DataFrame({"x": [1]})).fmt(escape=escape)
+
 
 @pytest.mark.typst
 class TestFn:

@@ -284,6 +284,14 @@ class TestOutputGating:
 @pytest.mark.typst
 class TestStyleValidation:
     @pytest.mark.parametrize(
+        "prop", ["bold", "italic", "underline", "strikeout", "monospace", "smallcaps"]
+    )
+    @pytest.mark.parametrize("value", [0, 1, "true"])
+    def test_boolean_properties_require_bools(self, prop, value):
+        with pytest.raises(TypeError, match=rf"{prop} must be a bool or None"):
+            tt(DF).style(**{prop: value})
+
+    @pytest.mark.parametrize(
         ("prop", "value", "error"),
         [
             ("colspan", True, ValueError),

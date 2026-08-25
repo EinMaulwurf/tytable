@@ -20,6 +20,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Save ASCII output to `.txt` files. Reject other unsupported `.save()` suffixes instead of writing Typst source to files such as PDF files.
 - Accept one backend name or a sequence in directive `output` filters. Validate and normalize the filter when the directive is registered.
 - Validate constructor row height, media height, and Typst layout options when their public methods are called.
+- Require genuine Boolean values for constructor, formatting, and styling Boolean options.
 
 ### Deprecated
 

@@ -285,6 +285,15 @@ def _validate_number(
         raise ValueError(f"{name} must be non-negative, got {value!r}")
 
 
+def _validate_bool(name: str, value: object, *, allow_none: bool = False) -> None:
+    """Validate a public Boolean option without accepting integer lookalikes."""
+    if value is None and allow_none:
+        return
+    if not isinstance(value, bool):
+        suffix = " or None" if allow_none else ""
+        raise TypeError(f"{name} must be a bool{suffix}, got {type(value).__name__}")
+
+
 def _normalize_media_height(height: float | str) -> float:
     """Validate a positive media height and return its numeric em value."""
     if isinstance(height, bool):
@@ -373,6 +382,9 @@ class TyTable:
         ValueError
             If figure metadata, ``width``, or ``height`` is invalid.
         """
+        _validate_bool("figure", figure)
+        _validate_bool("colnames", colnames)
+        _validate_bool("escape", escape)
         _validate_figure_options(figure, caption, label)
         _validate_gutter("gutter", gutter)
         _validate_gutter("column_gutter", column_gutter)
@@ -597,6 +609,15 @@ class TyTable:
         >>> import polars.selectors as cs
         >>> tt(df).style(where=cs.numeric() > 100, bold=True)  # doctest: +SKIP
         """
+        for name, value in (
+            ("bold", bold),
+            ("italic", italic),
+            ("underline", underline),
+            ("strikeout", strikeout),
+            ("monospace", monospace),
+            ("smallcaps", smallcaps),
+        ):
+            _validate_bool(name, value, allow_none=True)
         normalized_padding = normalize_padding(padding)
         normalized_output = _normalize_output_filter(output)
         _validate_style(
@@ -758,6 +779,7 @@ class TyTable:
             raise ValueError("linebreak marker must not be empty")
         if not isinstance(math, bool):
             raise TypeError("math must be a bool")
+        _validate_bool("escape", escape)
         if digits is not None and (isinstance(digits, bool) or not isinstance(digits, int)):
             raise TypeError(f"digits must be a non-negative integer or None, got {digits!r}")
         if digits is not None and digits < 0:
