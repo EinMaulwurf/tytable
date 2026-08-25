@@ -356,6 +356,28 @@ def _normalize_output_filter(
     return cast(tuple[OutputFormat, ...], tuple(dict.fromkeys(values)))
 
 
+def _normalize_public_sequence(name: str, value: object) -> list[Any]:
+    """Copy a public sequence while rejecting scalar strings and incidental iterables."""
+    if isinstance(value, (str, bytes, bytearray)) or not isinstance(value, Sequence):
+        raise TypeError(f"{name} must be a non-string sequence")
+    return list(value)
+
+
+def _normalize_xlim(xlim: Sequence[float] | None) -> list[float] | None:
+    """Validate optional finite two-value plot limits."""
+    if xlim is None:
+        return None
+    values = _normalize_public_sequence("xlim", xlim)
+    if len(values) != 2:
+        raise ValueError(f"xlim must contain exactly two values, got {len(values)}")
+    for value in values:
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            raise TypeError(f"xlim values must be numbers, got {value!r}")
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"xlim values must be finite, got {value!r}")
+    return [float(value) for value in values]
+
+
 class TyTable:
     """
     A chainable table built from a Polars DataFrame.
@@ -907,6 +929,8 @@ class TyTable:
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
+        if not isinstance(color, str):
+            raise TypeError(f"color must be a string, got {type(color).__name__}")
         for name, value in (("height_px", height_px), ("width_px", width_px)):
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an integer, got {value!r}")
@@ -914,13 +938,15 @@ class TyTable:
                 raise ValueError(f"{name} must be positive, got {value!r}")
         height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
+        normalized_data = _normalize_public_sequence("data", data) if data is not None else None
+        normalized_xlim = _normalize_xlim(xlim)
         directive = PlotDirective(
             i=i,
             j=j,
             fun=fun,
-            data=list(data) if data is not None else None,
+            data=normalized_data,
             color=color,
-            xlim=list(xlim) if xlim is not None else None,
+            xlim=normalized_xlim,
             height=height,
             height_px=height_px,
             width_px=width_px,
@@ -982,10 +1008,16 @@ class TyTable:
             raise ValueError(".images() requires j (column selector)")
         height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
+        normalized_paths = _normalize_public_sequence("paths", paths)
+        for path in normalized_paths:
+            if not isinstance(path, str):
+                raise TypeError(f"paths entries must be strings, got {type(path).__name__}")
+            if not path:
+                raise ValueError("paths entries must not be empty")
         directive = ImageDirective(
             i=i,
             j=j,
-            images=list(paths),
+            images=cast(list[str], normalized_paths),
             height=height,
             output=normalized_output,
         )

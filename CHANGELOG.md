@@ -22,6 +22,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Validate constructor row height, media height, and Typst layout options when their public methods are called.
 - Require genuine Boolean values for constructor, formatting, and styling Boolean options.
 - Reject malformed note collections, unsupported entries, unknown `NoteDict` keys, and invalid note field types instead of silently coercing or ignoring them.
+- Validate plot data, limits, and color along with static-image path collections when media directives are registered.
 
 ### Deprecated
 

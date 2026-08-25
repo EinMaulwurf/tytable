@@ -559,6 +559,48 @@ class TestValidation:
         with pytest.raises(TypeError, match="paths"):
             tt(df).images(j="X")
 
+    @pytest.mark.parametrize("data", [1, "values", b"values", {"value": 1}])
+    def test_plot_data_must_be_a_non_string_sequence(self, data):
+        with pytest.raises(TypeError, match="data must be a non-string sequence"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, data=data)
+
+    @pytest.mark.parametrize("xlim", [1, "0,1", {"lower": 0, "upper": 1}])
+    def test_plot_xlim_must_be_a_non_string_sequence(self, xlim):
+        with pytest.raises(TypeError, match="xlim must be a non-string sequence"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
+
+    @pytest.mark.parametrize("xlim", [[], [0], [0, 1, 2]])
+    def test_plot_xlim_requires_two_values(self, xlim):
+        with pytest.raises(ValueError, match="xlim must contain exactly two values"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
+
+    @pytest.mark.parametrize("xlim", [[False, 1], ["0", 1]])
+    def test_plot_xlim_requires_numeric_values(self, xlim):
+        with pytest.raises(TypeError, match="xlim values must be numbers"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
+
+    @pytest.mark.parametrize("xlim", [[float("nan"), 1], [0, float("inf")]])
+    def test_plot_xlim_requires_finite_values(self, xlim):
+        with pytest.raises(ValueError, match="xlim values must be finite"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
+
+    def test_plot_color_must_be_a_string(self):
+        with pytest.raises(TypeError, match="color must be a string"):
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, color=1)
+
+    @pytest.mark.parametrize("paths", [1, "image.svg", b"image.svg", {"image.svg"}])
+    def test_image_paths_must_be_a_non_string_sequence(self, paths):
+        with pytest.raises(TypeError, match="paths must be a non-string sequence"):
+            tt(pl.DataFrame({"X": [1]})).images(j="X", paths=paths)
+
+    def test_image_paths_require_string_entries(self):
+        with pytest.raises(TypeError, match="paths entries must be strings"):
+            tt(pl.DataFrame({"X": [1]})).images(j="X", paths=[1])
+
+    def test_image_paths_reject_empty_entries(self):
+        with pytest.raises(ValueError, match="paths entries must not be empty"):
+            tt(pl.DataFrame({"X": [1]})).images(j="X", paths=[""])
+
     def test_missing_extra_hint(self, monkeypatch):
         def _fake_require():
             raise ImportError(
