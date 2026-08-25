@@ -397,7 +397,7 @@ class TestGroupValidation:
 
     @pytest.mark.parametrize("groups", [{"Low": -1}, {"High": 3}])
     def test_row_group_position_must_be_in_range(self, groups):
-        with pytest.raises(IndexError, match="out of range for 2 rows"):
+        with pytest.raises(ValueError, match="out of range for 2 rows"):
             tt(DF).group(i=groups)
 
     @pytest.mark.parametrize("position", [True, 1.5, "1"])
@@ -429,7 +429,7 @@ class TestGroupValidation:
 
     @pytest.mark.parametrize("position", [-1, 4])
     def test_column_group_position_must_be_in_range(self, position):
-        with pytest.raises(IndexError, match="out of range for 4 columns"):
+        with pytest.raises(ValueError, match="out of range for 4 columns"):
             tt(DF3).group(j={"Group": [position]})
 
     def test_boolean_is_not_a_column_position(self):

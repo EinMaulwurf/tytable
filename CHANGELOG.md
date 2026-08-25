@@ -25,6 +25,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Validate plot data, limits, and color along with static-image path collections when media directives are registered.
 - Advertise the existing path-like object support in `.save()` annotations for both the output and asset paths.
 - Include the existing public `__version__` attribute in the package's declared exports.
+- Use contextual `TypeError` failures for invalid formatter option types and consistent `ValueError` failures for out-of-range public positions.
 
 ### Deprecated
 

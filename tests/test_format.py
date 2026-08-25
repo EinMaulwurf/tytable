@@ -178,6 +178,22 @@ class TestSemanticFormatters:
         with pytest.raises((TypeError, ValueError), match=message):
             factory()
 
+    @pytest.mark.parametrize(
+        ("factory", "message"),
+        [
+            (lambda: number(locale=[]), "locale must be a string or None"),
+            (lambda: currency(1), "currency code must be a string"),
+            (lambda: currency(symbol_position=[]), "symbol_position must be a string"),
+            (lambda: date_formatter(1), "date pattern must be a string"),
+            (lambda: duration(input_unit=[]), "input_unit must be a string"),
+            (lambda: duration(style=[]), "style must be a string"),
+            (lambda: unit(1), "unit symbol must be a string"),
+        ],
+    )
+    def test_formatter_option_types_raise_contextual_type_errors(self, factory, message):
+        with pytest.raises(TypeError, match=message):
+            factory()
+
     def test_accounting_compact_and_custom_separators(self):
         accounting = number(digits=0, accounting=True)
         accounting_currency = currency("USD", digits=0, accounting=True)

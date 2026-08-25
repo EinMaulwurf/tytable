@@ -1070,9 +1070,6 @@ class TyTable:
             ``None`` or an empty column-group label, or a delimiter cannot
             split every column name consistently. Empty specifications are
             no-ops.
-        IndexError
-            If a row- or column-group integer position is out of range.
-
         Examples
         --------
         >>> df = pl.DataFrame({"Q1_rev": [1], "Q1_cost": [2],

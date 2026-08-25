@@ -117,6 +117,8 @@ def _separators(
     decimal_mark: str | None,
     thousands_mark: str | None,
 ) -> tuple[str, str]:
+    if locale is not None and not isinstance(locale, str):
+        raise TypeError("locale must be a string or None")
     if locale is not None and locale not in _LOCALES:
         choices = ", ".join(repr(name) for name in ("de_DE", "en_US"))
         raise ValueError(f"locale must be one of the supported German or English names ({choices})")
@@ -450,12 +452,16 @@ def currency(
     Set ``digits=None`` to use known currency digits. The default remains two
     digits for compatibility.
     """
-    if not isinstance(code, str) or not code:
+    if not isinstance(code, str):
+        raise TypeError("currency code must be a string")
+    if not code:
         raise ValueError("currency code must be a non-empty string")
     normalized_code = code.upper()
     currency_symbol = symbol if symbol is not None else _CURRENCY_SYMBOLS.get(normalized_code, code)
     if not isinstance(currency_symbol, str):
         raise TypeError("symbol must be a string or None")
+    if not isinstance(symbol_position, str):
+        raise TypeError("symbol_position must be a string")
     if symbol_position not in {"auto", "prefix", "suffix"}:
         raise ValueError("symbol_position must be 'auto', 'prefix', or 'suffix'")
     resolved_digits = _CURRENCY_MINOR_DIGITS.get(normalized_code, 2) if digits is None else digits
@@ -537,7 +543,9 @@ def date(
 
     ``timezone`` converts timezone-aware datetimes before formatting.
     """
-    if not isinstance(pattern, str) or not pattern:
+    if not isinstance(pattern, str):
+        raise TypeError("date pattern must be a string")
+    if not pattern:
         raise ValueError("date pattern must be a non-empty string")
     if not isinstance(null, str):
         raise TypeError("null must be a string")
@@ -597,10 +605,14 @@ def duration(
     more than 24 hours. Human output uses labeled day, hour, minute, and second
     fields.
     """
+    if not isinstance(input_unit, str):
+        raise TypeError("input_unit must be a string")
     if input_unit not in _DURATION_FACTORS:
         choices = ", ".join(repr(name) for name in _DURATION_FACTORS)
         raise ValueError(f"input_unit must be one of {choices}")
     digits, resolved_min_digits = _validate_precision(digits, min_digits)
+    if not isinstance(style, str):
+        raise TypeError("style must be a string")
     if style not in {"clock", "human"}:
         raise ValueError("style must be 'clock' or 'human'")
     if not isinstance(normalize_negative_zero, bool):
@@ -707,7 +719,9 @@ def unit(
     to select an SI prefix. Set ``iec_prefix=True`` to select an IEC binary
     prefix.
     """
-    if not isinstance(symbol, str) or not symbol:
+    if not isinstance(symbol, str):
+        raise TypeError("unit symbol must be a string")
+    if not symbol:
         raise ValueError("unit symbol must be a non-empty string")
     if not isinstance(si_prefix, bool):
         raise TypeError("si_prefix must be a bool")

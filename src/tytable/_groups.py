@@ -50,7 +50,7 @@ def _resolve_cols(
             raise TypeError("column spec must be str or int, got bool")
         elif isinstance(c, int):
             if c < 0 or c >= len(colnames):
-                raise IndexError(
+                raise ValueError(
                     f"column group position {c} is out of range for {len(colnames)} columns"
                 )
             indices.append(c)
@@ -163,7 +163,7 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
                     f"row group position for {label!r} must be an integer, got {type(pos).__name__}"
                 )
             if pos < 0 or pos > table._data.height:
-                raise IndexError(
+                raise ValueError(
                     f"row group position {pos} is out of range for {table._data.height} rows"
                 )
         pairs = sorted(i.items(), key=lambda x: x[1])
