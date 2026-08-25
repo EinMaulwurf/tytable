@@ -24,4 +24,5 @@ __all__ = [
     "NoteDict",
     "formatters",
     "selectors",
+    "__version__",
 ]

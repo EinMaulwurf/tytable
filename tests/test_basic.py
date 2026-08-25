@@ -77,6 +77,8 @@ def test_public_table_class_is_tytable():
 
     assert isinstance(table, TyTable)
     assert "TyTable" in tytable.__all__
+    assert "__version__" in tytable.__all__
+    assert isinstance(tytable.__version__, str)
     assert "selectors" in tytable.__all__
     assert "groupi" not in tytable.__all__
     assert "groupj" not in tytable.__all__
