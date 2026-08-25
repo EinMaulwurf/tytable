@@ -49,6 +49,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.fmt(output=["html", "ascii"])
     table.plot(j=0, fun=lambda value: value, data=plot_data, xlim=integer_limits)
     table.images(j=0, paths=image_paths)
+    table.save(Path("table.typ"), assets=Path("table_assets"))
     table.compile(Path("table.pdf"), root=Path("."), font_paths=[Path("fonts")])
 
 

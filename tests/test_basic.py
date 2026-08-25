@@ -274,6 +274,14 @@ def test_save_plain_output(tmp_path, suffix, output):
     assert destination.read_text(encoding="utf-8") == expected
 
 
+def test_save_accepts_pathlike_output_and_assets(tmp_path):
+    destination = tmp_path / "output.typ"
+
+    tt(pl.DataFrame({"A": [1]})).save(destination, assets=tmp_path / "assets")
+
+    assert destination.is_file()
+
+
 @pytest.mark.parametrize("suffix", ["", ".pdf", ".png", ".svg"])
 def test_save_rejects_unsupported_suffix(tmp_path, suffix):
     destination = tmp_path / f"output{suffix}"

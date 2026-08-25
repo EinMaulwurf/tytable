@@ -1481,8 +1481,8 @@ class TyTable:
 
     def save(
         self,
-        path: str,
-        assets: str | None = None,
+        path: str | os.PathLike[str],
+        assets: str | os.PathLike[str] | None = None,
         *,
         static_images: StaticImagePolicy = "copy",
     ) -> None:
