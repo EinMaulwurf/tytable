@@ -135,6 +135,19 @@ def test_constructor_rejects_non_numeric_height(height):
         tt(pl.DataFrame({"A": [1]}), height=height)
 
 
+@pytest.mark.parametrize("data", [1, {"A": [1]}, object()])
+def test_constructor_requires_polars_dataframe(data):
+    with pytest.raises(TypeError, match="data must be a Polars DataFrame"):
+        tt(data)
+
+
+@pytest.mark.parametrize("name", ["caption", "label"])
+@pytest.mark.parametrize("value", [1, b"text", object()])
+def test_constructor_rejects_non_string_figure_metadata(name, value):
+    with pytest.raises(TypeError, match=rf"{name} must be a string or None"):
+        tt(pl.DataFrame({"A": [1]}), **{name: value})
+
+
 @pytest.mark.parametrize("height", [-1, float("nan"), float("inf")])
 def test_constructor_rejects_invalid_numeric_height(height):
     with pytest.raises(ValueError, match="height must be"):

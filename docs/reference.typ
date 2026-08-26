@@ -131,7 +131,7 @@ Import `regex` and `colgroup` from `tytable.selectors`. Use `regex(pattern)` for
 
 #api("Create", api_signatures.at("tt"))
 
-`data` is a Polars `DataFrame` and is cloned on construction. The constructor options fall into these groups:
+`data` must be a Polars `DataFrame` and is cloned on construction. `caption` and `label` must be strings when supplied. The constructor options fall into these groups:
 
 #docs-table(
   columns: (1.05fr, 1.9fr, 2.05fr),

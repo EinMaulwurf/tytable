@@ -120,8 +120,8 @@ def tt(
     Raises
     ------
     TypeError
-        If ``width``, one of its entries, or ``height`` has an unsupported
-        type.
+        If ``data``, figure metadata, ``width``, one of its entries, or
+        ``height`` has an unsupported type.
     ValueError
         If figure metadata, ``width``, or ``height`` is invalid.
 
@@ -230,6 +230,10 @@ _TYPST_LABEL_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.:-]*$")
 
 def _validate_figure_options(figure: bool, caption: str | None, label: str | None) -> None:
     """Validate figure-only metadata and keep label interpolation safe."""
+    if caption is not None and not isinstance(caption, str):
+        raise TypeError(f"caption must be a string or None, got {type(caption).__name__}")
+    if label is not None and not isinstance(label, str):
+        raise TypeError(f"label must be a string or None, got {type(label).__name__}")
     if not figure and (caption is not None or label is not None):
         raise ValueError("caption and label require figure=True")
     if label is not None and not _TYPST_LABEL_RE.fullmatch(label):
@@ -428,11 +432,13 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``width``, one of its entries, or ``height`` has an unsupported
-            type.
+            If ``data``, figure metadata, ``width``, one of its entries, or
+            ``height`` has an unsupported type.
         ValueError
             If figure metadata, ``width``, or ``height`` is invalid.
         """
+        if not isinstance(data, pl.DataFrame):
+            raise TypeError(f"data must be a Polars DataFrame, got {type(data).__name__}")
         _validate_bool("figure", figure)
         _validate_bool("colnames", colnames)
         _validate_bool("escape", escape)
