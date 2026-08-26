@@ -410,6 +410,11 @@ class TestCellSelectors:
 
 @pytest.mark.typst
 class TestReplace:
+    @pytest.mark.parametrize("replace", [1, 1.5, [], object()])
+    def test_rejects_unsupported_replace_types(self, replace):
+        with pytest.raises(TypeError, match="replace must be a bool, string, dict, or None"):
+            tt(pl.DataFrame({"x": [1]})).fmt(replace=replace)
+
     def test_replace_true(self):
         df = pl.DataFrame({"x": [None, 10], "y": [1.0, 2.0]})
         t = tt(df).fmt(replace=True).render("typst")
@@ -647,6 +652,11 @@ class TestFn:
     def test_fn_values_rejects_unknown_value(self):
         with pytest.raises(ValueError, match="fn_values must be either"):
             tt(pl.DataFrame({"x": [1]})).fmt(fn=lambda values: values, fn_values="raw")
+
+    @pytest.mark.parametrize("fn_values", [[], 1, None])
+    def test_fn_values_rejects_non_string(self, fn_values):
+        with pytest.raises(TypeError, match="fn_values must be a string"):
+            tt(pl.DataFrame({"x": [1]})).fmt(fn_values=fn_values)
 
     def test_default_typed_fn_values_cannot_be_combined_with_digits(self):
         with pytest.raises(ValueError, match="digits cannot be combined"):

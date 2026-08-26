@@ -830,8 +830,14 @@ class TyTable:
             raise ValueError(
                 f"num_fmt must be one of 'decimal', 'significant', or 'scientific'; got {num_fmt!r}"
             )
+        if replace is not None and not isinstance(replace, bool | str | dict):
+            raise TypeError(
+                f"replace must be a bool, string, dict, or None, got {type(replace).__name__}"
+            )
         if fn is not None and not callable(fn):
             raise TypeError(f"fn must be callable or None, got {type(fn).__name__}")
+        if not isinstance(fn_values, str):
+            raise TypeError(f"fn_values must be a string, got {type(fn_values).__name__}")
         if fn_values not in {"display", "typed"}:
             raise ValueError(f"fn_values must be either 'display' or 'typed'; got {fn_values!r}")
         if digits is not None and fn is not None and fn_values == "typed":

@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Reject unsupported `.fmt(replace=...)` and `fn_values` types immediately instead of silently ignoring them or exposing incidental errors.
 - Require callable row selectors to return genuine Boolean values for every source row.
 - Save ASCII output to `.txt` files. Reject other unsupported `.save()` suffixes instead of writing Typst source to files such as PDF files.
 - Accept one backend name or a sequence in directive `output` filters. Validate and normalize the filter when the directive is registered.
