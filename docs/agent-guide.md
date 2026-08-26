@@ -305,6 +305,8 @@ Alternatively, pass one group value per source row; a separator is inserted when
 table.group(i=["North", "North", "South", "South"])
 ```
 
+Row and column group labels may be strings or other displayable values. They are normalized to nonempty strings when registered, and typed group selectors apply the same normalization.
+
 Add spanning column headers with a mapping from labels to original columns:
 
 ```python

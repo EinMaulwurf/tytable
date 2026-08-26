@@ -1050,8 +1050,8 @@ class TyTable:
 
     def group(
         self,
-        i: Mapping[str, int] | Sequence[object] | None = None,
-        j: Mapping[str, _ColumnSelectorSpec] | None = None,
+        i: Mapping[Any, int] | Sequence[object] | None = None,
+        j: Mapping[Any, _ColumnSelectorSpec] | None = None,
         *,
         delimiter: str | None = None,
     ) -> TyTable:
@@ -1063,12 +1063,14 @@ class TyTable:
         i
             Row groups. A ``{label: row}`` dict inserts a labelled separator
             row before the given 0-based data row. A sequence (one entry per
-            data row) inserts a separator whenever the value changes.
+            data row) inserts a separator whenever the value changes. Labels
+            are converted to nonempty display strings.
         j
             Column groups. A ``{label: columns}`` dict adds a spanning header
             row where each value maps a label to a sequence of column names or
             positions, a Polars column selector, ``regex(pattern)``, or
             ``colgroup(label=..., level=...)`` referring to an existing level.
+            Labels are converted to nonempty display strings.
         delimiter
             Split every original DataFrame column name on this literal string
             and turn the shared parts into hierarchical group labels. For

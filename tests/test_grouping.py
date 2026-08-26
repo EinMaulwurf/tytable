@@ -423,6 +423,17 @@ class TestGroupValidation:
         with pytest.raises(ValueError, match="labels must not be None"):
             tt(DF).group(i=groups)
 
+    @pytest.mark.parametrize("groups", [{"": 0}, {"   ": 0}, ["", "A"], [" ", "A"]])
+    def test_row_group_labels_must_not_be_empty(self, groups):
+        with pytest.raises(ValueError, match="group labels must not be empty"):
+            tt(DF).group(i=groups)
+
+    def test_group_labels_and_selectors_share_string_normalization(self):
+        table = tt(DF).group(i=[1, 2]).group(j={3: [0, 1]})
+        out = table.style(i=groupi(label=1), bold=True).style(i=rowgroup(label=2), italic=True)
+        assert "(bold: true,)" in out.render("typst")
+        assert table._col_group_rows == [["3", ""]]
+
     def test_empty_row_group_specs_are_noops(self):
         table = tt(pl.DataFrame({"A": []})).group(i=[]).group(i={})
         assert table._row_groups == []

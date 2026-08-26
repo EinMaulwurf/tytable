@@ -174,15 +174,15 @@ class TestResolveI:
         with pytest.raises(ValueError, match="non-negative"):
             groupj(level=-1)
 
-    @pytest.mark.parametrize("label", [True, 1, ["A"]])
-    def test_groupi_label_must_be_a_string(self, label):
-        with pytest.raises(TypeError, match="must be a string"):
-            groupi(label=label)  # type: ignore[arg-type]
+    def test_row_group_selectors_normalize_displayable_labels(self):
+        assert groupi(label=1).label == "1"
+        assert rowgroup(label=True).label == "True"
 
-    @pytest.mark.parametrize("label", [True, 1, ["A"]])
-    def test_rowgroup_label_must_be_a_string(self, label):
-        with pytest.raises(TypeError, match="must be a string"):
-            rowgroup(label=label)  # type: ignore[arg-type]
+    @pytest.mark.parametrize("factory", [groupi, rowgroup])
+    @pytest.mark.parametrize("label", ["", "   "])
+    def test_row_group_selector_labels_must_not_be_empty(self, factory, label):
+        with pytest.raises(ValueError, match="label must not be empty"):
+            factory(label=label)
 
     @pytest.mark.parametrize("selector", [(value for value in range(2)), {0, 1}])
     def test_arbitrary_iterables_are_rejected(self, layout, selector):
@@ -311,10 +311,8 @@ class TestResolveJ:
         with pytest.raises(ValueError, match="level 1 is out of range"):
             resolve_j(colgroup(label="Measure", level=1), self.DF, column_group_rows=rows)
 
-    @pytest.mark.parametrize("label", [True, 1, ["A"]])
-    def test_colgroup_label_must_be_a_string(self, label):
-        with pytest.raises(TypeError, match="must be a string"):
-            colgroup(label=label, level=0)  # type: ignore[arg-type]
+    def test_colgroup_normalizes_displayable_labels(self):
+        assert colgroup(label=1, level=0).label == "1"
 
     @pytest.mark.parametrize("label", ["", "   "])
     def test_colgroup_label_must_not_be_empty(self, label):

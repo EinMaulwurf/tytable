@@ -63,8 +63,18 @@ def _resolve_cols(
     return indices
 
 
+def _display_group_label(label: object) -> str:
+    """Return a nonempty display string for one registered group label."""
+    if label is None:
+        raise ValueError("group labels must not be None")
+    display_label = str(label)
+    if not display_label.strip():
+        raise ValueError("group labels must not be empty")
+    return display_label
+
+
 def _build_col_group_row(
-    j_dict: Mapping[str, _ColumnSelectorSpec],
+    j_dict: Mapping[Any, _ColumnSelectorSpec],
     data: pl.DataFrame,
     column_group_rows: Sequence[Sequence[str | None]] = (),
 ) -> list[str | None]:
@@ -74,11 +84,7 @@ def _build_col_group_row(
     row: list[str | None] = [None] * ncol
     claimed: set[int] = set()
     for label, cols in j_dict.items():
-        if label is None:
-            raise ValueError("column group labels must not be None")
-        display_label = str(label)
-        if not display_label.strip():
-            raise ValueError("column group labels must not be empty")
+        display_label = _display_group_label(label)
         indices = _resolve_cols(cols, data, column_group_rows)
         if not indices:
             raise ValueError(f"column group {label!r} must select at least one column")
@@ -151,13 +157,13 @@ def _resolve_col_group_spans(row: list[str | None]) -> list[tuple[str, int, int]
     return spans
 
 
-def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) -> TyTable:
+def register_row_groups(table: TyTable, i: Mapping[Any, int] | Sequence[Any]) -> TyTable:
     """Record row-group separators from a mapping or a run-length sequence."""
     groups: list[RowGroup] = []
     if isinstance(i, Mapping):
+        normalized: list[tuple[str, int]] = []
         for label, pos in i.items():
-            if label is None:
-                raise ValueError("row group labels must not be None")
+            display_label = _display_group_label(label)
             if isinstance(pos, bool) or not isinstance(pos, int):
                 raise TypeError(
                     f"row group position for {label!r} must be an integer, got {type(pos).__name__}"
@@ -166,19 +172,18 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
                 raise ValueError(
                     f"row group position {pos} is out of range for {table._data.height} rows"
                 )
-        pairs = sorted(i.items(), key=lambda x: x[1])
-        for label, pos in pairs:
-            groups.append(RowGroup(label=str(label), position=pos))
+            normalized.append((display_label, pos))
+        for label, pos in sorted(normalized, key=lambda x: x[1]):
+            groups.append(RowGroup(label=label, position=pos))
     elif not isinstance(i, (str, bytes)) and isinstance(i, Sequence):
         if len(i) != table._data.height:
             raise ValueError(
                 f"row group list must contain exactly {table._data.height} entries, got {len(i)}"
             )
-        if any(label is None for label in i):
-            raise ValueError("row group labels must not be None")
+        labels = [_display_group_label(label) for label in i]
         prev = None
         pos = 0
-        for idx, val in enumerate(i):
+        for idx, val in enumerate(labels):
             if idx > 0 and val != prev:
                 groups.append(RowGroup(label=str(prev), position=pos))
                 pos = idx
@@ -197,7 +202,7 @@ def register_row_groups(table: TyTable, i: Mapping[str, int] | Sequence[Any]) ->
     return table
 
 
-def register_col_groups(table: TyTable, j: Mapping[str, _ColumnSelectorSpec]) -> TyTable:
+def register_col_groups(table: TyTable, j: Mapping[Any, _ColumnSelectorSpec]) -> TyTable:
     """Record a column-group header row from a ``{label: [cols]}`` mapping."""
     if isinstance(j, Mapping):
         if not j:
