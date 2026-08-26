@@ -591,14 +591,16 @@ class TyTable:
         fontsize
             Font size in ``em``.
         align
-            Horizontal alignment: ``"l"`` / ``"c"`` / ``"r"``. When ``j``
-            selects multiple columns, a multi-char string like ``"llr"``
-            sets per-column alignment (one char per selected column). Without
+            Horizontal alignment: ``"l"`` / ``"left"``, ``"c"`` /
+            ``"center"``, or ``"r"`` / ``"right"``. When ``j`` selects
+            multiple columns, a multi-char shorthand like ``"llr"`` sets
+            per-column alignment (one character per selected column). Without
             an explicit style, columns with numeric Polars dtypes are
             right-aligned and other columns are left-aligned; column-name
             headers follow the same defaults.
         alignv
-            Vertical alignment: ``"t"`` / ``"m"`` / ``"b"``. Per-column
+            Vertical alignment: ``"t"`` / ``"top"``, ``"m"`` /
+            ``"middle"``, or ``"b"`` / ``"bottom"``. Per-column shorthand
             strings (e.g. ``"tmb"``) are supported like ``align``.
         indent
             Left indent in ``em``.

@@ -315,6 +315,11 @@ class TestStyleValidation:
         with pytest.raises(ValueError):
             tt(DF).style(i=0, alignv="z")
 
+    def test_long_alignment_names_are_public(self):
+        built = build(tt(DF).style(i=0, j=0, align="left", alignv="bottom"), "typst")
+        assert built.style_grid[(1, 0)]["align"] == "left"
+        assert built.style_grid[(1, 0)]["alignv"] == "bottom"
+
     def test_bad_line(self):
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="z")

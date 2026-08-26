@@ -34,6 +34,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Include the existing public `__version__` attribute in the package's declared exports.
 - Use contextual `TypeError` failures for invalid formatter option types and consistent `ValueError` failures for out-of-range public positions.
 
+### Documentation
+
+- Document the supported long `align` and `alignv` names alongside their shorthand forms.
+
 ### Deprecated
 
 - Version 4.0 will remove `.fmt(digits=..., num_fmt=...)`. Version 3.x continues to support it. Semantic formatters from `tytable.formatters` replace it in new code.

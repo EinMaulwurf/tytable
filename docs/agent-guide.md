@@ -198,8 +198,8 @@ Common style properties are:
 | `monospace`, `smallcaps` | `bool` |
 | `color`, `background` | named color or hex string |
 | `fontsize` | finite, non-negative number in `em` |
-| `align` | `"l"`, `"c"`, or `"r"` |
-| `alignv` | `"t"`, `"m"`, or `"b"` |
+| `align` | `"l"` / `"left"`, `"c"` / `"center"`, or `"r"` / `"right"` |
+| `alignv` | `"t"` / `"top"`, `"m"` / `"middle"`, or `"b"` / `"bottom"` |
 | `indent` | finite, non-negative number in `em` |
 | `padding` | finite number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
 | `rotate` | finite angle in degrees for selected cell content |
@@ -373,7 +373,7 @@ In Jupyter, leaving the table as the last expression displays its HTML preview. 
 - Do not select a display label introduced by `.set_name()`; use the original DataFrame column name.
 - Do not put value options such as `digits` in `.style()`; use `.fmt()`.
 - Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of original typed values by default, or current strings with `fn_values="display"`.
-- Do not use `"left"`, `"center"`, or `"right"` for `align`; use `"l"`, `"c"`, or `"r"`.
+- Use either the concise alignment shorthands (`"l"`, `"c"`, `"r"`; `"t"`, `"m"`, `"b"`) or their full names. Per-column strings such as `"llr"` require shorthands.
 - Do not use `where` for structural rows; it selects body cells only.
 - Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with safe escaping.
 - Remember that directives are lazy. Many invalid selectors and incompatible structural targets are reported by `.render()` or `.save()`, not when `.style()` or `.fmt()` is called.
