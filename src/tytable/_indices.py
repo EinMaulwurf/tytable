@@ -274,9 +274,17 @@ def resolve_i(
                 )
             return source_to_display([j for j, value in enumerate(i) if value])
         if callable(i) and not isinstance(i, (int, str)):
-            return source_to_display(
-                [j for j, row in enumerate(data.iter_rows(named=True)) if i(row)]
-            )
+            selected_rows: list[int] = []
+            for j, row in enumerate(data.iter_rows(named=True)):
+                predicate_match = i(row)
+                if not isinstance(predicate_match, bool):
+                    raise TypeError(
+                        "row selector callable must return a bool for every row, "
+                        f"got {type(predicate_match).__name__} for source row {j}"
+                    )
+                if predicate_match:
+                    selected_rows.append(j)
+            return source_to_display(selected_rows)
 
     if isinstance(i, str):
         return layout.resolve_string(i)

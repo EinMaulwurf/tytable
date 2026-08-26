@@ -217,6 +217,11 @@ class TestDataDrivenRows:
     def test_callable(self, layout):
         assert resolve_i(lambda row: row["Grade"] == "C", layout=layout, data=self.DF) == [4]
 
+    @pytest.mark.parametrize("result", [1, 0, "yes", None])
+    def test_callable_requires_boolean_results(self, layout, result):
+        with pytest.raises(TypeError, match=r"must return a bool.*source row 0"):
+            resolve_i(lambda row: result, layout=layout, data=self.DF)
+
     def test_expression_contracts(self, layout):
         with pytest.raises(ValueError, match="one column"):
             resolve_i(pl.all(), layout=layout, data=self.DF)

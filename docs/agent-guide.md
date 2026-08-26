@@ -105,7 +105,7 @@ table.style(i=pl.Series([True, False, True]), bold=True)
 table.style(i=lambda row: row["Region"] == "North", bold=True)
 ```
 
-Boolean masks must have exactly one Boolean value per source row. Expressions and callables are evaluated against the original DataFrame. These forms also work as the `i` value in a targeted `NoteDict`.
+Boolean masks must have exactly one Boolean value per source row, and callable predicates must return a genuine `bool` for every row. Expressions and callables are evaluated against the original DataFrame. These forms also work as the `i` value in a targeted `NoteDict`.
 
 ### Columns: `j`
 
