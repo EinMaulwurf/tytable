@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Require stable width sequences and reject negative or non-finite numeric widths.
 - Reject unsupported `.fmt(replace=...)` and `fn_values` types immediately instead of silently ignoring them or exposing incidental errors.
 - Require callable row selectors to return genuine Boolean values for every source row.
 - Save ASCII output to `.txt` files. Reject other unsupported `.save()` suffixes instead of writing Typst source to files such as PDF files.

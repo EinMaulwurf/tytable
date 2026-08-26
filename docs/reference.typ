@@ -151,7 +151,7 @@ Import `regex` and `colgroup` from `tytable.selectors`. Use `regex(pattern)` for
   [global safe-markup policy],
 )
 
-`width` accepts a fraction, a Typst length string, or one entry per column (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets a finite, non-negative row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
+`width` accepts a finite, non-negative fraction, a Typst length string, or one entry per column in a list or tuple (fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed). `height` sets a finite, non-negative row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
 
 ```python
 from tytable import NoteDict, tt

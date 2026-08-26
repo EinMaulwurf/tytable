@@ -674,10 +674,28 @@ class TestWidthValidation:
         with pytest.raises(ValueError, match="width list must have one entry per column"):
             tt(df, width=[0.5])
 
+    @pytest.mark.parametrize("width", [-0.1, float("nan"), float("inf")])
+    def test_invalid_scalar_raises(self, width):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(ValueError, match="width must be"):
+            tt(df, width=width)
+
+    @pytest.mark.parametrize("width", [(value for value in [0.5, 0.5]), {0.5}, {"A": 0.5}])
+    def test_arbitrary_iterables_raise(self, width):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(TypeError, match="width must be a number, string, sequence, or None"):
+            tt(df, width=width)
+
     def test_negative_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         with pytest.raises(ValueError, match="non-negative"):
             tt(df, width=[-0.1, 0.5])
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf")])
+    def test_non_finite_entry_raises(self, value):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        with pytest.raises(ValueError, match="width entries must be finite"):
+            tt(df, width=[value, 0.5])
 
     def test_bool_entry_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})

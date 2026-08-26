@@ -57,7 +57,7 @@ tt(
 
 - `df` must be a Polars `DataFrame`. It is cloned on construction.
 - `caption` and `label` require `figure=True`, which is the default.
-- `width=1` fills the available line. A list sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
+- `width=1` fills the available line. Numeric widths must be finite and non-negative. A list or tuple sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is a finite, non-negative row height in `em`, not a table scaling factor.
 - `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; numbers are points and strings are Typst lengths.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.

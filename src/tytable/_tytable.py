@@ -251,8 +251,15 @@ def _normalize_width(
     """
     if isinstance(width, bool):
         raise TypeError("width must be a number, string, sequence, or None; bool is not supported")
-    if width is None or isinstance(width, (int, float, str)):
+    if width is None or isinstance(width, str):
         return width
+    if isinstance(width, int | float):
+        _validate_number("width", width)
+        return width
+    if not isinstance(width, Sequence):
+        raise TypeError(
+            f"width must be a number, string, sequence, or None, got {type(width).__name__}"
+        )
     entries = list(width)
     if len(entries) != ncol:
         raise ValueError(f"width list must have one entry per column ({ncol}), got {len(entries)}")
@@ -262,6 +269,8 @@ def _normalize_width(
             continue
         if isinstance(w, bool) or not isinstance(w, (int, float)):
             raise ValueError(f"width entries must be a number, string, or None, got {w!r}")
+        if isinstance(w, float) and not math.isfinite(w):
+            raise ValueError(f"width entries must be finite, got {w!r}")
         if w < 0:
             raise ValueError(f"width entries must be non-negative, got {w!r}")
         nums.append(w)
