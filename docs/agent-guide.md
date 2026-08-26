@@ -59,7 +59,7 @@ tt(
 - `caption` and `label` require `figure=True`, which is the default.
 - `width=1` fills the available line. Numeric widths must be finite and non-negative. A list or tuple sets widths per column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width.
 - `height` is a finite, non-negative row height in `em`, not a table scaling factor.
-- `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; numbers are points and strings are Typst lengths.
+- `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; finite, non-negative numbers are points and strings are Typst lengths.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.
 
 ## Row and column selectors
@@ -196,17 +196,17 @@ Common style properties are:
 | `bold`, `italic`, `underline`, `strikeout` | `bool` |
 | `monospace`, `smallcaps` | `bool` |
 | `color`, `background` | named color or hex string |
-| `fontsize` | non-negative number in `em` |
+| `fontsize` | finite, non-negative number in `em` |
 | `align` | `"l"`, `"c"`, or `"r"` |
 | `alignv` | `"t"`, `"m"`, or `"b"` |
-| `indent` | non-negative number in `em` |
-| `padding` | number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
-| `rotate` | angle in degrees for selected cell content |
+| `indent` | finite, non-negative number in `em` |
+| `padding` | finite number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
+| `rotate` | finite angle in degrees for selected cell content |
 | `colspan`, `rowspan` | positive integer span |
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
 | `line_style` | `"solid"`, `"dashed"`, `"dotted"`, `"dash-dotted"`, or `"none"` |
 | `line_color` | named color or hex string |
-| `line_width` | number in `em`; default `0.1` |
+| `line_width` | finite, non-negative number in `em`; default `0.1` |
 | `output` | one backend or a sequence, such as `"typst"` or `("typst", "html")` |
 
 Text columns default to left alignment and numeric columns to right alignment. Their headers use the same dtype-aware defaults. Explicit styles override the defaults. When `j` selects several columns, `align` and `alignv` can assign one character per selected column:

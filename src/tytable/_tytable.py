@@ -286,6 +286,8 @@ def _validate_gutter(name: str, value: float | str | None) -> None:
         return
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise TypeError(f"{name} must be a number, string, or None")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value!r}")
     if value < 0:
         raise ValueError(f"{name} must be non-negative, got {value!r}")
 

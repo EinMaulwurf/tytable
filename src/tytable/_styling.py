@@ -10,6 +10,7 @@ the grid per directive.
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, TypeAlias
@@ -199,9 +200,11 @@ def _validate_positive_int(name: str, value: object) -> None:
 
 def _validate_non_negative_number(name: str, value: object) -> None:
     """Validate a non-negative numeric style property."""
-    if value is not None and (
-        not isinstance(value, int | float) or isinstance(value, bool) or value < 0
-    ):
+    if value is not None and (not isinstance(value, int | float) or isinstance(value, bool)):
+        raise ValueError(f"{name} must be a non-negative number, got {value!r}")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value!r}")
+    if isinstance(value, int | float) and value < 0:
         raise ValueError(f"{name} must be a non-negative number, got {value!r}")
 
 
@@ -209,6 +212,8 @@ def _validate_number(name: str, value: object) -> None:
     """Validate a numeric style property."""
     if value is not None and (not isinstance(value, int | float) or isinstance(value, bool)):
         raise TypeError(f"{name} must be a number, got {type(value).__name__}")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{name} must be finite, got {value!r}")
 
 
 def _validate_non_negative_style_number(name: str, value: object) -> None:
@@ -225,6 +230,8 @@ def normalize_padding(value: float | Sequence[float] | None) -> Padding | None:
     if isinstance(value, bool):
         raise TypeError("padding must be a number or a sequence of two or four numbers")
     if isinstance(value, int | float):
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError(f"padding values must be finite, got {value!r}")
         if value < 0:
             raise ValueError(f"padding values must be non-negative, got {value!r}")
         return value
@@ -236,6 +243,8 @@ def normalize_padding(value: float | Sequence[float] | None) -> Padding | None:
     for item in values:
         if isinstance(item, bool) or not isinstance(item, int | float):
             raise TypeError(f"padding values must be numbers, got {item!r}")
+        if isinstance(item, float) and not math.isfinite(item):
+            raise ValueError(f"padding values must be finite, got {item!r}")
         if item < 0:
             raise ValueError(f"padding values must be non-negative, got {item!r}")
     if len(values) == 2:

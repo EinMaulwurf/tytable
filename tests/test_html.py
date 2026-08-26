@@ -575,6 +575,9 @@ class TestTypstGutter:
             ("gutter", True, TypeError),
             ("column_gutter", -1, ValueError),
             ("row_gutter", False, TypeError),
+            ("gutter", float("nan"), ValueError),
+            ("column_gutter", float("inf"), ValueError),
+            ("row_gutter", -float("inf"), ValueError),
         ],
     )
     def test_invalid_gutter(self, name, value, error):

@@ -339,6 +339,12 @@ class TestStyleValidation:
         with pytest.raises(ValueError):
             tt(DF).style(i=0, line="t", line_width=-1)
 
+    @pytest.mark.parametrize("prop", ["line_width", "fontsize", "indent", "rotate"])
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+    def test_numeric_properties_must_be_finite(self, prop, value):
+        with pytest.raises(ValueError, match=rf"{prop} must be finite"):
+            tt(DF).style(i=0, **{prop: value})
+
     @pytest.mark.parametrize("prop", ["fontsize", "indent"])
     def test_negative_size_property(self, prop):
         with pytest.raises(ValueError, match=rf"{prop} must be non-negative"):
@@ -355,6 +361,11 @@ class TestStyleValidation:
     )
     def test_invalid_padding(self, padding, error):
         with pytest.raises(error, match="padding"):
+            tt(DF).style(i=0, padding=padding)
+
+    @pytest.mark.parametrize("padding", [float("nan"), (1, float("inf"))])
+    def test_padding_must_be_finite(self, padding):
+        with pytest.raises(ValueError, match="padding values must be finite"):
             tt(DF).style(i=0, padding=padding)
 
     def test_bad_multi_char_align(self):
