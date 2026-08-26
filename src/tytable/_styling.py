@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from ._colors import _is_color_function, _validate_color_string
 from ._groups import _resolve_col_group_spans
 from ._indices import resolve_i, resolve_where
+from ._types import _StyleRowSelector
 
 if TYPE_CHECKING:
     from ._directives import StyleDirective
@@ -127,6 +128,22 @@ _LINE_STYLES = {"solid", "dashed", "dotted", "dash-dotted", "none"}
 
 StyleValidator = Callable[[str, object], None]
 Padding: TypeAlias = float | tuple[float, float] | tuple[float, float, float, float]
+
+
+def _split_meta_selectors(i: _StyleRowSelector) -> tuple[_StyleRowSelector, tuple[str, ...]]:
+    """Separate non-grid caption/note selectors from one public style selector."""
+    if isinstance(i, str) and i in META_SELECTORS:
+        return [], (i,)
+    if isinstance(i, Sequence) and not isinstance(i, (str, bytes, bytearray)):
+        meta = tuple(
+            dict.fromkeys(
+                value for value in i if isinstance(value, str) and value in META_SELECTORS
+            )
+        )
+        if meta:
+            grid = [value for value in i if value not in META_SELECTORS]
+            return grid, meta
+    return i, ()
 
 
 def align_to_typst(h: str | None, v: str | None) -> str | None:
@@ -319,12 +336,9 @@ def build_style_grid(
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
             continue
-        if isinstance(d.i, str) and d.i in META_SELECTORS:
-            # Caption/notes styling is resolved separately in ``build_meta_styles``;
-            # they are not grid cells, so skip them here.
-            continue
+        grid_i, _meta = _split_meta_selectors(d.i)
         i_vals = resolve_i(
-            d.i,
+            grid_i,
             layout=layout,
             data=table._data,
         )
@@ -447,39 +461,39 @@ def build_meta_styles(
     for d in table._style_directives:
         if d.output is not None and output not in d.output:
             continue
-        if not isinstance(d.i, str):
-            continue
-        if d.i == "caption":
-            target = style_caption
-        elif d.i == "notes":
-            target = style_notes
-        else:
+        _grid_i, targets = _split_meta_selectors(d.i)
+        if not targets:
             continue
         if d.where is not None:
-            raise ValueError(f"where cannot be used with the {d.i!r} selector")
+            raise ValueError(f"where cannot be used with metadata selector(s) {targets!r}")
         if d.j is not None:
-            raise ValueError(f"j cannot be used with the {d.i!r} selector")
+            raise ValueError(f"j cannot be used with metadata selector(s) {targets!r}")
         if d.line is not None or d.line_style is not None or d.line_color is not None:
-            raise ValueError(f"line styling cannot be used with the {d.i!r} selector")
+            raise ValueError(f"line styling cannot be used with metadata selector(s) {targets!r}")
         if d.colspan is not None or d.rowspan is not None:
-            raise ValueError(f"spans cannot be used with the {d.i!r} selector")
-        supported = _META_STYLE_SUPPORT.get(output, {}).get(d.i)
-        for prop in META_STYLE_PROPS:
-            v = getattr(d, prop)
-            if v is not None:
-                if prop == "align" and isinstance(v, str) and v not in _ALIGN_H:
-                    raise ValueError(
-                        f"per-column align spec {v!r} cannot be used with meta selector {d.i!r}"
-                    )
-                if prop == "alignv" and isinstance(v, str) and v not in _ALIGN_V:
-                    raise ValueError(
-                        f"per-column alignv spec {v!r} cannot be used with meta selector {d.i!r}"
-                    )
-                if supported is not None and prop not in supported:
-                    raise ValueError(
-                        f"style property {prop!r} is not supported for {d.i!r} in {output} output"
-                    )
-                target[prop] = v
+            raise ValueError(f"spans cannot be used with metadata selector(s) {targets!r}")
+        for selector in targets:
+            target = style_caption if selector == "caption" else style_notes
+            supported = _META_STYLE_SUPPORT.get(output, {}).get(selector)
+            for prop in META_STYLE_PROPS:
+                v = getattr(d, prop)
+                if v is not None:
+                    if prop == "align" and isinstance(v, str) and v not in _ALIGN_H:
+                        raise ValueError(
+                            f"per-column align spec {v!r} cannot be used with meta selector "
+                            f"{selector!r}"
+                        )
+                    if prop == "alignv" and isinstance(v, str) and v not in _ALIGN_V:
+                        raise ValueError(
+                            f"per-column alignv spec {v!r} cannot be used with meta selector "
+                            f"{selector!r}"
+                        )
+                    if supported is not None and prop not in supported:
+                        raise ValueError(
+                            f"style property {prop!r} is not supported for {selector!r} in "
+                            f"{output} output"
+                        )
+                    target[prop] = v
     return style_caption, style_notes
 
 

@@ -462,6 +462,20 @@ class TestBordersLines:
 
 @pytest.mark.typst
 class TestCaptionNotesStyle:
+    def test_metadata_selectors_can_be_combined_in_a_sequence(self):
+        out = (
+            tt(DF, caption="Demo", notes=["Source"])
+            .style(i=["caption", "notes"], italic=True)
+            .render("typst")
+        )
+        assert 'style: "italic"' in out
+        assert '#text(style: "italic", [Source])' in out
+
+    def test_metadata_and_grid_selectors_can_be_combined(self):
+        out = tt(DF, notes=["Source"]).style(i=[0, "notes"], bold=True).render("typst")
+        assert '"1_0": 0' in out
+        assert '#text(weight: "bold", [Source])' in out
+
     def test_caption_bold_color_fontsize(self):
         out = (
             tt(DF, caption="Demo")

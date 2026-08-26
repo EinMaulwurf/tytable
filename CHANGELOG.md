@@ -17,6 +17,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Let `.style()` selector sequences combine caption and note metadata with each other or with grid rows.
 - Normalize displayable row and column group labels consistently across registration and semantic selectors, and reject empty labels.
 - Validate the constructor DataFrame, caption, and label types immediately with contextual errors.
 - Reject non-finite cell style dimensions, rotations, padding, and table gutter values.
