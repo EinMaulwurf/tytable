@@ -505,6 +505,38 @@ class TestEscape:
 
 
 class TestLinebreak:
+    @pytest.mark.parametrize(
+        ("output", "expected"),
+        [("typst", r"\<first\> \ \#second&"), ("html", "&lt;first&gt;<br>#second&amp;")],
+    )
+    def test_chained_transform_reescapes_replaced_linebreak_content(self, output, expected):
+        df = pl.DataFrame({"text": ["<first>|#second&"]})
+        rendered = (
+            tt(df)
+            .theme_plain()
+            .fmt(j="text", linebreak="|")
+            .fmt(j="text", fn=lambda values: values, linebreak="|")
+            .render(output)
+        )
+
+        assert expected in rendered
+
+    @pytest.mark.parametrize(
+        ("output", "expected"),
+        [("typst", r"\<first\> \ \#second&"), ("html", "&lt;first&gt;<br>#second&amp;")],
+    )
+    def test_repeated_explicit_escape_reescapes_replaced_content(self, output, expected):
+        df = pl.DataFrame({"text": ["<first>|#second&"]})
+        rendered = (
+            tt(df, escape=False)
+            .theme_plain()
+            .fmt(j="text", linebreak="|", escape=True)
+            .fmt(j="text", fn=lambda values: values, linebreak="|", escape=True)
+            .render(output)
+        )
+
+        assert expected in rendered
+
     def test_typst_uses_native_linebreak_and_escapes_text(self):
         df = pl.DataFrame({"text": ["first\n#second"]})
         out = tt(df).theme_plain().fmt(j="text", linebreak="\n").render("typst")

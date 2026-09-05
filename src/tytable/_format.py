@@ -384,6 +384,11 @@ def apply_formats(
             output,
             layout,
         )
+        escaped_cells.difference_update(
+            cell
+            for cell, before in values_before.items()
+            if _cell_value(cell, data_body, colnames_display, layout) != before
+        )
         _apply_fn(
             target_cells,
             d,
@@ -393,6 +398,11 @@ def apply_formats(
             table._source_colnames,
             layout,
         )
+        escaped_cells.difference_update(
+            cell
+            for cell, before in values_before.items()
+            if _cell_value(cell, data_body, colnames_display, layout) != before
+        )
         _apply_replacements(
             target_cells,
             d,
@@ -401,6 +411,11 @@ def apply_formats(
             colnames_display,
             table._source_colnames,
             layout,
+        )
+        escaped_cells.difference_update(
+            cell
+            for cell, before in values_before.items()
+            if _cell_value(cell, data_body, colnames_display, layout) != before
         )
         generated_markup.update(
             _apply_linebreaks(
