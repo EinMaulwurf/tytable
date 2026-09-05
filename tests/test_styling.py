@@ -112,18 +112,6 @@ class TestStyleProps:
         assert '"0_0": 0' in out
         assert '"0_1": 0' not in out
 
-    def test_header_colspan_emits_span_and_omits_covered_cell(self):
-        out = tt(DF).theme_plain().style(i="header", j="A", colspan=2).render("typst")
-
-        assert "table.cell(colspan: 2)[A]," in out
-        assert "[A],[B]," not in out
-
-    def test_header_rowspan_emits_span_and_omits_covered_body_cell(self):
-        out = tt(DF).theme_plain().style(i="header", j="A", rowspan=2).render("typst")
-
-        assert "table.cell(rowspan: 2)[A],[B]," in out
-        assert "[1],[2]," not in out
-
     def test_rotate_in_show_rule(self):
         out = tt(DF).style(i="header", rotate=90).render("typst")
         assert "align(a, rotate(style.rotate, reflow: true, tmp))" in out
@@ -164,18 +152,6 @@ class TestStyleProps:
     def test_background_8hex_alpha(self):
         out = tt(DF).style(i=0, j=0, background="#00ff0033").render("typst")
         assert 'background: rgb("#00ff0033")' in out
-
-    def test_rowspan_typst(self):
-        df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
-        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("typst")
-        assert "table.cell(rowspan: 2)[top]" in out
-        assert "covered" not in out
-
-    def test_rowspan_html(self):
-        df = pl.DataFrame({"A": ["top", "covered"], "B": [1, 2]})
-        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("html")
-        assert '<td rowspan="2">top</td>' in out
-        assert "covered" not in out
 
     def test_color_normalization_4hex_alpha(self):
         out = tt(DF).style(i=0, j=0, color="#f008").render("typst")
@@ -306,8 +282,6 @@ class TestStyleValidation:
     @pytest.mark.parametrize(
         ("prop", "value", "error"),
         [
-            ("colspan", True, ValueError),
-            ("rowspan", 0, ValueError),
             ("line_width", True, ValueError),
             ("fontsize", True, TypeError),
             ("indent", "1", TypeError),
@@ -340,9 +314,10 @@ class TestStyleValidation:
         with pytest.raises(ValueError, match="line_style"):
             tt(DF).style(i=0, line="b", line_style="double")
 
-    def test_colspan_must_be_positive(self):
-        with pytest.raises(ValueError):
-            tt(DF).style(i=0, colspan=0)
+    @pytest.mark.parametrize("prop", ["colspan", "rowspan"])
+    def test_removed_span_options_fail_at_public_boundary(self, prop):
+        with pytest.raises(TypeError, match=prop):
+            tt(DF).style(i=0, **{prop: 2})
 
     def test_color_must_be_str(self):
         with pytest.raises(TypeError):
@@ -664,8 +639,6 @@ class TestMetaStyleSupportMatrix:
             ({"line": "b"}, "line styling cannot"),
             ({"line_style": "dashed"}, "line styling cannot"),
             ({"line_color": "red"}, "line styling cannot"),
-            ({"colspan": 2}, "spans cannot"),
-            ({"rowspan": 2}, "spans cannot"),
         ],
     )
     @pytest.mark.parametrize("target", ["caption", "notes"])

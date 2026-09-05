@@ -159,32 +159,6 @@ class TestHtmlStyle:
         assert "transform:rotate(-90deg)" in out
         assert_snapshot("html_style_rotate_header", out)
 
-    def test_header_colspan_is_rendered(self):
-        df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df).theme_plain().style(i="header", j="A", colspan=2).render("html")
-        header = next(line for line in out.splitlines() if "<th " in line)
-        assert '<th style="text-align:right" colspan="2">A</th>' in header
-        assert ">B</th>" not in header
-
-    def test_header_rowspan_is_rendered(self):
-        df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df).theme_plain().style(i="header", j="A", rowspan=2).render("html")
-        assert '<th style="text-align:right" rowspan="2">A</th>' in out
-        body = next(line for line in out.splitlines() if "<td" in line)
-        assert ">1</td>" not in body
-        assert ">2</td>" in body
-
-    def test_body_row_fully_covered_by_rowspan_is_retained(self):
-        df = pl.DataFrame({"A": ["A", "B", "C"]})
-        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("html")
-        body = out.split("<tbody>\n", maxsplit=1)[1].split("\n</tbody>", maxsplit=1)[0]
-
-        assert body.splitlines() == [
-            '<tr><td rowspan="2">A</td></tr>',
-            "<tr></tr>",
-            "<tr><td>C</td></tr>",
-        ]
-
     def test_rotate_not_emitted_when_none(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).theme_plain().render("html")
@@ -364,33 +338,6 @@ class TestAscii:
 
 @pytest.mark.html
 class TestHtmlBorders:
-    def test_colspan_preserves_border_from_covered_cell(self):
-        df = pl.DataFrame({"A": [1], "B": [2]})
-        out = (
-            tt(df)
-            .theme_plain()
-            .style(i=0, j="A", colspan=2)
-            .style(i=0, j="B", line="br")
-            .render("html")
-        )
-        body_cell = next(line for line in out.splitlines() if "<td" in line)
-        assert "border-bottom:0.1em solid #000000" in body_cell
-        assert "border-right:0.1em solid #000000" in body_cell
-
-    def test_rowspan_preserves_border_from_covered_cell(self):
-        df = pl.DataFrame({"A": [1, 2]})
-        out = (
-            tt(df)
-            .theme_plain()
-            .style(i=0, j="A", rowspan=2)
-            .style(i=1, j="A", line="blr")
-            .render("html")
-        )
-        body_cell = next(line for line in out.splitlines() if "<td" in line)
-        assert "border-bottom:0.1em solid #000000" in body_cell
-        assert "border-left:0.1em solid #000000" in body_cell
-        assert "border-right:0.1em solid #000000" in body_cell
-
     def test_default_theme_borders_on_correct_rows(self):
         df = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
         out = tt(df).render("html")

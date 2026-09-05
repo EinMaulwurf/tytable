@@ -176,6 +176,8 @@ table.style(i=pl.col("Active"), j=["Revenue", "Cost"], where=cs.numeric() > 100,
 
 ## Styling
 
+`.style()` does not accept `colspan` or `rowspan` in v4. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups are not a general spreadsheet-style cell-merging API.
+
 Use `.style(i=..., j=..., ...)` for appearance. Combine properties that share selectors in one call:
 
 ```python
@@ -203,7 +205,6 @@ Common style properties are:
 | `indent` | finite, non-negative number in `em` |
 | `padding` | finite number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
 | `rotate` | finite angle in degrees for selected cell content |
-| `colspan`, `rowspan` | positive integer span |
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
 | `line_style` | `"solid"`, `"dashed"`, `"dotted"`, `"dash-dotted"`, or `"none"` |
 | `line_color` | named color or hex string |

@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking
+
+- Remove public `colspan` and `rowspan` styling options. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups do not provide a general spreadsheet-style cell-merge replacement.
+
 ## [3.1.0] - 2026-09-05
 
 ### Features

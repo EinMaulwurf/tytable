@@ -37,8 +37,6 @@ class StyleDirective:
     alignv: str | None = None
     indent: float | None = None
     padding: float | tuple[float, float] | tuple[float, float, float, float] | None = None
-    colspan: int | None = None
-    rowspan: int | None = None
     rotate: float | None = None
     line: str | None = None
     line_style: Literal["solid", "dashed", "dotted", "dash-dotted", "none"] | None = None

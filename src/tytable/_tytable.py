@@ -528,8 +528,6 @@ class TyTable:
         alignv: str | None = None,
         indent: float | None = None,
         padding: float | Sequence[float] | None = None,
-        colspan: int | None = None,
-        rowspan: int | None = None,
         rotate: float | None = None,
         line: str | None = None,
         line_style: Literal["solid", "dashed", "dotted", "dash-dotted", "none"] | None = None,
@@ -608,8 +606,6 @@ class TyTable:
             Cell padding in ``em``. A number applies to all sides, a two-item
             sequence sets ``(vertical, horizontal)``, and a four-item sequence
             sets ``(top, right, bottom, left)``.
-        colspan, rowspan
-            Merge the selected cell across ``N`` columns/rows.
         rotate
             Rotation angle in degrees for the cell content (e.g. ``90``
             rotates text vertically). Useful for long column headers on
@@ -687,8 +683,6 @@ class TyTable:
             color=color,
             background=background,
             line_color=line_color,
-            colspan=colspan,
-            rowspan=rowspan,
             line_width=line_width,
             fontsize=fontsize,
             indent=indent,
@@ -713,8 +707,6 @@ class TyTable:
                 alignv=alignv,
                 indent=indent,
                 padding=normalized_padding,
-                colspan=colspan,
-                rowspan=rowspan,
                 rotate=rotate,
                 line=line,
                 line_style=line_style,

@@ -39,14 +39,11 @@ OVERWRITE_PROPS = (
     "fontsize",
     "indent",
     "padding",
-    "colspan",
-    "rowspan",
     "rotate",
 )
 
-# Props applicable to the non-grid "caption" / "notes" meta selectors
-# (everything in OVERWRITE_PROPS except the grid-only span controls).
-META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p not in ("padding", "colspan", "rowspan"))
+# Props applicable to the non-grid "caption" / "notes" meta selectors.
+META_STYLE_PROPS = tuple(p for p in OVERWRITE_PROPS if p != "padding")
 
 _META_STYLE_SUPPORT = {
     "typst": {
@@ -277,8 +274,6 @@ _STYLE_VALIDATORS: dict[str, StyleValidator] = {
     "color": _validate_color,
     "background": _validate_color,
     "line_color": _validate_color,
-    "colspan": _validate_positive_int,
-    "rowspan": _validate_positive_int,
     "line_width": _validate_non_negative_number,
     "fontsize": _validate_non_negative_style_number,
     "indent": _validate_non_negative_style_number,
@@ -295,8 +290,6 @@ def _validate_style(
     color: str | None,
     background: str | None,
     line_color: str | None,
-    colspan: int | None,
-    rowspan: int | None,
     line_width: int | float | None,
     fontsize: int | float | None,
     indent: int | float | None,
@@ -470,8 +463,6 @@ def build_meta_styles(
             raise ValueError(f"j cannot be used with metadata selector(s) {targets!r}")
         if d.line is not None or d.line_style is not None or d.line_color is not None:
             raise ValueError(f"line styling cannot be used with metadata selector(s) {targets!r}")
-        if d.colspan is not None or d.rowspan is not None:
-            raise ValueError(f"spans cannot be used with metadata selector(s) {targets!r}")
         for selector in targets:
             target = style_caption if selector == "caption" else style_notes
             supported = _META_STYLE_SUPPORT.get(output, {}).get(selector)

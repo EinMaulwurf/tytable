@@ -116,15 +116,13 @@ def test_show_columns_keeps_row_group_label_when_first_source_column_is_hidden()
     assert built.style_grid[(2, 0)]["align"] == "l"
 
 
-def test_show_columns_clips_span_only_when_its_anchor_remains_visible():
+def test_show_columns_projects_group_span_when_first_member_is_hidden():
     df = pl.DataFrame({"a": [1], "b": [2], "c": [3]})
-    table = tt(df).style(i=0, j="a", colspan=3)
+    table = tt(df).group(j={"Group": ["a", "b", "c"]})
 
-    clipped = build(table.clone().show_columns(["a", "c"]), "html")
-    unspanned = build(table.clone().show_columns(["b", "c"]), "html")
+    built = build(table.show_columns(["b", "c"]), "html")
 
-    assert clipped.style_grid[(1, 0)]["colspan"] == 2
-    assert all("colspan" not in props for props in unspanned.style_grid.values())
+    assert built.style_grid[(0, 0)]["colspan"] == 2
 
 
 @pytest.mark.parametrize("output", ["typst", "html", "ascii"])
