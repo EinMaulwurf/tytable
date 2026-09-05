@@ -2,6 +2,31 @@
 
 This is the single backlog for unresolved bugs, improvements, and ideas. Completed work belongs in `CHANGELOG.md`, not here.
 
+## Audit follow-up: correctness in 3.x
+
+Work through these independently, starting with escaping. Preserve the documented 3.x API; future removals do not replace fixes for currently supported behavior.
+
+- [ ] Fix the chained-formatting escaping bypass: invalidate prior escaped/trusted status as soon as a transform replaces content, before line-break generation or explicit escaping. Add regressions for `.fmt(linebreak="|").fmt(fn=lambda values: values, linebreak="|")` with HTML/Typst metacharacters in source values and for repeated explicit escaping with table-wide escaping disabled.
+- [ ] Preserve Decimal precision throughout semantic formatting, including scaling and magnitude calculations before final rounding. Cover `Decimal("12345678901234567890123456789.12")` and a reduced ambient Decimal context; verify the shared numeric formatter consumers.
+- [ ] Preserve large integers in the supported `.fmt(digits=..., num_fmt=...)` implementation instead of converting through float. Cover `9007199254740993` with zero decimal places and precision-sensitive significant/scientific output.
+- [ ] Correct Typst column-name header span rendering: emit the accepted span and omit covered cells consistently, rather than ignoring header spans while suppressing covered body data. Cover header colspans and define valid header-rowspan boundaries consistently with the documented 3.x contract.
+- [ ] Preserve HTML body rows fully covered by rowspans. A one-column table containing `A, B, C` with `rowspan=2` on `A` must retain the empty second `<tr>` so the span does not extend into C's row.
+
+## Audit follow-up: concise v4 API
+
+Prioritize these over adding convenience APIs. Each checkbox is a separate work item. Breaking changes belong in v4, with migration guidance and a `Breaking` changelog entry; retain compatibility in 3.x. Check both the manual included by `docs/main.typ` and `docs/agent-guide.md` for each public change.
+
+- [ ] Remove public `colspan` and `rowspan` from `.style()`. Keep spans internal to `.group(j=...)` column headings and `.group(i=...)` row sections; deliberately stop supporting arbitrary spreadsheet-style cell merging. Document the migration and remove obsolete public-span tests without losing internal group-span coverage.
+- [ ] Complete the already announced removal of `.fmt(digits=..., num_fmt=...)`, leaving semantic formatters passed through `fn` as the numeric-formatting API. Migrate introductory examples to `number()`, `currency()`, and related factories, and remove the duplicate numeric implementation after preserving its 3.x behavior.
+- [ ] Separate whole-table `width` from per-column widths and replace sum-dependent numeric normalization with explicit width/weight semantics. First resolve the current backend discrepancy: `width="3cm"` means each column in Typst but the whole table in HTML. Specify migration behavior for scalar fractions, lengths, mixed lists, and `[1, 1]` versus `[0.4, 0.4]`; assess any compatible 3.x correction separately.
+- [ ] Remove legacy `gutter`, retaining explicit `column_gutter` and `row_gutter`. Column spacing must not disappear merely because a grouped table gains a cell background. Keep cell padding as a distinct inside-cell spacing control.
+- [ ] Remove `.plot(color=..., xlim=...)` callback-argument forwarding and signature inspection; let callers configure plots in their callback or with `functools.partial`. Retain embedding, selection, and image dimensions, and complete the already announced `fun` to `fn` rename with migration examples.
+- [ ] Remove redundant `compact=True` formatter options in favor of `notation="compact"`, including forwarding options on currency and unit formatters. Preserve compact formatting capabilities while eliminating conflicting ways to select the same notation.
+- [ ] Replace mutually exclusive `si_prefix` and `iec_prefix` booleans with one unit-prefix choice, provisionally `prefix_system=None | "si" | "iec"`. Define its interaction with notation and cover existing SI/IEC output and rounding-boundary behavior.
+- [ ] Evaluate removing `.group(delimiter=...)` in favor of explicit `.group(j=...)` plus display labels, moving name parsing into a recipe. This is a lower-priority candidate, not a settled removal: evaluate migration for nested headers, empty parts, and repeated child labels across different parents before deciding.
+
+Retain stable source selectors, display-only `.show_columns()` and naming, cell-wise `where`, themes, and the separate render/save/compile operations: these serve distinct purposes. New convenience proposals below should justify their API and maintenance cost against this scope before implementation.
+
 ## Small improvements
 
 - [ ] Add HTML table semantics: scoped column and row headers, accessible column groups, and caption/note relationships.
