@@ -45,7 +45,8 @@ def tt(
     caption: str | None = None,
     label: str | None = None,
     notes: Sequence[str | NoteDict] | None = None,
-    width: float | Sequence[float | str | None] | str | None = None,
+    width: float | str | None = None,
+    column_widths: Sequence[float | str | None] | None = None,
     height: float | None = None,
     gutter: float | str | None = 2,
     column_gutter: float | str | None = None,
@@ -87,13 +88,13 @@ def tt(
         get auto-numbered superscript markers. Targeted notes support data
         rows, row-group rows, and the column-name header.
     width
-        Column-width spec. A float fraction (``1`` = full width, ``0.5`` =
-        half), a per-column list of fractions/strings/``None`` (``None`` =
-        auto), or a Typst/HTML length string such as ``"3.5cm"``. ``None`` lets
-        every column auto-size. A per-column list must have one entry per
-        column; when every entry is numeric and the list sums to more than 1,
-        each entry is divided by the sum so the table fills the available width
-        with relative column sizes.
+        Whole-table width: a finite, non-negative fraction of the available
+        line width or a Typst/CSS length string such as ``"3.5cm"``. ``None``
+        lets the renderer choose the table width.
+    column_widths
+        One width entry per source column. Entries may be fractions, Typst/CSS
+        lengths, or ``None`` for automatic sizing. Numeric-only sequences
+        whose sum exceeds one are normalized to proportions.
     height
         Row height in ``em`` (Typst). ``None`` = auto rows.
     gutter
@@ -152,6 +153,7 @@ def tt(
         label=label,
         notes=notes,
         width=width,
+        column_widths=column_widths,
         height=height,
         gutter=gutter,
         column_gutter=column_gutter,
@@ -242,41 +244,43 @@ def _validate_figure_options(figure: bool, caption: str | None, label: str | Non
         )
 
 
-def _normalize_width(
-    width: float | Sequence[float | str | None] | str | None, ncol: int
-) -> float | Sequence[float | str | None] | str | None:
-    """Validate and normalize the ``width`` spec.
-
-    A per-column list must have one entry per column; each numeric entry must be
-    non-negative. When every entry is numeric and the list sums to more than 1,
-    each entry is divided by the sum so the table fills the available width with
-    relative column sizes (mirrors the tinytable contract). Mixed lists
-    (containing ``None`` or length strings) are left untouched.
-    """
+def _normalize_width(width: float | str | None) -> float | str | None:
+    """Validate a whole-table width spec."""
     if isinstance(width, bool):
-        raise TypeError("width must be a number, string, sequence, or None; bool is not supported")
+        raise TypeError("width must be a number, string, or None; bool is not supported")
     if width is None or isinstance(width, str):
         return width
     if isinstance(width, int | float):
         _validate_number("width", width)
         return width
-    if not isinstance(width, Sequence):
-        raise TypeError(
-            f"width must be a number, string, sequence, or None, got {type(width).__name__}"
-        )
-    entries = list(width)
+    raise TypeError(f"width must be a number, string, or None, got {type(width).__name__}")
+
+
+def _normalize_column_widths(
+    column_widths: Sequence[float | str | None] | None, ncol: int
+) -> list[float | str | None] | None:
+    """Validate and normalize the per-source-column width spec."""
+    if column_widths is None:
+        return None
+    if isinstance(column_widths, (str, bytes, bytearray)) or not isinstance(
+        column_widths, Sequence
+    ):
+        raise TypeError("column_widths must be a non-string sequence or None")
+    entries = list(column_widths)
     if len(entries) != ncol:
-        raise ValueError(f"width list must have one entry per column ({ncol}), got {len(entries)}")
+        raise ValueError(
+            f"column_widths must have one entry per column ({ncol}), got {len(entries)}"
+        )
     nums = []
     for w in entries:
         if w is None or isinstance(w, str):
             continue
         if isinstance(w, bool) or not isinstance(w, (int, float)):
-            raise ValueError(f"width entries must be a number, string, or None, got {w!r}")
+            raise ValueError(f"column_widths entries must be a number, string, or None, got {w!r}")
         if isinstance(w, float) and not math.isfinite(w):
-            raise ValueError(f"width entries must be finite, got {w!r}")
+            raise ValueError(f"column_widths entries must be finite, got {w!r}")
         if w < 0:
-            raise ValueError(f"width entries must be non-negative, got {w!r}")
+            raise ValueError(f"column_widths entries must be non-negative, got {w!r}")
         nums.append(w)
     if len(nums) == len(entries) and sum(nums) > 1:
         total = sum(nums)
@@ -417,7 +421,8 @@ class TyTable:
         caption: str | None = None,
         label: str | None = None,
         notes: Sequence[str | NoteDict] | None = None,
-        width: float | Sequence[float | str | None] | str | None = None,
+        width: float | str | None = None,
+        column_widths: Sequence[float | str | None] | None = None,
         height: float | None = None,
         gutter: float | str | None = 2,
         column_gutter: float | str | None = None,
@@ -432,10 +437,10 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``data``, figure metadata, ``width``, one of its entries, or
+            If ``data``, figure metadata, ``width``, ``column_widths``, or
             ``height`` has an unsupported type.
         ValueError
-            If figure metadata, ``width``, or ``height`` is invalid.
+            If figure metadata, ``width``, ``column_widths``, or ``height`` is invalid.
         """
         if not isinstance(data, pl.DataFrame):
             raise TypeError(f"data must be a Polars DataFrame, got {type(data).__name__}")
@@ -454,7 +459,8 @@ class TyTable:
         self._show_colnames = colnames
         self._caption = caption
         self._label = label
-        self._width = _normalize_width(width, data.width)
+        self._width = _normalize_width(width)
+        self._column_widths = _normalize_column_widths(column_widths, data.width)
         self._height = height
         self._escape = escape
         self._style_directives: list[StyleDirective] = []
@@ -1251,6 +1257,9 @@ class TyTable:
         cloned._colnames_display = list(self._colnames_display)
         cloned._display_columns = list(self._display_columns)
         cloned._width = list(self._width) if isinstance(self._width, list) else self._width
+        cloned._column_widths = (
+            list(self._column_widths) if self._column_widths is not None else None
+        )
         cloned._style_directives = list(self._style_directives)
         cloned._format_directives = list(self._format_directives)
         cloned._plot_directives = list(self._plot_directives)

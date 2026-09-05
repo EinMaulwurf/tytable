@@ -46,9 +46,10 @@ class BuiltTable:
     properties. Line entries are ordered because border directives append.
 
     ``column_alignments`` has one
-    ``"l"``/``"r"`` entry per displayed column. ``width`` is a table fraction,
-    Typst length, or per-column sequence; ``height`` is the constructor's
-    row-height value in em. ``has_background`` lets the Typst renderer avoid a
+    ``"l"``/``"r"`` entry per displayed column. ``width`` is a whole-table
+    fraction or length, and ``column_widths`` is the projected per-column
+    sequence; ``height`` is the constructor's row-height value in em.
+    ``has_background`` lets the Typst renderer avoid a
     conflicting grouped-table gutter. ``typst_options`` is an invocation-local
     copy carrying layout operations and the Typst-specific part of the resolved
     base appearance.
@@ -68,7 +69,8 @@ class BuiltTable:
     notes: list[Note] = field(default_factory=list)
     caption: str | None = None
     label: str | None = None
-    width: float | Sequence[float | str | None] | str | None = None
+    width: float | str | None = None
+    column_widths: Sequence[float | str | None] | None = None
     height: float | None = None
     has_background: bool = False
     typst_options: TypstRenderOptions | None = None
@@ -459,13 +461,13 @@ def _project_columns(
     return _project_style_grid(style_grid, selected), projected_lines
 
 
-def _project_width(
-    width: float | Sequence[float | str | None] | str | None, selected: list[int]
-) -> float | Sequence[float | str | None] | str | None:
-    """Project a per-source-column width specification."""
-    if isinstance(width, Sequence) and not isinstance(width, str):
-        return [width[col] for col in selected]
-    return width
+def _project_column_widths(
+    column_widths: Sequence[float | str | None] | None, selected: list[int]
+) -> list[float | str | None] | None:
+    """Project per-source-column widths without renormalizing survivors."""
+    if column_widths is None:
+        return None
+    return [column_widths[col] for col in selected]
 
 
 def build(
@@ -511,7 +513,10 @@ def build(
         has_background=has_background,
         caption=state.table._caption,
         label=state.table._label,
-        width=_project_width(state.table._width, state.table._display_columns),
+        width=state.table._width,
+        column_widths=_project_column_widths(
+            state.table._column_widths, state.table._display_columns
+        ),
         height=state.table._height,
         notes=state.table._notes,
         typst_options=state.table._typst_opts,

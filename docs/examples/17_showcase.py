@@ -24,7 +24,7 @@ df = pl.DataFrame(
             {"text": "Highest validation accuracy.", "i": 2, "j": "Accuracy"},
             "Latency measured on the same CPU batch (milliseconds; lower is better).",
         ],
-        width=["2.8cm", "1fr", "1fr", "1fr", "1.2fr"],
+        column_widths=["2.8cm", "1fr", "1fr", "1fr", "1.2fr"],
     )
     .theme_plain()
     .group(j={"Quality": ["Accuracy", "F1"], "Cost": ["Latency", "Parameters"]})

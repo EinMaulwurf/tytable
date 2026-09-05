@@ -74,7 +74,7 @@ def test_show_columns_projects_widths_alignments_and_cell_styles():
     table = (
         tt(
             pl.DataFrame({"a": [1], "b": ["x"], "c": [3.0]}),
-            width=[0.2, "2cm", None],
+            column_widths=[0.2, "2cm", None],
         )
         .theme_plain()
         .style(i=0, j="c", italic=True, line="lr")
@@ -83,7 +83,7 @@ def test_show_columns_projects_widths_alignments_and_cell_styles():
 
     built = build(table, "html")
 
-    assert built.width == ["2cm", None]
+    assert built.column_widths == ["2cm", None]
     assert built.column_alignments == ["l", "r"]
     assert built.style_grid[(1, 1)]["italic"] is True
     assert [(line["j"], line["line"]) for line in built.style_lines] == [(1, "lr")]

@@ -120,20 +120,14 @@ class TypstRenderer(Renderer):
         self._opts = opts
 
     @staticmethod
-    def _columns_spec(
-        width: float | str | Sequence[float | str | None] | None, ncol: int
-    ) -> list[str]:
+    def _columns_spec(column_widths: Sequence[float | str | None] | None, ncol: int) -> list[str]:
         """Build the Typst ``columns: (…)`` entry list from a user width spec."""
         if ncol == 0:
             return []
-        if width is None:
+        if column_widths is None:
             return ["auto"] * ncol
-        if isinstance(width, str):
-            return [width] * ncol
-        if isinstance(width, (int, float)):
-            return [f"{width / ncol * 100:.2f}%"] * ncol
         result = []
-        for w in width:
+        for w in column_widths:
             if w is None:
                 result.append("auto")
             elif isinstance(w, str):
@@ -233,7 +227,14 @@ class TypstRenderer(Renderer):
     def _emit_table_options(self, L: list[str], built: BuiltTable, ncol: int) -> None:
         """Append column, gutter, stroke, and row-height table options."""
         opts = self._opts
-        L.append(f"    columns: ({', '.join(self._columns_spec(built.width, ncol))}),")
+        L.append(f"    columns: ({', '.join(self._columns_spec(built.column_widths, ncol))}),")
+        if built.width is not None:
+            width = (
+                f"{built.width * 100:.2f}%"
+                if isinstance(built.width, (int, float))
+                else built.width
+            )
+            L.append(f"    width: {width},")
         show_column_gutter = opts.column_gutter_explicit or (
             built.col_groups and not built.has_background
         )

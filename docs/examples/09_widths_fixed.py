@@ -15,7 +15,7 @@ df = pl.DataFrame(
 )
 
 (
-    tt(df, caption="Full width, fixed first column", width=["3.5cm", "1fr", "1fr", "1fr"])
+    tt(df, caption="Full width, fixed first column", column_widths=["3.5cm", "1fr", "1fr", "1fr"])
     .fmt(j="Accuracy", fn=number(digits=3))
     .fmt(j="Latency (ms)", fn=number(digits=1))
     .style(i="header", bold=True)

@@ -19,7 +19,7 @@ df = pl.DataFrame(
 )
 
 (
-    tt(df, caption="Mixed column widths", width=[0.2, 0.15, None])
+    tt(df, caption="Mixed column widths", column_widths=[0.2, 0.15, None])
     .fmt(j="Value", fn=number(digits=2))
     .save("build/06_widths.typ")
 )

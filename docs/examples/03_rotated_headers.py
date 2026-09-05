@@ -22,7 +22,7 @@ compact_columns = ["Accuracy", "Precision", "Recall", "F1 score", "Parameters (M
     tt(
         df,
         caption="Rotated labels keep numeric columns compact",
-        width=["3cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm"],
+        column_widths=["3cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm"],
     )
     .fmt(j=compact_columns, fn=number(digits=2))
     .style(i="header", bold=True, align="l", alignv="b", line="b")

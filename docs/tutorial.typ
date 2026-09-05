@@ -637,7 +637,7 @@ The gallery compares the four base appearances:
 
 The `.resize()` operation scales a table to fit a target size, expressed as a fraction of the available page area. It wraps the rendered fragment in a Typst `#layout(size => …)` block that measures the table and rescales it by a uniform factor. This is useful when a wide table would otherwise overflow the text column.
 
-This is different from `tt(width=...)`, which assigns available width among columns without scaling their contents, and `tt(height=...)`, which sets row height in `em`. See #link(<column-widths>)[Column widths] for column layout.
+This is different from `tt(width=...)`, which sets the whole table width, and `tt(column_widths=...)`, which controls individual columns without scaling their contents. `tt(height=...)` sets row height in `em`. See #link(<column-widths>)[Column widths] for column layout.
 
 Three knobs control `.resize()`:
 

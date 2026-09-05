@@ -8,7 +8,7 @@ These chapters are independent. Read the ones that match the table or applicatio
 
 == Column widths <column-widths>
 
-The `width` parameter of `tt()` accepts several forms: a single fraction spread evenly, a per-column list of fractions, a Typst/HTML unit string, or `None` for auto. You may mix all three in one list. Pass `width=1` for a #emph[full-width] table — the fraction is split across columns so the table fills the available content width (e.g. `width=0.5` covers half).
+The `width` parameter of `tt()` controls the whole table: use a finite fraction of the available line, a Typst/CSS length string, or `None` for automatic sizing. Use `column_widths` for one entry per source column; entries may be fractions, lengths, or `None`. Numeric-only entries whose sum exceeds one are normalized, while partial fractions remain partial. For example, `column_widths=[0.2, 0.15, None]` gives the first two columns explicit proportions and leaves the third automatic.
 
 This controls column layout; it does not scale the rendered table or its text. Use #link(<resize>)[`.resize()`] when the complete table should be uniformly shrunk or enlarged to fit a target width or height.
 

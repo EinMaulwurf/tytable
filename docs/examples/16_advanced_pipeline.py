@@ -45,7 +45,7 @@ class QuarterlyReportTable:
                 caption="Quarterly performance",
                 label="quarterly-performance",
                 notes=["Variance is actual revenue minus target."],
-                width=["3.2cm", "1fr", "1fr", "1fr"],
+                column_widths=["3.2cm", "1fr", "1fr", "1fr"],
             )
             .group(j={"Actual": ["Revenue"], "Plan": ["Target", "Variance"]})
             .fmt(j=numeric, fn=number(digits=0))

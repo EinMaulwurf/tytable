@@ -37,7 +37,7 @@ class TestBasicHtml:
 
     def test_caption_precedes_colgroup(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, caption="My Table", width=[0.5, 0.5]).render("html")
+        out = tt(df, caption="My Table", column_widths=[0.5, 0.5]).render("html")
         assert out.index("<caption>") < out.index("<colgroup>")
 
     def test_no_colnames(self):
@@ -389,7 +389,7 @@ class TestHtmlWidth:
 
     def test_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.3, 0.7]).theme_plain().render("html")
+        out = tt(df, column_widths=[0.3, 0.7]).theme_plain().render("html")
         assert "<colgroup>" in out
         assert "width:30.00%" in out
         assert "width:70.00%" in out
@@ -399,24 +399,38 @@ class TestHtmlWidth:
         out = tt(df, width="5cm").theme_plain().render("html")
         assert "width:5cm" in out
 
+    def test_table_width_and_column_widths_are_independent(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, width="8cm", column_widths=["3cm", "3cm"]).theme_plain().render("html")
+        assert (
+            '<table style="border-collapse:collapse;font-family:sans-serif;font-size:1em;'
+            'width:8cm">'
+        ) in out
+        assert 'style="width:3cm"' in out
+
     def test_list_with_none_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=["5cm", None]).theme_plain().render("html")
+        out = tt(df, column_widths=["5cm", None]).theme_plain().render("html")
         assert "width:5cm" in out
         assert "<col>" in out
 
     def test_list_width_sum_over_1_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.6, 0.7]).theme_plain().render("html")
+        out = tt(df, column_widths=[0.6, 0.7]).theme_plain().render("html")
         assert "width:46.15%" in out
         assert "width:53.85%" in out
 
     def test_mixed_list_sum_over_1_not_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.6, None, 0.7]).theme_plain().render("html")
+        out = tt(df, column_widths=[0.6, None, 0.7]).theme_plain().render("html")
         assert "width:60.00%" in out
         assert "width:70.00%" in out
         assert "<col>" in out
+
+    def test_all_zero_column_widths_do_not_divide_by_zero(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, column_widths=[0, 0]).theme_plain().render("html")
+        assert "width:0.00%" in out
 
 
 @pytest.mark.typst
@@ -424,11 +438,11 @@ class TestTypstWidth:
     def test_scalar_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width=0.8).theme_plain().render("typst")
-        assert "40.00%" in out
+        assert "width: 80.00%" in out
 
     def test_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.3, 0.7]).theme_plain().render("typst")
+        out = tt(df, column_widths=[0.3, 0.7]).theme_plain().render("typst")
         assert "30.00%" in out
         assert "70.00%" in out
 
@@ -440,26 +454,27 @@ class TestTypstWidth:
     def test_string_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width="5cm").theme_plain().render("typst")
-        assert "columns: (5cm, 5cm)" in out
+        assert "width: 5cm" in out
+        assert "columns: (auto, auto)" in out
 
     def test_mixed_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=["5cm", None]).theme_plain().render("typst")
+        out = tt(df, column_widths=["5cm", None]).theme_plain().render("typst")
         assert "columns: (5cm, auto)" in out
 
     def test_list_with_none_width(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.3, None, "2cm"]).theme_plain().render("typst")
+        out = tt(df, column_widths=[0.3, None, "2cm"]).theme_plain().render("typst")
         assert "columns: (30.00%, auto, 2cm)" in out
 
     def test_list_width_sum_over_1_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, width=[0.6, 0.7]).theme_plain().render("typst")
+        out = tt(df, column_widths=[0.6, 0.7]).theme_plain().render("typst")
         assert "columns: (46.15%, 53.85%)" in out
 
     def test_mixed_list_sum_over_1_not_normalized(self):
         df = pl.DataFrame({"A": [1], "B": [2], "C": [3]})
-        out = tt(df, width=[0.6, None, 0.7]).theme_plain().render("typst")
+        out = tt(df, column_widths=[0.6, None, 0.7]).theme_plain().render("typst")
         assert "columns: (60.00%, auto, 70.00%)" in out
 
     def test_finalize_callback(self):
@@ -632,8 +647,8 @@ class TestWidthValidation:
 
     def test_wrong_length_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        with pytest.raises(ValueError, match="width list must have one entry per column"):
-            tt(df, width=[0.5])
+        with pytest.raises(ValueError, match="column_widths must have one entry per column"):
+            tt(df, column_widths=[0.5])
 
     @pytest.mark.parametrize("width", [-0.1, float("nan"), float("inf")])
     def test_invalid_scalar_raises(self, width):
@@ -641,24 +656,24 @@ class TestWidthValidation:
         with pytest.raises(ValueError, match="width must be"):
             tt(df, width=width)
 
-    @pytest.mark.parametrize("width", [(value for value in [0.5, 0.5]), {0.5}, {"A": 0.5}])
-    def test_arbitrary_iterables_raise(self, width):
+    @pytest.mark.parametrize("width", [[0.5, 0.5], (0.5, 0.5), {0.5}, {"A": 0.5}])
+    def test_sequence_width_must_use_column_widths(self, width):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        with pytest.raises(TypeError, match="width must be a number, string, sequence, or None"):
+        with pytest.raises(TypeError, match="width must be a number, string, or None"):
             tt(df, width=width)
 
     def test_negative_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         with pytest.raises(ValueError, match="non-negative"):
-            tt(df, width=[-0.1, 0.5])
+            tt(df, column_widths=[-0.1, 0.5])
 
     @pytest.mark.parametrize("value", [float("nan"), float("inf")])
     def test_non_finite_entry_raises(self, value):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        with pytest.raises(ValueError, match="width entries must be finite"):
-            tt(df, width=[value, 0.5])
+        with pytest.raises(ValueError, match="column_widths entries must be finite"):
+            tt(df, column_widths=[value, 0.5])
 
     def test_bool_entry_raises(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        with pytest.raises(ValueError, match="width entries must be"):
-            tt(df, width=[True, 0.5])
+        with pytest.raises(ValueError, match="column_widths entries must be"):
+            tt(df, column_widths=[True, 0.5])

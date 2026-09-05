@@ -125,9 +125,9 @@ class HtmlRenderer(Renderer):
     @staticmethod
     def _emit_colgroup(parts: list[str], built: BuiltTable) -> None:
         """Append the optional HTML ``colgroup`` width declarations."""
-        if built.width is not None and isinstance(built.width, (list, tuple)):
+        if built.column_widths is not None:
             colgroup = ["<colgroup>"]
-            for w in built.width:
+            for w in built.column_widths:
                 if w is None:
                     colgroup.append("<col>")
                 elif isinstance(w, str):
