@@ -309,6 +309,20 @@ class TestDigits:
         assert "20.00" in out
         assert "30.00" in out
 
+    def test_decimal_formats_large_integers_without_float_loss(self):
+        df = pl.DataFrame({"x": [9007199254740993]})
+        out = tt(df).fmt(j="x", digits=0).render("typst")
+
+        assert "9007199254740993" in out
+
+    def test_decimal_formats_precision_sensitive_large_integer(self):
+        df = pl.DataFrame({"x": [9007199254740993]})
+        significant = tt(df).fmt(j="x", digits=17, num_fmt="significant").render("typst")
+        scientific = tt(df).fmt(j="x", digits=15, num_fmt="scientific").render("typst")
+
+        assert "9007199254740993" in significant
+        assert "$9.007199254740993 times 10^15$" in scientific
+
     def test_significant_formats_integers(self):
         df = pl.DataFrame({"x": [1234, 5678]})
         out = tt(df).fmt(j="x", digits=2, num_fmt="significant").render("typst")

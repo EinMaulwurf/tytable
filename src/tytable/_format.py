@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
@@ -22,25 +23,43 @@ Cell = tuple[int, int]
 
 
 def _is_numeric_typed(val: object) -> bool:
-    """True for ints/floats but not bools (which are technically int subclasses)."""
+    """True for supported numeric values but not bools (which are int subclasses)."""
     if isinstance(val, bool):
         return False
-    return isinstance(val, (int, float))
+    return isinstance(val, (int, float, Decimal))
+
+
+def _decimal_typed(val: Any) -> Decimal:
+    """Convert a supported numeric value while preserving integer and Decimal precision."""
+    if isinstance(val, float):
+        return Decimal.from_float(val)
+    return Decimal(str(val))
+
+
+def _pad_exponent(formatted: str) -> str:
+    """Match Python's numeric format exponent padding while retaining Decimal precision."""
+    if "e" not in formatted:
+        return formatted
+    mantissa, exponent = formatted.split("e", maxsplit=1)
+    sign = ""
+    if exponent[:1] in {"+", "-"}:
+        sign, exponent = exponent[0], exponent[1:]
+    return f"{mantissa}e{sign}{exponent.zfill(2)}"
 
 
 def _fmt_numeric_decimal(val: Any, digits: int) -> str:
     """Format a number with a fixed number of decimal places."""
-    return f"{float(val):.{digits}f}"
+    return f"{_decimal_typed(val):.{digits}f}"
 
 
 def _fmt_numeric_significant(val: Any, digits: int) -> str:
     """Format a number to a given number of significant figures."""
-    return f"{float(val):.{digits}g}"
+    return _pad_exponent(f"{_decimal_typed(val):.{digits}g}")
 
 
 def _fmt_numeric_scientific(val: Any, digits: int, output: str) -> str:
     """Format a number using backend-native scientific notation."""
-    formatted = f"{float(val):.{digits}e}"
+    formatted = _pad_exponent(f"{_decimal_typed(val):.{digits}e}")
     if "e" not in formatted:
         return formatted
 
