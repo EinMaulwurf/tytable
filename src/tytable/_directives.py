@@ -52,8 +52,6 @@ class FormatDirective:
     i: _RowSelector
     j: _ColumnSelector
     where: pl.Expr | None = None
-    digits: int | None = None
-    num_fmt: str | None = "decimal"
     replace: dict | str | bool | None = None
     escape: bool | str = False
     fn: Callable | None = None

@@ -267,91 +267,80 @@ class TestSemanticFormatters:
 class TestDigits:
     def test_decimal(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
-        out = tt(df).fmt(j="v", digits=2).render("typst")
+        out = tt(df).fmt(j="v", fn=number(digits=2)).render("typst")
         assert "3.14" in out
         assert "2.72" in out
         assert_snapshot("fmt_decimal", out)
 
     def test_significant(self):
         df = pl.DataFrame({"v": [3.14159, 0.00123]})
-        out = tt(df).fmt(j="v", digits=3, num_fmt="significant").render("typst")
+        out = tt(df).fmt(j="v", fn=number(digits=3, notation="significant")).render("typst")
         assert "3.14" in out
         assert "0.00123" in out
         assert_snapshot("fmt_significant", out)
 
     def test_scientific(self):
         df = pl.DataFrame({"v": [3141.59, 0.00123]})
-        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("typst")
-        assert "$3.14 times 10^3$" in out
-        assert "$1.23 times 10^(-3)$" in out
+        out = tt(df).fmt(j="v", fn=number(digits=2, notation="scientific")).render("typst")
+        assert "3.14e\\+3" in out
+        assert "1.23e\\-3" in out
 
     def test_scientific_formats_integers(self):
         df = pl.DataFrame({"x": [10, 200]})
-        out = tt(df).fmt(j="x", digits=1, num_fmt="scientific").render("typst")
-        assert "$1.0 times 10^1$" in out
-        assert "$2.0 times 10^2$" in out
+        out = tt(df).fmt(j="x", fn=number(digits=1, notation="scientific")).render("typst")
+        assert "1.0e\\+1" in out
+        assert "2.0e\\+2" in out
 
     def test_scientific_uses_html_markup(self):
         df = pl.DataFrame({"v": [3141.59, 0.00123]})
-        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("html")
-        assert "3.14 &times; 10<sup>3</sup>" in out
-        assert "1.23 &times; 10<sup>-3</sup>" in out
+        out = tt(df).fmt(j="v", fn=number(digits=2, notation="scientific")).render("html")
+        assert "3.14e+3" in out
+        assert "1.23e-3" in out
 
     def test_scientific_remains_readable_in_ascii(self):
         df = pl.DataFrame({"v": [3141.59]})
-        out = tt(df).fmt(j="v", digits=2, num_fmt="scientific").render("ascii")
-        assert "3.14 * 10^3" in out
+        out = tt(df).fmt(j="v", fn=number(digits=2, notation="scientific")).render("ascii")
+        assert "3.14e+3" in out
 
     def test_decimal_formats_integers(self):
         df = pl.DataFrame({"x": [10, 20, 30]})
-        out = tt(df).fmt(j="x", digits=2).render("typst")
+        out = tt(df).fmt(j="x", fn=number(digits=2)).render("typst")
         assert "10.00" in out
         assert "20.00" in out
         assert "30.00" in out
 
     def test_decimal_formats_large_integers_without_float_loss(self):
         df = pl.DataFrame({"x": [9007199254740993]})
-        out = tt(df).fmt(j="x", digits=0).render("typst")
+        out = tt(df).fmt(j="x", fn=number(digits=0)).render("typst")
 
-        assert "9007199254740993" in out
+        assert "9,007,199,254,740,993" in out
 
     def test_decimal_formats_precision_sensitive_large_integer(self):
         df = pl.DataFrame({"x": [9007199254740993]})
-        significant = tt(df).fmt(j="x", digits=17, num_fmt="significant").render("typst")
-        scientific = tt(df).fmt(j="x", digits=15, num_fmt="scientific").render("typst")
+        significant = (
+            tt(df).fmt(j="x", fn=number(digits=17, notation="significant")).render("typst")
+        )
+        scientific = tt(df).fmt(j="x", fn=number(digits=15, notation="scientific")).render("typst")
 
-        assert "9007199254740993" in significant
-        assert "$9.007199254740993 times 10^15$" in scientific
+        assert "9,007,199,254,740,993.0" in significant
+        assert "9.007199254740993e\\+15" in scientific
 
     def test_significant_formats_integers(self):
         df = pl.DataFrame({"x": [1234, 5678]})
-        out = tt(df).fmt(j="x", digits=2, num_fmt="significant").render("typst")
+        out = tt(df).fmt(j="x", fn=number(digits=2, notation="significant")).render("typst")
 
-        assert "1.2e\\+03" in out
-        assert "5.7e\\+03" in out
+        assert "1,200" in out
+        assert "5,700" in out
 
     def test_digits_none_no_effect(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
         out = tt(df).fmt(j="v").render("typst")
         assert "3.14159" in out
 
-    @pytest.mark.parametrize("digits", [True, 1.5, "2"])
-    def test_digits_rejects_non_integer(self, digits):
-        with pytest.raises(TypeError, match="digits must be a non-negative integer"):
-            tt(pl.DataFrame({"v": [1.0]})).fmt(digits=digits)
-
-    def test_digits_rejects_negative_integer(self):
-        with pytest.raises(ValueError, match="digits must be non-negative"):
-            tt(pl.DataFrame({"v": [1.0]})).fmt(digits=-1)
-
-    @pytest.mark.parametrize("num_fmt", ["currency", "", "Decimal"])
-    def test_num_fmt_rejects_unknown_value(self, num_fmt):
-        with pytest.raises(ValueError, match="num_fmt must be one of"):
-            tt(pl.DataFrame({"v": [1.0]})).fmt(num_fmt=num_fmt)
-
-    def test_num_fmt_rejects_non_string(self):
-        with pytest.raises(TypeError, match="num_fmt must be a string"):
-            tt(pl.DataFrame({"v": [1.0]})).fmt(num_fmt=None)  # type: ignore[arg-type]
+    @pytest.mark.parametrize("keyword", ["digits", "num_fmt"])
+    def test_removed_numeric_options_fail_at_public_boundary(self, keyword):
+        with pytest.raises(TypeError, match=keyword):
+            tt(pl.DataFrame({"v": [1.0]})).fmt(**{keyword: 2})
 
 
 class TestCellSelectors:
@@ -364,7 +353,7 @@ class TestCellSelectors:
     )
 
     def test_where_formats_individual_numeric_cells(self):
-        built = build(tt(self.DF).fmt(where=cs.numeric() > 100, digits=0), "typst")
+        built = build(tt(self.DF).fmt(where=cs.numeric() > 100, fn=number(digits=0)), "typst")
 
         assert built.data_body == [
             ["A", "150", "20.5"],
@@ -376,7 +365,7 @@ class TestCellSelectors:
             tt(self.DF).fmt(
                 i=pl.col("Price") > 100,
                 j=["Price", "Stock"],
-                digits=0,
+                fn=number(digits=0),
             ),
             "typst",
         )
@@ -393,7 +382,7 @@ class TestCellSelectors:
                 i=pl.col("active"),
                 j=["Price", "Stock"],
                 where=cs.numeric() > 100,
-                digits=0,
+                fn=number(digits=0),
             ),
             "typst",
         )
@@ -421,7 +410,7 @@ class TestCellSelectors:
         built = build(
             tt(self.DF)
             .set_name(j="Price", name="Unit price")
-            .fmt(j="Price", where=pl.col("Price") > 100, digits=0),
+            .fmt(j="Price", where=pl.col("Price") > 100, fn=number(digits=0)),
             "typst",
         )
 
@@ -431,7 +420,7 @@ class TestCellSelectors:
 
     def test_where_maps_rows_past_row_groups(self):
         built = build(
-            tt(self.DF).group(i={"Second": 1}).fmt(where=cs.numeric() > 100, digits=0),
+            tt(self.DF).group(i={"Second": 1}).fmt(where=cs.numeric() > 100, fn=number(digits=0)),
             "typst",
         )
 
@@ -639,10 +628,10 @@ class TestMath:
         out = (
             tt(df)
             .theme_plain()
-            .fmt(j="value", digits=1, num_fmt="scientific", math=True)
+            .fmt(j="value", fn=number(digits=1, notation="scientific"), math=True)
             .render("typst")
         )
-        assert "[$1.2 times 10^3$]" in out
+        assert "[$1.2e+3$]" in out
 
     @pytest.mark.parametrize("output", ["html", "ascii"])
     def test_other_backends_retain_original_value(self, output):
@@ -724,13 +713,6 @@ class TestFn:
         with pytest.raises(TypeError, match="fn_values must be a string"):
             tt(pl.DataFrame({"x": [1]})).fmt(fn_values=fn_values)
 
-    def test_default_typed_fn_values_cannot_be_combined_with_digits(self):
-        with pytest.raises(ValueError, match="digits cannot be combined"):
-            tt(pl.DataFrame({"x": [1.25]})).fmt(
-                digits=2,
-                fn=lambda values: values,
-            )
-
     def test_fn_returns_wrong_length(self):
         df = pl.DataFrame({"x": [1.0, 2.0, 3.0]})
         t = tt(df).fmt(j="x", fn=lambda vec: ["only one"])
@@ -778,16 +760,12 @@ class TestFn:
 
 @pytest.mark.typst
 class TestPipeline:
-    def test_pipeline_order_numeric_then_fn(self):
+    def test_pipeline_order_formatter_then_fn(self):
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
         out = (
             tt(df)
-            .fmt(
-                j="v",
-                digits=2,
-                fn=lambda vec: [f"{v}x" for v in vec],
-                fn_values="display",
-            )
+            .fmt(j="v", fn=number(digits=2))
+            .fmt(j="v", fn=lambda vec: [f"{v}x" for v in vec], fn_values="display")
             .render("typst")
         )
         assert "3.14x" in out
@@ -802,7 +780,7 @@ class TestPipeline:
         df = pl.DataFrame({"v": [3.14159, 2.71828]})
         out = (
             tt(df)
-            .fmt(j="v", digits=2)
+            .fmt(j="v", fn=number(digits=2))
             .fmt(j="v", fn=lambda vec: [f"[{v}]" for v in vec], fn_values="display")
             .render("typst")
         )
@@ -819,7 +797,9 @@ class TestSnapshots:
                 "status": [None, "ok"],
             }
         )
-        out = tt(df).fmt(j="score", digits=2).fmt(j="status", replace="—").render("typst")
+        out = (
+            tt(df).fmt(j="score", fn=number(digits=2)).fmt(j="status", replace="—").render("typst")
+        )
         assert_snapshot("fmt_full", out)
 
     def test_preformatted_polars(self):

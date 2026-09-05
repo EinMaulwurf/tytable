@@ -140,7 +140,7 @@ def tt(
     Chain formatting and styling before the terminal ``.save()``:
 
     >>> (tt(df, width=1)                     # doctest: +SKIP
-    ...  .fmt(j="y", digits=2)
+    ...  .fmt(j="y", fn=number(digits=2))
     ...  .style(i="header", bold=True)
     ...  .save("build/demo.typ"))
     """
@@ -723,8 +723,6 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
-        digits: int | None = None,
-        num_fmt: str = "decimal",
         replace: dict | str | bool | None = None,
         escape: bool = False,
         fn: Callable | None = None,
@@ -736,9 +734,10 @@ class TyTable:
         """
         Apply value formatting to selected cells.
 
-        The formatting options may be combined in a single call. Numeric
-        formatting runs first, followed by ``fn``, ``replace``, ``linebreak``,
-        ``math``, and escaping.
+        The formatting options may be combined in a single call. ``fn`` runs
+        first, followed by ``replace``, ``linebreak``, ``math``, and escaping.
+        Use semantic formatter factories from :mod:`tytable.formatters` for
+        numeric formatting.
 
         Parameters
         ----------
@@ -753,18 +752,6 @@ class TyTable:
             The result is intersected with ``i`` and ``j`` when either is
             supplied. Expressions are evaluated against the original typed
             DataFrame, before any formatting transforms run.
-        digits
-            A non-negative integer. For ``"decimal"`` this is the number of
-            digits after the decimal point; for ``"significant"`` it is the
-            number of significant figures; for ``"scientific"`` it is the
-            number of digits after the mantissa's decimal point. Integer and
-            floating-point values are formatted; booleans, nulls, and
-            non-numeric values are unchanged. ``None`` disables numeric
-            formatting for this directive.
-        num_fmt
-            Numeric style: ``"decimal"`` (fixed decimals, default),
-            ``"significant"`` (significant figures), or ``"scientific"``
-            (scientific notation).
         replace
             Substitute values: ``True`` blanks out nulls/NaNs, a ``str`` fills
             them, or a ``{old: new}`` dict maps old (typed values or string
@@ -781,8 +768,7 @@ class TyTable:
         fn_values
             Values passed to ``fn``: ``"typed"`` (default) passes the original
             Python values from the DataFrame; ``"display"`` passes the current
-            strings, including earlier formatting. Typed values cannot be
-            combined with ``digits`` in the same directive.
+            strings, including earlier formatting.
         linebreak
             Replace this literal marker with a backend-native line break: ``\\ ``
             in Typst and ``<br>`` in HTML. ASCII output leaves the marker intact.
@@ -801,28 +787,27 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``digits`` is not an integer, ``fn`` is not callable,
-            ``linebreak`` or ``math`` has an unsupported type, or a selector
-            has an unsupported type. Callback return-type and selector errors
-            are raised when the table is rendered; option errors are raised
-            immediately.
+            If ``fn`` is not callable, ``linebreak`` or ``math`` has an
+            unsupported type, or a selector has an unsupported type. Callback
+            return-type and selector errors are raised when the table is
+            rendered; option errors are raised immediately.
         ValueError
-            If ``digits`` is negative, ``num_fmt`` is unknown, a selector is
-            invalid, or ``fn`` returns the wrong number of values. Option
-            errors are raised immediately; selector and callback result errors
-            are raised when the table is rendered.
+            If a selector is invalid or ``fn`` returns the wrong number of
+            values. Option errors are raised immediately; selector and callback
+            result errors are raised when the table is rendered.
 
         Examples
         --------
+        >>> from tytable.formatters import number
         >>> df = pl.DataFrame({"rev": [12450.5, None]})
         >>> (tt(df)                                # doctest: +SKIP
-        ...  .fmt(j="rev", digits=2)
+        ...  .fmt(j="rev", fn=number(digits=2))
         ...  .fmt(j="rev", replace={"null": "—"}))
 
         Format only numeric cells greater than 100:
 
         >>> import polars.selectors as cs
-        >>> tt(df).fmt(where=cs.numeric() > 100, digits=0)  # doctest: +SKIP
+        >>> tt(df).fmt(where=cs.numeric() > 100, fn=number(digits=0))  # doctest: +SKIP
         """
         if linebreak is not None and not isinstance(linebreak, str):
             raise TypeError("linebreak marker must be a string or None")
@@ -831,16 +816,6 @@ class TyTable:
         if not isinstance(math, bool):
             raise TypeError("math must be a bool")
         _validate_bool("escape", escape)
-        if digits is not None and (isinstance(digits, bool) or not isinstance(digits, int)):
-            raise TypeError(f"digits must be a non-negative integer or None, got {digits!r}")
-        if digits is not None and digits < 0:
-            raise ValueError(f"digits must be non-negative, got {digits!r}")
-        if not isinstance(num_fmt, str):
-            raise TypeError(f"num_fmt must be a string, got {type(num_fmt).__name__}")
-        if num_fmt not in {"decimal", "significant", "scientific"}:
-            raise ValueError(
-                f"num_fmt must be one of 'decimal', 'significant', or 'scientific'; got {num_fmt!r}"
-            )
         if replace is not None and not isinstance(replace, bool | str | dict):
             raise TypeError(
                 f"replace must be a bool, string, dict, or None, got {type(replace).__name__}"
@@ -851,16 +826,12 @@ class TyTable:
             raise TypeError(f"fn_values must be a string, got {type(fn_values).__name__}")
         if fn_values not in {"display", "typed"}:
             raise ValueError(f"fn_values must be either 'display' or 'typed'; got {fn_values!r}")
-        if digits is not None and fn is not None and fn_values == "typed":
-            raise ValueError("digits cannot be combined with fn when fn_values='typed'")
         normalized_output = _normalize_output_filter(output)
         self._format_directives.append(
             FormatDirective(
                 i=i,
                 j=j,
                 where=where,
-                digits=digits,
-                num_fmt=num_fmt,
                 replace=replace,
                 escape=escape,
                 fn=fn,

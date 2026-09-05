@@ -7,6 +7,7 @@ This is a compact reference for coding assistants that need to write `tytable` c
 ```python
 import polars as pl
 from tytable import NoteDict, TyTable, tt
+from tytable.formatters import number
 from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 ```
 
@@ -19,7 +20,7 @@ Calls such as `.fmt()`, `.style()`, and `.group()` record intent. They do not im
 ```python
 table: TyTable = (
     tt(df, caption="Quarterly results", label="quarterly-results")
-    .fmt(j="Revenue", digits=2)
+    .fmt(j="Revenue", fn=number(digits=2))
     .style(i="header", bold=True, background="#17324d", color="white")
     .theme_striped()
 )
@@ -113,7 +114,7 @@ Boolean masks must have exactly one Boolean value per source row, and callable p
 Prefer exact original DataFrame names:
 
 ```python
-table.fmt(j="Revenue", digits=2)
+table.fmt(j="Revenue", fn=number(digits=2))
 table.style(j=["Revenue", "Cost"], align="r")
 table.style(j=0, bold=True)  # positions are supported but less readable
 ```
@@ -124,10 +125,10 @@ Omitting `j` selects every column. Names are case-sensitive. A sequence may cont
 import polars.selectors as cs
 from tytable.selectors import colgroup, regex
 
-table.fmt(j=regex(r"^(Revenue|Cost)$"), digits=0)
+table.fmt(j=regex(r"^(Revenue|Cost)$"), fn=number(digits=0))
 table.style(j=["Total", regex(r"^Q")], bold=True)
-table.fmt(j=cs.numeric(), digits=2)
-table.fmt(j=colgroup(label="Results", level=0), digits=1)
+table.fmt(j=cs.numeric(), fn=number(digits=2))
+table.fmt(j=colgroup(label="Results", level=0), fn=number(digits=1))
 table.show_columns(cs.matches(r"^(Revenue|Cost)$"))
 ```
 
@@ -146,7 +147,7 @@ Display names created by `.set_name()` never become selectors. Continue to selec
 
 ```python
 table = tt(df).set_name(j="annual_revenue_usd", name="Revenue")
-table.fmt(j="annual_revenue_usd", digits=0)  # correct
+table.fmt(j="annual_revenue_usd", fn=number(digits=0))  # correct
 ```
 
 Rename the Polars DataFrame first if a friendly name should become the true selector name.
@@ -159,7 +160,7 @@ Use `where` with `.style()`, `.fmt()`, or a targeted `NoteDict` when the conditi
 import polars.selectors as cs
 
 table.style(where=cs.numeric() > 100, bold=True, background="#d7f0ea")
-table.fmt(j=["Revenue", "Cost"], where=cs.numeric() >= 1_000, digits=0)
+table.fmt(j=["Revenue", "Cost"], where=cs.numeric() >= 1_000, fn=number(digits=0))
 high_values = NoteDict(text="Value exceeds 100", where=cs.numeric() > 100)
 table = tt(df, notes=[high_values])
 ```
@@ -235,9 +236,9 @@ Use `.fmt(i=..., j=..., ...)` to change displayed values while retaining the sou
 ```python
 table = (
     tt(df)
-    .fmt(j="Revenue", digits=2)
-    .fmt(j="Estimate", digits=3, num_fmt="significant")
-    .fmt(j="Measurement", digits=2, num_fmt="scientific")
+    .fmt(j="Revenue", fn=number(digits=2))
+    .fmt(j="Estimate", fn=number(digits=3, notation="significant"))
+    .fmt(j="Measurement", fn=number(digits=2, notation="scientific"))
     .fmt(j="Revenue", replace={"null": "—"})
 )
 ```
@@ -281,12 +282,12 @@ Callback results are covered by the default table-wide escaping. Use `.fmt(escap
 Set `fn_values="display"` when a callback should consume the current display strings, including values produced by an earlier formatting directive:
 
 ```python
-table.fmt(j="Share", digits=2).fmt(j="Share", fn=lambda values: [f"{value}%" for value in values], fn_values="display")
+table.fmt(j="Share", fn=number(digits=2)).fmt(j="Share", fn=lambda values: [f"{value}%" for value in values], fn_values="display")
 ```
 
-Typed callback input cannot be combined with `digits` in the same `.fmt()` call because `digits` produces display strings. Set `fn_values="display"` explicitly when combining them in one directive.
+Each `.fmt()` directive has one callback stage. Use a semantic formatter such as `number(digits=2)` in one directive, then chain a second `.fmt(fn=..., fn_values="display")` when a later callback should consume its display strings.
 
-For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators. Semantic formatters cannot be combined with `digits` in the same directive.
+For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators. Significant notation requires positive `digits`; scientific output is textual `e` notation, so use a custom callback if the old backend-native multiplication/superscript markup must be preserved.
 
 Numeric formatters accept `min_digits`, `notation`, `rounding`, `normalize_negative_zero`, `nan`, `inf`, and `negative_inf`. The `number()` formatter also accepts custom `compact_labels`. The `currency()` formatter forwards numeric options and accepts `symbol_position`. `digits=None` selects known currency digits. The `unit()` formatter accepts `si_prefix=True` or `iec_prefix=True`. `duration(style="human")` produces output such as `1d 3h 30m`. The `date()` formatter accepts `timezone` for timezone-aware datetimes.
 

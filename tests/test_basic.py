@@ -8,6 +8,7 @@ from tests.helpers import assert_snapshot
 from tytable import NoteDict, TyTable, tt
 from tytable._escape import escape_typst
 from tytable._resolve import build
+from tytable.formatters import number
 
 EXPECTED_BASIC_TYP = (
     '#show figure.where(kind: "tytable"): set block(breakable: false)\n'
@@ -92,7 +93,7 @@ def test_public_table_class_is_tytable():
 
 
 def test_clone_can_branch_table_configuration_independently():
-    base = tt(pl.DataFrame({"value": [1, 2]})).fmt(j="value", digits=1)
+    base = tt(pl.DataFrame({"value": [1, 2]})).fmt(j="value", fn=number(digits=1))
     variant = (
         base.clone()
         .set_name(j="value", name="Amount")

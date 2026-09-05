@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -18,7 +19,7 @@ df = pl.DataFrame(
     tt(df, caption="Store performance summary", width=1)
     .group(j={"Q1": ["Q1 Rev", "Q1 Cost"], "Q2": ["Q2 Rev", "Q2 Cost"]})
     .group(i={"Coastal district": 2})
-    .fmt(j=["Q1 Rev", "Q1 Cost", "Q2 Rev", "Q2 Cost"], digits=2)
+    .fmt(j=["Q1 Rev", "Q1 Cost", "Q2 Rev", "Q2 Cost"], fn=number(digits=2))
     .style(i="header", bold=True, color="white", background="#2c3e50")
     .style(i="groupj", bold=True, background="#ecf0f1")
     .style(i="groupi", bold=True, background="#f0f0f0")

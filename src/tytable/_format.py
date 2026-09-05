@@ -1,5 +1,5 @@
 """
-Value formatting: numeric, replace, escape, function, line-break, and math transforms.
+Value formatting: replace, escape, function, line-break, and math transforms.
 
 Applied during the render pipeline by :func:`tytable._resolve.build`.
 """
@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from ._escape import escape_typst
@@ -20,57 +19,6 @@ if TYPE_CHECKING:
     from ._tytable import TyTable
 
 Cell = tuple[int, int]
-
-
-def _is_numeric_typed(val: object) -> bool:
-    """True for supported numeric values but not bools (which are int subclasses)."""
-    if isinstance(val, bool):
-        return False
-    return isinstance(val, (int, float, Decimal))
-
-
-def _decimal_typed(val: Any) -> Decimal:
-    """Convert a supported numeric value while preserving integer and Decimal precision."""
-    if isinstance(val, float):
-        return Decimal.from_float(val)
-    return Decimal(str(val))
-
-
-def _pad_exponent(formatted: str) -> str:
-    """Match Python's numeric format exponent padding while retaining Decimal precision."""
-    if "e" not in formatted:
-        return formatted
-    mantissa, exponent = formatted.split("e", maxsplit=1)
-    sign = ""
-    if exponent[:1] in {"+", "-"}:
-        sign, exponent = exponent[0], exponent[1:]
-    return f"{mantissa}e{sign}{exponent.zfill(2)}"
-
-
-def _fmt_numeric_decimal(val: Any, digits: int) -> str:
-    """Format a number with a fixed number of decimal places."""
-    return f"{_decimal_typed(val):.{digits}f}"
-
-
-def _fmt_numeric_significant(val: Any, digits: int) -> str:
-    """Format a number to a given number of significant figures."""
-    return _pad_exponent(f"{_decimal_typed(val):.{digits}g}")
-
-
-def _fmt_numeric_scientific(val: Any, digits: int, output: str) -> str:
-    """Format a number using backend-native scientific notation."""
-    formatted = _pad_exponent(f"{_decimal_typed(val):.{digits}e}")
-    if "e" not in formatted:
-        return formatted
-
-    mantissa, raw_exponent = formatted.split("e", maxsplit=1)
-    exponent = int(raw_exponent)
-    if output == "typst":
-        exponent_expr = f"({exponent})" if exponent < 0 else str(exponent)
-        return f"${mantissa} times 10^{exponent_expr}$"
-    if output == "html":
-        return f"{mantissa} &times; 10<sup>{exponent}</sup>"
-    return f"{mantissa} * 10^{exponent}"
 
 
 def _matches(o: object, typed: object, s: str) -> bool:
@@ -192,37 +140,6 @@ def _set_cell_value(
         colnames_display[col_idx] = str(value)
     else:
         data_body[layout.body_index(display_row)][col_idx] = str(value)
-
-
-def _apply_digits(
-    cells: list[Cell],
-    directive: FormatDirective,
-    data_body: list[list[str]],
-    typed_body: list[list[Any]],
-    colnames_display: list[str],
-    colnames: list[str],
-    output: str,
-    layout: RowLayout,
-) -> dict[Cell, str]:
-    """Apply numeric formatting and return any generated backend markup."""
-    if directive.digits is None:
-        return {}
-    formatters = {
-        "decimal": _fmt_numeric_decimal,
-        "significant": _fmt_numeric_significant,
-    }
-    formatter = formatters.get(directive.num_fmt or "decimal", _fmt_numeric_decimal)
-    generated_markup: dict[Cell, str] = {}
-    for cell in cells:
-        typed_val = _typed_value(cell, typed_body, colnames, layout)
-        if _is_numeric_typed(typed_val):
-            if directive.num_fmt == "scientific":
-                formatted = _fmt_numeric_scientific(typed_val, directive.digits, output)
-                generated_markup[cell] = formatted
-            else:
-                formatted = formatter(typed_val, directive.digits)
-            _set_cell_value(cell, formatted, data_body, colnames_display, layout)
-    return generated_markup
 
 
 def _apply_fn(
@@ -393,16 +310,7 @@ def apply_formats(
         values_before = {
             cell: _cell_value(cell, data_body, colnames_display, layout) for cell in target_cells
         }
-        generated_markup = _apply_digits(
-            target_cells,
-            d,
-            data_body,
-            typed_body,
-            colnames_display,
-            table._source_colnames,
-            output,
-            layout,
-        )
+        generated_markup: dict[Cell, str] = {}
         escaped_cells.difference_update(
             cell
             for cell, before in values_before.items()

@@ -7,6 +7,7 @@ from tytable import tt
 from tytable._render_typst import _props_to_signature
 from tytable._resolve import build
 from tytable._styling import compute_covered_cells
+from tytable.formatters import number
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
 
@@ -667,7 +668,7 @@ class TestListSelectors:
 
     def test_column_fmt_by_list_of_names(self):
         df = pl.DataFrame({"x": [3.141, 2.718], "y": [1.0, 2.0], "z": [3.0, 4.0]})
-        out = tt(df).fmt(j=["x", "z"], digits=1).render("typst")
+        out = tt(df).fmt(j=["x", "z"], fn=number(digits=1)).render("typst")
         assert "3.1" in out
         assert "2.7" in out
         assert "1" in out
@@ -730,7 +731,9 @@ class TestDataDrivenRowSelectors:
         assert '"2_0"' not in out
 
     def test_polars_expr_fmt(self):
-        out = tt(self.DF).fmt(i=pl.col("Score") < 70, digits=0).render("typst")
+        out = (
+            tt(self.DF).fmt(i=pl.col("Score") < 70, j="Score", fn=number(digits=0)).render("typst")
+        )
         assert "[72]" in out
         assert "[60]" in out
 

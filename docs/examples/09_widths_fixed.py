@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -15,8 +16,8 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Full width, fixed first column", width=["3.5cm", "1fr", "1fr", "1fr"])
-    .fmt(j="Accuracy", digits=3)
-    .fmt(j="Latency (ms)", digits=1)
+    .fmt(j="Accuracy", fn=number(digits=3))
+    .fmt(j="Latency (ms)", fn=number(digits=1))
     .style(i="header", bold=True)
     .save("build/09_widths_fixed.typ")
 )

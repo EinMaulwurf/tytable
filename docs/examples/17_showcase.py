@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -27,8 +28,8 @@ df = pl.DataFrame(
     )
     .theme_plain()
     .group(j={"Quality": ["Accuracy", "F1"], "Cost": ["Latency", "Parameters"]})
-    .fmt(j=["Accuracy", "F1"], digits=3)
-    .fmt(j="Latency", digits=1)
+    .fmt(j=["Accuracy", "F1"], fn=number(digits=3))
+    .fmt(j="Latency", fn=number(digits=1))
     .style(i="groupj", bold=True, color="#153243", background="#dbeff0")
     .style(i="header", bold=True, color="white", background="#153243")
     .style(j="Model", bold=True)

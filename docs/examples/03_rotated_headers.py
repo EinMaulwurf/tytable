@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -23,7 +24,7 @@ compact_columns = ["Accuracy", "Precision", "Recall", "F1 score", "Parameters (M
         caption="Rotated labels keep numeric columns compact",
         width=["3cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm", "1.25cm"],
     )
-    .fmt(j=compact_columns, digits=2)
+    .fmt(j=compact_columns, fn=number(digits=2))
     .style(i="header", bold=True, align="l", alignv="b", line="b")
     .style(i="header", j=compact_columns, rotate=-55)
     .style(i="data", j=compact_columns, align="c")

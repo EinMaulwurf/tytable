@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -22,9 +23,9 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Regional revenue")
-    .fmt(j="Revenue", digits=2)
-    .fmt(j="Significant", digits=3, num_fmt="significant")
-    .fmt(j="Scientific", digits=2, num_fmt="scientific")
+    .fmt(j="Revenue", fn=number(digits=2))
+    .fmt(j="Significant", fn=number(digits=3, notation="significant"))
+    .fmt(j="Scientific", fn=number(digits=2, notation="scientific"))
     .fmt(j="Equation", math=True)
     .fmt(j="Revenue", replace={"null": "—"})
     .fmt(j="Status", replace={"null": "n/a"})

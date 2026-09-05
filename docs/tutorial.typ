@@ -76,7 +76,7 @@ Jupyter shows an HTML preview. In a script, choose the artifact you need: `.save
 Now add one formatting decision. Column names are used directly, so this reads as “show Price with two decimal places”:
 
 ```python
-table = tt(data).fmt(j="Price", digits=2)
+table = tt(data).fmt(j="Price", fn=number(digits=2))
 ```
 
 === Add one visual cue
@@ -86,7 +86,7 @@ Styling is another chained instruction. A header treatment is a useful first one
 ```python
 table = (
     tt(data)
-    .fmt(j="Price", digits=2)
+    .fmt(j="Price", fn=number(digits=2))
     .style(i="header", bold=True, background="#17324d", color="white")
 )
 ```
@@ -192,7 +192,7 @@ The selector vocabulary is shared, but operations accept only row kinds they can
 Select columns by their original DataFrame names whenever possible. Integer positions, sequences, and ranges are also supported. Omitting `j` selects every column.
 
 ```python
-table.fmt(j="Score", digits=1)
+table.fmt(j="Score", fn=number(digits=1))
 table.style(j=["Name", "Score"], bold=True)
 table.style(j=range(2), bold=True)
 ```
@@ -203,11 +203,11 @@ Polars column selectors, tytable's `regex(pattern)`, and `colgroup(label=..., le
 import polars.selectors as cs
 from tytable.selectors import colgroup, regex
 
-table.fmt(j=cs.numeric(), digits=1)
+table.fmt(j=cs.numeric(), fn=number(digits=1))
 table.style(j=cs.starts_with("rev"), bold=True)
 table.set_name(j=cs.string(), name="Label")
 table.group(j={"Measures": cs.by_dtype(pl.Int64, pl.Float64)})
-table.fmt(j=colgroup(label="Measures", level=0), digits=1)
+table.fmt(j=colgroup(label="Measures", level=0), fn=number(digits=1))
 table.show_columns(regex(r"^Q[1-4]$"))
 ```
 
@@ -216,7 +216,7 @@ A Polars selector that matches no columns produces an empty selection. Column gr
 `regex(pattern)` matches original column names using Python's `re.search`, limits patterns to 500 characters, and raises `ValueError` for invalid patterns or no matches. It composes with exact names and other selectors:
 
 ```python
-table.fmt(j=["Total", regex(r"^Q[1-4]$")], digits=1)
+table.fmt(j=["Total", regex(r"^Q[1-4]$")], fn=number(digits=1))
 ```
 
 Polars also provides `cs.matches(pattern)` using its own regex engine. It follows the normal Polars selector behavior and returns an empty selection when nothing matches, which is useful when an optional set of columns is expected.
@@ -358,7 +358,7 @@ Because that Polars expression converts `Revenue` to a string column, the exampl
 
 For quick, in-table transforms that stay inside the `tt()` chain, without reaching back into polars. See #link(<selectors>)[Select rows and columns] to restrict any transform to particular rows, columns, or conditionally selected cells.
 
-- `digits` — fixed decimal places (`num_fmt="decimal"`), significant figures (`num_fmt="significant"`), or typeset scientific notation (`num_fmt="scientific"`)
+- `fn` — pass a semantic formatter such as `number(digits=2)`, `percent(digits=1)`, or `currency("USD")`; significant notation requires positive `digits`, and scientific output is textual `e` notation
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}` mapping
 - `linebreak` — choose a literal input marker to replace with a native line break. For example, `linebreak="\n"` translates newline characters to a single `\` in Typst or `<br>` in HTML; use another marker such as `"|"` when that is more convenient for the source data
 - `math` — typeset selected values as Typst equations
@@ -607,7 +607,7 @@ Restrained top, header, and bottom rules give every new table the `default` book
 Selecting the plain theme does not clear styling, formatting, media, groups, or other recorded intent:
 
 ```python
-table = tt(df).fmt(j="Score", digits=2).theme_plain().style(i="header", bold=True)
+table = tt(df).fmt(j="Score", fn=number(digits=2)).theme_plain().style(i="header", bold=True)
 ```
 
 For reusable project-specific looks, write an ordinary function that selects a base and adds explicit styles. There is no separate theme registry or plugin mechanism.

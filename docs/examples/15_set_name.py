@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -16,7 +17,7 @@ df = pl.DataFrame(
     tt(df, caption="Renaming columns for display", width=1)
     .set_name(name=["", "Revenue", "Cost"])
     # Selectors continue to use the original DataFrame column names.
-    .fmt(j=["val_1", "val_2"], digits=2)
+    .fmt(j=["val_1", "val_2"], fn=number(digits=2))
     .style(i="header", bold=True, background="#2c3e50", color="white")
     .save("build/15_set_name.typ")
 )

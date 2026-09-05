@@ -5,6 +5,7 @@ import pytest
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._resolve import build
+from tytable.formatters import number
 from tytable.selectors import regex
 
 
@@ -173,7 +174,7 @@ class TestSetNameSelectorSemantics:
             .theme_plain()
             .set_name(j="revenue", name="Value")
             .set_name(j="cost", name="Value")
-            .fmt(j="revenue", digits=2),
+            .fmt(j="revenue", fn=number(digits=2)),
             "typst",
         )
         assert built.colnames_display == ["Value", "Value"]

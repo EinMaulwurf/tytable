@@ -5,6 +5,7 @@ import pytest
 from tests.helpers import assert_snapshot
 from tytable import TyTable, tt
 from tytable._resolve import build
+from tytable.formatters import number
 from tytable.selectors import regex
 
 DF = pl.DataFrame({"A": [1, 3], "B": [2, 4]})
@@ -80,7 +81,7 @@ class TestThemeGrid:
 @pytest.mark.typst
 class TestThemePlain:
     def test_preserves_recorded_intent(self):
-        t = tt(DF).style(i=0, bold=True).fmt(j="A", digits=1)
+        t = tt(DF).style(i=0, bold=True).fmt(j="A", fn=number(digits=1))
         assert len(t._style_directives) == 1
         assert len(t._format_directives) == 1
         t.theme_plain()
@@ -100,8 +101,8 @@ class TestThemePlain:
         assert t._typst_opts.column_gutter == "0.2em"
 
     def test_call_order_does_not_erase_styles_or_formats(self):
-        before = tt(DF).theme_plain().style(i=0, bold=True).fmt(j="A", digits=1)
-        after = tt(DF).style(i=0, bold=True).fmt(j="A", digits=1).theme_plain()
+        before = tt(DF).theme_plain().style(i=0, bold=True).fmt(j="A", fn=number(digits=1))
+        after = tt(DF).style(i=0, bold=True).fmt(j="A", fn=number(digits=1)).theme_plain()
         assert before.render("typst") == after.render("typst")
 
 

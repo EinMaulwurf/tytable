@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -16,8 +17,8 @@ df = pl.DataFrame(
 (
     tt(df, caption="List selectors — strings as row/column targets", width=1)
     .style(i=["header", "data"], bold=True)
-    .fmt(j=["Revenue", "Cost"], digits=0)
-    .fmt(j=["Growth %"], digits=1)
+    .fmt(j=["Revenue", "Cost"], fn=number(digits=0))
+    .fmt(j=["Growth %"], fn=number(digits=1))
     .style(i="header", background="#2c3e50", color="white")
     .save("build/13_list_selectors.typ")
 )

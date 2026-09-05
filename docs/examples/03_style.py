@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -14,8 +15,8 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Quarterly sales by region")
-    .fmt(j="Sales", digits=2)
-    .fmt(j="Growth", digits=2)
+    .fmt(j="Sales", fn=number(digits=2))
+    .fmt(j="Growth", fn=number(digits=2))
     .style(i="header", bold=True, color="white", background="#2c3e50", line="b")
     .style(i=2, bold=True, color="#27ae60")
     .style(i=1, color="#c0392b")

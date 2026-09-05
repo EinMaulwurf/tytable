@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -19,6 +20,6 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Mixed column widths", width=[0.2, 0.15, None])
-    .fmt(j="Value", digits=2)
+    .fmt(j="Value", fn=number(digits=2))
     .save("build/06_widths.typ")
 )

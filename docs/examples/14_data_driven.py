@@ -3,6 +3,7 @@
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame(
     {
@@ -16,8 +17,8 @@ df = pl.DataFrame(
 
 (
     tt(df, caption="Regional performance review", width=1)
-    .fmt(j=["Revenue", "Cost", "Profit"], digits=0)
-    .fmt(j="Growth %", digits=1)
+    .fmt(j=["Revenue", "Cost", "Profit"], fn=number(digits=0))
+    .fmt(j="Growth %", fn=number(digits=1))
     .style(i="header", bold=True, background="#2c3e50", color="white")
     .style(
         i=(pl.col("Growth %") > 0) & (pl.col("Profit") > 0),

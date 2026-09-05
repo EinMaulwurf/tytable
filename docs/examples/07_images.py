@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import polars as pl
 
 from tytable import tt
+from tytable.formatters import number
 
 
 def sparkline(values, *, color="#2c3e50", **kw):
@@ -27,7 +28,7 @@ df = pl.DataFrame(
 (
     tt(df, caption="Country scores with flags and trend sparklines")
     .theme_striped()
-    .fmt(j="Score", digits=2)
+    .fmt(j="Score", fn=number(digits=2))
     # Static inputs resolve from docs/ and are copied beside generated plots.
     .images(
         j="Flag",
