@@ -43,7 +43,7 @@ For every item, update public signatures, docstrings, typing examples in `tests/
 
 ### V4-4: remove legacy gutter behavior
 
-- [ ] Remove constructor `gutter` from both `tt()` and `TyTable`; retain `column_gutter`, `row_gutter`, and cell `padding`. Keep explicit gutters in points for numeric values and as Typst lengths for strings. Default `None` leaves spacing to the normal renderer defaults; do not preserve an implicit grouped-only 2 pt gutter.
+- [x] Remove constructor `gutter` from both `tt()` and `TyTable`; retain `column_gutter`, `row_gutter`, and cell `padding`. Keep explicit gutters in points for numeric values and as Typst lengths for strings. Default `None` leaves spacing to the normal renderer defaults; do not preserve an implicit grouped-only 2 pt gutter.
 - Implementation: remove `column_gutter_explicit` and the grouped/background-dependent fallback in `TypstRenderOptions` and `_emit_table_options`. Remove `BuiltTable.has_background` only if it has no remaining consumer. Emit explicitly supplied column spacing independently of grouping, themes, and backgrounds; avoid changing HTML spacing semantics as an unrelated addition.
 - Acceptance: the same explicit gutter survives toggling backgrounds and switching base themes on grouped and ungrouped tables. Cover zero, `None`, valid length strings, invalid/non-finite numbers, row gutters, and padding. Compile representative grouped tables to catch border/track-spacing interactions.
 - Migration: replace `gutter=value` with `column_gutter=value`. Documents that relied on the implicit legacy gap must request `column_gutter=2`; explain that the explicit setting applies consistently rather than conditionally.

@@ -48,7 +48,6 @@ def tt(
     width: float | str | None = None,
     column_widths: Sequence[float | str | None] | None = None,
     height: float | None = None,
-    gutter: float | str | None = 2,
     column_gutter: float | str | None = None,
     row_gutter: float | str | None = None,
     colnames: bool = True,
@@ -97,13 +96,9 @@ def tt(
         whose sum exceeds one are normalized to proportions.
     height
         Row height in ``em`` (Typst). ``None`` = auto rows.
-    gutter
-        Legacy Typst column gutter for grouped tables without cell backgrounds.
-        A number is treated as points; a string such as ``"0.1em"`` is passed
-        through. ``None`` suppresses the legacy gutter.
     column_gutter
-        Explicit Typst column gutter. When set, overrides ``gutter`` and applies
-        to every table layout, including tables with cell backgrounds.
+        Explicit Typst column gutter. A number is treated as points and a string
+        such as ``"0.1em"`` is passed through. It applies to every table layout.
     row_gutter
         Explicit Typst row gutter. A number is treated as points and a string
         is passed through as a Typst length.
@@ -155,7 +150,6 @@ def tt(
         width=width,
         column_widths=column_widths,
         height=height,
-        gutter=gutter,
         column_gutter=column_gutter,
         row_gutter=row_gutter,
         colnames=colnames,
@@ -424,7 +418,6 @@ class TyTable:
         width: float | str | None = None,
         column_widths: Sequence[float | str | None] | None = None,
         height: float | None = None,
-        gutter: float | str | None = 2,
         column_gutter: float | str | None = None,
         row_gutter: float | str | None = None,
         colnames: bool = True,
@@ -448,7 +441,6 @@ class TyTable:
         _validate_bool("colnames", colnames)
         _validate_bool("escape", escape)
         _validate_figure_options(figure, caption, label)
-        _validate_gutter("gutter", gutter)
         _validate_gutter("column_gutter", column_gutter)
         _validate_gutter("row_gutter", row_gutter)
         _validate_number("height", height, allow_none=True)
@@ -475,8 +467,7 @@ class TyTable:
         self._typst_opts = TypstRenderOptions(figure=figure, multipage=False)
         if height is not None:
             self._typst_opts.row_height_em = float(height)
-        self._typst_opts.column_gutter_explicit = column_gutter is not None
-        self._typst_opts.column_gutter = column_gutter if column_gutter is not None else gutter
+        self._typst_opts.column_gutter = column_gutter
         self._typst_opts.row_gutter = row_gutter
         self._theme: _themes.BaseTheme = "default"
 

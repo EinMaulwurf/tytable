@@ -49,8 +49,7 @@ class BuiltTable:
     ``"l"``/``"r"`` entry per displayed column. ``width`` is a whole-table
     fraction or length, and ``column_widths`` is the projected per-column
     sequence; ``height`` is the constructor's row-height value in em.
-    ``has_background`` lets the Typst renderer avoid a
-    conflicting grouped-table gutter. ``typst_options`` is an invocation-local
+    ``typst_options`` is an invocation-local
     copy carrying layout operations and the Typst-specific part of the resolved
     base appearance.
     """
@@ -72,7 +71,6 @@ class BuiltTable:
     width: float | str | None = None
     column_widths: Sequence[float | str | None] | None = None
     height: float | None = None
-    has_background: bool = False
     typst_options: TypstRenderOptions | None = None
 
 
@@ -495,7 +493,6 @@ def build(
     _apply_col_group_spans(style_grid, state)
     _apply_colspans(style_grid, state)
 
-    has_background = any("background" in props for props in style_grid.values())
     source_alignments = _column_alignments(state.table)
 
     return BuiltTable(
@@ -510,7 +507,6 @@ def build(
         style_lines=style_lines,
         style_caption=style_caption,
         style_notes=style_notes,
-        has_background=has_background,
         caption=state.table._caption,
         label=state.table._label,
         width=state.table._width,

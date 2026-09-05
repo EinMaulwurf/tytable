@@ -49,7 +49,6 @@ tt(
     width=None,
     column_widths=None,
     height=None,
-    gutter=2,
     column_gutter=None,
     row_gutter=None,
     colnames=True,
@@ -63,7 +62,7 @@ tt(
 - `width=1` fills the available line. Numeric widths must be finite and non-negative; a string is a whole-table length such as `"3cm"`.
 - `column_widths` sets one width per source column and may mix fractions, Typst lengths such as `"3cm"` or `1fr`, and `None` for automatic width. Numeric-only entries whose sum exceeds one are normalized; projection does not renormalize surviving columns.
 - `height` is a finite, non-negative row height in `em`, not a table scaling factor.
-- `gutter` retains the legacy grouped-table column spacing. Set `column_gutter` or `row_gutter` for explicit Typst track spacing; finite, non-negative numbers are points and strings are Typst lengths.
+- `column_gutter` and `row_gutter` explicitly control Typst track spacing; finite, non-negative numbers are points and strings are Typst lengths. Omitted gutters leave renderer defaults unchanged.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.
 
 ## Row and column selectors

@@ -53,8 +53,6 @@ class TestStyleProps:
     def test_background(self):
         out = tt(DF).style(i=0, j=0, background="#ffffcc").render("typst")
         assert 'background: rgb("#ffffcc")' in out
-        built = build(tt(DF).style(i=0, j=0, background="#ffffcc"), "typst")
-        assert built.has_background is True
         assert_snapshot("style_background", out)
 
     def test_fontsize(self):

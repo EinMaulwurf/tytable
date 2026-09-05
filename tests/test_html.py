@@ -491,41 +491,35 @@ class TestTypstWidth:
 
 @pytest.mark.typst
 class TestTypstGutter:
-    def test_default_gutter(self):
+    def test_omitted_gutter_is_not_emitted(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df).group(j={"G": [0, 1]}).render("typst")
-        assert "column-gutter: 2pt," in out
+        assert "column-gutter" not in out
 
-    def test_custom_gutter(self):
+    def test_custom_column_gutter(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, gutter=5).group(j={"G": [0, 1]}).render("typst")
+        out = tt(df, column_gutter=5).group(j={"G": [0, 1]}).render("typst")
         assert "column-gutter: 5pt," in out
 
     def test_string_gutter(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, gutter="0.1em").group(j={"G": [0, 1]}).render("typst")
+        out = tt(df, column_gutter="0.1em").group(j={"G": [0, 1]}).render("typst")
         assert "column-gutter: 0.1em," in out
 
     def test_zero_gutter(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, gutter=0).group(j={"G": [0, 1]}).render("typst")
+        out = tt(df, column_gutter=0).group(j={"G": [0, 1]}).render("typst")
         assert "column-gutter: 0pt," in out
 
-    def test_none_gutter_omitted(self):
+    def test_removed_gutter_option_fails_at_public_boundary(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, gutter=None).group(j={"G": [0, 1]}).render("typst")
-        assert "column-gutter" not in out
+        with pytest.raises(TypeError, match="gutter"):
+            tt(df, gutter=None)
 
     def test_explicit_column_gutter_applies_without_groups(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, column_gutter=4).render("typst")
         assert "column-gutter: 4pt," in out
-
-    def test_explicit_column_gutter_overrides_legacy_gutter(self):
-        df = pl.DataFrame({"A": [1], "B": [2]})
-        out = tt(df, gutter=2, column_gutter="0.5em").render("typst")
-        assert "column-gutter: 0.5em," in out
-        assert "column-gutter: 2pt," not in out
 
     def test_explicit_column_gutter_applies_with_backgrounds(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
@@ -545,10 +539,8 @@ class TestTypstGutter:
     @pytest.mark.parametrize(
         ("name", "value", "error"),
         [
-            ("gutter", True, TypeError),
             ("column_gutter", -1, ValueError),
             ("row_gutter", False, TypeError),
-            ("gutter", float("nan"), ValueError),
             ("column_gutter", float("inf"), ValueError),
             ("row_gutter", -float("inf"), ValueError),
         ],

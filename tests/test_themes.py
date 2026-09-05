@@ -95,7 +95,7 @@ class TestThemePlain:
         assert_snapshot("theme_plain", out)
 
     def test_preserves_constructor_and_layout_options(self):
-        t = tt(DF, figure=False, height=1.5, gutter="0.2em").theme_plain()
+        t = tt(DF, figure=False, height=1.5, column_gutter="0.2em").theme_plain()
         assert t._typst_opts.figure is False
         assert t._typst_opts.row_height_em == 1.5
         assert t._typst_opts.column_gutter == "0.2em"

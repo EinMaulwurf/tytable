@@ -63,13 +63,12 @@ class TypstRenderOptions:
     ``resize_width``; otherwise a positive width fraction is used.
     ``grid_stroke`` is a trusted Typst stroke expression. ``row_height_em`` is
     a row height in em. Numeric column and row gutters are in points; strings
-    are Typst lengths. A legacy column gutter is emitted only for grouped
-    tables without cell backgrounds, while an explicitly configured column
-    gutter is always emitted. ``portable`` is retained as a compatibility
-    option; direct renders now always embed generated plots and saves always
+    are Typst lengths. An explicitly configured column gutter is emitted for
+    every table layout. ``portable`` is retained as a compatibility option;
+    direct renders now always embed generated plots and saves always
     materialize them.
 
-    The constructor seeds ``figure``, ``multipage``, row height, and gutter.
+    The constructor seeds ``figure``, ``multipage``, and row height.
     Direct layout operations mutate this object. Base appearance options are
     applied to a build-time copy, so switching themes never leaves stale
     renderer state. Per-cell border directives remain separate from
@@ -87,8 +86,7 @@ class TypstRenderOptions:
     rotate_angle: float | None = None
     portable: bool = False
     row_height_em: float | None = None
-    column_gutter: float | str | None = 2
-    column_gutter_explicit: bool = False
+    column_gutter: float | str | None = None
     row_gutter: float | str | None = None
 
     def align_to_typst(self) -> str:
@@ -235,10 +233,7 @@ class TypstRenderer(Renderer):
                 else built.width
             )
             L.append(f"    width: {width},")
-        show_column_gutter = opts.column_gutter_explicit or (
-            built.col_groups and not built.has_background
-        )
-        if show_column_gutter and opts.column_gutter is not None:
+        if opts.column_gutter is not None:
             gutter = opts.column_gutter
             unit = "pt" if isinstance(gutter, (int, float)) else ""
             L.append(f"    column-gutter: {gutter}{unit},")

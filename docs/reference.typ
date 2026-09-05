@@ -141,7 +141,7 @@ Import `regex` and `colgroup` from `tytable.selectors`. Use `regex(pattern)` for
   [`figure`, `caption`, `label`, `notes`],
   [captions and labels require `figure=True`],
   [Layout],
-  [`width`, `column_widths`, `height`, `gutter`, `column_gutter`, `row_gutter`],
+  [`width`, `column_widths`, `height`, `column_gutter`, `row_gutter`],
   [`width=1` fills the line; `column_widths` sets each column],
   [Headers],
   [`colnames`],
@@ -151,7 +151,7 @@ Import `regex` and `colgroup` from `tytable.selectors`. Use `regex(pattern)` for
   [global safe-markup policy],
 )
 
-`width` is the whole-table size: a finite, non-negative fraction of the available line or a Typst/CSS length string. `column_widths` accepts one entry per source column; fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed. Numeric-only entries whose sum exceeds one are normalized to proportions, while `[0.4, 0.4]` remains partial and `[1, 1]` becomes equal columns. `.show_columns()` projects entries without renormalizing the survivors. `height` sets a finite, non-negative row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `gutter` retains the legacy grouped-table column spacing. `column_gutter` explicitly overrides it for every table layout, while `row_gutter` independently spaces rows; each accepts points as a number or a Typst length string. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
+`width` is the whole-table size: a finite, non-negative fraction of the available line or a Typst/CSS length string. `column_widths` accepts one entry per source column; fractions, strings such as `"3cm"` / `"1fr"`, and `None` may be mixed. Numeric-only entries whose sum exceeds one are normalized to proportions, while `[0.4, 0.4]` remains partial and `[1, 1]` becomes equal columns. `.show_columns()` projects entries without renormalizing the survivors. `height` sets a finite, non-negative row height in `em`; it does not scale the table like #link(<resize>)[`.resize()`]. `column_gutter` and `row_gutter` explicitly control Typst track spacing; each accepts points as a number or a Typst length string, and omitted gutters leave renderer defaults unchanged. Numeric formatting is configured separately with `.fmt()`. A note is a string or a `NoteDict`, exported from `tytable`. Its optional keys are `text` (footer text), `marker` (an explicit string or `None`), `i` (row selector), `j` (column selector), and `where` (cell-level Polars expression):
 
 ```python
 from tytable import NoteDict, tt
