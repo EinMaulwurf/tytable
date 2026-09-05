@@ -259,7 +259,7 @@ For both methods, tytable resolves `i` and `j` at render time and walks the sele
 
 #api("Generate plots", api_signatures.at("plot"))
 
-`j` and `fun` are required. The callable receives the typed cell value (or the matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Pixel dimensions control PNG generation for both backends and override a returned Matplotlib figure's canvas size; `height` independently controls the displayed cell size. `color` and `xlim` are inspected independently: each keyword is forwarded only if the callback declares it or accepts `**kwargs`. Plot callbacks and PNG generation run during `.render()` / `.save()`. Direct Typst and HTML renders embed the generated image bytes in the returned fragment; ASCII uses a text placeholder. `.save()` instead writes external PNG assets.
+`j` and `fn` are required. The callable receives exactly one positional typed cell value (or the matching `data` entry) and returns a Matplotlib `Figure` or `plotnine` plot. Configure plot options in the callback itself, with `functools.partial`, or with a wrapper function. Pixel dimensions control PNG generation for both backends and override a returned Matplotlib figure's canvas size; `height` independently controls the displayed cell size. Plot callbacks and PNG generation run during `.render()` / `.save()`. Direct Typst and HTML renders embed the generated image bytes in the returned fragment; ASCII uses a text placeholder. `.save()` instead writes external PNG assets.
 
 #api("Embed files", api_signatures.at("images"))
 

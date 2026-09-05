@@ -50,7 +50,7 @@ For every item, update public signatures, docstrings, typing examples in `tests/
 
 ### V4-5: simplify plot callback configuration
 
-- [ ] Rename `.plot(fun=...)` to `.plot(fn=...)` and remove its public `color` and `xlim` options. Call the callback with exactly one positional cell value or matching `data` entry; do not inspect its signature or inject plot-specific keyword arguments.
+- [x] Rename `.plot(fun=...)` to `.plot(fn=...)` and remove its public `color` and `xlim` options. Call the callback with exactly one positional cell value or matching `data` entry; do not inspect its signature or inject plot-specific keyword arguments.
 - Implementation: update `PlotDirective`, `_tytable.py`, and `_images.py`; remove `_callback_kwargs` and forwarding-only validation/helpers/imports when unused. Validate `fn` is callable when registering the directive. Preserve `data` overrides, selectors, row-major cardinality, height/pixel dimensions, backend filters, supported Matplotlib/plotnine results, contextual errors, and existing asset policies.
 - Acceptance: callbacks with their own `color`/`xlim` defaults retain those defaults; `functools.partial` and callable objects work; a callback needing an unbound extra argument gets the usual contextual render error. ASCII still emits placeholders without invoking plotting callbacks or importing optional plotting dependencies. Verify rendering and repeated saves do not acquire persistent media state.
 - Migration: `.plot(fun=draw, color="red", xlim=(0, 1), ...)` becomes `.plot(fn=partial(draw, color="red", xlim=(0, 1)), ...)`, or use a wrapper function. The removed keyword names must not remain as undocumented aliases in v4.

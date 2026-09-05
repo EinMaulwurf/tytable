@@ -366,7 +366,7 @@ With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or 
 
 In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer, which displays a zero-column DataFrame as `(empty table)`. A saved `.typ` fragment can be included in a Typst report with `#include`.
 
-`.plot()` generates plots during rendering and requires the optional `images` dependencies. `.images()` embeds or references existing files and does not require that extra. Their `height` option must be a positive, finite number or an `em` string. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
+`.plot(fn=...)` generates plots during rendering and requires the optional `images` dependencies. The callback receives exactly one positional cell value (or matching `data` entry) and must return a Matplotlib `Figure` or plotnine plot; configure options in the callback, with `functools.partial`, or with a wrapper. `.images()` embeds or references existing files and does not require that extra. Their `height` option must be a positive, finite number or an `em` string. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
 
 ## Common mistakes
 

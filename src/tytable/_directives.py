@@ -67,10 +67,8 @@ class PlotDirective:
 
     i: _RowSelector
     j: _ColumnSelector
-    fun: Callable
+    fn: Callable
     data: list | None = None
-    color: str = "black"
-    xlim: list[float] | None = None
     height: float = 1.0
     height_px: int = 400
     width_px: int = 1200

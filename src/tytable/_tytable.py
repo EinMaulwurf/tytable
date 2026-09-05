@@ -376,21 +376,6 @@ def _normalize_public_sequence(name: str, value: object) -> list[Any]:
     return list(value)
 
 
-def _normalize_xlim(xlim: Sequence[float] | None) -> list[float] | None:
-    """Validate optional finite two-value plot limits."""
-    if xlim is None:
-        return None
-    values = _normalize_public_sequence("xlim", xlim)
-    if len(values) != 2:
-        raise ValueError(f"xlim must contain exactly two values, got {len(values)}")
-    for value in values:
-        if isinstance(value, bool) or not isinstance(value, int | float):
-            raise TypeError(f"xlim values must be numbers, got {value!r}")
-        if isinstance(value, float) and not math.isfinite(value):
-            raise ValueError(f"xlim values must be finite, got {value!r}")
-    return [float(value) for value in values]
-
-
 class TyTable:
     """
     A chainable table built from a Polars DataFrame.
@@ -845,13 +830,11 @@ class TyTable:
         i: _RowSelector = None,
         j: _ColumnSelector = None,
         *,
-        fun: Callable,
+        fn: Callable,
         data: Sequence[Any] | None = None,
         height: float | str = 1.0,
         height_px: int = 400,
         width_px: int = 1200,
-        color: str = "black",
-        xlim: Sequence[float] | None = None,
         output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
@@ -865,12 +848,12 @@ class TyTable:
             Row/column selectors — see :meth:`style`. ``j`` is required. ``i``
             defaults to every source-data row. Plots can target data and
             row-group rows; selecting either header kind raises when rendered.
-        fun
-            Plotting callable. Called once per selected cell with either the
-            typed cell value (or the matching ``data`` list entry). ``color`` and
-            ``xlim`` are each forwarded only when the callable declares that
-            keyword or accepts ``**kwargs``. Must return a matplotlib Figure
-            or a plotnine ``ggplot``.
+        fn
+            Plotting callable. Called exactly once per selected cell with
+            either the typed cell value or the matching ``data`` list entry.
+            Configure plot options in the callback itself or with
+            ``functools.partial``. Must return a matplotlib Figure or a
+            plotnine ``ggplot``.
         data
             Optional per-cell data overriding the cell's own value. Supply
             exactly one item per selected cell, indexed row-major.
@@ -880,10 +863,6 @@ class TyTable:
             Pixel dimensions of the generated PNG (default 400×1200). These
             dimensions apply to both Matplotlib and plotnine output and
             override the canvas size of a returned Matplotlib figure.
-        color
-            Color forwarded to ``fun`` (default ``"black"``).
-        xlim
-            Optional x-axis limits forwarded to ``fun``.
         output
             Restrict this directive to the given output backends. ``None``
             applies to all.
@@ -897,7 +876,7 @@ class TyTable:
         ------
         TypeError
             If ``height`` has an unsupported type, if ``height_px`` or
-            ``width_px`` is not an integer, or if ``fun`` returns an
+            ``width_px`` is not an integer, or if ``fn`` returns an
             unsupported object when the table is rendered.
         ValueError
             If ``j`` is missing, a dimension is not positive, ``height`` cannot
@@ -908,14 +887,14 @@ class TyTable:
             If the table is rendered without the optional ``images``
             dependencies installed.
         RuntimeError
-            If ``fun`` raises an exception when the table is rendered.
+            If ``fn`` raises an exception when the table is rendered.
         OSError
             If the generated plot directory or PNG cannot be written.
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
-        if not isinstance(color, str):
-            raise TypeError(f"color must be a string, got {type(color).__name__}")
+        if not callable(fn):
+            raise TypeError(f"fn must be callable, got {type(fn).__name__}")
         for name, value in (("height_px", height_px), ("width_px", width_px)):
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an integer, got {value!r}")
@@ -924,14 +903,11 @@ class TyTable:
         height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
         normalized_data = _normalize_public_sequence("data", data) if data is not None else None
-        normalized_xlim = _normalize_xlim(xlim)
         directive = PlotDirective(
             i=i,
             j=j,
-            fun=fun,
+            fn=fn,
             data=normalized_data,
-            color=color,
-            xlim=normalized_xlim,
             height=height,
             height_px=height_px,
             width_px=width_px,

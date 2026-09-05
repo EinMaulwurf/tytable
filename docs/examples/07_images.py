@@ -1,5 +1,7 @@
 """Images & sparklines example — embedding existing files and generated plots."""
 
+from functools import partial
+
 import matplotlib.pyplot as plt
 import polars as pl
 
@@ -39,7 +41,7 @@ df = pl.DataFrame(
         ],
         height=1.2,
     )
-    .plot(j="Trend", fun=sparkline, height=1.5, color="#2c3e50")
+    .plot(j="Trend", fn=partial(sparkline, color="#2c3e50"), height=1.5)
     .style(j="Score", align="c")
     .style(
         i="header",

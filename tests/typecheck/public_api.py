@@ -20,7 +20,6 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     mixed_columns: list[str | int] = [0, "b"]
     mixed_selector: list[str | int] = [0, "b"]
     plot_data: tuple[Any, ...] = ([1, 2], [3, 4])
-    integer_limits: list[int] = [0, 10]
     image_paths: tuple[str, ...] = ("a.png", "b.png")
 
     table = tt(dataframe).set_name(name=display_names)
@@ -47,7 +46,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.style(j=mixed_selector, rotate=90)
     table.style(output="typst", bold=True)
     table.fmt(output=["html", "ascii"])
-    table.plot(j=0, fun=lambda value: value, data=plot_data, xlim=integer_limits)
+    table.plot(j=0, fn=lambda value: value, data=plot_data)
     table.images(j=0, paths=image_paths)
     table.save(Path("table.typ"), assets=Path("table_assets"))
     table.compile(Path("table.pdf"), root=Path("."), font_paths=[Path("fonts")])

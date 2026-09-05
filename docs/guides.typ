@@ -38,7 +38,7 @@ Use `.images()` to embed existing files without Matplotlib or the optional `imag
 #v(0.12em)
 #include "build/07_static_images.typ"
 
-Use `.plot()` when graphics must be generated from cell values. The next example combines those same static flags with a plotting function `fun(values) -> matplotlib.figure.Figure` for the sparkline column. Tytable handles generated PNG saving and path management; this plotting half requires the `images` extra.
+Use `.plot()` when graphics must be generated from cell values. The next example combines those same static flags with a plotting function `fn(values) -> matplotlib.figure.Figure` for the sparkline column. Configure callback options directly or with `functools.partial`; tytable handles generated PNG saving and path management. This plotting half requires the `images` extra.
 
 #tag("SOURCE — STATIC FILES + GENERATED PLOTS")
 #source("examples/07_images.py")

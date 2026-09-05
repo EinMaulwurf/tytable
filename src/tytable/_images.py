@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import inspect
 import pathlib
 import re
 import tempfile
@@ -60,40 +59,21 @@ def _height_to_float(h: str | float) -> float:
     return float(h)
 
 
-def _callback_kwargs(fun: Callable, *, color: str, xlim: object) -> dict[str, object]:
-    """Return only the optional plot keywords that ``fun`` can accept."""
-    try:
-        sig = inspect.signature(fun)
-    except (ValueError, TypeError):
-        return {}
-
-    parameters = sig.parameters
-    if any(p.kind == p.VAR_KEYWORD for p in parameters.values()):
-        return {"color": color, "xlim": xlim}
-
-    keyword_kinds = (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
-    available = {name for name, parameter in parameters.items() if parameter.kind in keyword_kinds}
-    values: dict[str, object] = {"color": color, "xlim": xlim}
-    return {name: value for name, value in values.items() if name in available}
-
-
 def _save_plot_image(
-    fun: Callable,
+    fn: Callable,
     entry: object,
     path: str | pathlib.Path,
     *,
     width_px: int,
     height_px: int,
-    color: str,
-    xlim: object,
     context: str,
 ) -> None:
-    """Call ``fun(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
+    """Call ``fn(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
     import matplotlib.pyplot as plt
 
     dpi = 100
     try:
-        obj = fun(entry, **_callback_kwargs(fun, color=color, xlim=xlim))
+        obj = fn(entry)
     except Exception as e:
         raise RuntimeError(f"{context}: plot callback failed: {e}") from e
 
@@ -117,7 +97,7 @@ def _save_plot_image(
             )
         else:
             raise TypeError(
-                f"{context}: fun must return a matplotlib Figure or a plotnine ggplot; "
+                f"{context}: fn must return a matplotlib Figure or a plotnine ggplot; "
                 f"got {type(obj).__name__}"
             )
     except OSError as e:
@@ -387,13 +367,11 @@ def execute_plots(
                     with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
                         png_path = pathlib.Path(td) / f"plot_{rank:04d}_{total_idx:04d}.png"
                         _save_plot_image(
-                            d.fun,
+                            d.fn,
                             entry,
                             png_path,
                             width_px=d.width_px,
                             height_px=d.height_px,
-                            color=d.color,
-                            xlim=d.xlim,
                             context=cell_context,
                         )
                         png_bytes = png_path.read_bytes()
@@ -422,13 +400,11 @@ def execute_plots(
                     with tempfile.TemporaryDirectory(prefix="tytable_plot_") as td:
                         temporary = pathlib.Path(td) / "plot.png"
                         _save_plot_image(
-                            d.fun,
+                            d.fn,
                             entry,
                             temporary,
                             width_px=d.width_px,
                             height_px=d.height_px,
-                            color=d.color,
-                            xlim=d.xlim,
                             context=(
                                 f".plot() directive {rank + 1}, selected cell "
                                 f"(row={body_row}, column={col_idx})"

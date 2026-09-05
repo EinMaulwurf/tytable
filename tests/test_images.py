@@ -2,6 +2,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from functools import partial
 
 import polars as pl
 import pytest
@@ -9,7 +10,6 @@ import pytest
 from tests.helpers import assert_snapshot
 from tytable import tt
 from tytable._directives import ImageDirective, PlotDirective
-from tytable._images import _callback_kwargs
 from tytable._resolve import build
 
 
@@ -30,7 +30,7 @@ def test_plot_and_image_calls_record_distinct_directive_types():
         tt(pl.DataFrame({"Value": [[1, 2, 3]]}))
         .theme_plain()
         .images(j="Value", paths=["image.png"])
-        .plot(j="Value", fun=_sparkline)
+        .plot(j="Value", fn=_sparkline)
     )
 
     assert len(table._plot_directives) == 1
@@ -69,44 +69,28 @@ def _only_plot(directory):
     return plots[0]
 
 
-class TestPlotCallbackKeywords:
-    def test_forwards_color_without_xlim(self):
-        def color_only(value, *, color):
-            return value, color
-
-        assert _callback_kwargs(color_only, color="red", xlim=[0, 1]) == {"color": "red"}
-
-    def test_forwards_xlim_without_color(self):
-        def xlim_only(value, *, xlim):
-            return value, xlim
-
-        assert _callback_kwargs(xlim_only, color="red", xlim=[0, 1]) == {"xlim": [0, 1]}
-
-    def test_forwards_both_to_var_kwargs(self):
-        def variadic(value, **kwargs):
-            return value, kwargs
-
-        assert _callback_kwargs(variadic, color="red", xlim=[0, 1]) == {
-            "color": "red",
-            "xlim": [0, 1],
-        }
-
-    def test_forwards_neither_to_plain_callback(self):
-        assert _callback_kwargs(lambda value: value, color="red", xlim=[0, 1]) == {}
-
-    def test_does_not_forward_positional_only_parameter(self):
-        def positional_only(value, color, /):
-            return value, color
-
-        assert _callback_kwargs(positional_only, color="red", xlim=[0, 1]) == {}
-
-
 @pytest.mark.images
 class TestPlotSparkline:
+    def test_callback_receives_only_value_and_partial_owns_options(self, tmp_path):
+        calls = []
+
+        def callback(value, *, color="black", **kwargs):
+            calls.append((value, color, kwargs))
+            return _sparkline(value, color=color)
+
+        table = (
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
+            .theme_plain()
+            .plot(j="Trend", fn=partial(callback, color="red"))
+        )
+        table.save(str(tmp_path / "out.typ"))
+
+        assert calls == [([1, 2, 3], "red", {})]
+
     def test_direct_render_is_side_effect_free_and_repeatable(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=_sparkline)
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fn=_sparkline)
         )
 
         before = set(tmp_path.iterdir())
@@ -121,7 +105,7 @@ class TestPlotSparkline:
         result = (
             tt(pl.DataFrame({"Trend": [[1, 2, 3]]}))
             .theme_plain()
-            .plot(j="Trend", fun=_sparkline)
+            .plot(j="Trend", fn=_sparkline)
             .render("html")
         )
 
@@ -129,7 +113,7 @@ class TestPlotSparkline:
 
     def test_save_and_render_destinations_are_independent(self, tmp_path):
         table = (
-            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=_sparkline)
+            tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fn=_sparkline)
         )
 
         table.save(str(tmp_path / "one" / "sales.typ"))
@@ -151,7 +135,7 @@ class TestPlotSparkline:
             raise AssertionError("ASCII must not generate plot assets")
 
         result = (
-            tt(pl.DataFrame({"Trend": [1]})).theme_plain().plot(j="Trend", fun=fail).render("ascii")
+            tt(pl.DataFrame({"Trend": [1]})).theme_plain().plot(j="Trend", fn=fail).render("ascii")
         )
 
         assert "[plot]" in result
@@ -159,7 +143,7 @@ class TestPlotSparkline:
     def test_plot_uses_source_name_after_duplicate_display_rename(self, tmp_path):
         df = pl.DataFrame({"revenue": [[1, 2, 3]], "cost": [2]})
         table = (
-            tt(df).theme_plain().set_name(name=["Value", "Value"]).plot(j="revenue", fun=_sparkline)
+            tt(df).theme_plain().set_name(name=["Value", "Value"]).plot(j="revenue", fn=_sparkline)
         )
 
         table.save(str(tmp_path / "out.typ"))
@@ -170,7 +154,7 @@ class TestPlotSparkline:
 
     def test_matplotlib_uses_requested_pixel_dimensions(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        tt(df).theme_plain().plot(j="Trend", fun=_sparkline, width_px=320, height_px=96).save(
+        tt(df).theme_plain().plot(j="Trend", fn=_sparkline, width_px=320, height_px=96).save(
             str(tmp_path / "out.typ")
         )
 
@@ -181,14 +165,14 @@ class TestPlotSparkline:
 
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_plain().plot(j="Trend", fn=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         assert '#image("out_assets/plot_0000_0000_' in result
         assert len(list((tmp_path / "out_assets").glob("plot_*.png"))) == 2
 
     def test_sparkline_explicit_data(self, tmp_path):
         df = pl.DataFrame({"X": [1, 2]})
-        tt(df).theme_plain().plot(j="X", fun=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
+        tt(df).theme_plain().plot(j="X", fn=_sparkline, data=[[1, 2, 3], [4, 1, 2]]).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -196,14 +180,14 @@ class TestPlotSparkline:
 
     def test_sparkline_snapshot(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(str(tmp_path / "out.typ"))
+        tt(df).theme_plain().plot(j="Trend", fn=_sparkline).save(str(tmp_path / "out.typ"))
         result = (tmp_path / "out.typ").read_text()
         normalized = re.sub(r"(?<=_)\w{12}(?=\.png)", "<content-hash>", result)
         assert_snapshot("images_sparkline", normalized)
 
     def test_sparkline_height_str(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
-        tt(df).theme_plain().plot(j="Trend", fun=_sparkline, height="1.5em").save(
+        tt(df).theme_plain().plot(j="Trend", fn=_sparkline, height="1.5em").save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -211,7 +195,7 @@ class TestPlotSparkline:
 
     def test_sparkline_custom_assets(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        tt(df).theme_plain().plot(j="Trend", fun=_sparkline).save(
+        tt(df).theme_plain().plot(j="Trend", fn=_sparkline).save(
             str(tmp_path / "sub/out.typ"), assets="../assets/myplots"
         )
         result = (tmp_path / "sub" / "out.typ").read_text()
@@ -220,7 +204,7 @@ class TestPlotSparkline:
 
     def test_sparkline_render_embeds_plot(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_plain().plot(j="Trend", fn=_sparkline).render("typst")
         assert "image.decode(" in result
 
     @pytest.mark.parametrize("policy", ["copy", "reference", "embed"])
@@ -235,7 +219,7 @@ class TestPlotSparkline:
             tt(pl.DataFrame({"Logo": [1], "Trend": [[1, 2, 3]]}))
             .theme_plain()
             .images(j="Logo", paths=["logo.svg"])
-            .plot(j="Trend", fun=_sparkline)
+            .plot(j="Trend", fn=_sparkline)
         )
 
         table.save(str(output), static_images=policy)
@@ -445,7 +429,7 @@ class TestPlotnine:
             data = pd.DataFrame({"x": range(len(values)), "y": values})
             return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line(color=color)
 
-        tt(df).theme_plain().plot(j="Trend", fun=p9_sparkline, height_px=96, width_px=320).save(
+        tt(df).theme_plain().plot(j="Trend", fn=p9_sparkline, height_px=96, width_px=320).save(
             str(tmp_path / "out.typ")
         )
         result = (tmp_path / "out.typ").read_text()
@@ -462,7 +446,7 @@ class TestPlotnine:
 class TestPortable:
     def test_direct_typst_render_inline_svg(self):
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
-        result = tt(df).theme_plain().plot(j="Trend", fun=_sparkline).render("typst")
+        result = tt(df).theme_plain().plot(j="Trend", fn=_sparkline).render("typst")
         assert "image.decode(" in result
 
     def test_inline_plot_uses_requested_pixel_dimensions(self):
@@ -470,7 +454,7 @@ class TestPortable:
         result = (
             tt(df)
             .theme_plain()
-            .plot(j="Trend", fun=_sparkline, width_px=320, height_px=96)
+            .plot(j="Trend", fn=_sparkline, width_px=320, height_px=96)
             .render("typst")
         )
 
@@ -483,7 +467,7 @@ class TestPortable:
         def fail(_value):
             raise RuntimeError("plot failed")
 
-        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fun=fail)
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).theme_plain().plot(j="Trend", fn=fail)
 
         with pytest.raises(
             RuntimeError,
@@ -498,7 +482,7 @@ class TestPortable:
 class TestValidation:
     def test_media_output_filters_are_normalized(self):
         df = pl.DataFrame({"X": [1]})
-        plot_table = tt(df).plot(j="X", fun=lambda value: value, output=["typst", "ascii"])
+        plot_table = tt(df).plot(j="X", fn=lambda value: value, output=["typst", "ascii"])
         image_table = tt(df).images(j="X", paths=["image.svg"], output="html")
 
         assert plot_table._plot_directives[0].output == ("typst", "ascii")
@@ -507,11 +491,11 @@ class TestValidation:
     def test_missing_j(self):
         df = pl.DataFrame({"X": [1]})
         with pytest.raises(ValueError, match="requires j"):
-            tt(df).plot(fun=lambda x: x)
+            tt(df).plot(fn=lambda x: x)
 
-    def test_missing_fun(self):
+    def test_missing_fn(self):
         df = pl.DataFrame({"X": [1]})
-        with pytest.raises(TypeError, match="fun"):
+        with pytest.raises(TypeError, match="fn"):
             tt(df).plot(j="X")
 
     @pytest.mark.parametrize("name", ["width_px", "height_px"])
@@ -519,20 +503,20 @@ class TestValidation:
     def test_plot_pixel_dimensions_must_be_positive(self, name, value):
         df = pl.DataFrame({"X": [[1, 2, 3]]})
         with pytest.raises(ValueError, match=rf"{name} must be positive"):
-            tt(df).plot(j="X", fun=_sparkline, **{name: value})
+            tt(df).plot(j="X", fn=_sparkline, **{name: value})
 
     @pytest.mark.parametrize("name", ["width_px", "height_px"])
     @pytest.mark.parametrize("value", [True, 1.5, "100"])
     def test_plot_pixel_dimensions_must_be_integers(self, name, value):
         df = pl.DataFrame({"X": [[1, 2, 3]]})
         with pytest.raises(TypeError, match=rf"{name} must be an integer"):
-            tt(df).plot(j="X", fun=_sparkline, **{name: value})
+            tt(df).plot(j="X", fn=_sparkline, **{name: value})
 
     @pytest.mark.parametrize("method", ["plot", "images"])
     @pytest.mark.parametrize("height", [0, -1, "0em", "-1em", float("nan"), float("inf")])
     def test_media_height_must_be_positive_and_finite(self, method, height):
         df = pl.DataFrame({"X": [1]})
-        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+        kwargs = {"fn": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
 
         with pytest.raises(ValueError, match="height must be"):
             getattr(tt(df), method)(j="X", height=height, **kwargs)
@@ -541,7 +525,7 @@ class TestValidation:
     @pytest.mark.parametrize("height", [True, object()])
     def test_media_height_must_be_numeric(self, method, height):
         df = pl.DataFrame({"X": [1]})
-        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+        kwargs = {"fn": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
 
         with pytest.raises(TypeError, match="height must be a number or em string"):
             getattr(tt(df), method)(j="X", height=height, **kwargs)
@@ -549,7 +533,7 @@ class TestValidation:
     @pytest.mark.parametrize("method", ["plot", "images"])
     def test_media_height_rejects_invalid_em_string(self, method):
         df = pl.DataFrame({"X": [1]})
-        kwargs = {"fun": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
+        kwargs = {"fn": _sparkline} if method == "plot" else {"paths": ["image.svg"]}
 
         with pytest.raises(ValueError, match="height must be a number or em string"):
             getattr(tt(df), method)(j="X", height="1emem", **kwargs)
@@ -562,31 +546,12 @@ class TestValidation:
     @pytest.mark.parametrize("data", [1, "values", b"values", {"value": 1}])
     def test_plot_data_must_be_a_non_string_sequence(self, data):
         with pytest.raises(TypeError, match="data must be a non-string sequence"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, data=data)
+            tt(pl.DataFrame({"X": [1]})).plot(j="X", fn=_sparkline, data=data)
 
-    @pytest.mark.parametrize("xlim", [1, "0,1", {"lower": 0, "upper": 1}])
-    def test_plot_xlim_must_be_a_non_string_sequence(self, xlim):
-        with pytest.raises(TypeError, match="xlim must be a non-string sequence"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
-
-    @pytest.mark.parametrize("xlim", [[], [0], [0, 1, 2]])
-    def test_plot_xlim_requires_two_values(self, xlim):
-        with pytest.raises(ValueError, match="xlim must contain exactly two values"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
-
-    @pytest.mark.parametrize("xlim", [[False, 1], ["0", 1]])
-    def test_plot_xlim_requires_numeric_values(self, xlim):
-        with pytest.raises(TypeError, match="xlim values must be numbers"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
-
-    @pytest.mark.parametrize("xlim", [[float("nan"), 1], [0, float("inf")]])
-    def test_plot_xlim_requires_finite_values(self, xlim):
-        with pytest.raises(ValueError, match="xlim values must be finite"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, xlim=xlim)
-
-    def test_plot_color_must_be_a_string(self):
-        with pytest.raises(TypeError, match="color must be a string"):
-            tt(pl.DataFrame({"X": [1]})).plot(j="X", fun=_sparkline, color=1)
+    @pytest.mark.parametrize("keyword", ["fun", "color", "xlim"])
+    def test_removed_plot_options_are_not_public_aliases(self, keyword):
+        with pytest.raises(TypeError):
+            tt(pl.DataFrame({"X": [[1, 2, 3]]})).plot(j="X", fn=_sparkline, **{keyword: _sparkline})
 
     @pytest.mark.parametrize("paths", [1, "image.svg", b"image.svg", {"image.svg"}])
     def test_image_paths_must_be_a_non_string_sequence(self, paths):
@@ -610,12 +575,12 @@ class TestValidation:
         monkeypatch.setattr("tytable._images._require_plotting", _fake_require)
         df = pl.DataFrame({"Trend": [[1, 2, 3]]})
         with pytest.raises(ImportError, match=r"\.plot\(\) directive 1:.*images.*extra"):
-            build(tt(df).theme_plain().plot(j="Trend", fun=_sparkline), "typst")
+            build(tt(df).theme_plain().plot(j="Trend", fn=_sparkline), "typst")
 
     def test_asset_directory_failure_includes_directive_and_path(self, tmp_path):
         occupied = tmp_path / "occupied"
         occupied.write_text("not a directory")
-        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(j="Trend", fun=_sparkline)
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(j="Trend", fn=_sparkline)
 
         with pytest.raises(
             OSError,
@@ -625,7 +590,7 @@ class TestValidation:
 
     def test_invalid_callback_return_includes_directive_and_cell(self, tmp_path):
         table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
-            j="Trend", fun=lambda _value: "not a plot"
+            j="Trend", fn=lambda _value: "not a plot"
         )
 
         with pytest.raises(
@@ -666,4 +631,4 @@ class TestMediaCardinality:
     @pytest.mark.parametrize("data", [[1, 2, 3], [1, 2, 3, 4, 5]])
     def test_plot_rejects_wrong_data_cardinality_before_loading_dependencies(self, data):
         with pytest.raises(ValueError, match=rf"data has {len(data)} item.*contains 4 cell"):
-            build(tt(self.DF).plot(j=["A", "B"], fun=lambda value: value, data=data), "typst")
+            build(tt(self.DF).plot(j=["A", "B"], fn=lambda value: value, data=data), "typst")
