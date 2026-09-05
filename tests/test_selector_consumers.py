@@ -37,7 +37,7 @@ def test_column_selectors_work_across_every_j_consumer(selector_factory):
     plotted = table().plot(
         i=0,
         j=selector_factory(),
-        fun=lambda value: value,
+        fn=lambda value: value,
         data=["first", "second"],
     )
     assert build(plotted, "ascii").data_body == [["[plot]", "[plot]", "3"]]

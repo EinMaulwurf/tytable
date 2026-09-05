@@ -70,7 +70,7 @@ def test_repeated_rows_and_columns_are_deduplicated_in_display_order():
             r"\.images\(\).*'header'",
         ),
         (
-            lambda table: table.plot(i="header", j="a", fun=lambda value: value),
+            lambda table: table.plot(i="header", j="a", fn=lambda value: value),
             r"\.plot\(\).*'header'",
         ),
     ],
