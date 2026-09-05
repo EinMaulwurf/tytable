@@ -174,6 +174,17 @@ class TestHtmlStyle:
         assert ">1</td>" not in body
         assert ">2</td>" in body
 
+    def test_body_row_fully_covered_by_rowspan_is_retained(self):
+        df = pl.DataFrame({"A": ["A", "B", "C"]})
+        out = tt(df).theme_plain().style(i=0, j="A", rowspan=2).render("html")
+        body = out.split("<tbody>\n", maxsplit=1)[1].split("\n</tbody>", maxsplit=1)[0]
+
+        assert body.splitlines() == [
+            '<tr><td rowspan="2">A</td></tr>',
+            "<tr></tr>",
+            "<tr><td>C</td></tr>",
+        ]
+
     def test_rotate_not_emitted_when_none(self):
         df = pl.DataFrame({"A": [1, 2]})
         out = tt(df).theme_plain().render("html")

@@ -234,8 +234,7 @@ class HtmlRenderer(Renderer):
                     style = "font-weight:bold;background-color:#f0f0f0"
                 attrs = HtmlRenderer._span_attrs(cell_props)
                 cells.append(HtmlRenderer._cell("td", val, style, attrs))
-            if cells:
-                parts.append(f"<tr>{' '.join(cells)}</tr>")
+            parts.append(f"<tr>{' '.join(cells)}</tr>")
         parts.append("</tbody>")
 
     @staticmethod

@@ -10,7 +10,7 @@ Work through these independently, starting with escaping. Preserve the documente
 - [x] Preserve Decimal precision throughout semantic formatting, including scaling and magnitude calculations before final rounding. Cover `Decimal("12345678901234567890123456789.12")` and a reduced ambient Decimal context; verify the shared numeric formatter consumers.
 - [x] Preserve large integers in the supported `.fmt(digits=..., num_fmt=...)` implementation instead of converting through float. Cover `9007199254740993` with zero decimal places and precision-sensitive significant/scientific output.
 - [x] Correct Typst column-name header span rendering: emit the accepted span and omit covered cells consistently, rather than ignoring header spans while suppressing covered body data. Cover header colspans and define valid header-rowspan boundaries consistently with the documented 3.x contract.
-- [ ] Preserve HTML body rows fully covered by rowspans. A one-column table containing `A, B, C` with `rowspan=2` on `A` must retain the empty second `<tr>` so the span does not extend into C's row.
+- [x] Preserve HTML body rows fully covered by rowspans. A one-column table containing `A, B, C` with `rowspan=2` on `A` must retain the empty second `<tr>` so the span does not extend into C's row.
 
 ## Audit follow-up: concise v4 API
 
