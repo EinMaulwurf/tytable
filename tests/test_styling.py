@@ -112,6 +112,18 @@ class TestStyleProps:
         assert '"0_0": 0' in out
         assert '"0_1": 0' not in out
 
+    def test_header_colspan_emits_span_and_omits_covered_cell(self):
+        out = tt(DF).theme_plain().style(i="header", j="A", colspan=2).render("typst")
+
+        assert "table.cell(colspan: 2)[A]," in out
+        assert "[A],[B]," not in out
+
+    def test_header_rowspan_emits_span_and_omits_covered_body_cell(self):
+        out = tt(DF).theme_plain().style(i="header", j="A", rowspan=2).render("typst")
+
+        assert "table.cell(rowspan: 2)[A],[B]," in out
+        assert "[1],[2]," not in out
+
     def test_rotate_in_show_rule(self):
         out = tt(DF).style(i="header", rotate=90).render("typst")
         assert "align(a, rotate(style.rotate, reflow: true, tmp))" in out

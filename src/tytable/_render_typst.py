@@ -259,8 +259,7 @@ class TypstRenderer(Renderer):
                 parts = self._build_col_group_row(cg_row)
                 L.append(f"      {', '.join(parts)},")
             if built.show_colnames:
-                col_line = "      " + ",".join(f"[{c}]" for c in built.colnames_display) + ","
-                L.append(col_line)
+                L.append(f"      {self._build_column_name_row(built)},")
             L.append("    ),")
 
     @staticmethod
@@ -480,3 +479,28 @@ class TypstRenderer(Renderer):
             else:
                 parts.append(f"table.cell(align: center)[{escaped}]")
         return parts
+
+    @staticmethod
+    def _build_column_name_row(built: BuiltTable) -> str:
+        """Build the column-name row while honoring its accepted cell spans."""
+        display_row = built.layout.header_row
+        if display_row is None:
+            return ""
+        covered = compute_covered_cells(built.style_grid)
+        parts: list[str] = []
+        for col, value in enumerate(built.colnames_display):
+            if (display_row, col) in covered:
+                continue
+            props = built.style_grid.get((display_row, col), {})
+            args: list[str] = []
+            colspan = props.get("colspan", 1)
+            rowspan = props.get("rowspan", 1)
+            if colspan > 1:
+                args.append(f"colspan: {colspan}")
+            if rowspan > 1:
+                args.append(f"rowspan: {rowspan}")
+            if args:
+                parts.append(f"table.cell({', '.join(args)})[{value}]")
+            else:
+                parts.append(f"[{value}]")
+        return ",".join(parts)
