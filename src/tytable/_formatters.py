@@ -147,6 +147,12 @@ def _scale_factor(scale: object) -> Decimal:
     return Decimal(str(scale))
 
 
+def _operation_precision(*values: Decimal, extra: int = 16) -> int:
+    """Return enough precision for exact intermediate Decimal arithmetic."""
+    significant_digits = sum(max(len(value.as_tuple().digits), 1) for value in values)
+    return max(28, significant_digits + extra)
+
+
 def _validate_precision(digits: object, min_digits: object) -> tuple[int, int]:
     if isinstance(digits, bool) or not isinstance(digits, int):
         raise TypeError("digits must be a non-negative integer")
@@ -255,6 +261,37 @@ def _scaled_with_prefix(
 
 
 def _format_finite_number(
+    numeric: Decimal,
+    *,
+    digits: int,
+    min_digits: int,
+    decimal_mark: str,
+    thousands_mark: str,
+    grouping: bool,
+    accounting: bool,
+    notation: _Notation,
+    rounding: str,
+    normalize_negative_zero: bool,
+    compact_thresholds: Sequence[tuple[Decimal, str]],
+) -> str:
+    with localcontext() as context:
+        context.prec = _operation_precision(numeric, extra=digits + 16)
+        return _format_finite_number_inner(
+            numeric,
+            digits=digits,
+            min_digits=min_digits,
+            decimal_mark=decimal_mark,
+            thousands_mark=thousands_mark,
+            grouping=grouping,
+            accounting=accounting,
+            notation=notation,
+            rounding=rounding,
+            normalize_negative_zero=normalize_negative_zero,
+            compact_thresholds=compact_thresholds,
+        )
+
+
+def _format_finite_number_inner(
     numeric: Decimal,
     *,
     digits: int,
@@ -394,7 +431,10 @@ def number(
             if value is None:
                 result.append(null)
                 continue
-            numeric = _decimal(value) * scale_factor
+            raw_numeric = _decimal(value)
+            with localcontext() as context:
+                context.prec = _operation_precision(raw_numeric, scale_factor)
+                numeric = raw_numeric * scale_factor
             if numeric.is_nan():
                 result.append(null if nan is None else f"{prefix}{nan}{suffix}")
                 continue
@@ -636,7 +676,10 @@ def duration(
                     value.microseconds
                 ) / Decimal(1_000_000)
             else:
-                seconds = _decimal(value) * factor
+                raw_seconds = _decimal(value)
+                with localcontext() as context:
+                    context.prec = _operation_precision(raw_seconds, factor)
+                    seconds = raw_seconds * factor
             if seconds.is_nan():
                 result.append(null if nan is None else nan)
                 continue
@@ -762,18 +805,23 @@ def unit(
             if value is None:
                 result.append(null)
                 continue
-            numeric = _decimal(value) * scale_factor
+            raw_numeric = _decimal(value)
+            with localcontext() as context:
+                context.prec = _operation_precision(raw_numeric, scale_factor)
+                numeric = raw_numeric * scale_factor
             scaled = numeric
             prefix = ""
             magnitude = abs(numeric)
             prefix_table = _SI_PREFIXES if si_prefix else _IEC_PREFIXES if iec_prefix else ()
             if prefix_table and numeric.is_finite() and magnitude:
-                scaled_magnitude, prefix = _scaled_with_prefix(
-                    magnitude,
-                    prefix_table,
-                    digits=digits,
-                    rounding=_magnitude_rounding(rounding_mode, numeric.is_signed()),
-                )
+                with localcontext() as context:
+                    context.prec = _operation_precision(magnitude, extra=digits + 16)
+                    scaled_magnitude, prefix = _scaled_with_prefix(
+                        magnitude,
+                        prefix_table,
+                        digits=digits,
+                        rounding=_magnitude_rounding(rounding_mode, numeric.is_signed()),
+                    )
                 scaled = scaled_magnitude.copy_negate() if numeric.is_signed() else scaled_magnitude
             rendered = plain([scaled])[0]
             if numeric.is_nan() and nan is None:

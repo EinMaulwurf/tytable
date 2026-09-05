@@ -1,6 +1,6 @@
 import math
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 import polars as pl
 import polars.selectors as cs
@@ -48,6 +48,26 @@ class TestSemanticFormatters:
             "2.5 million",
             "-0.8 million",
             "—",
+        ]
+
+    def test_decimal_precision_survives_low_ambient_context(self):
+        value = Decimal("12345678901234567890123456789.12")
+        formatters = [
+            number(digits=2),
+            currency("USD", digits=2),
+            percent(digits=2, scale=1),
+            unit("m", digits=2, scale=1),
+        ]
+
+        with localcontext() as context:
+            context.prec = 10
+            rendered = [formatter([value])[0] for formatter in formatters]
+
+        assert rendered == [
+            "12,345,678,901,234,567,890,123,456,789.12",
+            "$12,345,678,901,234,567,890,123,456,789.12",
+            "12,345,678,901,234,567,890,123,456,789.12%",
+            "12,345,678,901,234,567,890,123,456,789.12\u00a0m",
         ]
 
     def test_percent_scales_fractions_by_default(self):
