@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-09-05
+
 ### Features
 
 - Add a `scale` option to the `number`, `currency`, and `unit` formatters. The existing `percent` formatter continues to use `scale=100` by default.
@@ -17,6 +19,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixes
 
+- Invalidate trusted cell markup when chained formatting transforms replace content, so later line-break generation and explicit escaping protect Typst and HTML metacharacters.
+- Preserve Decimal precision through semantic formatter scaling, prefix selection, and final rounding even under a reduced ambient Decimal context.
+- Preserve large integers in legacy `.fmt(digits=..., num_fmt=...)` formatting instead of converting them through binary floating point.
+- Render Typst column-name header spans and omit the cells covered by accepted `colspan` and `rowspan` styles consistently with other backends.
+- Retain empty HTML body rows fully covered by a rowspan so the span cannot extend into the following source row.
 - Let `.style()` selector sequences combine caption and note metadata with each other or with grid rows.
 - Normalize displayable row and column group labels consistently across registration and semantic selectors, and reject empty labels.
 - Validate the constructor DataFrame, caption, and label types immediately with contextual errors.
@@ -386,7 +393,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/EinMaulwurf/tytable/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/EinMaulwurf/tytable/compare/v2.1.0...v2.2.0
