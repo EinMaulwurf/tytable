@@ -413,7 +413,7 @@ from tytable.formatters import currency, date, duration, number, unit
 number(digits=2, min_digits=0, rounding="half_up")([1, 1.205])
 # ["1", "1.21"]
 
-number(digits=1, compact=True, compact_labels={3: " thousand", 6: " million"})([2_500_000])
+number(digits=1, notation="compact", compact_labels={3: " thousand", 6: " million"})([2_500_000])
 # ["2.5 million"]
 
 currency("JPY", digits=None)([1250])

@@ -14,6 +14,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Separate whole-table `width` from per-column `column_widths`. Scalar lengths now size the table consistently in Typst and HTML; migrate legacy per-column `width=[...]` values to `column_widths=[...]`.
 - Remove legacy constructor `gutter`. Use explicit `column_gutter` or `row_gutter`; omitted gutters no longer add a conditional 2 pt gap to grouped tables.
 - Simplify `.plot()` callbacks to `fn=...`; callbacks now receive exactly one positional value, while `color` and `xlim` are configured by the callback itself or a `functools.partial`.
+- Remove the boolean `compact` option from `number()`, `currency()`, and `unit()`; use `notation="compact"`.
 
 ## [3.1.0] - 2026-09-05
 

@@ -185,7 +185,7 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
-`notation` accepts `"fixed"`, `"significant"`, `"scientific"`, `"engineering"`, or `"compact"`. The legacy `compact=True` option selects compact notation. In fixed, compact, scientific, and engineering notation, `digits` sets the maximum decimal places. `min_digits` sets the minimum and defaults to `digits`. Significant notation uses `digits` significant figures. `grouping` inserts thousands marks. You can override locale defaults with `decimal_mark` and `thousands_mark`.
+`notation` accepts `"fixed"`, `"significant"`, `"scientific"`, `"engineering"`, or `"compact"`; use `notation="compact"` for compact output. In fixed, compact, scientific, and engineering notation, `digits` sets the maximum decimal places. `min_digits` sets the minimum and defaults to `digits`. Significant notation uses `digits` significant figures. `grouping` inserts thousands marks. You can override locale defaults with `decimal_mark` and `thousands_mark`.
 
 `scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. `rounding` accepts `"half_even"`, `"half_up"`, `"half_down"`, `"up"`, `"down"`, `"ceiling"`, or `"floor"`. The formatter removes a negative sign when a value rounds to zero. Set `normalize_negative_zero=False` to retain the sign.
 

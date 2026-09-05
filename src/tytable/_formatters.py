@@ -373,7 +373,6 @@ def number(
     thousands_mark: str | None = None,
     grouping: bool = True,
     accounting: bool = False,
-    compact: bool = False,
     compact_labels: Mapping[int, str] | None = None,
     scale: int | float | Decimal = 1,
     rounding: _Rounding = "half_even",
@@ -399,7 +398,6 @@ def number(
     for name, value in (
         ("grouping", grouping),
         ("accounting", accounting),
-        ("compact", compact),
         ("normalize_negative_zero", normalize_negative_zero),
     ):
         if not isinstance(value, bool):
@@ -410,10 +408,6 @@ def number(
         raise ValueError(
             "notation must be 'fixed', 'significant', 'scientific', 'engineering', or 'compact'"
         )
-    if compact and notation not in {"fixed", "compact"}:
-        raise ValueError("compact=True cannot be combined with another notation")
-    if compact:
-        notation = "compact"
     if notation == "significant" and digits == 0:
         raise ValueError("digits must be positive for significant notation")
     if not all(isinstance(value, str) for value in (prefix, suffix, null, inf, negative_inf)):
@@ -477,7 +471,6 @@ def currency(
     symbol: str | None = None,
     symbol_position: Literal["auto", "prefix", "suffix"] = "auto",
     accounting: bool = False,
-    compact: bool = False,
     compact_labels: Mapping[int, str] | None = None,
     scale: int | float | Decimal = 1,
     rounding: _Rounding = "half_even",
@@ -517,7 +510,6 @@ def currency(
         thousands_mark=thousands_mark,
         grouping=grouping,
         accounting=accounting,
-        compact=compact,
         compact_labels=compact_labels,
         scale=scale,
         rounding=rounding,
@@ -745,7 +737,6 @@ def unit(
     accounting: bool = False,
     si_prefix: bool = False,
     iec_prefix: bool = False,
-    compact: bool = False,
     compact_labels: Mapping[int, str] | None = None,
     scale: int | float | Decimal = 1,
     rounding: _Rounding = "half_even",
@@ -772,7 +763,7 @@ def unit(
         raise TypeError("iec_prefix must be a bool")
     if si_prefix and iec_prefix:
         raise ValueError("si_prefix and iec_prefix cannot both be true")
-    if (si_prefix or iec_prefix) and (compact or notation == "compact"):
+    if (si_prefix or iec_prefix) and notation == "compact":
         raise ValueError("unit prefixes cannot be combined with compact notation")
     if not isinstance(space, str):
         raise TypeError("space must be a string")
@@ -789,7 +780,6 @@ def unit(
         thousands_mark=thousands_mark,
         grouping=grouping,
         accounting=accounting,
-        compact=compact,
         compact_labels=compact_labels,
         rounding=rounding,
         normalize_negative_zero=normalize_negative_zero,

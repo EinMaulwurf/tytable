@@ -57,7 +57,7 @@ For every item, update public signatures, docstrings, typing examples in `tests/
 
 ### V4-6a: one compact-notation option
 
-- [ ] Remove `compact` from the semantic `number`, `currency`, and `unit` factories, leaving `notation="compact"` as the single choice. These are formatter options, not new options on `.fmt()`.
+- [x] Remove `compact` from the semantic `number`, `currency`, and `unit` factories, leaving `notation="compact"` as the single choice. These are formatter options, not new options on `.fmt()`.
 - Implementation: remove boolean validation, alias conversion, and forwarding from `_formatters.py`; preserve `compact_labels`, threshold selection, rounding-boundary promotion, precision, signs, locale separators, and special-value formatting. Keep percent's existing notation forwarding; it does not need a new compact switch.
 - Acceptance: migrate representative `compact=True` cases to `notation="compact"` and require identical results, including custom labels and negative rounding boundaries. Removed keywords fail at factory construction; invalid notation still raises the documented validation error.
 - Migration: `number(compact=True)` becomes `number(notation="compact")`, with the same change for currency/unit factories. Omit `compact=False`; preserve any independently selected notation.

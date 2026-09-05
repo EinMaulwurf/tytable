@@ -128,7 +128,7 @@ class TestSemanticFormatters:
     def test_compact_labels_and_rounding_boundary(self):
         formatter = number(
             digits=1,
-            compact=True,
+            notation="compact",
             compact_labels={3: " thousand", 6: " million"},
         )
 
@@ -149,7 +149,7 @@ class TestSemanticFormatters:
             thousands_mark="",
             symbol_position="suffix",
         )([1234.5]) == ["1234,5 $"]
-        assert currency("USD", digits=1, compact=True)([2_500_000]) == ["$2.5M"]
+        assert currency("USD", digits=1, notation="compact")([2_500_000]) == ["$2.5M"]
 
     def test_percent_forwards_number_options(self):
         formatter = percent(digits=2, min_digits=0, rounding="half_up")
@@ -187,7 +187,6 @@ class TestSemanticFormatters:
             (lambda: number(rounding="nearest"), "rounding must be one of"),
             (lambda: number(notation="binary"), "notation must be"),
             (lambda: number(compact_labels={0: "ones"}), "positive integers"),
-            (lambda: number(compact=True, notation="scientific"), "cannot be combined"),
             (lambda: currency(symbol_position="left"), "symbol_position must be"),
             (lambda: unit("B", si_prefix=True, iec_prefix=True), "cannot both be true"),
             (lambda: duration(style="words"), "style must be"),
@@ -214,10 +213,22 @@ class TestSemanticFormatters:
         with pytest.raises(TypeError, match=message):
             factory()
 
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            lambda: number(compact=True),
+            lambda: currency(compact=True),
+            lambda: unit("B", compact=True),
+        ],
+    )
+    def test_compact_keyword_is_removed(self, factory):
+        with pytest.raises(TypeError, match="compact"):
+            factory()
+
     def test_accounting_compact_and_custom_separators(self):
         accounting = number(digits=0, accounting=True)
         accounting_currency = currency("USD", digits=0, accounting=True)
-        compact = number(digits=1, compact=True, decimal_mark=",", thousands_mark=".")
+        compact = number(digits=1, notation="compact", decimal_mark=",", thousands_mark=".")
 
         assert accounting([-1250]) == ["(1,250)"]
         assert accounting_currency([-1250]) == ["($1,250)"]
