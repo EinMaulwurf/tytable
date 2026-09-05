@@ -211,7 +211,7 @@ The formatter accepts numeric values in `input_unit` or Python `timedelta` value
 
 #api("Format values with units", api_signatures.at("formatter_unit"))
 
-The formatter appends `symbol` after a non-breaking space by default. It accepts the number options for precision, notation, separators, grouping, accounting, scaling, rounding, and special values. `si_prefix=True` selects SI prefixes from yocto (`y`) through yotta (`Y`). `iec_prefix=True` selects binary prefixes from kibi (`Ki`) through yobi (`Yi`). The formatter promotes values when rounding crosses the next prefix boundary. SI, IEC, and compact prefixes cannot be combined. Set `space=""` if the symbol must touch the number.
+The formatter appends `symbol` after a non-breaking space by default. It accepts the number options for precision, notation, separators, grouping, accounting, scaling, rounding, and special values. `prefix_system="si"` selects SI prefixes from yocto (`y`) through yotta (`Y`); `prefix_system="iec"` selects binary prefixes from kibi (`Ki`) through yobi (`Yi`). The formatter promotes values when rounding crosses the next prefix boundary. SI, IEC, and compact prefixes cannot be combined. Set `space=""` if the symbol must touch the number.
 
 #api("Group", api_signatures.at("group"))
 

@@ -419,7 +419,7 @@ number(digits=1, notation="compact", compact_labels={3: " thousand", 6: " millio
 currency("JPY", digits=None)([1250])
 # ["¥1,250"]
 
-unit("B", digits=1, min_digits=0, iec_prefix=True)([1_048_576])
+unit("B", digits=1, min_digits=0, prefix_system="iec")([1_048_576])
 # ["1 MiB"]
 
 duration(style="human")([9000])

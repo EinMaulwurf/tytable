@@ -101,6 +101,7 @@ _IEC_PREFIXES = tuple(
 )
 
 _Notation = Literal["fixed", "significant", "scientific", "engineering", "compact"]
+_PrefixSystem = Literal["si", "iec"]
 _Rounding = Literal[
     "half_even",
     "half_up",
@@ -735,8 +736,7 @@ def unit(
     thousands_mark: str | None = None,
     grouping: bool = True,
     accounting: bool = False,
-    si_prefix: bool = False,
-    iec_prefix: bool = False,
+    prefix_system: _PrefixSystem | None = None,
     compact_labels: Mapping[int, str] | None = None,
     scale: int | float | Decimal = 1,
     rounding: _Rounding = "half_even",
@@ -749,21 +749,19 @@ def unit(
 ) -> Callable[[Sequence[Any]], list[str]]:
     """Create a number formatter that appends a unit symbol.
 
-    The formatter multiplies values by ``scale`` first. Set ``si_prefix=True``
-    to select an SI prefix. Set ``iec_prefix=True`` to select an IEC binary
-    prefix.
+    The formatter multiplies values by ``scale`` first. Set
+    ``prefix_system="si"`` to select an SI prefix or ``prefix_system="iec"``
+    to select an IEC binary prefix.
     """
     if not isinstance(symbol, str):
         raise TypeError("unit symbol must be a string")
     if not symbol:
         raise ValueError("unit symbol must be a non-empty string")
-    if not isinstance(si_prefix, bool):
-        raise TypeError("si_prefix must be a bool")
-    if not isinstance(iec_prefix, bool):
-        raise TypeError("iec_prefix must be a bool")
-    if si_prefix and iec_prefix:
-        raise ValueError("si_prefix and iec_prefix cannot both be true")
-    if (si_prefix or iec_prefix) and notation == "compact":
+    if prefix_system is not None and not isinstance(prefix_system, str):
+        raise TypeError("prefix_system must be 'si', 'iec', or None")
+    if prefix_system not in {None, "si", "iec"}:
+        raise ValueError("prefix_system must be 'si', 'iec', or None")
+    if prefix_system is not None and notation == "compact":
         raise ValueError("unit prefixes cannot be combined with compact notation")
     if not isinstance(space, str):
         raise TypeError("space must be a string")
@@ -802,7 +800,13 @@ def unit(
             scaled = numeric
             prefix = ""
             magnitude = abs(numeric)
-            prefix_table = _SI_PREFIXES if si_prefix else _IEC_PREFIXES if iec_prefix else ()
+            prefix_table = (
+                _SI_PREFIXES
+                if prefix_system == "si"
+                else _IEC_PREFIXES
+                if prefix_system == "iec"
+                else ()
+            )
             if prefix_table and numeric.is_finite() and magnitude:
                 with localcontext() as context:
                     context.prec = _operation_precision(magnitude, extra=digits + 16)

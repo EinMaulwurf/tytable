@@ -76,7 +76,7 @@ class TestSemanticFormatters:
     def test_currency_and_unit_accept_scale(self):
         assert currency("USD", digits=1, scale=1 / 1e6)([2_500_000]) == ["$2.5"]
         assert unit("g", digits=1, scale=1000)([1.25]) == ["1,250.0 g"]
-        assert unit("g", digits=1, scale=1000, si_prefix=True)([1.25]) == ["1.2 kg"]
+        assert unit("g", digits=1, scale=1000, prefix_system="si")([1.25]) == ["1.2 kg"]
 
     @pytest.mark.parametrize(
         "factory",
@@ -157,10 +157,10 @@ class TestSemanticFormatters:
         assert formatter([0.625, -0.00001]) == ["62.5%", "0%"]
 
     def test_unit_iec_prefix_and_prefix_rollover(self):
-        formatter = unit("B", digits=1, min_digits=0, iec_prefix=True)
+        formatter = unit("B", digits=1, min_digits=0, prefix_system="iec")
 
         assert formatter([1024, 1_048_576]) == ["1 KiB", "1 MiB"]
-        assert unit("g", digits=1, si_prefix=True)([999_949, 999_950]) == [
+        assert unit("g", digits=1, prefix_system="si")([999_949, 999_950]) == [
             "999.9 kg",
             "1.0 Mg",
         ]
@@ -188,7 +188,11 @@ class TestSemanticFormatters:
             (lambda: number(notation="binary"), "notation must be"),
             (lambda: number(compact_labels={0: "ones"}), "positive integers"),
             (lambda: currency(symbol_position="left"), "symbol_position must be"),
-            (lambda: unit("B", si_prefix=True, iec_prefix=True), "cannot both be true"),
+            (lambda: unit("B", prefix_system="binary"), "prefix_system must be"),
+            (
+                lambda: unit("B", prefix_system="si", notation="compact"),
+                "cannot be combined",
+            ),
             (lambda: duration(style="words"), "style must be"),
             (lambda: date_formatter(timezone=1), "timezone must be"),
         ],
@@ -196,6 +200,22 @@ class TestSemanticFormatters:
     def test_extended_formatter_options_are_validated(self, factory, message):
         with pytest.raises((TypeError, ValueError), match=message):
             factory()
+
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            lambda: unit("B", prefix_system=1),
+            lambda: unit("B", prefix_system=[]),
+        ],
+    )
+    def test_prefix_system_rejects_non_strings(self, factory):
+        with pytest.raises(TypeError, match="prefix_system"):
+            factory()
+
+    @pytest.mark.parametrize("keyword", ["si_prefix", "iec_prefix"])
+    def test_removed_prefix_keywords_are_not_aliases(self, keyword):
+        with pytest.raises(TypeError, match=keyword):
+            unit("B", **{keyword: True})
 
     @pytest.mark.parametrize(
         ("factory", "message"),
@@ -250,7 +270,7 @@ class TestSemanticFormatters:
         assert duration(digits=1)([3599.96]) == ["01:00:00.0"]
 
     def test_unit_locale_si_prefix_and_accounting(self):
-        formatter = unit("m", digits=1, locale="de_DE", si_prefix=True)
+        formatter = unit("m", digits=1, locale="de_DE", prefix_system="si")
 
         assert formatter([1500, 0.002, 0, None]) == ["1,5 km", "2,0 mm", "0,0 m", "—"]
         assert unit("kg", digits=0, accounting=True)([-1250]) == ["(1,250 kg)"]

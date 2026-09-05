@@ -64,7 +64,7 @@ For every item, update public signatures, docstrings, typing examples in `tests/
 
 ### V4-6b: one unit-prefix choice
 
-- [ ] Replace semantic `unit()` options `si_prefix` and `iec_prefix` with the proposed `prefix_system: Literal["si", "iec"] | None = None`. Keep this configuration on the formatter, not on `.fmt()`; use the same name in signatures, typing examples, and documentation.
+- [x] Replace semantic `unit()` options `si_prefix` and `iec_prefix` with the proposed `prefix_system: Literal["si", "iec"] | None = None`. Keep this configuration on the formatter, not on `.fmt()`; use the same name in signatures, typing examples, and documentation.
 - Implementation: select the existing SI or IEC threshold table from this one value in `_formatters.py`. Reject non-string/non-`None` values with `TypeError` and unknown strings with `ValueError` at factory construction. Retain the rejection of combining any prefix system with `notation="compact"`; preserve other currently supported notation combinations.
 - Acceptance: preserve scaling-before-prefix-selection, positive/negative values, zero, null/NaN/infinity handling, accounting, spacing, precision, and promotion across rounding boundaries. Existing SI/IEC cases should produce identical output after keyword migration. Both removed boolean keywords must fail rather than remain hidden aliases.
 - Migration: `si_prefix=True` becomes `prefix_system="si"`, `iec_prefix=True` becomes `prefix_system="iec"`, and both false becomes the default `None`. Implement after V4-6a or coordinate the compact-notation validation so neither change reintroduces obsolete options.
