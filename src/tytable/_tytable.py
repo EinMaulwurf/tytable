@@ -1363,10 +1363,14 @@ class TyTable:
 
         Raises
         ------
+        TypeError
+            If ``fn`` is not callable.
         Exception
             Any exception raised by ``fn`` is propagated when the table is
             subsequently rendered.
         """
+        if not callable(fn):
+            raise TypeError(f"fn must be callable, got {type(fn).__name__}")
         self._finalize_hooks.append(fn)
         return self
 

@@ -120,6 +120,11 @@ def test_clone_can_branch_table_configuration_independently():
     assert variant._typst_opts.rotate_angle == 45
 
 
+def test_finalize_rejects_non_callable_when_registered():
+    with pytest.raises(TypeError, match="fn must be callable"):
+        tt(pl.DataFrame({"value": [1]})).finalize(None)
+
+
 def test_construction_api_excludes_removed_parameters():
     assert "rownames" not in inspect.signature(tt).parameters
     assert "digits" not in inspect.signature(tt).parameters
