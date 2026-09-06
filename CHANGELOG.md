@@ -10,7 +10,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Breaking
 
 - Remove public `colspan` and `rowspan` styling options. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups do not provide a general spreadsheet-style cell-merge replacement.
-- Remove `.fmt(digits=..., num_fmt=...)` and the legacy numeric formatting stage. Use semantic formatter factories such as `.fmt(fn=number(digits=2))`; significant notation requires positive `digits`, and scientific output is textual `e` notation rather than the former backend-native multiplication/superscript markup.
+- Remove `.fmt(digits=..., num_fmt=...)` and the legacy numeric formatting stage. To preserve legacy grouping behavior, migrate to semantic formatter factories such as `.fmt(fn=number(digits=2, grouping=False))`; significant notation requires positive `digits`, and scientific output is textual `e` notation rather than the former backend-native multiplication/superscript markup.
 - Separate whole-table `width` from per-column `column_widths`. Scalar lengths now size the table consistently in Typst and HTML; migrate legacy per-column `width=[...]` values to `column_widths=[...]`.
 - Remove legacy constructor `gutter`. Use explicit `column_gutter` or `row_gutter`; omitted gutters no longer add a conditional 2 pt gap to grouped tables.
 - Simplify `.plot()` callbacks to `fn=...`; callbacks now receive exactly one positional value, while `color` and `xlim` are configured by the callback itself or a `functools.partial`.

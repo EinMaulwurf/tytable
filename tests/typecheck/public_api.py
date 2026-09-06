@@ -8,6 +8,7 @@ import polars as pl
 import polars.selectors as cs
 
 from tytable import tt
+from tytable.formatters import number, unit
 from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 
@@ -22,7 +23,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     plot_data: tuple[Any, ...] = ([1, 2], [3, 4])
     image_paths: tuple[str, ...] = ("a.png", "b.png")
 
-    table = tt(dataframe).set_name(name=display_names)
+    table = tt(dataframe, width=0.8, column_widths=[1, 1]).set_name(name=display_names)
     table.group(i=row_labels)
     table.group(j={"Integer": integer_columns})
     table.group(j={"Named": named_columns})
@@ -43,6 +44,8 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.set_name(j=cs.string(), name="Text")
     table.group(j={"Numeric": cs.numeric()})
     table.fmt(j=mixed_selector, fn=lambda values: [str(value) for value in values])
+    table.fmt(j=cs.numeric(), fn=number(notation="compact"))
+    table.fmt(j=cs.numeric(), fn=unit("B", prefix_system="iec"))
     table.style(j=mixed_selector, rotate=90)
     table.style(output="typst", bold=True)
     table.fmt(output=["html", "ascii"])

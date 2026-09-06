@@ -158,13 +158,25 @@ class TypstRenderer(Renderer):
             L.append('  kind: "tytable",')
             L.append('  supplement: "Table",')
             L.append("")
-            L.append("block[")
+            block_args = self._block_args(built, include_breakable=False)
+            L.append(f"block({block_args})[" if block_args else "block[")
         else:
-            breakable_arg = ""
-            if opts.multipage is not None:
-                breakable = "true" if opts.multipage else "false"
-                breakable_arg = f"breakable: {breakable}"
-            L.append(f"#block({breakable_arg})[")
+            L.append(f"#block({self._block_args(built, include_breakable=True)})[")
+
+    def _block_args(self, built: BuiltTable, *, include_breakable: bool) -> str:
+        """Build outer block arguments for whole-table sizing and pagination."""
+        args = []
+        if built.width is not None:
+            width = (
+                f"{built.width * 100:.2f}%"
+                if isinstance(built.width, (int, float))
+                else built.width
+            )
+            args.append(f"width: {width}")
+        if include_breakable and self._opts.multipage is not None:
+            breakable = "true" if self._opts.multipage else "false"
+            args.append(f"breakable: {breakable}")
+        return ", ".join(args)
 
     @staticmethod
     def _emit_caption(L: list[str], built: BuiltTable) -> None:
@@ -226,13 +238,6 @@ class TypstRenderer(Renderer):
         """Append column, gutter, stroke, and row-height table options."""
         opts = self._opts
         L.append(f"    columns: ({', '.join(self._columns_spec(built.column_widths, ncol))}),")
-        if built.width is not None:
-            width = (
-                f"{built.width * 100:.2f}%"
-                if isinstance(built.width, (int, float))
-                else built.width
-            )
-            L.append(f"    width: {width},")
         if opts.column_gutter is not None:
             gutter = opts.column_gutter
             unit = "pt" if isinstance(gutter, (int, float)) else ""

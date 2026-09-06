@@ -36,6 +36,7 @@ make test
 ```python
 import polars as pl
 from tytable import tt
+from tytable.formatters import number
 
 df = pl.DataFrame({
     "Product": ["A", "B", "C"],
@@ -44,7 +45,7 @@ df = pl.DataFrame({
 
 tab = (
     tt(df, caption="Product scores", label="product-scores")
-    .fmt(j="Score", digits=2)
+    .fmt(j="Score", fn=number(digits=2))
     .style(j="Score", align="c")
     .style(i=0, bold=True, background="#2c3e50", color="white")
 )

@@ -8,7 +8,7 @@ These chapters are independent. Read the ones that match the table or applicatio
 
 == Column widths <column-widths>
 
-The `width` parameter of `tt()` controls the whole table: use a finite fraction of the available line, a Typst/CSS length string, or `None` for automatic sizing. Use `column_widths` for one entry per source column; entries may be fractions, lengths, or `None`. Numeric-only entries whose sum exceeds one are normalized, while partial fractions remain partial. For example, `column_widths=[0.2, 0.15, None]` gives the first two columns explicit proportions and leaves the third automatic.
+The `width` parameter of `tt()` controls the whole table: use a finite fraction of the available line, a length string, or `None` for automatic sizing. Use `column_widths` for one entry per source column; entries may be fractions, lengths, or `None`. Fractions use the table's available layout width in both Typst and HTML, including when the renderer chooses an automatic table width. Numeric-only entries whose sum exceeds one are normalized, while partial fractions remain partial. This normalization preserves the established numeric-list convenience: `[2, 1]` becomes two-thirds and one-third, while `[0.2, 0.1]` remains partial. For example, `column_widths=[0.2, 0.15, None]` gives the first two columns explicit proportions and leaves the third automatic. Common length units such as `cm`, `mm`, `in`, `pt`, `em`, and `%` work in Typst and CSS; Typst fractional units such as `1fr` are not valid CSS and should only be used for Typst output.
 
 This controls column layout; it does not scale the rendered table or its text. Use #link(<resize>)[`.resize()`] when the complete table should be uniformly shrunk or enlarged to fit a target width or height.
 

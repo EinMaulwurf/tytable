@@ -438,7 +438,8 @@ class TestTypstWidth:
     def test_scalar_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width=0.8).theme_plain().render("typst")
-        assert "width: 80.00%" in out
+        assert "block(width: 80.00%)[" in out
+        assert "    width:" not in out
 
     def test_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
@@ -454,8 +455,14 @@ class TestTypstWidth:
     def test_string_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width="5cm").theme_plain().render("typst")
-        assert "width: 5cm" in out
+        assert "block(width: 5cm)[" in out
         assert "columns: (auto, auto)" in out
+
+    def test_table_width_and_column_widths_are_independent(self):
+        df = pl.DataFrame({"A": [1], "B": [2]})
+        out = tt(df, width="8cm", column_widths=["3cm", "3cm"]).theme_plain().render("typst")
+        assert "block(width: 8cm)[" in out
+        assert "columns: (3cm, 3cm)" in out
 
     def test_mixed_list_width(self):
         df = pl.DataFrame({"A": [1], "B": [2]})

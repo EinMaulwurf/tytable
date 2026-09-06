@@ -181,6 +181,20 @@ def test_compile_styled(tmp_path):
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+@pytest.mark.parametrize("figure", [True, False])
+@pytest.mark.parametrize("width", [0.8, "8cm"])
+def test_compile_table_and_column_widths(tmp_path, figure, width):
+    df = pl.DataFrame({"A": [1.5, 2.5], "B": [3.5, 4.5]})
+    typ = tt(
+        df,
+        figure=figure,
+        width=width,
+        column_widths=["3cm", "3cm"],
+    ).render("typst")
+    _compile(typ, tmp_path)
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_grouped(tmp_path):
     df = pl.DataFrame({"Q1_a": [1, 2], "Q1_b": [3, 4], "Q2_c": [5, 6], "Q2_d": [7, 8]})
     typ = tt(df).group(delimiter="_").group(i={"Section": 1}).render("typst")

@@ -628,8 +628,9 @@ class TyTable:
         share the same selectors — one directive, not several. Without
         ``where``, selected rows and columns form a cross-product. With
         ``where``, only true body cells within that cross-product are styled.
-        Value formatting such as ``digits`` lives in :meth:`fmt`, a separate
-        pipeline, and so always needs its own call.
+        Value formatting lives in :meth:`fmt`, a separate pipeline, and so
+        always needs its own call. Numeric formatting uses formatter factories
+        from :mod:`tytable.formatters`.
         Caption and note properties are backend-specific; unsupported
         properties raise a targeted error when that backend is rendered.
 
