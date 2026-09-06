@@ -57,7 +57,7 @@ tab
 
 Common number, currency, percentage, date, duration, and unit conventions are available from `tytable.formatters`, including German output such as `1.023,87 €`. Pass them to `.fmt(fn=...)`; see the full guide for options and rendered examples.
 
-![Rendered Product scores table](docs/assets/readme-example.png)
+![Rendered Product scores table](https://raw.githubusercontent.com/EinMaulwurf/tytable/main/docs/assets/readme-example.png)
 
 Create a standalone PDF, PNG, or SVG directly when the Typst CLI is installed:
 
