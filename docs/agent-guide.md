@@ -60,7 +60,7 @@ tt(
 - `caption` and `label` must be strings when supplied.
 - `caption` and `label` require `figure=True`, which is the default.
 - `width=1` fills the available line. Numeric widths must be finite and non-negative; a string is a whole-table length such as `"3cm"`.
-- `column_widths` sets one width per source column and may mix fractions, length strings, and `None` for automatic width. Fractions use the table's available layout width. Common units such as `cm`, `mm`, `in`, `pt`, `em`, and `%` work in Typst and CSS; Typst units such as `1fr` are not valid CSS. Numeric-only entries whose sum exceeds one are normalized; projection does not renormalize surviving columns.
+- `column_widths` sets one width per source column and may mix fractions, length strings, and `None` for automatic width. When it is omitted, Typst divides an explicit `width` equally among the displayed columns. Explicit tracks can occupy less or more than that layout width; fixed tracks are not rescaled. Fractions use the table's available layout width. Common units such as `cm`, `mm`, `in`, `pt`, `em`, and `%` work in Typst and CSS; Typst units such as `1fr` are not valid CSS. Numeric-only entries whose sum exceeds one are normalized; projection does not renormalize surviving columns.
 - `height` is a finite, non-negative row height in `em`, not a table scaling factor.
 - `column_gutter` and `row_gutter` explicitly control Typst track spacing; finite, non-negative numbers are points and strings are Typst lengths. Omitted gutters leave renderer defaults unchanged.
 - `escape=True` safely escapes cell text for the output backend. Disable it only when intentionally supplying raw markup.

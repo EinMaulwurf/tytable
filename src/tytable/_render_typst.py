@@ -118,12 +118,18 @@ class TypstRenderer(Renderer):
         self._opts = opts
 
     @staticmethod
-    def _columns_spec(column_widths: Sequence[float | str | None] | None, ncol: int) -> list[str]:
+    def _columns_spec(
+        column_widths: Sequence[float | str | None] | None,
+        ncol: int,
+        *,
+        fill_available_width: bool,
+    ) -> list[str]:
         """Build the Typst ``columns: (…)`` entry list from a user width spec."""
         if ncol == 0:
             return []
         if column_widths is None:
-            return ["auto"] * ncol
+            default = "1fr" if fill_available_width else "auto"
+            return [default] * ncol
         result = []
         for w in column_widths:
             if w is None:
@@ -237,7 +243,12 @@ class TypstRenderer(Renderer):
     def _emit_table_options(self, L: list[str], built: BuiltTable, ncol: int) -> None:
         """Append column, gutter, stroke, and row-height table options."""
         opts = self._opts
-        L.append(f"    columns: ({', '.join(self._columns_spec(built.column_widths, ncol))}),")
+        columns = self._columns_spec(
+            built.column_widths,
+            ncol,
+            fill_available_width=built.width is not None,
+        )
+        L.append(f"    columns: ({', '.join(columns)}),")
         if opts.column_gutter is not None:
             gutter = opts.column_gutter
             unit = "pt" if isinstance(gutter, (int, float)) else ""

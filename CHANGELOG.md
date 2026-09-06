@@ -17,6 +17,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Remove the boolean `compact` option from `number()`, `currency()`, and `unit()`; use `notation="compact"`.
 - Replace `unit(si_prefix=..., iec_prefix=...)` with `unit(prefix_system="si" | "iec" | None)`.
 
+### Fixes
+
+- Make an explicit Typst table `width` fill its layout region when per-column widths are omitted.
+
 ## [3.1.0] - 2026-09-05
 
 ### Features

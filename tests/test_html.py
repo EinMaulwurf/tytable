@@ -439,6 +439,7 @@ class TestTypstWidth:
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width=0.8).theme_plain().render("typst")
         assert "block(width: 80.00%)[" in out
+        assert "columns: (1fr, 1fr)" in out
         assert "    width:" not in out
 
     def test_list_width(self):
@@ -456,7 +457,7 @@ class TestTypstWidth:
         df = pl.DataFrame({"A": [1], "B": [2]})
         out = tt(df, width="5cm").theme_plain().render("typst")
         assert "block(width: 5cm)[" in out
-        assert "columns: (auto, auto)" in out
+        assert "columns: (1fr, 1fr)" in out
 
     def test_table_width_and_column_widths_are_independent(self):
         df = pl.DataFrame({"A": [1], "B": [2]})

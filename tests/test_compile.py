@@ -6,6 +6,7 @@ table and assert exit 0. Skip locally when Typst is absent so the core Python
 test suite does not require a system typesetter.
 """
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -192,6 +193,33 @@ def test_compile_table_and_column_widths(tmp_path, figure, width):
         column_widths=["3cm", "3cm"],
     ).render("typst")
     _compile(typ, tmp_path)
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+@pytest.mark.parametrize(
+    ("width", "expected_points"), [(1, 12 * 72 / 2.54), ("8cm", 8 * 72 / 2.54)]
+)
+def test_compiled_table_width_matches_requested_width(tmp_path, width, expected_points):
+    df = pl.DataFrame({"A": ["x"], "B": ["y"]})
+    typ = tt(df, figure=False, width=width).render("typst")
+    source = "#set page(width: 12cm, height: auto, margin: 0pt)\n" + typ
+    output = tmp_path / "table.svg"
+
+    result = subprocess.run(
+        ["typst", "compile", "-", str(output), "--format", "svg"],
+        input=source,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    rule_lengths = [
+        float(length)
+        for length in re.findall(r'<path[^>]* d="M 0 0h ([0-9.]+)"', output.read_text())
+    ]
+    assert rule_lengths
+    assert max(rule_lengths) == pytest.approx(expected_points, abs=1)
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")

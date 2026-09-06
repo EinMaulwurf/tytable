@@ -89,11 +89,14 @@ def tt(
     width
         Whole-table width: a finite, non-negative fraction of the available
         line width or a Typst/CSS length string such as ``"3.5cm"``. ``None``
-        lets the renderer choose the table width.
+        lets the renderer choose the table width. In Typst, omitted
+        ``column_widths`` divide an explicit table width equally.
     column_widths
         One width entry per source column. Entries may be fractions, Typst/CSS
         lengths, or ``None`` for automatic sizing. Numeric-only sequences
-        whose sum exceeds one are normalized to proportions.
+        whose sum exceeds one are normalized to proportions. Explicit tracks
+        may use less or more than ``width``; that width remains their available
+        layout region rather than rescaling fixed tracks.
     height
         Row height in ``em`` (Typst). ``None`` = auto rows.
     column_gutter
