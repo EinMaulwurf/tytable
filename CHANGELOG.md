@@ -22,6 +22,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Make an explicit Typst table `width` fill its layout region when per-column widths are omitted.
 - Validate `.finalize(fn=...)` callbacks when they are registered, consistently with formatting and plotting callbacks.
 
+### Documentation
+
+- Align the manual and coding-agent guide with the concise v4 API, and use an absolute README image URL that renders on PyPI.
+
+### CI
+
+- Run linting, formatting, type checking, and both test suites in the tag-triggered release workflow before publishing.
+
 ## [3.1.0] - 2026-09-05
 
 ### Features
