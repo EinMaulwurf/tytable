@@ -178,7 +178,7 @@ table.style(i=pl.col("Active"), j=["Revenue", "Cost"], where=cs.numeric() > 100,
 
 ## Styling
 
-`.style()` does not accept `colspan` or `rowspan` in v4. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups are not a general spreadsheet-style cell-merging API.
+`.style()` does not accept `colspan` or `rowspan`. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups are not a general spreadsheet-style cell-merging API.
 
 Use `.style(i=..., j=..., ...)` for appearance. Combine properties that share selectors in one call:
 
@@ -248,8 +248,6 @@ Formatting options are:
 
 | Option | Meaning |
 | --- | --- |
-| `digits` | non-negative integer; format numeric values |
-| `num_fmt` | `"decimal"`, `"significant"`, or `"scientific"` |
 | `fn` | column-wise callback returning a sequence of the same length |
 | `fn_values` | callback input: original `"typed"` values (default) or current `"display"` strings |
 | `replace` | `True` blanks missing values, a string fills them, or a dict maps values |
@@ -260,14 +258,11 @@ Formatting options are:
 
 Within one directive, transforms run in this order:
 
-1. `digits`
-2. `fn`
-3. `replace`
-4. `linebreak`
-5. `math`
-6. `escape`
-
-Decimal formatting uses `digits` places after the decimal point. Significant formatting uses that many significant figures. Scientific formatting uses that many places after the mantissa's decimal point. Numeric source columns remain right-aligned because alignment is inferred from the original dtype.
+1. `fn`
+2. `replace`
+3. `linebreak`
+4. `math`
+5. `escape`
 
 The `fn` callback is column-wise, not cell-wise. By default it receives the original Python values from the DataFrame for each selected column and must return a non-string sequence of the same length:
 
@@ -288,7 +283,7 @@ table.fmt(j="Share", fn=number(digits=2)).fmt(j="Share", fn=lambda values: [f"{v
 
 Each `.fmt()` directive has one callback stage. Use a semantic formatter such as `number(digits=2)` in one directive, then chain a second `.fmt(fn=..., fn_values="display")` when a later callback should consume its display strings.
 
-For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. When migrating removed `.fmt(digits=n)` calls, use `number(digits=n, grouping=False)` to preserve the legacy lack of thousands separators. `locale="de_DE"` produces German separators. Significant notation requires positive `digits`; scientific output is textual `e` notation, so use a custom callback if the old backend-native multiplication/superscript markup must be preserved.
+For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators.
 
 Numeric formatters accept `min_digits`, `notation`, `rounding`, `normalize_negative_zero`, `nan`, `inf`, and `negative_inf`; use `notation="compact"` for compact output. The `number()` formatter also accepts custom `compact_labels`. The `currency()` formatter forwards numeric options and accepts `symbol_position`. `digits=None` selects known currency digits. The `unit()` formatter accepts `prefix_system="si"` or `prefix_system="iec"` for automatic prefixes. `duration(style="human")` produces output such as `1d 3h 30m`. The `date()` formatter accepts `timezone` for timezone-aware datetimes.
 
@@ -374,7 +369,7 @@ In Jupyter, leaving the table as the last expression displays its HTML preview. 
 - Do not adjust row positions after grouping. Integer selectors always address source rows.
 - Do not use negative row positions.
 - Do not select a display label introduced by `.set_name()`; use the original DataFrame column name.
-- Do not put value options such as `digits` in `.style()`; use `.fmt()`.
+- Do not put value formatting in `.style()`; configure a formatter and pass it to `.fmt(fn=...)`.
 - Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of original typed values by default, or current strings with `fn_values="display"`.
 - Use either the concise alignment shorthands (`"l"`, `"c"`, `"r"`; `"t"`, `"m"`, `"b"`) or their full names. Per-column strings such as `"llr"` require shorthands.
 - Do not use `where` for structural rows; it selects body cells only.

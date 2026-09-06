@@ -94,7 +94,7 @@ make docs
 
 `make docs` formats the hand-written `.typ` sources with Typstyle before compiling them. It uses Tinymist's defaults: a 120-column print width and no prose wrapping. Run `make format-docs` to format without building the PDF.
 
-Documented public APIs remain backward compatible throughout each major release series. After version 2.0, further breaking changes are reserved for 3.0.
+Documented public APIs remain backward compatible throughout each major release series. Breaking changes are reserved for major releases.
 
 ## Coming from R tinytable
 

@@ -106,7 +106,7 @@ The generated file can be `#include`-ed in a Typst report. Refer to the numbered
 
 === The storyline from here
 
-This documentation is organized into three parts. *Learn tytable* grows that first table one concern at a time. *Recipes and advanced topics* collects independent solutions for wider tables, media, alternate backends, and reusable components. *Reference* provides complete selectors, signatures, error contracts, troubleshooting, and migration notes.
+This documentation is organized into three parts. *Learn tytable* grows that first table one concern at a time. *Recipes and advanced topics* collects independent solutions for wider tables, media, alternate backends, and reusable components. *Reference* provides complete selectors, signatures, error contracts, and troubleshooting.
 
 The recommended path is:
 
@@ -437,7 +437,7 @@ This example combines all four factories. Notice `1.023,87 €`, the non-breaki
 #v(0.12em)
 #include "build/02_semantic_formatters.typ"
 
-A configured formatter can be reused across tables. It cannot be combined with `digits` in the same `.fmt()` directive, but subsequent directives can still apply replacement, line breaks, math, escaping, or styles:
+A configured formatter can be reused across tables, and subsequent directives can still apply replacement, line breaks, math, escaping, or styles:
 
 ```python
 from tytable.formatters import currency
@@ -449,7 +449,7 @@ quarter_2 = tt(q2).fmt(j="Revenue", fn=eur)
 
 === With custom callbacks
 
-Calling a built-in such as `unit("kg")` returns an ordinary column-wise callback. For a custom function that already accepts the values, pass the function itself as `fn=my_formatter`; write `fn=my_formatter(...)` only when the custom function is also a configurable factory returning that callback. In either case, the callback must return a non-string sequence of the same length as its input. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by `digits`:
+Calling a built-in such as `unit("kg")` returns an ordinary column-wise callback. For a custom function that already accepts the values, pass the function itself as `fn=my_formatter`; write `fn=my_formatter(...)` only when the custom function is also a configurable factory returning that callback. In either case, the callback must return a non-string sequence of the same length as its input. By default, tytable hands it the original Python values from the DataFrame. Typed input makes it easy to implement transforms that depend on magnitude — for example, abbreviating large numbers into a human-readable scale where `201818` becomes `"201.8 thousand"` and `2729179` becomes `"2.7 million"`. Set `fn_values="display"` when a callback should instead consume current display strings, including values produced by an earlier formatting directive:
 
 #tag("SOURCE")
 #source("examples/10_format_fn.py")
@@ -476,11 +476,11 @@ By default, text columns and their headers are left-aligned, while columns with 
 
 === Styling cells
 
-Apply per-cell styling through selectors `i` (rows) and `j` (columns). Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`left`, `c`/`center`, or `r`/`right`), `alignv` (`t`/`top`, `m`/`middle`, or `b`/`bottom`), `indent`, `padding`, and per-side borders (`line="tblr"` in any combination, with `line_color`, `line_width`, and `line_style`). Manual cell merging with `colspan` or `rowspan` is not part of the v4 API. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups are not a general spreadsheet-style merge replacement. `padding` accepts one value for all sides, two values for vertical and horizontal padding, or four values in top/right/bottom/left order; all values are in `em`. `line_style` accepts `solid`, `dashed`, `dotted`, `dash-dotted`, or `none`; the last removes selected edges from the base theme. When multiple directives target the same physical edge, the later directive wins.
+Apply per-cell styling through selectors `i` (rows) and `j` (columns). Supported properties: `bold`, `italic`, `underline`, `strikeout`, `monospace`, `smallcaps`, `color`, `background`, `fontsize`, `align` (`l`/`left`, `c`/`center`, or `r`/`right`), `alignv` (`t`/`top`, `m`/`middle`, or `b`/`bottom`), `indent`, `padding`, and per-side borders (`line="tblr"` in any combination, with `line_color`, `line_width`, and `line_style`). Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections. `padding` accepts one value for all sides, two values for vertical and horizontal padding, or four values in top/right/bottom/left order; all values are in `em`. `line_style` accepts `solid`, `dashed`, `dotted`, `dash-dotted`, or `none`; the last removes selected edges from the base theme. When multiple directives target the same physical edge, the later directive wins.
 
 See #link(<selectors>)[Select rows and columns] for positional, semantic, data-driven, and individual-cell selection.
 
-Any number of these properties can be combined in a single `.style()` call when they share the same selectors — e.g. `style(j="Score", align="c", background="#eee", bold=True)` is one directive rather than three separate calls. (Value formatting such as `digits` belongs to `.fmt()`, a separate pipeline, and so always needs its own call.)
+Any number of these properties can be combined in a single `.style()` call when they share the same selectors — e.g. `style(j="Score", align="c", background="#eee", bold=True)` is one directive rather than three separate calls. Value formatting belongs to `.fmt()`, a separate pipeline, and therefore needs its own call.
 
 Omit `i` (or use `i="data"`) when a style should apply to every source-data row while leaving structural rows alone. The example below uses it to draw the left and right borders around the body; its header has a separate style.
 
