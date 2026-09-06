@@ -7,7 +7,6 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 - [ ] Add HTML table semantics: scoped column and row headers, accessible column groups, and caption/note relationships.
 - [ ] Remove duplicate semicolons from generated inline CSS.
 - [ ] Use an absolute README image URL so the image renders on PyPI.
-- [ ] Run lint, type checking, and tests in the tag-triggered release workflow before publishing.
 - [ ] Add dependency and security scanning.
 
 ## Possible features

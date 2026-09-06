@@ -77,6 +77,21 @@ jobs:
       - name: Sync dependencies
         run: uv sync --all-extras
 
+      - name: Lint
+        run: make lint
+
+      - name: Check formatting
+        run: uv run ruff format --check src tests
+
+      - name: Type check
+        run: make typecheck
+
+      - name: Test
+        run: make test
+
+      - name: Test images
+        run: make test-images
+
       - name: Build documentation
         run: make docs
 
