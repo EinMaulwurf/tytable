@@ -21,6 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Make an explicit Typst table `width` fill its layout region when per-column widths are omitted.
 - Validate `.finalize(fn=...)` callbacks when they are registered, consistently with formatting and plotting callbacks.
+- Require each `.finalize()` callback to return a string during rendering; raise a contextual `TypeError` before later callbacks run when a result has the wrong type.
 
 ### Documentation
 

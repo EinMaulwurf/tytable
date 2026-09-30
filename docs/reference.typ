@@ -275,7 +275,7 @@ Copy and embed reject URLs, missing files, and unreadable inputs with the direct
 
 #api("Post-process", api_signatures.at("finalize"))
 
-Registers `fn(rendered: str, output: str) -> str`. The callback is validated when registered. Callbacks run in registration order after any renderer and are useful for narrowly scoped integration markup.
+Registers `fn(rendered: str, output: str) -> str`. Callability is validated when registered. Callbacks run in registration order after any renderer; each receives the preceding callback's string and must return a string, which may be empty. A non-string result raises `TypeError` identifying the callback's position and output backend before any later callback runs. Exceptions raised by callbacks propagate unchanged. Finalizers are useful for narrowly scoped integration markup.
 
 #api("Render string", api_signatures.at("render"))
 

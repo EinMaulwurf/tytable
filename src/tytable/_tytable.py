@@ -1361,7 +1361,8 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``fn`` is not callable.
+            If ``fn`` is not callable when registered, or returns a non-string
+            value when the table is subsequently rendered.
         Exception
             Any exception raised by ``fn`` is propagated when the table is
             subsequently rendered.
@@ -1412,7 +1413,7 @@ class TyTable:
         TypeError
             If a recorded selector has an unsupported type, a formatter
             returns an unsupported object, or a plot callback returns an
-            unsupported object.
+            unsupported object, or a finalizer returns a non-string value.
         ValueError
             If a recorded selector, formatting transform, media cardinality,
             or style is invalid. Group specifications are validated earlier,
@@ -1443,8 +1444,13 @@ class TyTable:
         }
         renderer = renderers.get(output, renderers["typst"])
         result = renderer.render(built)
-        for fn in self._finalize_hooks:
+        for hook_number, fn in enumerate(self._finalize_hooks, start=1):
             result = fn(result, output)
+            if not isinstance(result, str):
+                raise TypeError(
+                    f".finalize() callback {hook_number} for output={output!r} "
+                    f"must return a string, got {type(result).__name__}"
+                )
         return result
 
     def save(
@@ -1490,7 +1496,7 @@ class TyTable:
         TypeError
             If a recorded selector has an unsupported type, a formatter
             returns an unsupported object, or a plot callback returns an
-            unsupported object.
+            unsupported object, or a finalizer returns a non-string value.
         ValueError
             If the path suffix is unsupported, or if a recorded selector,
             formatting transform, media cardinality, or style is invalid.

@@ -125,6 +125,59 @@ def test_finalize_rejects_non_callable_when_registered():
         tt(pl.DataFrame({"value": [1]})).finalize(None)
 
 
+@pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+@pytest.mark.parametrize("result", [None, 42, b"rendered"])
+def test_finalize_rejects_non_string_result_before_running_next_hook(output, result):
+    calls = []
+
+    def first_hook(rendered, backend):
+        calls.append((rendered, backend))
+        return rendered + "\nfirst hook"
+
+    def invalid_hook(rendered, backend):
+        calls.append((rendered, backend))
+        return result
+
+    def last_hook(rendered, backend):
+        pytest.fail("a finalizer ran after a non-string result")
+
+    table = tt(pl.DataFrame({"value": [1]}))
+    original = table.render(output)
+    table.finalize(first_hook).finalize(invalid_hook).finalize(last_hook)
+
+    with pytest.raises(
+        TypeError,
+        match=rf"callback 2 for output='{output}' must return a string, got {type(result).__name__}",
+    ):
+        table.render(output)
+
+    assert calls == [(original, output), (original + "\nfirst hook", output)]
+
+
+@pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+def test_finalize_accepts_empty_string_and_chains_results(output):
+    table = (
+        tt(pl.DataFrame({"value": [1]}))
+        .finalize(lambda rendered, backend: "")
+        .finalize(lambda rendered, backend: rendered + backend)
+    )
+
+    assert table.render(output) == output
+
+
+def test_finalize_preserves_callback_exception():
+    error = ValueError("callback failed")
+
+    def fail(rendered, output):
+        raise error
+
+    table = tt(pl.DataFrame({"value": [1]})).finalize(fail)
+    with pytest.raises(ValueError) as exc:
+        table.render()
+
+    assert exc.value is error
+
+
 def test_construction_api_excludes_removed_parameters():
     assert "rownames" not in inspect.signature(tt).parameters
     assert "digits" not in inspect.signature(tt).parameters
