@@ -60,7 +60,7 @@ Typst is the primary output format, but a `TyTable` can render the same recorded
 table.save("build/preview.html")
 ```
 
-The HTML backend represents captions, notes, row and column groups, images, spans, alignment, and most visual cell styling. It is also convenient for web applications and snapshot tests that need inspectable markup:
+The HTML backend represents captions, notes, row-group separators, spanning column-group headers, images, alignment, and most visual cell styling. It is also convenient for web applications and snapshot tests that need inspectable markup:
 
 ```python
 html = table.render("html")
@@ -83,7 +83,7 @@ assert "Revenue" in text
 
 Formatting, renamed columns, row groups, and horizontal alignment are preserved. Captions and notes are emitted as plain text, with targeted note markers written as `[1]`, `[*]`, and so on. Cells are limited to 60 terminal columns and truncated with an ellipsis; wide and combining Unicode characters are measured by their terminal display width.
 
-ASCII output intentionally omits properties that plain text cannot represent reliably, including colors, backgrounds, font styles, rotation, and line styling. Column-group headers and general row or column spans are not currently represented. Use HTML for a quick visual check and compiled Typst when exact layout matters. `.save()` infers only HTML or Typst from the destination suffix; write the string returned by `.render("ascii")` yourself when a text artifact is needed.
+ASCII output intentionally omits properties that plain text cannot represent reliably, including colors, backgrounds, font styles, rotation, and line styling. Spanning column-group headers are not represented. Use HTML for a quick visual check and compiled Typst when exact layout matters. `.save("build/preview.txt")` writes ASCII output directly; `.typ`, `.html`, and `.htm` select the visual backends.
 
 === Backend styling support
 
@@ -118,17 +118,13 @@ The renderers share recorded style intent, but only apply properties their outpu
   [yes],
   [yes],
   [—],
-  [Cell: row/column spans],
+  [Spanning column-group headers],
   [yes],
   [yes],
   [—],
   [Cell: border side/color/width],
   [yes],
   [yes],
-  [—],
-  [Cell: border trim],
-  [yes],
-  [—],
   [—],
   [Caption: font styles, color, size],
   [yes #super[1]],
@@ -183,7 +179,7 @@ The following script separates four concerns that tend to become tangled in a la
 
 - *Accept and return `TyTable` in reusable styling functions.* This is the simplest custom-theme interface and keeps those functions easy to test.
 - *Keep `build()` separate from `save()`.* Building describes the table; saving decides where report artifacts belong. This also makes HTML previews and tests (`table.render("html")`) straightforward.
-- *Build fresh variants when they should diverge.* Chaining methods mutate the table and return `self`. If a print version and a web version need different directives, call the component's `build()` method twice rather than trying to copy internal state.
+- *Clone configurable variants when they should diverge.* Chaining methods mutate the table and return `self`. Use `.clone()` to branch a configured table, or call the component's `build()` method again for a fresh configuration. Callback and selector objects are shared by reference across clones.
 - *Let Polars own data preparation.* Derived columns, sorting, aggregation, joins, and input validation belong before `tt(...)`; tytable should describe presentation intent.
 - *Test rendered contracts at the right level.* Assert the prepared DataFrame separately, then use a small snapshot of `render("typst")` or `render("html")` for the table layer.
 

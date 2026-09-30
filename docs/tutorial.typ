@@ -428,7 +428,7 @@ duration(style="human")([9000])
 date("%Y-%m-%d %H:%M", timezone="Europe/Berlin")
 ```
 
-This example combines all four factories. Notice `1.023,87 €`, the non-breaking space before German currency and percentage symbols, accounting parentheses for the negative currency, and the shared em dash for missing values:
+This example combines the number, currency, percentage, and date factories. Notice `1.023,87 €`, the non-breaking space before German currency and percentage symbols, accounting parentheses for the negative currency, and the shared em dash for missing values:
 
 #tag("SOURCE")
 #source("examples/02_semantic_formatters.py")
@@ -580,9 +580,9 @@ Grouping adds visual hierarchy by placing spanning labels above related columns 
 
 Column groups add #emph[spanning header rows] above the regular column names, so you can label clusters of related columns. The simplest way is to pass an explicit delimiter: `.group(delimiter="_")` splits every column name on that string and turns the shared prefix into a group. In the example below the dataframe has four columns named `Q1_revenue`, `Q1_cost`, `Q2_revenue`, and `Q2_cost`; the underscore split yields two groups — `Q1` spanning the first two columns and `Q2` spanning the last two. For full control you can instead pass a dict mapping each label to its column positions, e.g. `.group(j={"Group A": [0, 1], "Group B": [2, 3]})`. These spanning header rows are addressable through `i="groupj"` or `i=groupj(level=...)`; use `j=colgroup(label=..., level=...)` to select the source columns belonging to matching groups.
 
-Each explicit group must select at least one column. Its list must be a left-to-right contiguous span with no duplicate columns, and spans within the same dictionary may not overlap; different groups may leave ungrouped columns between their spans. Column names and positions may be mixed. An empty `j={}` is a no-op, while a `None` label is rejected (other labels are converted to text).
+Each explicit group must select at least one column. Its list must be a left-to-right contiguous span with no duplicate columns, and spans within the same dictionary may not overlap; different groups may leave ungrouped columns between their spans. Column names and positions may be mixed. An empty `j={}` is a no-op. Explicit row and column group labels are converted to nonempty text; `None` and whitespace-only labels are rejected.
 
-The delimiter is a literal, non-empty string which must occur in every display column name and split every name into the same number of parts. Adjacent equal parts form spans; an empty part produces a blank label. The first part is the outermost header row and the final part is the innermost. Each later `.group(j=...)` or `.group(delimiter=...)` call adds its header row(s) outside the existing ones, so calls stack from newest/outermost to oldest/innermost.
+The delimiter is a literal, non-empty string which must occur in every original DataFrame column name and split every name into the same number of parts. Display renaming does not affect this split. Adjacent equal parts form spans; an empty part produces a blank label. The first part is the outermost header row and the final part is the innermost. Each later `.group(j=...)` or `.group(delimiter=...)` call adds its header row(s) outside the existing ones, so calls stack from newest/outermost to oldest/innermost.
 
 === Row groups
 

@@ -26,10 +26,70 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Documentation
 
 - Align the manual and coding-agent guide with the concise v4 API, and use an absolute README image URL that renders on PyPI.
+- Add a v3-to-v4 migration guide here and correct the current-version documentation for ASCII saving, semantic groups, and supported styles.
 
 ### CI
 
 - Run linting, formatting, type checking, and both test suites in the tag-triggered release workflow before publishing.
+
+### Migrating from v3 to v4
+
+Version 4 simplifies the public API. Removed keywords are rejected rather than retained as aliases. Keep the same source-row and source-column selectors when updating calls; display names and inserted group rows do not change their identities.
+
+#### Numeric formatting
+
+Import `number` from `tytable.formatters` and move numeric options into the formatter passed to `.fmt(fn=...)`:
+
+| v3 | v4 |
+| --- | --- |
+| `.fmt(j="Amount", digits=2)` | `.fmt(j="Amount", fn=number(digits=2, grouping=False))` |
+| `.fmt(j="Amount", digits=3, num_fmt="significant")` | `.fmt(j="Amount", fn=number(digits=3, notation="significant", grouping=False))` |
+| `.fmt(j="Amount", digits=2, num_fmt="scientific")` | `.fmt(j="Amount", fn=number(digits=2, notation="scientific", grouping=False))` |
+
+`grouping=False` preserves the absence of thousands separators in the legacy formatter; semantic formatters default to `grouping=True`. Significant notation requires positive `digits` and can change the displayed notation or trailing zeros. Scientific output is plain textual `e` notation in every backend, replacing the former multiplication/superscript markup. Semantic formatters also have their own rounding and special-value conventions: nulls and NaNs default to an em dash, infinities default to `infinity` / `-infinity`, and negative zero is normalized. Set `null`, `nan`, `inf`, `negative_inf`, `rounding`, and `normalize_negative_zero` explicitly when the old appearance matters. Unlike the legacy stage, `number()` expects numeric values, so select numeric columns explicitly instead of applying it indiscriminately to text, Boolean, or structural cells.
+
+A v3 directive combining `digits` with a display callback now needs two directives. For example, replace `.fmt(j="Amount", digits=2, fn=decorate, fn_values="display")` with:
+
+```python
+from tytable.formatters import number
+
+table.fmt(j="Amount", fn=number(digits=2, grouping=False)).fmt(
+    j="Amount", fn=decorate, fn_values="display"
+)
+```
+
+Carry over any `i`, `where`, and `output` filters to both directives so they transform the same cells. Keep `replace`, `linebreak`, `math`, and `escape` on the second directive to preserve their position after the display callback.
+
+#### Layout and semantic groups
+
+| v3 | v4 |
+| --- | --- |
+| `tt(df, width=[0.6, 0.4])` | `tt(df, column_widths=[0.6, 0.4])` |
+| `tt(df, gutter=2)` | `tt(df, column_gutter=2)` for explicit column spacing |
+| `.style(..., colspan=...)` | `.group(j={"Heading": ["Column A", "Column B"]})` for shared column headings |
+| `.style(..., rowspan=...)` | `.group(i={"Section": 0})` for labelled row sections |
+
+`width` now always sizes the whole table; use `width=1` to fill the available line or a length such as `width="12cm"`. Combine it with `column_widths` when both controls are needed. Without explicit column widths, Typst divides an explicit table width equally among displayed columns. Fixed column tracks are not rescaled to fit that width.
+
+Omitted gutters no longer insert a conditional 2 pt column gap in grouped Typst tables. Set `column_gutter=2` explicitly if that gap is needed; use `row_gutter` for row spacing. Explicit column gutters apply regardless of grouping or background styling. Semantic groups add heading or separator rows; they do not merge arbitrary data cells and are not a general replacement for spreadsheet-style spans.
+
+#### Plot callbacks and formatter options
+
+| v3 | v4 |
+| --- | --- |
+| `.plot(j="Trend", fun=sparkline)` | `.plot(j="Trend", fn=sparkline)` |
+| `.plot(j="Trend", fun=sparkline, color="red", xlim=(0, 10))` | `.plot(j="Trend", fn=partial(sparkline, color="red", xlim=(0, 10)))` after `from functools import partial` |
+| `number(compact=True)` | `number(notation="compact")` |
+| `currency(compact=True)` | `currency(notation="compact")` |
+| `unit("B", compact=True)` | `unit("B", notation="compact")` |
+| `unit("m", si_prefix=True)` | `unit("m", prefix_system="si")` |
+| `unit("B", iec_prefix=True)` | `unit("B", prefix_system="iec")` |
+
+Plot callbacks receive exactly one positional cell value or matching `data` entry. Configure their options inside the callback, with a wrapper, or with `functools.partial`; callbacks requiring `color` or `xlim` must bind those arguments themselves. Existing `data`, pixel dimensions, display height, and backend filters remain available on `.plot()`.
+
+Replace `compact=False` by omitting `notation` for the default fixed notation, or retain the desired explicit notation. Omit `prefix_system` or set it to `None` to disable automatic unit prefixes; SI, IEC, and compact prefixes cannot be combined.
+
+`.fmt()`, `.plot()`, and `.finalize()` reject non-callable callbacks when registered. Each finalizer must return a string, including when it only adds integration markup; return the input string for a no-op. A non-string result raises `TypeError` during rendering before later hooks run, with the hook's 1-based position and backend in the message. Exceptions raised inside finalizers still propagate unchanged.
 
 ## [3.1.0] - 2026-09-05
 

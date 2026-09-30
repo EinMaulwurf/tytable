@@ -178,7 +178,7 @@ table.style(i=pl.col("Active"), j=["Revenue", "Cost"], where=cs.numeric() > 100,
 
 ## Styling
 
-`.style()` does not accept `colspan` or `rowspan`. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups are not a general spreadsheet-style cell-merging API.
+Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections. Styling changes appearance within this semantic structure.
 
 Use `.style(i=..., j=..., ...)` for appearance. Combine properties that share selectors in one call:
 
@@ -205,7 +205,7 @@ Common style properties are:
 | `align` | `"l"` / `"left"`, `"c"` / `"center"`, or `"r"` / `"right"` |
 | `alignv` | `"t"` / `"top"`, `"m"` / `"middle"`, or `"b"` / `"bottom"` |
 | `indent` | finite, non-negative number in `em` |
-| `padding` | finite number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
+| `padding` | finite, non-negative number, `(vertical, horizontal)`, or `(top, right, bottom, left)` in `em` |
 | `rotate` | finite angle in degrees for selected cell content |
 | `line` | any combination of `"t"`, `"b"`, `"l"`, and `"r"` |
 | `line_style` | `"solid"`, `"dashed"`, `"dotted"`, `"dash-dotted"`, or `"none"` |

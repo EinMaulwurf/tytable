@@ -9,7 +9,7 @@ from tytable import tt
 from tytable.formatters import number
 
 
-def sparkline(values, *, color="#2c3e50", **kw):
+def sparkline(values, *, color="#2c3e50"):
     fig, ax = plt.subplots(figsize=(2.4, 0.8), dpi=150)
     ax.plot(range(len(values)), values, color=color, lw=3, solid_joinstyle="round")
     ax.set_axis_off()

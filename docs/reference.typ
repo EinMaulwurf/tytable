@@ -177,7 +177,7 @@ Combines any properties sharing the same selectors. `where` accepts a Polars exp
 
 #api("Format", api_signatures.at("fmt"))
 
-Transforms values in this order: `fn`, `replace`, `linebreak`, `math`, then `escape`. `where` restricts all transforms in the directive to individual true body cells. Numeric formatting is provided by semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, and is passed through `fn`. The formatter preserves typed input, handles missing and special values according to its own options, and scientific notation is textual `e` output rather than backend-native multiplication or superscript markup.
+Transforms values in this order: `fn`, `replace`, `linebreak`, `math`, then `escape`. `where` restricts all transforms in the directive to individual true body cells. Numeric formatting is provided by semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, and is passed through `fn`. The formatter preserves typed input and handles missing and special values according to its own options. Scientific notation uses textual `e` output in every backend.
 
 `replace`, `fn_values`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. By default, `fn` receives each selected column as original typed Python values; `fn_values="display"` instead passes the current display strings, including the result of an earlier formatter directive. The callback must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
@@ -185,7 +185,7 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
-`notation` accepts `"fixed"`, `"significant"`, `"scientific"`, `"engineering"`, or `"compact"`; use `notation="compact"` for compact output. In fixed, compact, scientific, and engineering notation, `digits` sets the maximum decimal places. `min_digits` sets the minimum and defaults to `digits`. Significant notation uses `digits` significant figures. `grouping` inserts thousands marks. You can override locale defaults with `decimal_mark` and `thousands_mark`.
+`notation` accepts `"fixed"`, `"significant"`, `"scientific"`, `"engineering"`, or `"compact"`; use `notation="compact"` for compact output. In fixed, compact, scientific, and engineering notation, `digits` sets the maximum decimal places. `min_digits` sets the minimum and defaults to `digits`. Significant notation requires positive `digits` and uses that many significant figures. `grouping` inserts thousands marks. You can override locale defaults with `decimal_mark` and `thousands_mark`.
 
 `scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. `rounding` accepts `"half_even"`, `"half_up"`, `"half_down"`, `"up"`, `"down"`, `"ceiling"`, or `"floor"`. The formatter removes a negative sign when a value rounds to zero. Set `normalize_negative_zero=False` to retain the sign.
 
@@ -215,7 +215,7 @@ The formatter appends `symbol` after a non-breaking space by default. It accepts
 
 #api("Group", api_signatures.at("group"))
 
-For row groups, pass `{label: row}` or a list with one group value per data row. For spanning column headers, pass `{label: [columns]}` as `j`, or pass a literal string as `delimiter` to split every column name. `j` and `delimiter` are mutually exclusive.
+For row groups, pass `{label: row}` or a list with one group value per data row. For spanning column headers, pass `{label: [columns]}` as `j`, or pass a literal string as `delimiter` to split every original DataFrame column name. `j` and `delimiter` are mutually exclusive. Explicit row and column group labels must be nonempty after conversion to text; `None` and whitespace-only labels are rejected.
 
 #api("Rename display headers", api_signatures.at("set_name"))
 
@@ -223,7 +223,7 @@ With `j`, `name` is one display name or a list matching the selected columns. Wi
 
 #api("Choose displayed columns", api_signatures.at("show_columns"))
 
-Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, regex selectors, column-group selectors, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, groups, spans, styles, notes, and media are projected with the displayed columns for every renderer.
+Applies a display-only projection without modifying the DataFrame. `j` accepts names, integer source positions, regex selectors, column-group selectors, Polars selectors, or a mixed sequence, and the result retains source-column order. Set `invert=True` to omit the selection instead. Hidden columns remain available to selectors and conditional formatting, and a later call replaces the previous projection. Per-column widths, column-group header spans, styles, notes, and media are projected with the displayed columns for every renderer.
 
 #api("Use default appearance", api_signatures.at("theme_default"))
 

@@ -90,6 +90,8 @@ concise user-facing API reference for coding agents. After changing public behav
 styling, formatting, or examples, check both `docs/main.typ` and `docs/agent-guide.md` and update
 either one that is affected.
 
+Keep documentation focused on the current API, without references to previous tytable versions. Put migration guides and old/new API comparisons in the corresponding `CHANGELOG.md` release entry.
+
 ## Commit style
 
 Conventional commits: `type(scope): description`. Types: `feat`, `fix`, `docs`, `test`, `ci`, `build`, `refactor`. Scope optional. Keep descriptions imperative and lowercase. Examples from history: `refactor: make themes replaceable base appearances`, `fix: resolve all 20 mypy type-checking errors`, `docs: add docstrings to all public API`.
