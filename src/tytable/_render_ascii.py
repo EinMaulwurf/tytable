@@ -69,56 +69,33 @@ class AsciiRenderer(Renderer):
             for c, val in enumerate(row):
                 max_widths[c] = max(max_widths[c], min(_display_width(val), self.MAX_CELL_WIDTH))
 
-        def sep() -> str:
-            return "+" + "+".join("-" * (w + 2) for w in max_widths) + "+"
+        separator = "+" + "+".join("-" * (w + 2) for w in max_widths) + "+"
 
-        def format_cell(val: str, width: int, align: str) -> str:
-            return _pad(_truncate(val, width), width, align)
+        def format_row(row: list[str], display_row: int, *, row_group: bool = False) -> str:
+            cells = []
+            for col, val in enumerate(row):
+                align = built.style_grid.get((display_row, col), {}).get(
+                    "align", "l" if row_group else built.column_alignments[col]
+                )
+                width = max_widths[col]
+                cells.append(_pad(_truncate(val, width), width, align))
+            return "| " + " | ".join(cells) + " |"
 
-        lines.append(sep())
+        lines.append(separator)
 
         if built.show_colnames:
             header_row = built.layout.header_row
             if header_row is None:
                 raise RuntimeError("visible column names require a header row")
-            header = (
-                "| "
-                + " | ".join(
-                    format_cell(
-                        c,
-                        max_widths[i],
-                        built.style_grid.get((header_row, i), {}).get(
-                            "align", built.column_alignments[i]
-                        ),
-                    )
-                    for i, c in enumerate(headers)
-                )
-                + " |"
-            )
-            lines.append(header)
-            lines.append(sep())
+            lines.append(format_row(headers, header_row))
+            lines.append(separator)
 
         groupi_rows = set(built.layout.groupi_rows)
         for body_idx, row in enumerate(body):
             display_row = built.layout.header_rows + body_idx
-            line = (
-                "| "
-                + " | ".join(
-                    format_cell(
-                        val,
-                        max_widths[i],
-                        built.style_grid.get((display_row, i), {}).get(
-                            "align",
-                            "l" if display_row in groupi_rows else built.column_alignments[i],
-                        ),
-                    )
-                    for i, val in enumerate(row)
-                )
-                + " |"
-            )
-            lines.append(line)
+            lines.append(format_row(row, display_row, row_group=display_row in groupi_rows))
 
-        lines.append(sep())
+        lines.append(separator)
         self._append_notes(lines, built)
         return "\n".join(lines)
 

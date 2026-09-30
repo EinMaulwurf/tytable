@@ -208,12 +208,11 @@ class RowLayout:
 
         selected: list[int] = []
         for position, next_position in matching_runs:
+            # Consecutive separators enclose a disjoint run of data rows.
             selected.extend(
-                self.header_rows + body_row
-                for body_row in self.source_body_rows
-                if position < body_row < next_position
+                range(self.header_rows + position + 1, self.header_rows + next_position)
             )
-        return sorted(set(selected))
+        return selected
 
 
 def resolve_i(
@@ -351,12 +350,9 @@ def resolve_j(
     if cs.is_selector(j):
         return _resolve_selector_j(j, data)
     if isinstance(j, Sequence) and not isinstance(j, (str, bytes, bytearray)):
-        result: list[int] = []
+        result: set[int] = set()
         for value in j:
-            resolved = _resolve_single_j(value, data, column_group_rows=column_group_rows)
-            for idx in resolved:
-                if idx not in result:
-                    result.append(idx)
+            result.update(_resolve_single_j(value, data, column_group_rows=column_group_rows))
         return sorted(result)
     if isinstance(j, (int, str, _RegexSelector, _ColGroupSelector)):
         return _resolve_single_j(j, data, column_group_rows=column_group_rows)
@@ -472,9 +468,11 @@ def resolve_where(
 
     cells: set[tuple[int, int]] = set()
     for name in mask.columns:
-        selected_rows = [i for i, value in enumerate(mask[name]) if value is True]
-        display_rows = [layout.source_to_display(row) for row in selected_rows]
-        cells.update((row, source_positions[name]) for row in display_rows)
+        cells.update(
+            (layout.source_to_display(row), source_positions[name])
+            for row, value in enumerate(mask[name])
+            if value is True
+        )
     return cells
 
 

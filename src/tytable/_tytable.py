@@ -144,7 +144,7 @@ def tt(
     ...  .save("build/demo.typ"))
     """
 
-    t = TyTable(
+    return TyTable(
         data,
         figure=figure,
         caption=caption,
@@ -158,7 +158,6 @@ def tt(
         colnames=colnames,
         escape=escape,
     )
-    return t
 
 
 def _normalize_notes(raw: Sequence[str | NoteDict | Note]) -> list[Note]:
@@ -213,14 +212,12 @@ def _assign_markers(notes: list[Note]) -> list[Note]:
     auto = 0
     result: list[Note] = []
     for note in notes:
-        if note.marker is not None:
-            result.append(note)
-            continue
-        if note.i is not None or note.j is not None or note.where is not None:
+        if note.marker is None and (
+            note.i is not None or note.j is not None or note.where is not None
+        ):
             auto += 1
-            result.append(replace(note, marker=str(auto)))
-        else:
-            result.append(note)
+            note = replace(note, marker=str(auto))
+        result.append(note)
     return result
 
 

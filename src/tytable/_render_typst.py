@@ -48,6 +48,18 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
     return StyleMarkup.from_props(props).typst_inline(content)
 
 
+def _cell_content(value: str, props: dict[str, Any]) -> str:
+    """Wrap one cell's markup with its resolved span arguments."""
+    args = []
+    for name in ("colspan", "rowspan"):
+        span = props.get(name, 1)
+        if span > 1:
+            args.append(f"{name}: {span}")
+    if args:
+        return f"table.cell({', '.join(args)})[{value}]"
+    return f"[{value}]"
+
+
 @dataclass
 class TypstRenderOptions:
     """Internal options for Typst rendering and Typst plot materialization.
@@ -284,18 +296,7 @@ class TypstRenderer(Renderer):
             for c, val in enumerate(row):
                 if (display_row, c) in covered:
                     continue
-                span_props = built.style_grid.get((display_row, c), {})
-                colspan = span_props.get("colspan", 1)
-                rowspan = span_props.get("rowspan", 1)
-                args = []
-                if colspan > 1:
-                    args.append(f"colspan: {colspan}")
-                if rowspan > 1:
-                    args.append(f"rowspan: {rowspan}")
-                if args:
-                    parts.append(f"table.cell({', '.join(args)})[{val}]")
-                else:
-                    parts.append(f"[{val}]")
+                parts.append(_cell_content(val, built.style_grid.get((display_row, c), {})))
             if parts:
                 L.append("    " + ",".join(parts) + ",")
 
@@ -430,12 +431,12 @@ class TypstRenderer(Renderer):
             target.setdefault((boundary, stroke), set()).add(segment)
 
         hline_entries = []
-        for (y, stroke), cols in sorted(hlines.items()):
+        for (y, stroke), cols in hlines.items():
             for start, end in _split_chunks(cols):
                 hline_entries.append((y, start, end, stroke))
 
         vline_entries = []
-        for (x, stroke), rows in sorted(vlines.items()):
+        for (x, stroke), rows in vlines.items():
             for start, end in _split_chunks(rows):
                 vline_entries.append((x, start, end, stroke))
 
@@ -447,21 +448,17 @@ class TypstRenderer(Renderer):
 
     def _emit_style_block(self, L: list[str], built: BuiltTable) -> None:
         """Emit the ``style-dict``/``style-array``/``get-style`` machinery for per-cell styling."""
-        styled = []
+        sig_to_idx: dict[str, int] = {}
+        coord_entries: list[tuple[int, int, int]] = []
         for (i, j), props in built.style_grid.items():
             if not props:
                 continue
             sig = _props_to_signature(props)
             if not sig:
                 continue
-            styled.append((i, j, sig))
-
-        sig_to_idx: dict[str, int] = {}
-        coord_entries: list[tuple[int, int, int]] = []
-        for ti, tj, sig in styled:
             if sig not in sig_to_idx:
                 sig_to_idx[sig] = len(sig_to_idx)
-            coord_entries.append((ti, tj, sig_to_idx[sig]))
+            coord_entries.append((i, j, sig_to_idx[sig]))
 
         L.append("  #let style-dict = (")
         for ti, tj, idx in coord_entries:
@@ -470,9 +467,8 @@ class TypstRenderer(Renderer):
         L.append("")
 
         L.append("  #let style-array = (")
-        idx_to_sig = {idx: sig for sig, idx in sig_to_idx.items()}
-        for idx in range(len(idx_to_sig)):
-            L.append(f"    ({idx_to_sig[idx]}),")
+        for sig in sig_to_idx:
+            L.append(f"    ({sig}),")
         L.append("  )")
         L.append("")
 
@@ -503,16 +499,5 @@ class TypstRenderer(Renderer):
         for col, value in enumerate(built.colnames_display):
             if (display_row, col) in covered:
                 continue
-            props = built.style_grid.get((display_row, col), {})
-            args: list[str] = []
-            colspan = props.get("colspan", 1)
-            rowspan = props.get("rowspan", 1)
-            if colspan > 1:
-                args.append(f"colspan: {colspan}")
-            if rowspan > 1:
-                args.append(f"rowspan: {rowspan}")
-            if args:
-                parts.append(f"table.cell({', '.join(args)})[{value}]")
-            else:
-                parts.append(f"[{value}]")
+            parts.append(_cell_content(value, built.style_grid.get((display_row, col), {})))
         return ",".join(parts)

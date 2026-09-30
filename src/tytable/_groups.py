@@ -181,15 +181,11 @@ def register_row_groups(table: TyTable, i: Mapping[Any, int] | Sequence[Any]) ->
                 f"row group list must contain exactly {table._data.height} entries, got {len(i)}"
             )
         labels = [_display_group_label(label) for label in i]
-        prev = None
-        pos = 0
-        for idx, val in enumerate(labels):
-            if idx > 0 and val != prev:
-                groups.append(RowGroup(label=str(prev), position=pos))
-                pos = idx
-            prev = val
-        if pos < len(i):
-            groups.append(RowGroup(label=str(prev), position=pos))
+        groups = [
+            RowGroup(label=label, position=idx)
+            for idx, label in enumerate(labels)
+            if idx == 0 or label != labels[idx - 1]
+        ]
     else:
         raise TypeError("group(i=...) must be a mapping or sequence")
 
@@ -219,8 +215,8 @@ def register_delimiter_groups(table: TyTable, delimiter: str, colnames: list[str
     if not isinstance(delimiter, str):
         raise TypeError("group(delimiter=...) must be a str")
     rows = _build_col_group_rows_delim(delimiter, colnames)
-    for row in reversed(rows):
-        table._col_group_rows.insert(0, row)
+    # Prepend the new levels in outermost-to-innermost order.
+    table._col_group_rows[:0] = rows
     return table
 
 
@@ -230,18 +226,14 @@ def merge_row_groups(
     """Interleave row-group rows; return zero-based body positions and labels."""
     if not row_groups:
         return data_body, {}
-    nrows = len(data_body)
-    ngroups = len(row_groups)
-    n_merged = nrows + ngroups
-    p = sorted(rg.position for rg in row_groups)
-    group_positions = [p[k] + k for k in range(ngroups)]
-    group_positions_set = set(group_positions)
-    sorted_rg = sorted(row_groups, key=lambda rg: rg.position)
-    pos_to_label = dict(zip(group_positions, (rg.label for rg in sorted_rg), strict=True))
+    pos_to_label = {
+        group.position + offset: group.label
+        for offset, group in enumerate(sorted(row_groups, key=lambda group: group.position))
+    }
     merged = []
     data_row_idx = 0
-    for r in range(n_merged):
-        if r in group_positions_set:
+    for r in range(len(data_body) + len(row_groups)):
+        if r in pos_to_label:
             merged.append([pos_to_label[r]] + [""] * (ncols - 1))
         else:
             merged.append(data_body[data_row_idx])

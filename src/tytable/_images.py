@@ -319,8 +319,7 @@ def execute_plots(
 
         for total_idx, (display_row, body_row, col_idx) in enumerate(target_cells):
             cell_context = (
-                f"{'.images()' if isinstance(d, ImageDirective) else '.plot()'} directive "
-                f"{rank + 1}, selected cell (row={body_row}, column={col_idx})"
+                f"{method} directive {rank + 1}, selected cell (row={body_row}, column={col_idx})"
             )
             if isinstance(d, ImageDirective):
                 img_path = d.images[total_idx]
@@ -356,8 +355,6 @@ def execute_plots(
                             image_data,
                             image_format,
                         )
-                data_body[body_row][col_idx] = cell_str
-                image_cells.add((display_row, col_idx))
             else:
                 entry = d.data[total_idx] if d.data is not None else typed_body[body_row][col_idx]
 
@@ -405,10 +402,7 @@ def execute_plots(
                             temporary,
                             width_px=d.width_px,
                             height_px=d.height_px,
-                            context=(
-                                f".plot() directive {rank + 1}, selected cell "
-                                f"(row={body_row}, column={col_idx})"
-                            ),
+                            context=cell_context,
                         )
                         png_bytes = temporary.read_bytes()
                     digest = hashlib.sha256(png_bytes).hexdigest()[:12]
@@ -432,7 +426,7 @@ def execute_plots(
                         d.width_px,
                         d.height_px,
                     )
-                data_body[body_row][col_idx] = cell_str
-                image_cells.add((display_row, col_idx))
+            data_body[body_row][col_idx] = cell_str
+            image_cells.add((display_row, col_idx))
 
     return image_cells

@@ -311,11 +311,6 @@ def apply_formats(
             cell: _cell_value(cell, data_body, colnames_display, layout) for cell in target_cells
         }
         generated_markup: dict[Cell, str] = {}
-        escaped_cells.difference_update(
-            cell
-            for cell, before in values_before.items()
-            if _cell_value(cell, data_body, colnames_display, layout) != before
-        )
         _apply_fn(
             target_cells,
             d,

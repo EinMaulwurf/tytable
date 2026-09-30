@@ -206,12 +206,6 @@ def _validate_color(name: str, value: object) -> None:
         raise ValueError(f"invalid {name}: {exc}") from exc
 
 
-def _validate_positive_int(name: str, value: object) -> None:
-    """Validate a positive integer span property."""
-    if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 1):
-        raise ValueError(f"{name} must be a positive int, got {value!r}")
-
-
 def _validate_non_negative_number(name: str, value: object) -> None:
     """Validate a non-negative numeric style property."""
     if value is not None and (not isinstance(value, int | float) or isinstance(value, bool)):

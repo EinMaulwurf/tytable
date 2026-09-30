@@ -95,14 +95,6 @@ class RowGroup:
 
 
 @dataclass(frozen=True)
-class ColGroup:
-    """A column group: ``label`` spanning ``columns`` (0-based positions)."""
-
-    label: str
-    columns: list[int]
-
-
-@dataclass(frozen=True)
 class Note:
     """A footnote; ``marker`` is auto-assigned when its selectors target cells."""
 

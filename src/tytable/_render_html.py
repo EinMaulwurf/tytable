@@ -17,11 +17,6 @@ from ._style_markup import StyleMarkup, align_to_css
 from ._styling import compute_covered_cells, resolve_line_edges
 
 
-def _align_to_css(h: str | None, v: str | None) -> str | None:
-    """Translate alignment shorthands into a CSS ``text-align`` keyword string."""
-    return align_to_css(h, v)
-
-
 def _style_html_inline(props: dict[str, Any], content: str) -> str:
     """Wrap escaped HTML ``content`` with inline caption/notes styling.
 
@@ -145,7 +140,7 @@ class HtmlRenderer(Renderer):
             attrs = ""
             if built.style_caption:
                 escaped = _style_html_inline(built.style_caption, escaped)
-                align = _align_to_css(built.style_caption.get("align"), None)
+                align = align_to_css(built.style_caption.get("align"), None)
                 if align:
                     attrs = f' style="text-align:{align}"'
             parts.append(f"<caption{attrs}>{escaped}</caption>")
@@ -157,8 +152,7 @@ class HtmlRenderer(Renderer):
         border_map: dict[tuple[int, int], str],
     ) -> None:
         """Append column-group and column-name header rows."""
-        head_parts: list[str] = []
-        head_parts.extend(self._col_group_rows(built, border_map))
+        head_parts = self._col_group_rows(built, border_map)
         if built.show_colnames:
             head_parts.append(self._column_name_row(built, border_map))
 
@@ -262,9 +256,9 @@ class HtmlRenderer(Renderer):
         if not built.notes:
             return
         note_style = built.style_notes
-        align = _align_to_css(note_style.get("align"), None) or "left"
+        align = align_to_css(note_style.get("align"), None) or "left"
         css = [f"text-align:{align}"]
-        alignv = _align_to_css(None, note_style.get("alignv"))
+        alignv = align_to_css(None, note_style.get("alignv"))
         if alignv:
             css.append(f"vertical-align:{alignv}")
         if note_style.get("background"):

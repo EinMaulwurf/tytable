@@ -19,7 +19,7 @@ from ._format import apply_formats
 from ._groups import _resolve_col_group_spans, merge_row_groups
 from ._indices import RowLayout, resolve_i, resolve_where
 from ._renderer import OutputFormat
-from ._styling import build_meta_styles, build_style_grid
+from ._styling import build_meta_styles, build_style_grid, compute_covered_cells
 from ._utils import format_markup_num
 
 if TYPE_CHECKING:
@@ -194,27 +194,14 @@ def _extract_body(
     table: TyTable, output: OutputFormat, media_context: MediaContext | None = None
 ) -> _BuildState:
     """Extract display and typed cell matrices from the source dataframe."""
-    nrows = table._data.height
-    ncols = table._data.width
-    data_body: list[list[str]] = []
-    typed_body: list[list[Any]] = []
-    raw_data = table._data.to_dict(as_series=False)
-    col_names = list(raw_data)
-
-    for row_idx in range(nrows):
-        display_row: list[str] = []
-        typed_row: list[Any] = []
-        for col_name in col_names:
-            raw_val = raw_data[col_name][row_idx]
-            typed_row.append(raw_val)
-            display_row.append(format_markup_num(raw_val))
-        data_body.append(display_row)
-        typed_body.append(typed_row)
+    columns = table._data.to_dict(as_series=False).values()
+    typed_body = [[column[row] for column in columns] for row in range(table._data.height)]
+    data_body = [[format_markup_num(value) for value in row] for row in typed_body]
 
     return _BuildState(
         table=table,
         output=output,
-        ncols=ncols,
+        ncols=table._data.width,
         data_body=data_body,
         typed_body=typed_body,
         colnames_display=list(table._colnames_display),
@@ -391,18 +378,10 @@ def _project_style_grid(
 ) -> dict[tuple[int, int], dict[str, Any]]:
     """Map source-column cell styles and spans onto displayed columns."""
     col_map = {source: display for display, source in enumerate(selected)}
-    covered: set[tuple[int, int]] = set()
-    for (row, source_col), props in grid.items():
-        colspan = props.get("colspan")
-        rowspan = props.get("rowspan")
-        if source_col not in col_map:
-            continue
-        colspan = colspan if isinstance(colspan, int) else 1
-        rowspan = rowspan if isinstance(rowspan, int) else 1
-        for covered_row in range(row, row + rowspan):
-            for covered_col in range(source_col, source_col + colspan):
-                if (covered_row, covered_col) != (row, source_col):
-                    covered.add((covered_row, covered_col))
+    # A hidden span anchor does not hide styles on surviving columns.
+    covered = compute_covered_cells(
+        {cell: props for cell, props in grid.items() if cell[1] in col_map}
+    )
     projected: dict[tuple[int, int], dict[str, Any]] = {}
 
     for (row, source_col), props in grid.items():

@@ -786,6 +786,11 @@ def unit(
         inf=inf,
         negative_inf=negative_inf,
     )
+    prefix_table: Sequence[tuple[Decimal, str]] = ()
+    if prefix_system == "si":
+        prefix_table = _SI_PREFIXES
+    elif prefix_system == "iec":
+        prefix_table = _IEC_PREFIXES
 
     def formatter(values: Sequence[Any]) -> list[str]:
         result: list[str] = []
@@ -800,13 +805,6 @@ def unit(
             scaled = numeric
             prefix = ""
             magnitude = abs(numeric)
-            prefix_table = (
-                _SI_PREFIXES
-                if prefix_system == "si"
-                else _IEC_PREFIXES
-                if prefix_system == "iec"
-                else ()
-            )
             if prefix_table and numeric.is_finite() and magnitude:
                 with localcontext() as context:
                     context.prec = _operation_precision(magnitude, extra=digits + 16)

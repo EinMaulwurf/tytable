@@ -73,7 +73,7 @@ inserted group rows and headers are selected by explicit semantic names.
 | File               | Role                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------- |
 | `_tytable.py`      | Public API: `TyTable` class, `tt()` factory                                                       |
-| `_directives.py`   | Dataclasses: `StyleDirective`, `FormatDirective`, `PlotDirective`, `Note`, `RowGroup`, `ColGroup` |
+| `_directives.py`   | Dataclasses: `StyleDirective`, `FormatDirective`, `PlotDirective`, `Note`, `RowGroup`             |
 | `_resolve.py`      | `build()` pipeline and `BuiltTable` output dataclass                                              |
 | `_styling.py`      | Style validation, style-grid construction                                                         |
 | `_format.py`       | Numeric formatting, replace, escape, fn transforms                                                |
