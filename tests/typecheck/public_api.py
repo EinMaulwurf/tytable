@@ -8,7 +8,7 @@ import polars as pl
 import polars.selectors as cs
 
 from tytable import tt
-from tytable.formatters import number, unit
+from tytable.formatters import number, scientific, unit
 from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
 
 
@@ -44,6 +44,7 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.set_name(j=cs.string(), name="Text")
     table.group(j={"Numeric": cs.numeric()})
     table.fmt(j=mixed_selector, fn=lambda values: [str(value) for value in values])
+    table.fmt(j=cs.numeric(), fn=scientific(digits=2, locale="de_DE"))
     table.fmt(j=cs.numeric(), fn=number(notation="compact"))
     table.fmt(j=cs.numeric(), fn=unit("B", prefix_system="iec"))
     table.style(j=mixed_selector, rotate=90)

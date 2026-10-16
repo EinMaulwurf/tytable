@@ -358,7 +358,7 @@ Because that Polars expression converts `Revenue` to a string column, the exampl
 
 For quick, in-table transforms that stay inside the `tt()` chain, without reaching back into polars. See #link(<selectors>)[Select rows and columns] to restrict any transform to particular rows, columns, or conditionally selected cells.
 
-- `fn` — pass a semantic formatter such as `number(digits=2)`, `percent(digits=1)`, or `currency("USD")`; significant notation requires positive `digits`, and scientific output is textual `e` notation
+- `fn` — pass a semantic formatter such as `number(digits=2)`, `percent(digits=1)`, or `currency("USD")`; significant notation requires positive `digits`, and `number(notation="scientific")` produces textual `e` notation; use `scientific()` for native superscripts
 - `replace` — replace missing/null/NaN values with a string or a `{old: new}` mapping
 - `linebreak` — choose a literal input marker to replace with a native line break. For example, `linebreak="\n"` translates newline characters to a single `\` in Typst or `<br>` in HTML; use another marker such as `"|"` when that is more convenient for the source data
 - `math` — typeset selected values as Typst equations
@@ -397,6 +397,7 @@ Common report formats should not require a custom callback. Import formatter fac
 The built-in factories are:
 
 - `number()` — flexible decimal places, five notation modes, named rounding modes, scaling, grouping, custom compact labels, and special-value text
+- `scientific()` — multiplication and superscripts in Typst and HTML, with textual `e` output in ASCII
 - `currency()` — numeric options plus a currency code or symbol, locale-aware placement, optional known currency digits, and accounting parentheses
 - `percent()` — numeric options plus fraction-to-percentage scaling and locale-aware symbol spacing
 - `date()` — Python `strftime` patterns and optional timezone conversion for timezone-aware datetimes
@@ -436,6 +437,15 @@ This example combines the number, currency, percentage, and date factories. Noti
 #tag("RESULT")
 #v(0.12em)
 #include "build/02_semantic_formatters.typ"
+
+Use `scientific()` when measurements should display multiplication and superscripts. Pass it through `fn` with default escaping; the formatter handles native markup for Typst and HTML, while ASCII remains plain `e` notation. `digits` counts decimal places in the mantissa, so `1230000` with `digits=2` displays as 1.23 × 10⁶:
+
+#tag("SOURCE")
+#source("examples/02_scientific.py")
+
+#tag("RESULT")
+#v(0.12em)
+#include "build/02_scientific.typ"
 
 A configured formatter can be reused across tables, and subsequent directives can still apply replacement, line breaks, math, escaping, or styles:
 

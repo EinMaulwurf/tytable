@@ -16,7 +16,7 @@ import polars as pl
 import pytest
 
 from tytable import tt
-from tytable.formatters import number
+from tytable.formatters import number, scientific
 
 pytestmark = pytest.mark.typst
 
@@ -178,6 +178,13 @@ def test_compile_styled(tmp_path):
         .style(i="header", line="b", line_style="none")
         .render("typst")
     )
+    _compile(typ, tmp_path)
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_compile_scientific_formatter(tmp_path):
+    df = pl.DataFrame({"value": [1230000.0, -0.000123, 0.0, None, float("inf")]})
+    typ = tt(df).fmt(fn=scientific(locale="de_DE")).render("typst")
     _compile(typ, tmp_path)
 
 

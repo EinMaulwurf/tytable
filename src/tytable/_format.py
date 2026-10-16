@@ -10,6 +10,8 @@ import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
+from tytable._formatters import _ScientificText
+
 from ._escape import escape_typst
 from ._indices import resolve_i, resolve_where
 
@@ -150,10 +152,12 @@ def _apply_fn(
     colnames_display: list[str],
     colnames: list[str],
     layout: RowLayout,
-) -> None:
+    output: str,
+) -> dict[Cell, str]:
     """Apply a column-wise transform to the selected cells."""
+    generated_markup: dict[Cell, str] = {}
     if directive.fn is None:
-        return
+        return generated_markup
     col_to_rows: dict[int, list[int]] = {}
     for row_idx, col_idx in cells:
         col_to_rows.setdefault(col_idx, []).append(row_idx)
@@ -171,7 +175,12 @@ def _apply_fn(
         if len(result) != len(values):
             raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
         for cell, value in zip(column_cells, result, strict=True):
+            if isinstance(value, _ScientificText):
+                value = value.render(output)
+                generated_markup[cell] = value
             _set_cell_value(cell, value, data_body, colnames_display, layout)
+
+    return generated_markup
 
 
 def _apply_replacements(
@@ -310,8 +319,7 @@ def apply_formats(
         values_before = {
             cell: _cell_value(cell, data_body, colnames_display, layout) for cell in target_cells
         }
-        generated_markup: dict[Cell, str] = {}
-        _apply_fn(
+        generated_markup = _apply_fn(
             target_cells,
             d,
             data_body,
@@ -319,6 +327,7 @@ def apply_formats(
             colnames_display,
             table._source_colnames,
             layout,
+            output,
         )
         escaped_cells.difference_update(
             cell
@@ -339,6 +348,14 @@ def apply_formats(
             for cell, before in values_before.items()
             if _cell_value(cell, data_body, colnames_display, layout) != before
         )
+        # Native formatter markup remains trusted only while later transforms
+        # preserve it. Line-break generation must not escape intact markup again.
+        generated_markup = {
+            cell: text
+            for cell, text in generated_markup.items()
+            if _cell_value(cell, data_body, colnames_display, layout) == text
+        }
+        escaped_cells.update(generated_markup)
         generated_markup.update(
             _apply_linebreaks(
                 target_cells,

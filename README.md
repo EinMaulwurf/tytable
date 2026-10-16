@@ -55,7 +55,9 @@ tab.save("report_assets/products.typ")
 tab
 ```
 
-Common number, currency, percentage, date, duration, and unit conventions are available from `tytable.formatters`, including German output such as `1.023,87 €`. Pass them to `.fmt(fn=...)`; see the full guide for options and rendered examples.
+Common number, scientific, currency, percentage, date, duration, and unit conventions are available from `tytable.formatters`, including German output such as `1.023,87 €`. Pass them to `.fmt(fn=...)`; see the full guide for options and rendered examples.
+
+For scientific measurements, use `.fmt(j="Measurement", fn=scientific(digits=2))` after `from tytable.formatters import scientific`. Typst and HTML display values such as 1.23 × 10⁶ with native superscripts; ASCII uses `1.23e+6`.
 
 ![Rendered Product scores table](https://raw.githubusercontent.com/EinMaulwurf/tytable/main/docs/assets/readme-example.png)
 

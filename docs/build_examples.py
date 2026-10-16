@@ -26,7 +26,7 @@ from typing import Any
 
 from tytable import TyTable, __version__, tt
 from tytable._colors import _NAMED_COLORS
-from tytable.formatters import currency, date, duration, number, percent, unit
+from tytable.formatters import currency, date, duration, number, percent, scientific, unit
 
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "examples"
@@ -37,6 +37,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "style": (".style", TyTable.style),
     "fmt": (".fmt", TyTable.fmt),
     "formatter_number": ("number", number),
+    "formatter_scientific": ("scientific", scientific),
     "formatter_currency": ("currency", currency),
     "formatter_percent": ("percent", percent),
     "formatter_date": ("date", date),

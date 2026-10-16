@@ -177,7 +177,7 @@ Combines any properties sharing the same selectors. `where` accepts a Polars exp
 
 #api("Format", api_signatures.at("fmt"))
 
-Transforms values in this order: `fn`, `replace`, `linebreak`, `math`, then `escape`. `where` restricts all transforms in the directive to individual true body cells. Numeric formatting is provided by semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, and is passed through `fn`. The formatter preserves typed input and handles missing and special values according to its own options. Scientific notation uses textual `e` output in every backend.
+Transforms values in this order: `fn`, `replace`, `linebreak`, `math`, then `escape`. `where` restricts all transforms in the directive to individual true body cells. Numeric formatting is provided by semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, and is passed through `fn`. The formatter preserves typed input and handles missing and special values according to its own options. `number(notation="scientific")` uses textual `e` output in every backend. Use `scientific()` for multiplication and superscripts in Typst and HTML.
 
 `replace`, `fn_values`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. By default, `fn` receives each selected column as original typed Python values; `fn_values="display"` instead passes the current display strings, including the result of an earlier formatter directive. The callback must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
 
@@ -190,6 +190,12 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 `scale` multiplies each value before rounding. For example, `number(digits=1, scale=1 / 1e6)` displays `2500000` as `2.5`. `rounding` accepts `"half_even"`, `"half_up"`, `"half_down"`, `"up"`, `"down"`, `"ceiling"`, or `"floor"`. The formatter removes a negative sign when a value rounds to zero. Set `normalize_negative_zero=False` to retain the sign.
 
 `compact_labels` maps positive powers of ten to labels. For example, `{3: " thousand", 6: " million"}` supplies long labels. Compact notation promotes a rounded `1000 thousand` value to `1 million`. `accounting` encloses negatives in parentheses. `prefix` and `suffix` add text around finite values. `null` formats nulls and NaNs by default. Set `nan` to format NaNs separately. The `inf` and `negative_inf` options format infinities.
+
+#api("Format scientific values", api_signatures.at("formatter_scientific"))
+
+Use `.fmt(j="Measurement", fn=scientific(digits=2))` for multiplication and native superscripts in Typst and HTML, such as 1.23 × 10⁶. ASCII output and direct calls to the returned callback use `1.23e+6`. `digits` sets the mantissa's maximum decimal places, and `min_digits` defaults to `digits`. Rounding that reaches ten promotes the exponent. Zero is displayed with exponent zero.
+
+The formatter shares `number()` conventions for `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, and special-value labels (`null`, `nan`, `inf`, and `negative_inf`). Labels and custom decimal marks are plain text and escaped safely; generated superscripts work with default escaping. Pass the configured callback directly to `fn` so the table can render its native notation. Later display callbacks receive the current backend's rendered string; replacements and callbacks that change it follow ordinary escaping rules. `scientific()` does not accept `notation`, grouping, accounting, prefixes, or suffixes.
 
 #api("Format currencies", api_signatures.at("formatter_currency"))
 

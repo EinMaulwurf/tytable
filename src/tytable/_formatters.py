@@ -23,7 +23,9 @@ from decimal import (
 from typing import Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-__all__ = ["currency", "date", "duration", "number", "percent", "unit"]
+from tytable._escape import escape_html, escape_typst
+
+__all__ = ["currency", "date", "duration", "number", "percent", "scientific", "unit"]
 
 _LocaleName = Literal["de", "de-DE", "de_DE", "en", "en-US", "en_US"]
 _LOCALES: dict[str, tuple[str, str]] = {
@@ -455,6 +457,69 @@ def number(
             else:
                 result.append(f"{prefix}{formatted}{suffix}")
         return result
+
+    return formatter
+
+
+class _ScientificText(str):
+    """A scientific value with a plain-text representation and safe native markup."""
+
+    def render(self, output: str) -> str:
+        mantissa, exponent = self.rsplit("e", 1)
+        exponent = str(int(exponent))
+        if output == "typst":
+            return f"{escape_typst(mantissa)} × 10#super[{escape_typst(exponent)}]"
+        if output == "html":
+            return f"{escape_html(mantissa)} × 10<sup>{exponent}</sup>"
+        return str(self)
+
+
+def scientific(
+    *,
+    digits: int = 2,
+    min_digits: int | None = None,
+    locale: _LocaleName | None = None,
+    decimal_mark: str | None = None,
+    scale: int | float | Decimal = 1,
+    rounding: _Rounding = "half_even",
+    normalize_negative_zero: bool = True,
+    null: str = "—",
+    nan: str | None = None,
+    inf: str = "infinity",
+    negative_inf: str = "-infinity",
+) -> Callable[[Sequence[Any]], list[str]]:
+    """Create scientific notation with native multiplication and superscripts.
+
+    Pass the returned callback to ``.fmt(fn=...)``. Typst and HTML display
+    ``1.23 × 10⁶`` using native superscripts; ASCII and direct callback calls
+    return ``1.23e+6``. ``digits`` sets mantissa decimal places, with the same
+    precision, locale, scaling, rounding, and special-value conventions as
+    :func:`number`. Labels and decimal marks are treated as plain text.
+    """
+    plain = number(
+        digits=digits,
+        min_digits=min_digits,
+        notation="scientific",
+        locale=locale,
+        decimal_mark=decimal_mark,
+        scale=scale,
+        rounding=rounding,
+        normalize_negative_zero=normalize_negative_zero,
+        null=null,
+        nan=nan,
+        inf=inf,
+        negative_inf=negative_inf,
+    )
+    finite_scale = _scale_factor(scale).is_finite()
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        rendered = plain(values)
+        return [
+            _ScientificText(text)
+            if value is not None and finite_scale and _decimal(value).is_finite()
+            else text
+            for value, text in zip(values, rendered, strict=True)
+        ]
 
     return formatter
 

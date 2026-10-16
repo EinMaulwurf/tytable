@@ -10,8 +10,111 @@ from tests.helpers import assert_snapshot
 from tytable import formatters, tt
 from tytable._format import _apply_escape, _apply_replace, _matches
 from tytable._resolve import build
-from tytable.formatters import currency, duration, number, percent, unit
+from tytable.formatters import currency, duration, number, percent, scientific, unit
 from tytable.formatters import date as date_formatter
+
+
+class TestScientificFormatter:
+    def test_direct_calls_and_numeric_conventions(self):
+        values = [1230000, -0.000123, 0, Decimal("-0"), None, math.nan, math.inf, -math.inf]
+        assert scientific()(values) == number(notation="scientific")(values)
+        assert scientific(digits=1, min_digits=0, rounding="half_up", scale=1000)(
+            [Decimal("0.00995"), Decimal("-0.00125")]
+        ) == ["1e+1", "-1.3e+0"]
+        with localcontext() as context:
+            context.prec = 3
+            assert scientific(digits=4)([Decimal("1234567890123456789")]) == ["1.2346e+18"]
+
+    @pytest.mark.parametrize(
+        ("output", "positive", "negative"),
+        [
+            ("typst", "1.23 × 10#super[6]", r"\-1.23 × 10#super[\-4]"),
+            ("html", "1.23 × 10<sup>6</sup>", "-1.23 × 10<sup>-4</sup>"),
+            ("ascii", "1.23e+6", "-1.23e-4"),
+        ],
+    )
+    def test_native_output_with_default_escaping(self, output, positive, negative):
+        table = tt(pl.DataFrame({"value": [1230000.0, -0.000123, 0.0, None]})).fmt(fn=scientific())
+        rendered = table.render(output)
+        assert positive in rendered
+        assert negative in rendered
+        assert "—" in rendered
+        assert rendered == table.render(output)
+        assert "1.23e+6" in table.render("ascii")
+
+    @pytest.mark.parametrize("output", ["typst", "html", "ascii"])
+    def test_locale_and_special_labels_are_plain_text(self, output):
+        from tytable._escape import escape_html, escape_typst
+
+        escape = {"typst": escape_typst, "html": escape_html, "ascii": str}[output]
+        label = "<missing>&#[]"
+        table = tt(pl.DataFrame({"value": [1.25, None, math.nan, math.inf, -math.inf]})).fmt(
+            fn=scientific(locale="de_DE", null=label, nan=label, inf=label, negative_inf=label)
+        )
+        rendered = table.render(output)
+        assert "1,25" in rendered
+        assert escape(label) in rendered
+
+    @pytest.mark.parametrize("output", ["typst", "html"])
+    def test_custom_decimal_mark_is_escaped_inside_native_output(self, output):
+        from tytable._escape import escape_html, escape_typst
+
+        escape = escape_html if output == "html" else escape_typst
+        mark = "<b>&#[]e"
+        rendered = (
+            tt(pl.DataFrame({"value": [1250]})).fmt(fn=scientific(decimal_mark=mark)).render(output)
+        )
+        assert escape("1" + mark + "25") in rendered
+        assert ("<sup>3</sup>" if output == "html" else "#super[3]") in rendered
+
+    @pytest.mark.parametrize("output", ["typst", "html"])
+    def test_replacements_and_chained_callbacks_invalidate_native_markup(self, output):
+        from tytable._escape import escape_html, escape_typst
+
+        escape = escape_html if output == "html" else escape_typst
+        label = "<replaced>&#[]"
+        df = pl.DataFrame({"value": [1250]})
+        replaced = tt(df).fmt(fn=scientific(), replace={1250: label}).render(output)
+        assert escape(label) in replaced
+        assert "#super[" not in replaced
+        assert "<sup>" not in replaced
+        chained = (
+            tt(df)
+            .fmt(fn=scientific())
+            .fmt(fn=lambda values: [label for _ in values], fn_values="display")
+            .render(output)
+        )
+        assert escape(label) in chained
+        assert "#super[" not in chained
+        assert "<sup>" not in chained
+
+    def test_selectors_filters_and_ordinary_callbacks(self):
+        df = pl.DataFrame({"a": [1200, 2400], "b": [3600, 4800]})
+        table = tt(df).fmt(j="a", where=pl.col("a") > 2000, fn=scientific(), output="html")
+        html = table.render("html")
+        assert "2.40 × 10<sup>3</sup>" in html
+        assert "1.20 ×" not in html
+        assert "3.60 ×" not in html
+        assert "e+3" not in table.render("ascii")
+        assert "&lt;sup&gt;" in tt(df).fmt(fn=lambda values: ["<sup>3</sup>"] * len(values)).render(
+            "html"
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{"digits": -1}, {"min_digits": 3}, {"rounding": "unknown"}, {"locale": "fr"}],
+    )
+    def test_invalid_options(self, kwargs):
+        with pytest.raises(ValueError):
+            scientific(**kwargs)
+
+    def test_invalid_types_and_nonfinite_scale(self):
+        with pytest.raises(TypeError):
+            scientific(digits=True)
+        with pytest.raises(TypeError, match="numeric"):
+            scientific()(["1.23e+6"])
+        assert scientific(scale=math.inf)([1]) == ["infinity"]
+        assert scientific(scale=math.nan)([1]) == ["—"]
 
 
 class TestSemanticFormatters:

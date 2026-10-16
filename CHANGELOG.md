@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Add `scientific()` in `tytable.formatters` for multiplication and native superscripts in Typst and HTML, with textual `e` notation in ASCII. It shares numeric precision, locale, scaling, rounding, and special-value conventions with `number()` and works with default escaping.
+
 ## [4.0.0] - 2026-10-16
 
 ### Breaking

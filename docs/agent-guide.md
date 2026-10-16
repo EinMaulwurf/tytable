@@ -235,11 +235,13 @@ Use `.style(i="header", rotate=90)` to rotate header content. `.rotate(90)` rota
 Use `.fmt(i=..., j=..., ...)` to change displayed values while retaining the source DataFrame and its dtypes:
 
 ```python
+from tytable.formatters import scientific
+
 table = (
     tt(df)
     .fmt(j="Revenue", fn=number(digits=2))
     .fmt(j="Estimate", fn=number(digits=3, notation="significant"))
-    .fmt(j="Measurement", fn=number(digits=2, notation="scientific"))
+    .fmt(j="Measurement", fn=scientific(digits=2))
     .fmt(j="Revenue", replace={"null": "—"})
 )
 ```
@@ -283,9 +285,11 @@ table.fmt(j="Share", fn=number(digits=2)).fmt(j="Share", fn=lambda values: [f"{v
 
 Each `.fmt()` directive has one callback stage. Use a semantic formatter such as `number(digits=2)` in one directive, then chain a second `.fmt(fn=..., fn_values="display")` when a later callback should consume its display strings.
 
-For common typed formats, import `number`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators.
+For common typed formats, import `number`, `scientific`, `currency`, `percent`, `date`, `duration`, or `unit` from `tytable.formatters`. Pass the configured formatter to `fn`. For example, `table.fmt(j="Share", fn=percent(digits=1))` converts `0.6281` to `62.8%`. Use `number(digits=1, scale=1 / 1e6)` to display values in millions. The `number`, `currency`, and `unit` formatters use `scale=1` by default. The `percent` formatter uses `scale=100`. These built-ins are factories. Each factory returns the callback that `fn` requires. Pass a custom callback directly as `fn=my_formatter`. Use `fn=my_formatter(...)` only when the custom callback is also a factory. `locale="de_DE"` produces German separators.
 
 Numeric formatters accept `min_digits`, `notation`, `rounding`, `normalize_negative_zero`, `nan`, `inf`, and `negative_inf`; use `notation="compact"` for compact output. The `number()` formatter also accepts custom `compact_labels`. The `currency()` formatter forwards numeric options and accepts `symbol_position`. `digits=None` selects known currency digits. The `unit()` formatter accepts `prefix_system="si"` or `prefix_system="iec"` for automatic prefixes. `duration(style="human")` produces output such as `1d 3h 30m`. The `date()` formatter accepts `timezone` for timezone-aware datetimes.
+
+Use `.fmt(j="Measurement", fn=scientific(digits=2))` for values such as 1.23 × 10⁶ with native superscripts in Typst and HTML. ASCII and direct callback calls return `1.23e+6`. `digits` counts mantissa decimal places; `min_digits`, `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, `null`, `nan`, `inf`, and `negative_inf` follow `number()` conventions. Labels and decimal marks are plain text, and default escaping can stay enabled. Pass the configured callback directly to `fn` to preserve native notation. Later `fn_values="display"` callbacks receive backend markup; changed strings follow ordinary escaping rules. `number(notation="scientific")` provides plain `e` notation in every backend. Custom sequence callbacks remain available for other conventions.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 
