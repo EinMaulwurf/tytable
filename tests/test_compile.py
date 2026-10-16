@@ -216,7 +216,12 @@ def test_compiled_table_width_matches_requested_width(tmp_path, width, expected_
     assert result.returncode == 0, result.stderr
     rule_lengths = [
         float(length)
-        for length in re.findall(r'<path[^>]* d="M 0 0h ([0-9.]+)"', output.read_text())
+        # Typst versions use either a horizontal command or an absolute line,
+        # and differ in whether they include trailing whitespace in path data.
+        for length in re.findall(
+            r'<path[^>]* d="M 0 0\s*(?:h|L)\s+([0-9.]+)(?:\s+0)?\s*"',
+            output.read_text(),
+        )
     ]
     assert rule_lengths
     assert max(rule_lengths) == pytest.approx(expected_points, abs=1)
