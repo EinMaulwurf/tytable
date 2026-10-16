@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-10-16
+
 ### Breaking
 
 - Remove public `colspan` and `rowspan` styling options. Use `.group(j={...})` for shared column headings and `.group(i={...})` for labelled row sections; these semantic groups do not provide a general spreadsheet-style cell-merge replacement.
@@ -477,7 +479,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.0.0...HEAD
+[4.0.0]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/EinMaulwurf/tytable/compare/v2.2.0...v3.0.0
