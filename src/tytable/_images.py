@@ -64,11 +64,11 @@ def _save_plot_image(
     entry: object,
     path: str | pathlib.Path,
     *,
-    width_px: int,
-    height_px: int,
+    width_px: int | None,
+    height_px: int | None,
     context: str,
 ) -> None:
-    """Call ``fn(entry)``, then save the returned Figure/ggplot to ``path`` as a PNG."""
+    """Call ``fn(entry)`` and export its Figure/ggplot in the path's image format."""
     import matplotlib.pyplot as plt
 
     dpi = 100
@@ -77,29 +77,36 @@ def _save_plot_image(
     except Exception as e:
         raise RuntimeError(f"{context}: plot callback failed: {e}") from e
 
+    svg = pathlib.Path(path).suffix == ".svg"
+    export_options: dict[str, Any] = {"metadata": {"Date": None}} if svg else {}
     try:
-        if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
-            obj.save(
-                filename=str(path),
-                width=width_px / dpi,
-                height=height_px / dpi,
-                dpi=dpi,
-                verbose=False,
-            )
-        elif isinstance(obj, plt.Figure):
-            obj.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
-            obj.savefig(
-                str(path),
-                dpi=dpi,
-                transparent=True,
-                bbox_inches=obj.bbox_inches,
-                pad_inches=0,
-            )
-        else:
-            raise TypeError(
-                f"{context}: fn must return a matplotlib Figure or a plotnine ggplot; "
-                f"got {type(obj).__name__}"
-            )
+        # Stable SVG IDs and no timestamp keep repeat renders and asset hashes stable.
+        with plt.rc_context({"svg.hashsalt": "tytable"} if svg else {}):
+            if hasattr(obj, "save") and not isinstance(obj, plt.Figure):
+                obj.save(
+                    filename=str(path),
+                    width=width_px / dpi if width_px is not None else None,
+                    height=height_px / dpi if height_px is not None else None,
+                    dpi=dpi,
+                    verbose=False,
+                    **export_options,
+                )
+            elif isinstance(obj, plt.Figure):
+                if width_px is not None and height_px is not None:
+                    obj.set_size_inches(width_px / dpi, height_px / dpi, forward=True)
+                obj.savefig(
+                    str(path),
+                    dpi=dpi,
+                    transparent=True,
+                    bbox_inches=obj.bbox_inches,
+                    pad_inches=0,
+                    **export_options,
+                )
+            else:
+                raise TypeError(
+                    f"{context}: fn must return a matplotlib Figure or a plotnine ggplot; "
+                    f"got {type(obj).__name__}"
+                )
     except OSError as e:
         raise OSError(f"{context}: could not write plot asset {str(path)!r}: {e}") from e
     finally:
@@ -362,25 +369,25 @@ def execute_plots(
                     cell_str = "[plot]"
                 elif media_context is None or media_context.assets_dir is None:
                     with tempfile.TemporaryDirectory(prefix="tytable_portable_") as td:
-                        png_path = pathlib.Path(td) / f"plot_{rank:04d}_{total_idx:04d}.png"
+                        image_path = pathlib.Path(td) / f"plot.{d.format}"
                         _save_plot_image(
                             d.fn,
                             entry,
-                            png_path,
+                            image_path,
                             width_px=d.width_px,
                             height_px=d.height_px,
                             context=cell_context,
                         )
-                        png_bytes = png_path.read_bytes()
+                        image_bytes = image_path.read_bytes()
                     cell_str = _build_image_cell_string(
                         "",
                         height,
                         output,
                         True,
-                        png_bytes,
-                        None,
-                        d.width_px,
-                        d.height_px,
+                        image_bytes,
+                        ("svg", "image/svg+xml") if d.format == "svg" else None,
+                        d.width_px or 0,
+                        d.height_px or 0,
                     )
                 else:
                     assets_dir = media_context.assets_dir
@@ -395,7 +402,7 @@ def execute_plots(
                             f"{str(assets_dir)!r}: {e}"
                         ) from e
                     with tempfile.TemporaryDirectory(prefix="tytable_plot_") as td:
-                        temporary = pathlib.Path(td) / "plot.png"
+                        temporary = pathlib.Path(td) / f"plot.{d.format}"
                         _save_plot_image(
                             d.fn,
                             entry,
@@ -404,16 +411,16 @@ def execute_plots(
                             height_px=d.height_px,
                             context=cell_context,
                         )
-                        png_bytes = temporary.read_bytes()
-                    digest = hashlib.sha256(png_bytes).hexdigest()[:12]
-                    filename = f"plot_{rank:04d}_{total_idx:04d}_{digest}.png"
-                    png_path = assets_dir / filename
+                        image_bytes = temporary.read_bytes()
+                    digest = hashlib.sha256(image_bytes).hexdigest()[:12]
+                    filename = f"plot_{rank:04d}_{total_idx:04d}_{digest}.{d.format}"
+                    image_path = assets_dir / filename
                     try:
-                        png_path.write_bytes(png_bytes)
+                        image_path.write_bytes(image_bytes)
                     except OSError as e:
                         raise OSError(
                             f".plot() directive {rank + 1}: could not write plot asset "
-                            f"{str(png_path)!r}: {e}"
+                            f"{str(image_path)!r}: {e}"
                         ) from e
                     relpath = f"{assets_relpath.rstrip('/')}/{filename}"
                     cell_str = _build_image_cell_string(
@@ -422,9 +429,6 @@ def execute_plots(
                         output,
                         False,
                         None,
-                        None,
-                        d.width_px,
-                        d.height_px,
                     )
             data_body[body_row][col_idx] = cell_str
             image_cells.add((display_row, col_idx))

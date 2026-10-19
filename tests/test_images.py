@@ -1,8 +1,11 @@
+import base64
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 from functools import partial
+from xml.etree import ElementTree
 
 import polars as pl
 import pytest
@@ -52,6 +55,12 @@ def test_existing_images_do_not_require_plotting_dependencies(monkeypatch):
     result = tt(df).theme_plain().images(j="Logo", paths=["img/a.png"]).render("typst")
 
     assert '#image("img/a.png", height: 1em)' in result
+
+
+@pytest.mark.parametrize("format", ["pdf", "SVG", "", None])
+def test_plot_rejects_unsupported_asset_format(format):
+    with pytest.raises(ValueError, match="format must be 'png' or 'svg'"):
+        tt(pl.DataFrame({"Trend": [1]})).plot(j="Trend", fn=lambda value: value, format=format)
 
 
 def _sparkline(values, *, color="black", xlim=None, **kw):
@@ -130,12 +139,16 @@ class TestPlotSparkline:
         assert not hasattr(table, "_assets_dir")
         assert not hasattr(table, "_assets_relpath")
 
-    def test_ascii_plot_is_a_placeholder_without_calling_callback(self):
+    @pytest.mark.parametrize("format", ["png", "svg"])
+    def test_ascii_plot_is_a_placeholder_without_calling_callback(self, format):
         def fail(_value):
             raise AssertionError("ASCII must not generate plot assets")
 
         result = (
-            tt(pl.DataFrame({"Trend": [1]})).theme_plain().plot(j="Trend", fn=fail).render("ascii")
+            tt(pl.DataFrame({"Trend": [1]}))
+            .theme_plain()
+            .plot(j="Trend", fn=fail, format=format)
+            .render("ascii")
         )
 
         assert "[plot]" in result
@@ -162,6 +175,20 @@ class TestPlotSparkline:
 
         image = mpimg.imread(_only_plot(tmp_path / "out_assets"))
         assert image.shape[:2] == (96, 320)
+
+    @pytest.mark.parametrize(
+        ("dimensions", "expected"),
+        [({}, (400, 1200)), ({"width_px": 320}, (400, 320)), ({"height_px": 96}, (96, 1200))],
+    )
+    def test_png_keeps_default_canvas_dimensions(self, tmp_path, dimensions, expected):
+        import matplotlib.image as mpimg
+
+        tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(j="Trend", fn=_sparkline, **dimensions).save(
+            tmp_path / "out.typ"
+        )
+
+        image = mpimg.imread(_only_plot(tmp_path / "out_assets"))
+        assert image.shape[:2] == expected
 
     def test_sparkline_list_column(self, tmp_path):
         df = pl.DataFrame({"Trend": [[1, 2, 3], [4, 1, 2]]})
@@ -440,6 +467,133 @@ class TestPlotnine:
         plots = list((tmp_path / "out_assets").glob("plot_*.png"))
         assert len(plots) == 2
         assert all(mpimg.imread(plot).shape[:2] == (96, 320) for plot in plots)
+
+    @pytest.mark.parametrize("dimensions", [{}, {"width_px": 320, "height_px": 96}])
+    def test_svg_uses_theme_size_or_explicit_dimensions(self, tmp_path, dimensions):
+        p9 = pytest.importorskip("plotnine")
+        import pandas as pd
+
+        def callback(values):
+            data = pd.DataFrame({"x": range(len(values)), "y": values})
+            return p9.ggplot(data, p9.aes("x", "y")) + p9.geom_line() + p9.theme(figure_size=(5, 2))
+
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fn=callback, format="svg", **dimensions
+        )
+        table.save(tmp_path / "out.typ")
+        asset = next((tmp_path / "out_assets").glob("plot_*.svg"))
+        root = ElementTree.fromstring(asset.read_bytes())
+        expected = [0, 0, 230.4, 69.12] if dimensions else [0, 0, 360, 144]
+        assert [float(value) for value in root.attrib["viewBox"].split()] == pytest.approx(expected)
+        assert root.findall(".//{http://www.w3.org/2000/svg}path")
+        assert not root.findall(".//{http://www.w3.org/2000/svg}image")
+
+
+@pytest.mark.images
+class TestSvgPlots:
+    @pytest.mark.parametrize(
+        ("dimensions", "expected"),
+        [
+            ({}, [0, 0, 432, 144]),
+            ({"width_px": 320, "height_px": 96}, [0, 0, 230.4, 69.12]),
+            ({"width_px": 320}, [0, 0, 230.4, 288]),
+            ({"height_px": 96}, [0, 0, 864, 69.12]),
+        ],
+    )
+    def test_saved_svg_contains_vectors_with_requested_geometry(
+        self, tmp_path, dimensions, expected
+    ):
+        import matplotlib.pyplot as plt
+
+        figures = []
+
+        def callback(value):
+            fig = _sparkline(value)
+            fig.set_dpi(200)
+            figures.append(fig)
+            return fig
+
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fn=callback, format="svg", height="1.5em", **dimensions
+        )
+        table.save(tmp_path / "out.typ", assets="media/plots")
+
+        assets = list((tmp_path / "media" / "plots").iterdir())
+        assert len(assets) == 1
+        asset = assets[0]
+        assert asset.suffix == ".svg"
+        root = ElementTree.fromstring(asset.read_bytes())
+        assert [float(value) for value in root.attrib["viewBox"].split()] == pytest.approx(expected)
+        assert root.findall(".//{http://www.w3.org/2000/svg}path")
+        assert not root.findall(".//{http://www.w3.org/2000/svg}image")
+        assert (
+            f'#image("media/plots/{asset.name}", height: 1.5em)'
+            in (tmp_path / "out.typ").read_text()
+        )
+        assert len(figures) == 1
+        assert not plt.fignum_exists(figures[0].number)
+
+    def test_inline_and_saved_exports_are_repeatable_and_leave_no_render_assets(
+        self, tmp_path, monkeypatch
+    ):
+        import matplotlib as mpl
+
+        monkeypatch.chdir(tmp_path)
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fn=_sparkline, format="svg"
+        )
+        with mpl.rc_context({"svg.hashsalt": "user-setting"}):
+            first = table.render("typst")
+            assert first == table.render("typst")
+            assert mpl.rcParams["svg.hashsalt"] == "user-setting"
+        assert list(tmp_path.iterdir()) == []
+        assert 'format: "svg"' in first
+        assert "<path" in first
+        assert "image/png" not in first
+        assert "<dc:date>" not in first
+
+        table.save("out.typ")
+        first_saved = (tmp_path / "out.typ").read_text()
+        table.save("out.typ")
+        assert (tmp_path / "out.typ").read_text() == first_saved
+        assert len(list((tmp_path / "out_assets").iterdir())) == 1
+        assert table.render("typst") == first
+
+    @pytest.mark.parametrize("saved", [False, True])
+    def test_html_embeds_or_references_svg(self, tmp_path, saved):
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fn=_sparkline, format="svg", height=1.5
+        )
+        if saved:
+            table.save(tmp_path / "out.html")
+            asset = next((tmp_path / "out_assets").glob("plot_*.svg"))
+            assert (
+                f'<img src="out_assets/{asset.name}" style="height: 1.5em;">'
+                in (tmp_path / "out.html").read_text()
+            )
+        else:
+            html = table.render("html")
+            match = re.search(r"data:image/svg\+xml;base64,([^\"]+)", html)
+            assert match is not None
+            root = ElementTree.fromstring(base64.b64decode(match[1]))
+            assert root.findall(".//{http://www.w3.org/2000/svg}path")
+            assert not root.findall(".//{http://www.w3.org/2000/svg}image")
+
+    @pytest.mark.typst
+    @pytest.mark.skipif(shutil.which("typst") is None, reason="typst CLI not installed")
+    @pytest.mark.parametrize("saved", [False, True])
+    def test_typst_compiles_svg_plot(self, tmp_path, saved):
+        table = tt(pl.DataFrame({"Trend": [[1, 2, 3]]})).plot(
+            j="Trend", fn=_sparkline, format="svg"
+        )
+        pdf = tmp_path / "out.pdf"
+        if saved:
+            source = tmp_path / "out.typ"
+            table.save(source)
+            subprocess.run(["typst", "compile", str(source), str(pdf)], check=True)
+        else:
+            table.compile(pdf)
+        assert pdf.read_bytes().startswith(b"%PDF-")
 
 
 @pytest.mark.images

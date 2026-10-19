@@ -51,6 +51,8 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.style(output="typst", bold=True)
     table.fmt(output=["html", "ascii"])
     table.plot(j=0, fn=lambda value: value, data=plot_data)
+    table.plot(j=0, fn=lambda value: value, format="svg", height="1.5em")
+    table.plot(j=0, fn=lambda value: value, format="svg", width_px=320, height_px=96)
     table.images(j=0, paths=image_paths)
     table.save(Path("table.typ"), assets=Path("table_assets"))
     table.compile(Path("table.pdf"), root=Path("."), font_paths=[Path("fonts")])

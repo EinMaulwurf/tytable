@@ -834,8 +834,9 @@ class TyTable:
         fn: Callable,
         data: Sequence[Any] | None = None,
         height: float | str = 1.0,
-        height_px: int = 400,
-        width_px: int = 1200,
+        height_px: int | None = None,
+        width_px: int | None = None,
+        format: Literal["png", "svg"] = "png",
         output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
@@ -861,9 +862,15 @@ class TyTable:
         height
             Plot height in ``em`` (default ``1.0``).
         height_px, width_px
-            Pixel dimensions of the generated PNG (default 400×1200). These
-            dimensions apply to both Matplotlib and plotnine output and
-            override the canvas size of a returned Matplotlib figure.
+            Positive integer canvas dimensions, converted to inches at 100 dpi
+            for both Matplotlib and plotnine. PNG defaults to 400×1200. SVG
+            preserves the callback's figure size when both are omitted. If
+            either is supplied, the other defaults to 400 or 1200 respectively.
+            These dimensions override the callback's canvas size; ``height``
+            independently controls the displayed size in the table.
+        format
+            Plot asset format: ``"png"`` (default) or ``"svg"``. SVG exports
+            vector graphics directly, though rasterized artists remain raster.
         output
             Restrict this directive to the given output backends. ``None``
             applies to all.
@@ -877,30 +884,37 @@ class TyTable:
         ------
         TypeError
             If ``height`` has an unsupported type, if ``height_px`` or
-            ``width_px`` is not an integer, or if ``fn`` returns an
-            unsupported object when the table is rendered.
+            ``width_px`` is neither an integer nor ``None``, or if ``fn`` returns
+            an unsupported object when the table is rendered.
         ValueError
             If ``j`` is missing, a dimension is not positive, ``height`` cannot
             be parsed, the length of ``data`` differs from the resolved cell
-            count, or a selector is invalid. Cardinality and selector errors
-            are raised at render time.
+            count, ``format`` is unsupported, or a selector is invalid.
+            Cardinality and selector errors are raised at render time.
         ImportError
             If the table is rendered without the optional ``images``
             dependencies installed.
         RuntimeError
             If ``fn`` raises an exception when the table is rendered.
         OSError
-            If the generated plot directory or PNG cannot be written.
+            If the generated plot directory or asset cannot be written.
         """
         if j is None:
             raise ValueError(".plot() requires j (column selector)")
         if not callable(fn):
             raise TypeError(f"fn must be callable, got {type(fn).__name__}")
+        if format not in ("png", "svg"):
+            raise ValueError(f"format must be 'png' or 'svg'; got {format!r}")
         for name, value in (("height_px", height_px), ("width_px", width_px)):
+            if value is None:
+                continue
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an integer, got {value!r}")
             if value <= 0:
                 raise ValueError(f"{name} must be positive, got {value!r}")
+        if format == "png" or height_px is not None or width_px is not None:
+            height_px = 400 if height_px is None else height_px
+            width_px = 1200 if width_px is None else width_px
         height = _normalize_media_height(height)
         normalized_output = _normalize_output_filter(output)
         normalized_data = _normalize_public_sequence("data", data) if data is not None else None
@@ -912,6 +926,7 @@ class TyTable:
             height=height,
             height_px=height_px,
             width_px=width_px,
+            format=format,
             output=normalized_output,
         )
         self._plot_directives.append(directive)

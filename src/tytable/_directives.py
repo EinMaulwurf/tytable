@@ -70,9 +70,10 @@ class PlotDirective:
     fn: Callable
     data: list | None = None
     height: float = 1.0
-    height_px: int = 400
-    width_px: int = 1200
+    height_px: int | None = 400
+    width_px: int | None = 1200
     output: tuple[str, ...] | None = None
+    format: Literal["png", "svg"] = "png"
 
 
 @dataclass(frozen=True)

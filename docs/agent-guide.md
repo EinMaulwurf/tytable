@@ -369,6 +369,8 @@ Use `.finalize(fn)` for post-processing rendered text. The callback receives `(r
 
 `.plot(fn=...)` generates plots during rendering and requires the optional `images` dependencies. The callback receives exactly one positional cell value (or matching `data` entry) and must return a Matplotlib `Figure` or plotnine plot; configure options in the callback, with `functools.partial`, or with a wrapper. `.images()` embeds or references existing files and does not require that extra. Their `height` option must be a positive, finite number or an `em` string. See their public docstrings or the full manual before generating media code because cell cardinality and asset-policy rules are intentionally strict.
 
+Use `.plot(j="Trend", fn=sparkline, format="svg", height=1.5)` for direct vector export. With both `width_px` and `height_px` omitted, SVG preserves the callback's Matplotlib `figsize` or plotnine themed figure size; `height` controls its displayed height and width follows its aspect ratio. PNG remains the default and uses a 1200×400 canvas. Supplying either pixel dimension overrides the canvas for either format using a 100 dpi conversion; the other dimension defaults to 1200 or 400. SVG does not turn rasterized artists or images into vectors. Typst and HTML renders embed generated plots; `.save()` writes external `.png` or `.svg` assets.
+
 ## Common mistakes
 
 - Do not use 1-based row positions. `i=0` is the first source row.

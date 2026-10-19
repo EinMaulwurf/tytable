@@ -38,7 +38,9 @@ Use `.images()` to embed existing files without Matplotlib or the optional `imag
 #v(0.12em)
 #include "build/07_static_images.typ"
 
-Use `.plot()` when graphics must be generated from cell values. The next example combines those same static flags with a plotting function `fn(values) -> matplotlib.figure.Figure` for the sparkline column. Configure callback options directly or with `functools.partial`; tytable handles generated PNG saving and path management. This plotting half requires the `images` extra.
+Use `.plot()` when graphics must be generated from cell values. The next example combines those same static flags with a plotting function `fn(values) -> matplotlib.figure.Figure` for the sparkline column. Configure callback options directly or with `functools.partial`; tytable handles image export and path management. This plotting half requires the `images` extra.
+
+Use `format="svg"` for vector sparklines: the callback's `figsize` determines the canvas proportions, while `height` sets the displayed height in the table. No pixel dimensions are needed. Simple vector plots can reduce Typst compilation time and PDF size compared with large PNGs. The default `format="png"` remains useful for dense plots or raster content; images and rasterized artists inside an SVG remain raster graphics.
 
 #tag("SOURCE — STATIC FILES + GENERATED PLOTS")
 #source("examples/07_images.py")

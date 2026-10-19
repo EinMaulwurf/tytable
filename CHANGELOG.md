@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Features
+
+- Add `.plot(format="svg")` for direct vector export from Matplotlib and plotnine, supporting embedded Typst/HTML output and external SVG assets. SVG preserves the callback's figure size when pixel dimensions are omitted; explicitly supplied dimensions retain the existing canvas sizing rules. PNG remains the default with its existing 1200×400 canvas. SVG exports omit timestamps and use stable identifiers for repeatable rendering and asset names.
+
 ## [4.1.0] - 2026-10-19
 
 ### Features
