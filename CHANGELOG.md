@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-10-19
+
 ### Features
 
 - Add `.plot(format="svg")` for direct vector export from Matplotlib and plotnine, supporting embedded Typst/HTML output and external SVG assets. SVG preserves the callback's figure size when pixel dimensions are omitted; explicitly supplied dimensions retain the existing canvas sizing rules. PNG remains the default with its existing 1200×400 canvas. SVG exports omit timestamps and use stable identifiers for repeatable rendering and asset names.
@@ -493,7 +495,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.1.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.2.0...HEAD
+[4.2.0]: https://github.com/EinMaulwurf/tytable/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/EinMaulwurf/tytable/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...v3.1.0
