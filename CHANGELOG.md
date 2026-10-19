@@ -11,6 +11,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Add `scientific()` in `tytable.formatters` for multiplication and native superscripts in Typst and HTML, with textual `e` notation in ASCII. It shares numeric precision, locale, scaling, rounding, and special-value conventions with `number()` and works with default escaping.
 
+### Performance
+
+- Reduce Typst-to-PDF compilation work by emitting static column alignments, native cell fill/alignment/inset properties, and inline text styling instead of per-cell style dictionaries and callbacks. Preserve contextual alignment for vertical-only styles and scoped show rules for rotation and font sizing or indentation with inherited table insets. Coalesce identical whole-cell transforms into row runs. Add a reproducible compilation benchmark for reports with plain tables, financial formatting, and embedded SVG sparklines.
+
 ## [4.0.0] - 2026-10-16
 
 ### Breaking

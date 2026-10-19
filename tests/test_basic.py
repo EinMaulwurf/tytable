@@ -17,50 +17,12 @@ EXPECTED_BASIC_TYP = (
     '  supplement: "Table",\n'
     "\n"
     "block[\n"
-    "  #let style-dict = (\n"
-    "  )\n"
-    "\n"
-    "  #let style-array = (\n"
-    "  )\n"
-    "\n"
-    "  #let get-style(x, y) = {\n"
-    '    let key = str(y) + "_" + str(x)\n'
-    "    if key in style-dict { style-array.at(style-dict.at(key)) } else { none }\n"
-    "  }\n"
-    "\n"
-    "  #show table.cell: it => {\n"
-    "    if style-array.len() == 0 { return it }\n"
-    "    let style = get-style(it.x, it.y)\n"
-    "    if style == none { return it }\n"
-    "    let tmp = it\n"
-    '    if ("fontsize" in style) { tmp = text(size: style.fontsize, tmp) }\n'
-    '    if ("color" in style) { tmp = text(fill: style.color, tmp) }\n'
-    '    if ("indent" in style) { tmp = pad(left: style.indent, tmp) }\n'
-    '    if ("underline" in style) { tmp = underline(tmp) }\n'
-    '    if ("italic" in style) { tmp = emph(tmp) }\n'
-    '    if ("bold" in style) { tmp = strong(tmp) }\n'
-    '    if ("mono" in style) { tmp = math.mono(tmp) }\n'
-    '    if ("strikeout" in style) { tmp = strike(tmp) }\n'
-    '    if ("smallcaps" in style) { tmp = smallcaps(tmp) }\n'
-    '    if ("rotate" in style) {\n'
-    '      let a = if "align" in style { style.align } else { left }\n'
-    "      tmp = align(a, rotate(style.rotate, reflow: true, tmp))\n"
-    "    }\n"
-    "    tmp\n"
-    "  }\n"
-    "\n"
     "  #table(\n"
     "    columns: (auto, auto),\n"
     "    stroke: none,\n"
     "    rows: auto,\n"
-    "    align: (x, y) => {\n"
-    "      let style = get-style(x, y)\n"
-    '      if style != none and "align" in style { style.align } else { (right, right).at(x) }\n'
-    "    },\n"
-    "    fill: (x, y) => {\n"
-    "      let style = get-style(x, y)\n"
-    '      if style != none and "background" in style { style.background }\n'
-    "    },\n"
+    "    align: right,\n"
+    "    fill: none,\n"
     "    table.header(\n"
     "      repeat: true,\n"
     "      [A],[B],\n"
@@ -437,7 +399,7 @@ class TestDefaultAlignment:
 
         out = tt(df).theme_plain().render("typst")
 
-        assert "else { (left, right).at(x) }" in out
+        assert "align: (left, right)," in out
 
     def test_html_aligns_numeric_header_and_body(self):
         df = pl.DataFrame({"label": ["A"], "number": [123]})
@@ -463,7 +425,7 @@ class TestDefaultAlignment:
         )
 
         assert build(table, "typst").column_alignments == ["r"]
-        assert "else { (right,).at(x) }" in table.render("typst")
+        assert "align: right," in table.render("typst")
 
     def test_explicit_style_overrides_default(self):
         table = tt(pl.DataFrame({"number": [123]})).theme_plain().style(j="number", align="l")
@@ -508,7 +470,7 @@ class TestCaption:
         assert "#figure(" not in out
         assert "#table(" in out
         assert "#block(breakable: false)[" in out
-        assert "bold: true" in out
+        assert "#strong[" in out
 
     @pytest.mark.parametrize("metadata", [{"caption": "Results"}, {"label": "results"}])
     def test_figure_false_rejects_figure_metadata(self, metadata):

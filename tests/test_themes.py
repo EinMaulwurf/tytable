@@ -115,7 +115,7 @@ class TestThemeRotate:
 
     def test_selected_cell_rotate(self):
         out = tt(DF).style(i="header", j="A", rotate=45).render("typst")
-        assert "rotate: 45deg" in out
+        assert "rotate(45deg" in out
         assert "#rotate(45deg, reflow: true" not in out
 
     def test_accepts_negative_whole_table_angle(self):

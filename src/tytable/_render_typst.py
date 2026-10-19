@@ -13,24 +13,12 @@ from functools import lru_cache
 from typing import Any
 
 from ._colors import color_to_typst
-from ._constants import STATIC_GET_STYLE_AND_SHOW_RULE
 from ._escape import escape_typst
 from ._groups import _resolve_col_group_spans
 from ._renderer import Renderer
 from ._resolve import BuiltTable
 from ._style_markup import StyleMarkup
 from ._styling import align_to_typst, compute_covered_cells, resolve_line_edges
-
-
-def _props_to_signature(props: dict[str, Any]) -> str:
-    """Translate a cell-style prop dict into a comma-separated Typst signature fragment."""
-    return _props_to_signature_cached(tuple(sorted(props.items())))
-
-
-@lru_cache(maxsize=256)
-def _props_to_signature_cached(prop_items: tuple[tuple[str, Any], ...]) -> str:
-    """Translate a hashable, canonical property tuple into a Typst signature."""
-    return StyleMarkup.from_props(dict(prop_items)).typst_signature()
 
 
 def _style_typst_content(props: dict[str, Any], content: str) -> str:
@@ -48,16 +36,79 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
     return StyleMarkup.from_props(props).typst_inline(content)
 
 
-def _cell_content(value: str, props: dict[str, Any]) -> str:
-    """Wrap one cell's markup with its resolved span arguments."""
+def _cell_content(value: str, props: dict[str, Any], *, inherited_inset: bool = False) -> str:
+    """Emit a cell with native properties and inline body styling."""
+    if inherited_inset and ("fontsize" in props or props.get("indent", 0) > 0):
+        # These must wrap the resolved cell when its inset comes from the
+        # including document. Moving them inside would change em resolution.
+        props = {name: value for name, value in props.items() if name not in ("fontsize", "indent")}
+    args, prefix, suffix = _cell_style_cached(tuple(sorted(props.items())))
+    body = f"[{prefix}{value}{suffix}]"
+    return f"table.cell({args}){body}" if args else body
+
+
+@lru_cache(maxsize=256)
+def _cell_style_cached(prop_items: tuple[tuple[str, Any], ...]) -> tuple[str, str, str]:
+    """Translate each distinct resolved style once, without caching cell values."""
+    props = dict(prop_items)
+    markup = StyleMarkup.from_props(props)
+    markup.validate_typst_values()
+    prefix = suffix = ""
     args = []
     for name in ("colspan", "rowspan"):
         span = props.get(name, 1)
         if span > 1:
             args.append(f"{name}: {span}")
-    if args:
-        return f"table.cell({', '.join(args)})[{value}]"
-    return f"[{value}]"
+    # Vertical-only alignment must inherit the surrounding document's horizontal
+    # alignment, rather than the numeric column default. Handle it on the table.
+    align = align_to_typst(props.get("align"), props.get("alignv")) if props.get("align") else None
+    if align:
+        args.append(f"align: {align}")
+    if "background" in props:
+        args.append(f"fill: {color_to_typst(props['background'])}")
+    if "padding" in props or props.get("indent", 0) > 0:
+        # Text styling now lives in the body. Explicit padding still uses the
+        # cell's font size, while the outer indentation uses the table's size.
+        scale = props.get("fontsize", 1)
+        padding = props.get("padding", 0)
+        if isinstance(padding, tuple):
+            padding = tuple(v * scale for v in padding)
+        else:
+            padding *= scale
+        inset = markup._padding_to_typst(padding) if "padding" in props else "5pt"
+        if props.get("indent", 0) > 0:
+            left = f"{markup._padding_left(padding)}em" if "padding" in props else "5pt"
+            if inset.startswith("("):
+                # Normalize directional padding before overriding its left edge.
+                if len(padding) == 2:
+                    top = bottom = padding[0]
+                    right = padding[1]
+                else:
+                    top, right, bottom, _ = padding
+                inset = f"(top: {top}em, right: {right}em, bottom: {bottom}em, left: {left} + {props['indent']}em)"
+            else:
+                inset = f"(rest: {inset}, left: {left} + {props['indent']}em)"
+        args.append(f"inset: {inset}")
+    text_args = []
+    if "fontsize" in props:
+        text_args.append(f"size: {props['fontsize']}em")
+    if "color" in props:
+        text_args.append(f"fill: {color_to_typst(props['color'])}")
+    if text_args:
+        prefix = f"#text({', '.join(text_args)})["
+        suffix = "]"
+    for name, function in (
+        ("underline", "underline"),
+        ("italic", "emph"),
+        ("bold", "strong"),
+        ("monospace", "math.mono"),
+        ("strikeout", "strike"),
+        ("smallcaps", "smallcaps"),
+    ):
+        if props.get(name):
+            prefix = f"#{function}[{prefix}"
+            suffix += "]"
+    return ", ".join(args), prefix, suffix
 
 
 @dataclass
@@ -128,6 +179,7 @@ class TypstRenderer(Renderer):
 
     def __init__(self, opts: TypstRenderOptions) -> None:
         self._opts = opts
+        self._inherited_inset = True
 
     @staticmethod
     def _columns_spec(
@@ -155,12 +207,55 @@ class TypstRenderer(Renderer):
     def render(self, built: BuiltTable) -> str:
         """Produce the full Typst fragment (figure/table header, body, footer, notes)."""
         L: list[str] = []
+        self._inherited_inset = not any("padding" in props for props in built.style_grid.values())
         self._emit_outer_open(L, built)
-        self._emit_style_block(L, built)
-        L.append("")
+        self._emit_cell_transforms(L, built)
         self._emit_table(L, built)
         self._emit_outer_close(L, built)
         return self._wrap_result(L)
+
+    def _emit_cell_transforms(self, L: list[str], built: BuiltTable) -> None:
+        """Scope whole-cell transforms, coalescing cells with the same transform."""
+        transforms: dict[str, dict[int, set[int]]] = {}
+        for (row, col), props in built.style_grid.items():
+            expression = "it"
+            if self._inherited_inset:
+                if "fontsize" in props:
+                    expression = f"text(size: {props['fontsize']}em, {expression})"
+                if props.get("indent", 0) > 0:
+                    expression = f"pad(left: {props['indent']}em, {expression})"
+            if "rotate" in props:
+                align = align_to_typst(props.get("align"), props.get("alignv")) or "left"
+                expression = (
+                    f"align({align}, rotate({props['rotate']}deg, reflow: true, {expression}))"
+                )
+            if expression != "it":
+                transforms.setdefault(expression, {}).setdefault(col, set()).add(row)
+        for expression, columns in transforms.items():
+            # Whole-table styles should cost one rule, rather than one rule per
+            # cell. Partial selections are coalesced into contiguous row runs.
+            selections: list[tuple[int | None, set[int]]]
+            row_sets = list(columns.values())
+            if len(columns) == len(built.colnames_display) and all(
+                rows == row_sets[0] for rows in row_sets
+            ):
+                selections = [(None, row_sets[0])]
+            else:
+                selections = list(columns.items())
+            for selected_col, rows in selections:
+                for start, end in _split_chunks(rows):
+                    selector = "table.cell"
+                    fields = [f"x: {selected_col}"] if selected_col is not None else []
+                    if end == start + 1:
+                        fields.append(f"y: {start}")
+                    if fields:
+                        selector += f".where({', '.join(fields)})"
+                    body = expression
+                    if end > start + 1:
+                        body = (
+                            f"if it.y >= {start} and it.y < {end} {{ {expression} }} else {{ it }}"
+                        )
+                    L.append(f"  #show {selector}: it => {body}")
 
     def _emit_outer_open(self, L: list[str], built: BuiltTable) -> None:
         """Open the optional figure and its containing block."""
@@ -218,39 +313,48 @@ class TypstRenderer(Renderer):
             self._emit_footer(L, built, 1)
             L.append("  )")
             return
+        alignment = self._table_alignment(L, built)
         L.append("  #table(")
         self._emit_table_options(L, built, ncol)
-        L.append("    align: (x, y) => {")
-        L.append("      let style = get-style(x, y)")
-        if "r" in built.column_alignments:
-            defaults = ", ".join(
-                {"l": "left", "c": "center", "r": "right"}[align]
-                for align in built.column_alignments
-            )
-            if len(built.column_alignments) == 1:
-                defaults += ","
-            fallback = f"({defaults}).at(x)"
-        else:
-            fallback = "left"
-        L.append(
-            f'      if style != none and "align" in style {{ style.align }} else {{ {fallback} }}'
-        )
-        L.append("    },")
-
-        L.append("    fill: (x, y) => {")
-        L.append("      let style = get-style(x, y)")
-        L.append('      if style != none and "background" in style { style.background }')
-        L.append("    },")
+        L.append(f"    align: {alignment},")
+        L.append("    fill: none,")
         if any("padding" in props for props in built.style_grid.values()):
-            L.append("    inset: (x, y) => {")
-            L.append("      let style = get-style(x, y)")
-            L.append('      if style != none and "padding" in style { style.padding } else { 5pt }')
-            L.append("    },")
+            # Match the fallback of the former per-cell inset callback, even
+            # when the including document has its own table inset set rule.
+            L.append("    inset: 5pt,")
         self._emit_lines(L, built)
         self._emit_header(L, built)
         self._emit_body(L, built)
         self._emit_footer(L, built, ncol)
         L.append("  )")
+
+    @staticmethod
+    def _table_alignment(L: list[str], built: BuiltTable) -> str:
+        """Use static defaults, preserving contextual vertical-only alignment."""
+        alignments = [
+            {"l": "left", "c": "center", "r": "right"}[a] for a in built.column_alignments
+        ]
+        vertical_only: dict[tuple[int, int], str] = {}
+        for (row, col), props in built.style_grid.items():
+            if props.get("alignv") and not props.get("align"):
+                vertical = align_to_typst(None, props["alignv"])
+                assert vertical is not None
+                vertical_only[(row, col)] = vertical
+        if vertical_only:
+            # A native cell override merges a partial alignment with the table
+            # alignment. Returning it from a callback preserves inheritance from
+            # the surrounding document. Materialize the grid once so each lookup
+            # stays constant-time, even when every cell has vertical alignment.
+            L.append("  #let cell-alignments = (")
+            for row in range(built.layout.total_rows):
+                cells = [vertical_only.get((row, col), a) for col, a in enumerate(alignments)]
+                L.append(f"    ({', '.join(cells)},),")
+            L.append("  )")
+            defaults = f"({', '.join(alignments)},)"
+            return f"(x, y) => cell-alignments.at(y, default: {defaults}).at(x)"
+        if len(set(alignments)) == 1:
+            return alignments[0]
+        return f"({', '.join(alignments)})"
 
     def _emit_table_options(self, L: list[str], built: BuiltTable, ncol: int) -> None:
         """Append column, gutter, stroke, and row-height table options."""
@@ -279,15 +383,14 @@ class TypstRenderer(Renderer):
             L.append("    table.header(")
             repeat = "true" if self._opts.repeat_headers else "false"
             L.append(f"      repeat: {repeat},")
-            for cg_row in built.col_groups:
-                parts = self._build_col_group_row(cg_row)
+            for display_row, cg_row in enumerate(built.col_groups):
+                parts = self._build_col_group_row(cg_row, built, display_row)
                 L.append(f"      {', '.join(parts)},")
             if built.show_colnames:
                 L.append(f"      {self._build_column_name_row(built)},")
             L.append("    ),")
 
-    @staticmethod
-    def _emit_body(L: list[str], built: BuiltTable) -> None:
+    def _emit_body(self, L: list[str], built: BuiltTable) -> None:
         """Append visible table body cells, including span declarations."""
         covered = compute_covered_cells(built.style_grid)
         for r, row in enumerate(built.data_body):
@@ -296,7 +399,13 @@ class TypstRenderer(Renderer):
             for c, val in enumerate(row):
                 if (display_row, c) in covered:
                     continue
-                parts.append(_cell_content(val, built.style_grid.get((display_row, c), {})))
+                parts.append(
+                    _cell_content(
+                        val,
+                        built.style_grid.get((display_row, c), {}),
+                        inherited_inset=self._inherited_inset,
+                    )
+                )
             if parts:
                 L.append("    " + ",".join(parts) + ",")
 
@@ -446,50 +555,27 @@ class TypstRenderer(Renderer):
         for x, start, end, stroke in sorted(vline_entries):
             L.append(f"    table.vline(x: {x}, start: {start}, end: {end}, stroke: {stroke}),")
 
-    def _emit_style_block(self, L: list[str], built: BuiltTable) -> None:
-        """Emit the ``style-dict``/``style-array``/``get-style`` machinery for per-cell styling."""
-        sig_to_idx: dict[str, int] = {}
-        coord_entries: list[tuple[int, int, int]] = []
-        for (i, j), props in built.style_grid.items():
-            if not props:
-                continue
-            sig = _props_to_signature(props)
-            if not sig:
-                continue
-            if sig not in sig_to_idx:
-                sig_to_idx[sig] = len(sig_to_idx)
-            coord_entries.append((i, j, sig_to_idx[sig]))
-
-        L.append("  #let style-dict = (")
-        for ti, tj, idx in coord_entries:
-            L.append(f'    "{ti}_{tj}": {idx},')
-        L.append("  )")
-        L.append("")
-
-        L.append("  #let style-array = (")
-        for sig in sig_to_idx:
-            L.append(f"    ({sig}),")
-        L.append("  )")
-        L.append("")
-
-        L.append(STATIC_GET_STYLE_AND_SHOW_RULE)
-
-    def _build_col_group_row(self, row: list[str | None]) -> list[str]:
+    def _build_col_group_row(
+        self, row: list[str | None], built: BuiltTable, display_row: int
+    ) -> list[str]:
         """Turn one column-group header row into Typst cell fragments (with ``colspan`` merging)."""
         parts = []
-        for label, _start, span in _resolve_col_group_spans(row):
-            if not label:
-                parts.append("[ ]")
-                continue
-            escaped = escape_typst(label)
+        for label, start, span in _resolve_col_group_spans(row):
+            props = dict(built.style_grid.get((display_row, start), {}))
             if span > 1:
-                parts.append(f"table.cell(colspan: {span}, align: center)[{escaped}]")
-            else:
-                parts.append(f"table.cell(align: center)[{escaped}]")
+                props["colspan"] = span
+            if label:
+                props["align"] = "c"
+            parts.append(
+                _cell_content(
+                    escape_typst(label) if label else " ",
+                    props,
+                    inherited_inset=self._inherited_inset,
+                )
+            )
         return parts
 
-    @staticmethod
-    def _build_column_name_row(built: BuiltTable) -> str:
+    def _build_column_name_row(self, built: BuiltTable) -> str:
         """Build the column-name row while honoring its accepted cell spans."""
         display_row = built.layout.header_row
         if display_row is None:
@@ -499,5 +585,11 @@ class TypstRenderer(Renderer):
         for col, value in enumerate(built.colnames_display):
             if (display_row, col) in covered:
                 continue
-            parts.append(_cell_content(value, built.style_grid.get((display_row, col), {})))
+            parts.append(
+                _cell_content(
+                    value,
+                    built.style_grid.get((display_row, col), {}),
+                    inherited_inset=self._inherited_inset,
+                )
+            )
         return ",".join(parts)

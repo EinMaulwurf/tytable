@@ -48,6 +48,35 @@ def test_heavy_table_under_budget():
     assert dt < 0.3, f"render of {N_ROWS}x{N_COLS} table took {dt:.3f}s (budget 0.3s)"
 
 
+@pytest.mark.typst
+def test_common_styles_require_no_typst_callbacks():
+    # Guard Typst compilation work independently of Python rendering speed.
+    out = (
+        tt(pl.DataFrame({"Account": ["Cash", "Debt"], "EUR": [123.0, -456.0]}))
+        .theme_striped()
+        .style(i="header", bold=True, color="white", background="#333", padding=0.5)
+        .style(j="Account", indent=0.5)
+        .style(i=1, j="EUR", bold=True, align="r", color="red")
+        .render("typst")
+    )
+
+    assert "=>" not in out
+    assert "get-style" not in out
+    assert "#show table.cell" not in out
+    assert "align: (left, right)," in out
+    assert 'table.cell(fill: rgb("#ededed"))' in out
+    assert 'table.cell(align: right)[#strong[#text(fill: rgb("#ff0000"))' in out
+
+
+@pytest.mark.typst
+def test_inherited_inset_transforms_are_coalesced():
+    out = tt(_build_heavy_table()).theme_plain().style(fontsize=1.2, indent=0.5).render("typst")
+
+    assert out.count("#show table.cell:") == 1
+    assert "get-style" not in out
+    assert "pad(left: 0.5em, text(size: 1.2em, it))" in out
+
+
 @pytest.mark.html
 def test_plain_html_table_under_budget():
     df = pl.DataFrame({f"c{i}": list(range(1000)) for i in range(30)})

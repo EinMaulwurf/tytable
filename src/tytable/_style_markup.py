@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from tytable._colors import color_to_css, color_to_typst
-from tytable._styling import align_to_typst
 
-_UNSAFE_TYPST_SIGNATURE_CHARS = frozenset("#();[]")
+_UNSAFE_TYPST_STYLE_CHARS = frozenset("#();[]")
 _MISSING = object()
 
 
@@ -39,40 +38,6 @@ class StyleMarkup:
     def from_props(cls, props: dict[str, Any]) -> StyleMarkup:
         """Create a style translation from a resolved property mapping."""
         return cls(props.copy())
-
-    def typst_signature(self) -> str:
-        """Return Typst cell-style arguments, including the trailing comma."""
-        self._validate_typst_signature_values()
-        props = self.props
-        parts: list[str] = []
-        if props.get("bold"):
-            parts.append("bold: true")
-        if props.get("italic"):
-            parts.append("italic: true")
-        if props.get("underline"):
-            parts.append("underline: true")
-        if props.get("strikeout"):
-            parts.append("strikeout: true")
-        if props.get("monospace"):
-            parts.append("mono: true")
-        if props.get("smallcaps"):
-            parts.append("smallcaps: true")
-        if "color" in props:
-            parts.append(f"color: {color_to_typst(props['color'])}")
-        if "background" in props:
-            parts.append(f"background: {color_to_typst(props['background'])}")
-        if "fontsize" in props:
-            parts.append(f"fontsize: {props['fontsize']}em")
-        if "indent" in props and props["indent"] > 0:
-            parts.append(f"indent: {props['indent']}em")
-        if "padding" in props:
-            parts.append(f"padding: {self._padding_to_typst(props['padding'])}")
-        if "rotate" in props:
-            parts.append(f"rotate: {props['rotate']}deg")
-        align = align_to_typst(props.get("align"), props.get("alignv"))
-        if align:
-            parts.append(f"align: {align}")
-        return ", ".join(parts) + "," if parts else ""
 
     def typst_inline(self, content: str) -> str:
         """Wrap escaped content in Typst text-level styling."""
@@ -187,11 +152,11 @@ class StyleMarkup:
             return value[1]
         return value[3]
 
-    def _validate_typst_signature_values(self) -> None:
+    def validate_typst_values(self) -> None:
         for name, value in self.props.items():
             if not isinstance(value, str):
                 continue
             if name in ("color", "background"):
                 color_to_typst(value)
-            elif any(char in value for char in _UNSAFE_TYPST_SIGNATURE_CHARS):
+            elif any(char in value for char in _UNSAFE_TYPST_STYLE_CHARS):
                 raise ValueError(f"unsafe Typst style property {name!r}: {value!r}")

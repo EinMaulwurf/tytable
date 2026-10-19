@@ -182,6 +182,134 @@ def test_compile_styled(tmp_path):
 
 
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+@pytest.mark.parametrize("document_inset", ["5pt", "12pt", "(x: 0.8em, y: 0.4em)"])
+@pytest.mark.parametrize(
+    ("props", "wrapper", "inset"),
+    [
+        ({"bold": True, "italic": True}, "strong(emph(it))", "5pt"),
+        ({"color": "red"}, 'text(fill: rgb("#ff0000"), it)', "5pt"),
+        ({"fontsize": 1.5, "padding": 0.5}, "text(size: 1.5em, it)", "0.5em"),
+        ({"indent": 0.5}, "pad(left: 0.5em, it)", "5pt"),
+        (
+            {"fontsize": 1.5, "indent": 0.5, "padding": (0.1, 0.2, 0.3, 0.4)},
+            "pad(left: 0.5em, text(size: 1.5em, it))",
+            "(top: 0.1em, right: 0.2em, bottom: 0.3em, left: 0.4em)",
+        ),
+        (
+            {"rotate": 30, "fontsize": 1.5, "indent": 0.5, "padding": (0.1, 0.2, 0.3, 0.4)},
+            "align(left, rotate(30deg, reflow: true, pad(left: 0.5em, text(size: 1.5em, it))))",
+            "(top: 0.1em, right: 0.2em, bottom: 0.3em, left: 0.4em)",
+        ),
+        (
+            {"underline": True, "strikeout": True, "smallcaps": True},
+            "smallcaps(strike(underline(it)))",
+            "5pt",
+        ),
+        ({"monospace": True}, "math.mono(it)", "5pt"),
+    ],
+)
+def test_cell_styles_preserve_compiled_appearance(tmp_path, props, wrapper, inset, document_inset):
+    # Independent reference: apply text/decorations around the resolved cell.
+    # This catches changes to em-based padding, indentation, and rotation that
+    # source snapshots and compilation-success checks cannot detect.
+    inset_option = (
+        f"inset: (x, y) => if x == 0 and y == 1 {{ {inset} }} else {{ 5pt }},"
+        if "padding" in props
+        else ""
+    )
+    reference = f"""#block(breakable: false)[
+      #show table.cell.where(x: 0, y: 1): it => {wrapper}
+      #table(
+        columns: (auto, auto), stroke: none, rows: auto,
+        align: (left, right),
+        {inset_option}
+        fill: (x, y) => if x == 0 and y == 1 {{ rgb("#dddddd") }},
+        table.header(repeat: true, [A], [B]),
+        [Alpha], [123], [Beta], [4],
+      )
+    ]"""
+    actual = (
+        tt(pl.DataFrame({"A": ["Alpha", "Beta"], "B": [123, 4]}), figure=False)
+        .theme_plain()
+        .style(i=0, j="A", background="#ddd", **props)
+        .render("typst")
+    )
+    preamble = (
+        f"#set page(width: 15cm, height: auto, margin: 10pt)\n#set table(inset: {document_inset})\n"
+    )
+    for name, source in (("reference", reference), ("actual", actual)):
+        result = subprocess.run(
+            ["typst", "compile", "-", str(tmp_path / f"{name}.png")],
+            input=preamble + source,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, result.stderr
+    assert (tmp_path / "actual.png").read_bytes() == (tmp_path / "reference.png").read_bytes()
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+@pytest.mark.parametrize("outer_alignment", ["left", "center", "right"])
+def test_vertical_only_alignment_inherits_document_alignment(tmp_path, outer_alignment):
+    actual = (
+        tt(
+            pl.DataFrame({"A": [1], "B": [222]}),
+            figure=False,
+            column_widths=["3cm", "3cm"],
+        )
+        .theme_plain()
+        .style(i=0, j="A", alignv="m")
+        .render("typst")
+    )
+    reference = """#block(breakable: false)[
+      #table(
+        columns: (3cm, 3cm), stroke: none,
+        align: (x, y) => if x == 0 and y == 1 { horizon } else { right },
+        table.header([A], [B]), [1], [222],
+      )
+    ]"""
+    for name, source in (("actual", actual), ("reference", reference)):
+        result = subprocess.run(
+            ["typst", "compile", "-", str(tmp_path / f"{name}.png")],
+            input=(
+                "#set page(width: 15cm, height: auto, margin: 10pt)\n"
+                f"#align({outer_alignment})[\n{source}\n]"
+            ),
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, result.stderr
+    assert (tmp_path / "actual.png").read_bytes() == (tmp_path / "reference.png").read_bytes()
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+def test_coalesced_font_style_excludes_footer(tmp_path):
+    actual = (
+        tt(pl.DataFrame({"A": [1, 2]}), figure=False, notes=["Note"])
+        .theme_plain()
+        .style(i=["header", "data"], fontsize=1.5)
+        .render("typst")
+    )
+    reference = """#block(breakable: false)[
+      #show table.cell: it => if it.y < 3 { text(size: 1.5em, it) } else { it }
+      #table(
+        columns: 1, stroke: none, align: right,
+        table.header([A]), [1], [2],
+        table.footer(repeat: false, table.cell(align: left, colspan: 1, [Note])),
+      )
+    ]"""
+    for name, source in (("actual", actual), ("reference", reference)):
+        result = subprocess.run(
+            ["typst", "compile", "-", str(tmp_path / f"{name}.png")],
+            input="#set page(width: 15cm, height: auto, margin: 10pt)\n" + source,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, result.stderr
+    assert (tmp_path / "actual.png").read_bytes() == (tmp_path / "reference.png").read_bytes()
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_scientific_formatter(tmp_path):
     df = pl.DataFrame({"value": [1230000.0, -0.000123, 0.0, None, float("inf")]})
     typ = tt(df).fmt(fn=scientific(locale="de_DE")).render("typst")

@@ -27,26 +27,26 @@ def test_resolve_col_group_spans():
 class TestRowGroups:
     def test_single_row_group(self):
         out = tt(DF).group(i={"My Group": 0}).render("typst")
-        assert "table.cell(colspan: 2)[My Group]" in out
+        assert "table.cell(colspan: 2, align: left)[My Group]" in out
         assert_snapshot("group_row_single", out)
 
     def test_multiple_row_groups(self):
         df = pl.DataFrame({"a": [1, 2, 3, 4, 5], "b": [6, 7, 8, 9, 10]})
         out = tt(df).group(i={"First": 0, "Second": 2}).render("typst")
-        assert "table.cell(colspan: 2)[First]" in out
-        assert "table.cell(colspan: 2)[Second]" in out
+        assert "table.cell(colspan: 2, align: left)[First]" in out
+        assert "table.cell(colspan: 2, align: left)[Second]" in out
         assert_snapshot("group_row_multiple", out)
 
     def test_row_group_at_end(self):
         df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
         out = tt(df).group(i={"End": 1}).render("typst")
-        assert "table.cell(colspan: 2)[End]" in out
+        assert "table.cell(colspan: 2, align: left)[End]" in out
         assert_snapshot("group_row_end", out)
 
     def test_row_group_at_position_zero(self):
         out = tt(DF).group(i={"Start": 0}).render("typst")
         assert "table.header" in out
-        assert "table.cell(colspan: 2)[Start]" in out
+        assert "table.cell(colspan: 2, align: left)[Start]" in out
 
     def test_row_groups_from_run_length_list(self):
         df = pl.DataFrame({"value": [1, 2, 3, 4, 5]})
@@ -344,7 +344,7 @@ class TestCombinedGroups:
         df = pl.DataFrame({"a": [1, 2, 3, 4], "b": [5, 6, 7, 8]})
         out = tt(df).group(j={"H": [0, 1]}).group(i={"G": 2}).render("typst")
         assert "table.cell(colspan: 2, align: center)[H]" in out
-        assert "table.cell(colspan: 2)[G]" in out
+        assert "table.cell(colspan: 2, align: left)[G]" in out
         assert_snapshot("group_combined", out)
 
     def test_row_group_after_col_group_stacks(self):
@@ -362,13 +362,13 @@ class TestGroupiStyling:
     def test_groupi_bold(self):
         df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         out = tt(df).group(i={"G": 1}).style(i="groupi", bold=True).render("typst")
-        assert "(bold: true,)" in out
+        assert "#strong[" in out
         assert_snapshot("group_groupi_bold", out)
 
     def test_groupi_background(self):
         df = pl.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         out = tt(df).group(i={"G": 1}).style(i="groupi", background="#f0f0f0").render("typst")
-        assert 'background: rgb("#f0f0f0")' in out
+        assert 'fill: rgb("#f0f0f0")' in out
         assert_snapshot("group_groupi_background", out)
 
 
@@ -431,7 +431,7 @@ class TestGroupValidation:
     def test_group_labels_and_selectors_share_string_normalization(self):
         table = tt(DF).group(i=[1, 2]).group(j={3: [0, 1]})
         out = table.style(i=groupi(label=1), bold=True).style(i=rowgroup(label=2), italic=True)
-        assert "(bold: true,)" in out.render("typst")
+        assert "#strong[" in out.render("typst")
         assert table._col_group_rows == [["3", ""]]
 
     def test_empty_row_group_specs_are_noops(self):
