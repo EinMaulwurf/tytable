@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-10-19
+
 ### Features
 
 - Add `scientific()` in `tytable.formatters` for multiplication and native superscripts in Typst and HTML, with textual `e` notation in ASCII. It shares numeric precision, locale, scaling, rounding, and special-value conventions with `number()` and works with default escaping.
@@ -487,7 +489,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.1.0...HEAD
+[4.1.0]: https://github.com/EinMaulwurf/tytable/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...v4.0.0
 [3.1.0]: https://github.com/EinMaulwurf/tytable/compare/v3.0.1...v3.1.0
 [3.0.1]: https://github.com/EinMaulwurf/tytable/compare/v3.0.0...v3.0.1
