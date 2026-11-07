@@ -706,21 +706,17 @@ class TyTable:
         j: _ColumnSelector = None,
         *,
         where: pl.Expr | None = None,
-        replace: dict | str | bool | None = None,
-        escape: bool = False,
         fn: Callable | None = None,
         fn_values: Literal["display", "typed"] = "typed",
-        linebreak: str | None = None,
-        math: bool = False,
         output: OutputFormat | Sequence[OutputFormat] | None = None,
     ) -> TyTable:
         """
         Apply value formatting to selected cells.
 
-        The formatting options may be combined in a single call. ``fn`` runs
-        first, followed by ``replace``, ``linebreak``, ``math``, and escaping.
-        Use semantic formatter factories from :mod:`tytable.formatters` for
-        numeric formatting.
+        Pass a configured factory from :mod:`tytable.formatters` or a custom
+        column-wise callback to ``fn``. Chain calls in application order, using
+        ``fn_values="display"`` to consume earlier formatting. Ordinary callback
+        text follows table-wide escaping; built-ins preserve native markup.
 
         Parameters
         ----------
@@ -735,16 +731,6 @@ class TyTable:
             The result is intersected with ``i`` and ``j`` when either is
             supplied. Expressions are evaluated against the original typed
             DataFrame, before any formatting transforms run.
-        replace
-            Substitute values: ``True`` blanks out nulls/NaNs, a ``str`` fills
-            them, or a ``{old: new}`` dict maps old (typed values or string
-            matches, including ``"null"``, ``"nan"``, ``"inf"``) to new.
-        escape
-            Explicitly escape selected cell text for the target backend after
-            other transforms. This is normally unnecessary because
-            ``tt(escape=True)`` applies safe table-wide escaping by default;
-            use it to escape selected cells when table-wide escaping is
-            disabled.
         fn
             Custom column-wise transform called once per selected column. The
             returned sequence must have the same length as its input.
@@ -752,12 +738,6 @@ class TyTable:
             Values passed to ``fn``: ``"typed"`` (default) passes the original
             Python values from the DataFrame; ``"display"`` passes the current
             strings, including earlier formatting.
-        linebreak
-            Replace this literal marker with a backend-native line break: ``\\ ``
-            in Typst and ``<br>`` in HTML. ASCII output leaves the marker intact.
-        math
-            Wrap selected values in Typst math delimiters (``$...$``). This is
-            intentionally a no-op for HTML and ASCII output.
         output
             Restrict this directive to the given output backends. ``None``
             applies to all.
@@ -770,8 +750,7 @@ class TyTable:
         Raises
         ------
         TypeError
-            If ``fn`` is not callable, ``linebreak`` or ``math`` has an
-            unsupported type, or a selector has an unsupported type. Callback
+            If ``fn`` is not callable or a selector has an unsupported type. Callback
             return-type and selector errors are raised when the table is
             rendered; option errors are raised immediately.
         ValueError
@@ -784,25 +763,13 @@ class TyTable:
         >>> from tytable.formatters import number
         >>> df = pl.DataFrame({"rev": [12450.5, None]})
         >>> (tt(df)                                # doctest: +SKIP
-        ...  .fmt(j="rev", fn=number(digits=2))
-        ...  .fmt(j="rev", replace={"null": "—"}))
+        ...  .fmt(j="rev", fn=number(digits=2, null="—")))
 
         Format only numeric cells greater than 100:
 
         >>> import polars.selectors as cs
         >>> tt(df).fmt(where=cs.numeric() > 100, fn=number(digits=0))  # doctest: +SKIP
         """
-        if linebreak is not None and not isinstance(linebreak, str):
-            raise TypeError("linebreak marker must be a string or None")
-        if linebreak == "":
-            raise ValueError("linebreak marker must not be empty")
-        if not isinstance(math, bool):
-            raise TypeError("math must be a bool")
-        _validate_bool("escape", escape)
-        if replace is not None and not isinstance(replace, bool | str | dict):
-            raise TypeError(
-                f"replace must be a bool, string, dict, or None, got {type(replace).__name__}"
-            )
         if fn is not None and not callable(fn):
             raise TypeError(f"fn must be callable or None, got {type(fn).__name__}")
         if not isinstance(fn_values, str):
@@ -815,12 +782,8 @@ class TyTable:
                 i=i,
                 j=j,
                 where=where,
-                replace=replace,
-                escape=escape,
                 fn=fn,
                 fn_values=fn_values,
-                linebreak=linebreak,
-                math=math,
                 output=normalized_output,
             )
         )

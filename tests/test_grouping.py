@@ -3,6 +3,7 @@ import polars.selectors as cs
 import pytest
 
 from tests.helpers import assert_snapshot
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable._groups import _resolve_col_group_spans
 from tytable._resolve import build
@@ -77,7 +78,7 @@ class TestRowGroups:
             tt(df)
             .theme_plain()
             .group(i={"Original": 0})
-            .fmt(i="groupi", replace={"Original": "Displayed"})
+            .fmt(i="groupi", fn=fmt_tools.replace({"Original": "Displayed"}))
             .style(i=groupi(label="Original"), italic=True),
             "typst",
         )

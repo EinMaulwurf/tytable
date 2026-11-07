@@ -26,7 +26,19 @@ from typing import Any
 
 from tytable import TyTable, __version__, tt
 from tytable._colors import _NAMED_COLORS
-from tytable.formatters import currency, date, duration, number, percent, scientific, unit
+from tytable.formatters import (
+    currency,
+    date,
+    duration,
+    linebreak,
+    math,
+    missing,
+    number,
+    percent,
+    replace,
+    scientific,
+    unit,
+)
 
 ROOT = Path(__file__).resolve().parent
 EXAMPLES = ROOT / "examples"
@@ -36,6 +48,10 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "tt": ("tt", tt),
     "style": (".style", TyTable.style),
     "fmt": (".fmt", TyTable.fmt),
+    "formatter_math": ("math", math),
+    "formatter_linebreak": ("linebreak", linebreak),
+    "formatter_replace": ("replace", replace),
+    "formatter_missing": ("missing", missing),
     "formatter_number": ("number", number),
     "formatter_scientific": ("scientific", scientific),
     "formatter_currency": ("currency", currency),

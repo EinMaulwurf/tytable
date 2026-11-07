@@ -7,6 +7,7 @@ from typing import Any
 import polars as pl
 import polars.selectors as cs
 
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable.formatters import number, scientific, unit
 from tytable.selectors import colgroup, groupi, groupj, regex, rowgroup
@@ -33,8 +34,8 @@ def _accepts_narrow_collection_types(dataframe: pl.DataFrame) -> None:
     table.style(i=groupj(level=0), j="a", bold=True)
     table.style(i=groupi(label="First"), bold=True)
     table.style(i=rowgroup(label="First"), bold=True)
-    table.fmt(i=groupi(label="First"), replace=True)
-    table.fmt(i=rowgroup(label="First"), replace=True)
+    table.fmt(i=groupi(label="First"), fn=fmt_tools.missing(""))
+    table.fmt(i=rowgroup(label="First"), fn=fmt_tools.missing(""))
     table.style(j=colgroup(label="Integer", level=0), bold=True)
     table.style(j=["a", regex("^b")], bold=True)
     table.show_columns(regex("^a"))

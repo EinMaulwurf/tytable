@@ -15,6 +15,7 @@ import time
 import polars as pl
 import pytest
 
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable._indices import RowLayout
 from tytable._render_ascii import AsciiRenderer
@@ -109,25 +110,12 @@ def test_plain_html_table_under_budget():
     assert dt < 0.9, f"HTML render of 1000x30 table took {dt:.3f}s (budget 0.9s)"
 
 
-class _CountingDict(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.items_calls = 0
-
-    def items(self):
-        self.items_calls += 1
-        return super().items()
-
-
 @pytest.mark.typst
-def test_replacement_mapping_is_prepared_once():
-    replacement = _CountingDict({value: f"value-{value}" for value in range(100)})
+def test_large_replacement_mapping():
+    replacement = {value: f"value-{value}" for value in range(10000)}
     df = pl.DataFrame({"value": list(range(1000))})
-
-    out = tt(df).fmt(replace=replacement).render("typst")
-
-    assert "value\\-99" in out
-    assert replacement.items_calls == 1
+    out = tt(df).fmt(fn=fmt_tools.replace(replacement)).render("typst")
+    assert "value\\-999" in out
 
 
 @pytest.mark.parametrize("renderer", [HtmlRenderer(), AsciiRenderer()])

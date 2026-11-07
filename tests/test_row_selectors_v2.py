@@ -1,6 +1,7 @@
 import polars as pl
 import pytest
 
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable._resolve import build
 
@@ -39,7 +40,7 @@ def test_integer_selectors_keep_source_identity_past_groups(method):
         assert built.style_grid[(4, 0)]["bold"] is True
         assert (2, 0) not in built.style_grid
     elif method == "fmt":
-        built = build(table.fmt(i=1, j="a", replace={20: "selected"}), "typst")
+        built = build(table.fmt(i=1, j="a", fn=fmt_tools.replace({20: "selected"})), "typst")
         assert built.data_body[3][0] == "selected"
         assert built.data_body[1][0] == "10"
     else:
@@ -64,7 +65,7 @@ def test_repeated_rows_and_columns_are_deduplicated_in_display_order():
 @pytest.mark.parametrize(
     ("operation", "match"),
     [
-        (lambda table: table.fmt(i="groupj", replace=True), r"\.fmt\(\).*'groupj'"),
+        (lambda table: table.fmt(i="groupj", fn=fmt_tools.missing("")), r"\.fmt\(\).*'groupj'"),
         (
             lambda table: table.images(i="header", j="a", paths=["one.png"]),
             r"\.images\(\).*'header'",

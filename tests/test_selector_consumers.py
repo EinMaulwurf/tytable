@@ -2,6 +2,7 @@ import polars as pl
 import polars.selectors as cs
 import pytest
 
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable._resolve import build
 from tytable.selectors import colgroup, regex
@@ -29,7 +30,9 @@ def test_column_selectors_work_across_every_j_consumer(selector_factory):
     assert "bold" not in styled.style_grid.get((2, 2), {})
 
     formatted = build(
-        table().fmt(i=0, j=selector_factory(), replace={1: "selected", 2: "selected"}),
+        table().fmt(
+            i=0, j=selector_factory(), fn=fmt_tools.replace({1: "selected", 2: "selected"})
+        ),
         "ascii",
     )
     assert formatted.data_body == [["selected", "selected", "3"]]

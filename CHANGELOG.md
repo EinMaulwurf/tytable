@@ -7,6 +7,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Breaking
+
+These changes target the next major release, v5.
+
+- Simplify `.fmt()` to selectors, `fn`, `fn_values`, and `output`. Remove `replace`, `linebreak`, `math`, and `escape` keyword arguments. Apply transformations through formatter factories and chain directives in the desired order.
+- Replacement factories match only their supplied input using Python mapping equality. They no longer also match display strings or interpret string keys such as `"null"`, `"nan"`, or `"inf"` as special values.
+
+### Features
+
+- Add `math(display=False, null="—")`, `linebreak(marker="\n")`, `replace(mapping)`, and `missing(label="—")` to `tytable.formatters`.
+- Share semantic rendering across scientific notation, equations, and line breaks. Built-in display-mode chains preserve native markup while changed custom callback strings follow ordinary escaping rules. Math uses Typst syntax; HTML and ASCII retain source expressions.
+
+### Migrating to v5
+
+Import factories from `tytable.formatters` and pass them through `fn`:
+
+| Previous API | v5 API |
+| --- | --- |
+| `.fmt(math=True)` | `.fmt(fn=math())` |
+| `.fmt(linebreak="|")` | `.fmt(fn=linebreak("|"))` |
+| `.fmt(replace={1: "one"})` | `.fmt(fn=replace({1: "one"}))` |
+| `.fmt(replace="—")` | `.fmt(fn=missing("—"))` |
+| `.fmt(replace=True)` | `.fmt(fn=missing(""))` (empty text rather than a single space) |
+| `.fmt(replace={"null": "—"})` | `.fmt(fn=missing("—"))`, or use the numeric formatter's `null="—"` option |
+
+A numeric key such as `1` matches numeric input, while `"1"` matches string input. To replace a displayed number, chain `.fmt(fn=replace({"1.00": "one"}), fn_values="display")` after numeric formatting. Use `missing()` for NaNs; mappings use ordinary Python equality. A typed replacement directive starts from source values, so unmatched cells do not retain earlier formatting. Use a display-mode mapping to preserve existing display output, or combine the intended logic in a custom callback.
+
+Split combined directives into separate calls with the same selectors, `where`, and `output` filters. For example, `.fmt(j="x", fn=number(digits=2), math=True)` becomes `.fmt(j="x", fn=number(digits=2)).fmt(j="x", fn=math(), fn_values="display")`. Similarly, line breaks and math can be chained using display input. Plain custom callbacks remain column-wise and receive original typed input by default.
+
+There is no replacement `escape()` factory. Keep table-wide `tt(escape=True)` for ordinary text and callback results. Applications that deliberately used `tt(escape=False).fmt(escape=True, ...)` must move literal text back under default escaping or explicitly escape it in their own callback. Math now renders missing values as literal `"—"` by default; configure `null` to change that label. The internal escaping helpers remain private APIs.
+
 ## [4.3.0] - 2026-11-17
 
 ### Improvements
@@ -20,6 +51,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Refresh Git-derived editable-install version information with `make install` and CI dependency setup. Add checks for agreement between the imported version and package metadata, plus release-tag checks for the editable install, wheel, and source distribution before publishing.
+
 
 ## [4.2.0] - 2026-10-19
 

@@ -239,10 +239,9 @@ from tytable.formatters import scientific
 
 table = (
     tt(df)
-    .fmt(j="Revenue", fn=number(digits=2))
+    .fmt(j="Revenue", fn=number(digits=2, null="—"))
     .fmt(j="Estimate", fn=number(digits=3, notation="significant"))
     .fmt(j="Measurement", fn=scientific(digits=2))
-    .fmt(j="Revenue", replace={"null": "—"})
 )
 ```
 
@@ -252,19 +251,16 @@ Formatting options are:
 | --- | --- |
 | `fn` | column-wise callback returning a sequence of the same length |
 | `fn_values` | callback input: original `"typed"` values (default) or current `"display"` strings |
-| `replace` | `True` blanks missing values, a string fills them, or a dict maps values |
-| `linebreak` | literal marker replaced by a native Typst/HTML line break |
-| `math` | wrap values in Typst math delimiters; no effect in HTML/ASCII |
-| `escape` | escape selected text after the other transforms |
 | `output` | one backend or a sequence, such as `"typst"` or `("typst", "html")` |
 
-Within one directive, transforms run in this order:
+Each directive applies one callback. Directives run in registration order. Import text factories from `tytable.formatters`:
 
-1. `fn`
-2. `replace`
-3. `linebreak`
-4. `math`
-5. `escape`
+- `replace(mapping)` copies a mapping and matches exact supplied values using Python mapping equality, without string coercion or special string sentinels. Unmatched inputs are preserved. Use `fn_values="display"` to match current strings.
+- `missing(label="—")` replaces None and numeric NaNs with literal text; `missing("")` blanks them. Literal strings such as `"nan"` remain text. Numeric formatters also expose `null` and `nan` options.
+- `linebreak(marker="\n")` replaces a nonempty literal marker with native Typst/HTML breaks. ASCII retains the marker. Surrounding text follows table-wide escaping.
+- `math(display=False, null="—")` interprets Typst math, accepts existing dollar delimiters, and optionally emits a block equation. None and numeric NaNs use the literal `null` label. HTML/ASCII retain source expressions. Use `.style()` for font, size, and color.
+
+For example, `.fmt(j="Formula", fn=math())` formats equations and `.fmt(j="Detail", fn=linebreak("|"))` inserts line breaks. Built-ins retain semantic content across display-mode chains: `.fmt(fn=linebreak("|")).fmt(fn=math(), fn_values="display")` composes breaks and equations without escaping their markup. Custom callbacks still receive current backend strings, and changed strings follow ordinary escaping rules.
 
 The `fn` callback is column-wise, not cell-wise. By default it receives the original Python values from the DataFrame for each selected column and must return a non-string sequence of the same length:
 
@@ -275,7 +271,7 @@ def add_percent(values: list[float]) -> list[str]:
 table.fmt(j="Share", fn=add_percent)
 ```
 
-Callback results are covered by the default table-wide escaping. Use `.fmt(escape=True)` only to escape selected cells when the table was constructed with `tt(escape=False)`.
+Ordinary callback results are covered by default table-wide escaping. Keep `tt(escape=True)` for literal text; built-in generated formatting is handled separately.
 
 Set `fn_values="display"` when a callback should consume the current display strings, including values produced by an earlier formatting directive:
 
@@ -383,7 +379,7 @@ Use `.plot(j="Trend", fn=sparkline, format="svg", height=1.5)` for direct vector
 - Do not assume `.fmt(fn=...)` is called once per cell; it receives a whole column of original typed values by default, or current strings with `fn_values="display"`.
 - Use either the concise alignment shorthands (`"l"`, `"c"`, `"r"`; `"t"`, `"m"`, `"b"`) or their full names. Per-column strings such as `"llr"` require shorthands.
 - Do not use `where` for structural rows; it selects body cells only.
-- Do not disable escaping merely to use `math=True` or `linebreak`; those features cooperate with safe escaping.
+- Do not disable escaping merely to use `fn=math()` or `fn=linebreak(...)`; those features cooperate with safe escaping.
 - Remember that directives are lazy. Many invalid selectors and incompatible structural targets are reported by `.render()` or `.save()`, not when `.style()` or `.fmt()` is called.
 - `.set_name()`, `.show_columns()`, and `.group(j=...)` resolve their column selectors immediately. Register a column group before using `colgroup(...)` with one of these methods.
 

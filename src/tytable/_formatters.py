@@ -23,9 +23,21 @@ from decimal import (
 from typing import Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from tytable._escape import escape_html, escape_typst
+from tytable._formatted import _FormattedText, _LinebreakText, _MathText, _render
 
-__all__ = ["currency", "date", "duration", "number", "percent", "scientific", "unit"]
+__all__ = [
+    "currency",
+    "date",
+    "duration",
+    "linebreak",
+    "math",
+    "missing",
+    "number",
+    "percent",
+    "replace",
+    "scientific",
+    "unit",
+]
 
 _LocaleName = Literal["de", "de-DE", "de_DE", "en", "en-US", "en_US"]
 _LOCALES: dict[str, tuple[str, str]] = {
@@ -461,16 +473,26 @@ def number(
     return formatter
 
 
-class _ScientificText(str):
+class _ScientificText(_FormattedText):
     """A scientific value with a plain-text representation and safe native markup."""
 
-    def render(self, output: str) -> str:
+    def render(
+        self,
+        output: str,
+        *,
+        escape: bool = True,
+        math_mode: bool = False,
+        breaks: tuple[str, ...] = (),
+    ) -> str:
         mantissa, exponent = self.rsplit("e", 1)
         exponent = str(int(exponent))
+        mantissa_text = _render(mantissa, output, breaks=breaks)
+        exponent_text = _render(exponent, output, breaks=breaks)
         if output == "typst":
-            return f"{escape_typst(mantissa)} × 10#super[{escape_typst(exponent)}]"
+            content = f"{mantissa_text} × 10#super[{exponent_text}]"
+            return f"#box[{content}]" if math_mode else content
         if output == "html":
-            return f"{escape_html(mantissa)} × 10<sup>{exponent}</sup>"
+            return f"{mantissa_text} × 10<sup>{exponent_text}</sup>"
         return str(self)
 
 
@@ -890,5 +912,85 @@ def unit(
             else:
                 result.append(f"{rendered}{suffix}")
         return result
+
+    return formatter
+
+
+def _is_missing(value: object) -> bool:
+    if isinstance(value, Decimal):
+        return value.is_nan()
+    return value is None or (isinstance(value, float) and value != value)
+
+
+def missing(label: str = "—") -> Callable[[Sequence[Any]], list[Any]]:
+    """Replace None and numeric NaN values with literal text; preserve other inputs.
+
+    Use typed input to detect missing values. Display strings such as ``"nan"``
+    and ``"null"`` are ordinary text, not missing-value sentinels.
+    """
+    if not isinstance(label, str):
+        raise TypeError("missing label must be a string")
+
+    def formatter(values: Sequence[Any]) -> list[Any]:
+        return [label if _is_missing(value) else value for value in values]
+
+    return formatter
+
+
+def replace(mapping: Mapping[Any, Any]) -> Callable[[Sequence[Any]], list[Any]]:
+    """Map exact input values using Python mapping equality; preserve unmatched values.
+
+    No string coercion or special string keys are used. Select current strings
+    with ``fn_values="display"``. Use :func:`missing` for nulls and NaNs.
+    The mapping is copied when this factory is called.
+    """
+    if not isinstance(mapping, Mapping):
+        raise TypeError("replace mapping must be a mapping")
+    replacements = dict(mapping)
+
+    def formatter(values: Sequence[Any]) -> list[Any]:
+        result = []
+        for value in values:
+            try:
+                result.append(replacements.get(value, value))
+            except TypeError:  # Unhashable values cannot match dictionary keys.
+                result.append(value)
+        return result
+
+    return formatter
+
+
+def linebreak(marker: str = "\n") -> Callable[[Sequence[Any]], list[str]]:
+    """Replace a literal marker with native Typst/HTML breaks; retain it in ASCII.
+
+    Surrounding text follows table-wide escaping. Chain with
+    ``fn_values="display"`` to preserve previous built-in formatting.
+    """
+    if not isinstance(marker, str):
+        raise TypeError("linebreak marker must be a string")
+    if not marker:
+        raise ValueError("linebreak marker must not be empty")
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        return [_LinebreakText(value, marker) for value in values]
+
+    return formatter
+
+
+def math(*, display: bool = False, null: str = "—") -> Callable[[Sequence[Any]], list[str]]:
+    """Interpret values as Typst math; retain source text in HTML and ASCII.
+
+    Input uses Typst math syntax. Existing dollar delimiters are accepted.
+    ``display=True`` emits a block equation. None and numeric NaN values use
+    ``null`` as literal text. Font, size, and color belong in ``.style()``.
+    This formatter interprets expressions, so use it only for intended math.
+    """
+    if not isinstance(display, bool):
+        raise TypeError("math display must be a bool")
+    if not isinstance(null, str):
+        raise TypeError("math null must be a string")
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        return [null if _is_missing(value) else _MathText(value, display) for value in values]
 
     return formatter

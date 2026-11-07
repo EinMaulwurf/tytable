@@ -15,6 +15,7 @@ from types import SimpleNamespace
 import polars as pl
 import pytest
 
+from tytable import formatters as fmt_tools
 from tytable import tt
 from tytable.formatters import number, scientific
 
@@ -378,7 +379,12 @@ def test_compile_special_chars(tmp_path):
 @pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
 def test_compile_math_and_linebreak(tmp_path):
     df = pl.DataFrame({"Formula": ["x^2 + y^2"], "Detail": ["first|second"]})
-    typ = tt(df).fmt(j="Formula", math=True).fmt(j="Detail", linebreak="|").render("typst")
+    typ = (
+        tt(df)
+        .fmt(j="Formula", fn=fmt_tools.math())
+        .fmt(j="Detail", fn=fmt_tools.linebreak("|"))
+        .render("typst")
+    )
     _compile(typ, tmp_path)
 
 
@@ -425,3 +431,16 @@ def test_compile_embedded_static_svg(tmp_path):
         .render("typst", static_images="embed")
     )
     _compile(typ, tmp_path)
+
+
+@pytest.mark.skipif(not HAS_TYPST, reason="typst CLI not installed")
+@pytest.mark.parametrize("display", [False, True])
+def test_compile_composed_semantic_formatters(tmp_path, display):
+    table = tt(pl.DataFrame({"Formula": ["x = 1|y = 2"], "Value": [1250]}))
+    table.fmt(j="Formula", fn=fmt_tools.linebreak("|")).fmt(
+        j="Formula", fn=fmt_tools.math(display=display), fn_values="display"
+    )
+    table.fmt(j="Value", fn=scientific(decimal_mark="<>&#")).fmt(
+        j="Value", fn=fmt_tools.math(display=display), fn_values="display"
+    )
+    _compile(table.render("typst"), tmp_path)

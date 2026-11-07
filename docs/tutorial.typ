@@ -358,15 +358,18 @@ Because that Polars expression converts `Revenue` to a string column, the exampl
 
 For quick, in-table transforms that stay inside the `tt()` chain, without reaching back into polars. See #link(<selectors>)[Select rows and columns] to restrict any transform to particular rows, columns, or conditionally selected cells.
 
-- `fn` — pass a semantic formatter such as `number(digits=2)`, `percent(digits=1)`, or `currency("USD")`; significant notation requires positive `digits`, and `number(notation="scientific")` produces textual `e` notation; use `scientific()` for native superscripts
-- `replace` — replace missing/null/NaN values with a string or a `{old: new}` mapping
-- `linebreak` — choose a literal input marker to replace with a native line break. For example, `linebreak="\n"` translates newline characters to a single `\` in Typst or `<br>` in HTML; use another marker such as `"|"` when that is more convenient for the source data
-- `math` — typeset selected values as Typst equations
-- `escape` — explicitly escape selected cells after formatting. This is normally unnecessary because `tt(escape=True)` safely escapes the whole table by default; it is useful when table-wide escaping was deliberately disabled
+- `fn=number(digits=2)`, `fn=percent(digits=1)`, or `fn=currency("USD")` formats typed numbers; use `scientific()` for native superscripts
+- `fn=replace({"pending": "Pending"})` maps exact input values, with no implicit conversion between numbers and strings
+- `fn=missing("—")` replaces None and numeric NaN values; numeric formatters also provide `null` and `nan` options
+- `fn=linebreak("|")` replaces a literal marker with native line breaks in Typst and HTML; its default marker is a newline
+- `fn=math()` interprets Typst expressions; `math(display=True)` creates display equations, and `null="—"` controls literal missing-value text
 
+Each call applies one formatter. Calls run in registration order. Callbacks receive original typed values unless `fn_values="display"` selects current display strings. Built-ins preserve semantic content across display-mode chains, so generated line breaks and equations compose without escaping their markup. Ordinary callback results follow table-wide escaping.
 Formatting text and equations does not require disabling safe escaping. This example treats `Formula` as Typst math and uses `|` inside `Detail` to mark where a native line break should appear:
 
 ```python
+from tytable.formatters import linebreak, math
+
 df = pl.DataFrame({
     "Formula": ["x^2 + y^2", "sum_(i=1)^n i"],
     "Detail": ["first line|second line", "one line"],
@@ -374,8 +377,8 @@ df = pl.DataFrame({
 
 table = (
     tt(df)
-    .fmt(j="Formula", math=True)
-    .fmt(j="Detail", linebreak="|")
+    .fmt(j="Formula", fn=math())
+    .fmt(j="Detail", fn=linebreak("|"))
 )
 ```
 

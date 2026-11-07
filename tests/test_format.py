@@ -8,7 +8,7 @@ import pytest
 
 from tests.helpers import assert_snapshot
 from tytable import formatters, tt
-from tytable._format import _apply_escape, _apply_replace, _matches
+from tytable import formatters as fmt_tools
 from tytable._resolve import build
 from tytable.formatters import currency, duration, number, percent, scientific, unit
 from tytable.formatters import date as date_formatter
@@ -74,7 +74,9 @@ class TestScientificFormatter:
         escape = escape_html if output == "html" else escape_typst
         label = "<replaced>&#[]"
         df = pl.DataFrame({"value": [1250]})
-        replaced = tt(df).fmt(fn=scientific(), replace={1250: label}).render(output)
+        replaced = (
+            tt(df).fmt(fn=scientific()).fmt(fn=fmt_tools.replace({1250: label})).render(output)
+        )
         assert escape(label) in replaced
         assert "#super[" not in replaced
         assert "<sup>" not in replaced
@@ -323,7 +325,7 @@ class TestSemanticFormatters:
     @pytest.mark.parametrize(
         ("factory", "message"),
         [
-            (lambda: number(locale=[]), "locale must be a string or None"),
+            (lambda: number(locale=[]), "locale must be a string"),
             (lambda: currency(1), "currency code must be a string"),
             (lambda: currency(symbol_position=[]), "symbol_position must be a string"),
             (lambda: date_formatter(1), "date pattern must be a string"),
@@ -567,98 +569,25 @@ class TestCellSelectors:
 
 @pytest.mark.typst
 class TestReplace:
-    @pytest.mark.parametrize("replace", [1, 1.5, [], object()])
-    def test_rejects_unsupported_replace_types(self, replace):
-        with pytest.raises(TypeError, match="replace must be a bool, string, dict, or None"):
-            tt(pl.DataFrame({"x": [1]})).fmt(replace=replace)
-
     def test_replace_true(self):
         df = pl.DataFrame({"x": [None, 10], "y": [1.0, 2.0]})
-        t = tt(df).fmt(replace=True).render("typst")
+        t = tt(df).fmt(fn=fmt_tools.missing("")).render("typst")
         assert t  # no crash
 
     def test_replace_str(self):
         df = pl.DataFrame({"x": [None, 10], "y": [1.0, 2.0]})
-        out = tt(df).fmt(replace="—").render("typst")
+        out = tt(df).fmt(fn=fmt_tools.missing("—")).render("typst")
         assert "\\u2014" in out or "\\—" in out or "\\u2014" in out or "—" in out
 
     def test_replace_dict_none(self):
         df = pl.DataFrame({"x": [None, 10, None]})
-        out = tt(df).fmt(replace={None: "MISSING"}).render("typst")
+        out = tt(df).fmt(fn=fmt_tools.replace({None: "MISSING"})).render("typst")
         assert "MISSING" in out
-
-    def test_replace_dict_nan(self):
-        df = pl.DataFrame({"x": [float("nan"), 10.0]})
-        out = tt(df).fmt(replace={float("nan"): "NAN"}).render("typst")
-        assert "NAN" in out
 
     def test_replace_dict_inf(self):
         df = pl.DataFrame({"x": [float("inf"), 10.0]})
-        out = tt(df).fmt(replace={float("inf"): "INF"}).render("typst")
+        out = tt(df).fmt(fn=fmt_tools.replace({float("inf"): "INF"})).render("typst")
         assert "INF" in out
-
-
-class TestFormattingUtilities:
-    @pytest.mark.parametrize(
-        ("key", "typed", "rendered"),
-        [
-            (None, None, ""),
-            (float("nan"), float("nan"), "nan"),
-            (float("inf"), float("inf"), "inf"),
-            (float("-inf"), float("-inf"), "-inf"),
-            ("null", None, ""),
-            ("nan", float("nan"), "nan"),
-            ("inf", float("inf"), "inf"),
-            ("-inf", float("-inf"), "-inf"),
-            (7, 7, "7"),
-            ("7", 7, "7"),
-        ],
-    )
-    def test_matches_special_and_regular_values(self, key, typed, rendered):
-        assert _matches(key, typed, rendered)
-
-    def test_matches_distinguishes_infinity_signs(self):
-        assert not _matches(float("inf"), float("-inf"), "-inf")
-
-    @pytest.mark.parametrize(
-        ("typed", "rendered", "replace", "expected"),
-        [
-            (None, "", True, " "),
-            (float("nan"), "nan", "missing", "missing"),
-            (1, "1", "missing", "1"),
-            (None, "", {None: "NA"}, "NA"),
-            (float("inf"), "inf", {"inf": "infinity"}, "infinity"),
-            (2, "2", {1: "one"}, "2"),
-        ],
-    )
-    def test_apply_replace(self, typed, rendered, replace, expected):
-        assert _apply_replace(typed, rendered, replace) == expected
-
-    @pytest.mark.parametrize(
-        ("value", "escape_spec", "output", "expected"),
-        [
-            ("a#b", True, "typst", "a\\#b"),
-            ("a<b", True, "html", "a&lt;b"),
-            ("a&b", "typst", "ascii", "a&b"),
-            ("a#b", False, "typst", "a#b"),
-        ],
-    )
-    def test_apply_escape(self, value, escape_spec, output, expected):
-        assert _apply_escape(value, escape_spec, output) == expected
-
-
-@pytest.mark.typst
-class TestEscape:
-    def test_fmt_escape_true(self):
-        df = pl.DataFrame({"A": ["#hash", "delta$"]})
-        out = tt(df, escape=False).fmt(escape=True).render("typst")
-        assert "\\#" in out
-        assert "\\$" in out
-
-    def test_fmt_escape_false_with_global_escape(self):
-        df = pl.DataFrame({"A": ["#hash"]})
-        out = tt(df, escape=True).fmt(escape=False).render("typst")
-        assert "\\#" in out
 
 
 class TestLinebreak:
@@ -671,24 +600,9 @@ class TestLinebreak:
         rendered = (
             tt(df)
             .theme_plain()
-            .fmt(j="text", linebreak="|")
-            .fmt(j="text", fn=lambda values: values, linebreak="|")
-            .render(output)
-        )
-
-        assert expected in rendered
-
-    @pytest.mark.parametrize(
-        ("output", "expected"),
-        [("typst", r"\<first\> \ \#second&"), ("html", "&lt;first&gt;<br>#second&amp;")],
-    )
-    def test_repeated_explicit_escape_reescapes_replaced_content(self, output, expected):
-        df = pl.DataFrame({"text": ["<first>|#second&"]})
-        rendered = (
-            tt(df, escape=False)
-            .theme_plain()
-            .fmt(j="text", linebreak="|", escape=True)
-            .fmt(j="text", fn=lambda values: values, linebreak="|", escape=True)
+            .fmt(j="text", fn=fmt_tools.linebreak("|"))
+            .fmt(j="text", fn=lambda values: values)
+            .fmt(j="text", fn=fmt_tools.linebreak("|"), fn_values="display")
             .render(output)
         )
 
@@ -696,64 +610,59 @@ class TestLinebreak:
 
     def test_typst_uses_native_linebreak_and_escapes_text(self):
         df = pl.DataFrame({"text": ["first\n#second"]})
-        out = tt(df).theme_plain().fmt(j="text", linebreak="\n").render("typst")
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("\n")).render("typst")
         assert "[first \\ \\#second]" in out
 
     def test_html_uses_br_and_escapes_text(self):
         df = pl.DataFrame({"text": ["<first>|second&"]})
-        out = tt(df).theme_plain().fmt(j="text", linebreak="|").render("html")
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("|")).render("html")
         assert "&lt;first&gt;<br>second&amp;" in out
 
-    def test_escape_false_preserves_raw_text_around_html_break(self):
+    def test_escapes_html_around_break(self):
         df = pl.DataFrame({"text": ["<b>first</b>|second"]})
-        out = tt(df, escape=False).theme_plain().fmt(j="text", linebreak="|").render("html")
-        assert "<b>first</b><br>second" in out
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("|")).render("html")
+        assert "&lt;b&gt;first&lt;/b&gt;<br>second" in out
 
-    def test_directive_escape_escapes_chunks(self):
+    def test_linebreak_escapes_chunks(self):
         df = pl.DataFrame({"text": ["#first|[second]"]})
-        out = (
-            tt(df, escape=False)
-            .theme_plain()
-            .fmt(j="text", linebreak="|", escape=True)
-            .render("typst")
-        )
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("|")).render("typst")
         assert "[\\#first \\ \\[second\\]]" in out
 
     def test_ascii_leaves_marker_intact(self):
         df = pl.DataFrame({"text": ["first|second"]})
-        out = tt(df).theme_plain().fmt(j="text", linebreak="|").render("ascii")
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("|")).render("ascii")
         assert "first|second" in out
 
     def test_linebreak_can_target_header(self):
         df = pl.DataFrame({"first|second": [1]})
-        out = tt(df).theme_plain().fmt(i="header", linebreak="|").render("html")
+        out = tt(df).theme_plain().fmt(i="header", fn=fmt_tools.linebreak("|")).render("html")
         assert ">first<br>second</th>" in out
 
     def test_absent_marker_does_not_make_cell_trusted(self):
         df = pl.DataFrame({"text": ["#value"]})
-        out = tt(df).theme_plain().fmt(j="text", linebreak="|").render("typst")
+        out = tt(df).theme_plain().fmt(j="text", fn=fmt_tools.linebreak("|")).render("typst")
         assert "[\\#value]" in out
 
     def test_empty_marker_raises(self):
         df = pl.DataFrame({"text": ["value"]})
         with pytest.raises(ValueError, match="must not be empty"):
-            tt(df).fmt(linebreak="")
+            tt(df).fmt(fn=fmt_tools.linebreak(""))
 
     def test_non_string_marker_raises(self):
         df = pl.DataFrame({"text": ["value"]})
-        with pytest.raises(TypeError, match="must be a string or None"):
-            tt(df).fmt(linebreak=1)  # type: ignore[arg-type]
+        with pytest.raises(TypeError, match="must be a string"):
+            tt(df).fmt(fn=fmt_tools.linebreak(1))  # type: ignore[arg-type]
 
 
 class TestMath:
     def test_typst_wraps_equation_without_escaping_math_syntax(self):
         df = pl.DataFrame({"equation": ["sum_(i=1)^n i"]})
-        out = tt(df).theme_plain().fmt(j="equation", math=True).render("typst")
+        out = tt(df).theme_plain().fmt(j="equation", fn=fmt_tools.math()).render("typst")
         assert "[$sum_(i=1)^n i$]" in out
 
     def test_existing_math_is_not_double_wrapped(self):
         df = pl.DataFrame({"equation": ["$x^2$"]})
-        out = tt(df).theme_plain().fmt(j="equation", math=True).render("typst")
+        out = tt(df).theme_plain().fmt(j="equation", fn=fmt_tools.math()).render("typst")
         assert "[$x^2$]" in out
         assert "[$$x^2$$]" not in out
 
@@ -762,7 +671,8 @@ class TestMath:
         out = (
             tt(df)
             .theme_plain()
-            .fmt(j="value", fn=number(digits=1, notation="scientific"), math=True)
+            .fmt(j="value", fn=number(digits=1, notation="scientific"))
+            .fmt(j="value", fn=fmt_tools.math(), fn_values="display")
             .render("typst")
         )
         assert "[$1.2e+3$]" in out
@@ -770,24 +680,20 @@ class TestMath:
     @pytest.mark.parametrize("output", ["html", "ascii"])
     def test_other_backends_retain_original_value(self, output):
         df = pl.DataFrame({"equation": ["x^2"]})
-        out = tt(df).theme_plain().fmt(j="equation", math=True).render(output)
+        out = tt(df).theme_plain().fmt(j="equation", fn=fmt_tools.math()).render(output)
         assert "x^2" in out
         assert "$x^2$" not in out
 
     def test_math_and_linebreak_compose(self):
         df = pl.DataFrame({"equation": ["x = 1|y = 2"]})
-        out = tt(df).theme_plain().fmt(j="equation", linebreak="|", math=True).render("typst")
+        out = (
+            tt(df)
+            .theme_plain()
+            .fmt(j="equation", fn=fmt_tools.linebreak("|"))
+            .fmt(j="equation", fn=fmt_tools.math(), fn_values="display")
+            .render("typst")
+        )
         assert "[$x = 1 \\ y = 2$]" in out
-
-    def test_non_bool_math_raises(self):
-        df = pl.DataFrame({"equation": ["x"]})
-        with pytest.raises(TypeError, match="math must be a bool"):
-            tt(df).fmt(math="yes")  # type: ignore[arg-type]
-
-    @pytest.mark.parametrize("escape", [0, 1, "yes", None])
-    def test_escape_requires_bool(self, escape):
-        with pytest.raises(TypeError, match="escape must be a bool"):
-            tt(pl.DataFrame({"x": [1]})).fmt(escape=escape)
 
 
 @pytest.mark.typst
@@ -881,14 +787,9 @@ class TestFn:
         assert "[x1]" in out
         assert "[x2]" in out
 
-    def test_stacked_fn_and_escape_on_header(self):
+    def test_fn_output_on_header_is_escaped(self):
         df = pl.DataFrame({"value": [1]})
-        out = (
-            tt(df, escape=False)
-            .fmt(i="header", fn=lambda vec: [f"#{value}" for value in vec])
-            .fmt(i="header", escape=True)
-            .render("typst")
-        )
+        out = tt(df).fmt(i="header", fn=lambda vec: [f"#{value}" for value in vec]).render("typst")
         assert "[\\#value]" in out
 
 
@@ -907,7 +808,7 @@ class TestPipeline:
 
     def test_pipeline_order_replace_before_escape(self):
         df = pl.DataFrame({"A": ["hello", None]})
-        out = tt(df, escape=False).fmt(replace={None: "say #hi"}, escape=True).render("typst")
+        out = tt(df).fmt(fn=fmt_tools.replace({None: "say #hi"})).render("typst")
         assert "\\#hi" in out
 
     def test_stacked_fmt_calls(self):
@@ -932,7 +833,10 @@ class TestSnapshots:
             }
         )
         out = (
-            tt(df).fmt(j="score", fn=number(digits=2)).fmt(j="status", replace="—").render("typst")
+            tt(df)
+            .fmt(j="score", fn=number(digits=2))
+            .fmt(j="status", fn=fmt_tools.missing("—"))
+            .render("typst")
         )
         assert_snapshot("fmt_full", out)
 

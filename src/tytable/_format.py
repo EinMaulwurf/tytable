@@ -1,96 +1,23 @@
 """
-Value formatting: replace, escape, function, line-break, and math transforms.
+Apply column-wise formatting callbacks and preserve semantic output.
 
 Applied during the render pipeline by :func:`tytable._resolve.build`.
 """
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from tytable._formatters import _ScientificText
-
-from ._escape import escape_typst
-from ._indices import resolve_i, resolve_where
+from tytable._formatted import _DisplayText, _FormattedText, _source
+from tytable._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
-    from ._directives import FormatDirective
-    from ._indices import RowLayout
-    from ._tytable import TyTable
+    from tytable._directives import FormatDirective
+    from tytable._indices import RowLayout
+    from tytable._tytable import TyTable
 
 Cell = tuple[int, int]
-
-
-def _matches(o: object, typed: object, s: str) -> bool:
-    """Check whether a ``replace`` key matches a typed value or its string form (handles null/nan/inf)."""
-    if o is None:
-        return typed is None
-    if isinstance(o, float) and math.isnan(o):
-        return isinstance(typed, float) and math.isnan(typed)
-    if isinstance(o, float) and math.isinf(o):
-        return isinstance(typed, float) and math.isinf(typed) and (typed > 0) == (o > 0)
-    if isinstance(o, str):
-        lo = o.lower()
-        if lo == "null":
-            return typed is None
-        if lo == "nan":
-            return isinstance(typed, float) and math.isnan(typed)
-        if lo == "inf":
-            return isinstance(typed, float) and math.isinf(typed) and typed > 0
-        if lo == "-inf":
-            return isinstance(typed, float) and math.isinf(typed) and typed < 0
-    return typed == o or s == str(o)
-
-
-def _replacement_items(replace: dict) -> list[tuple[object, object]]:
-    """Flatten a replacement mapping once while preserving its iteration order."""
-    mapping: dict = {}
-    for key, value in replace.items():
-        if isinstance(key, list):
-            for item in key:
-                mapping[item] = value
-        else:
-            mapping[key] = value
-    return list(mapping.items())
-
-
-def _apply_replace(
-    typed_val: object,
-    current_str: str,
-    replace: object,
-    *,
-    replacement_items: list[tuple[object, object]] | None = None,
-) -> str:
-    """Apply a ``replace`` spec (``True``, a fill string, or an ``{old: new}`` dict) to one cell."""
-    if replace is True:
-        if typed_val is None or (isinstance(typed_val, float) and math.isnan(typed_val)):
-            return " "
-        return current_str
-    if isinstance(replace, str):
-        if typed_val is None or (isinstance(typed_val, float) and math.isnan(typed_val)):
-            return replace
-        return current_str
-    if isinstance(replace, dict):
-        items = replacement_items if replacement_items is not None else _replacement_items(replace)
-        for old, new in items:
-            if _matches(old, typed_val, current_str):
-                return str(new)
-    return current_str
-
-
-def _apply_escape(current_str: str, escape_spec: object, output: str) -> str:
-    """Re-escape a cell string for the target backend when ``fmt(escape=...)`` is set."""
-    if escape_spec is True or escape_spec == "typst":
-        if output == "html":
-            from ._escape import escape_html
-
-            return escape_html(current_str)
-        if output == "ascii":
-            return current_str
-        return escape_typst(current_str)
-    return current_str
 
 
 def _resolve_target_cells(
@@ -139,9 +66,11 @@ def _set_cell_value(
     """Set the rendered value of a body or header cell."""
     display_row, col_idx = cell
     if display_row == layout.header_row:
-        colnames_display[col_idx] = str(value)
+        colnames_display[col_idx] = value if isinstance(value, str) else str(value)
     else:
-        data_body[layout.body_index(display_row)][col_idx] = str(value)
+        data_body[layout.body_index(display_row)][col_idx] = (
+            value if isinstance(value, str) else str(value)
+        )
 
 
 def _apply_fn(
@@ -153,6 +82,7 @@ def _apply_fn(
     colnames: list[str],
     layout: RowLayout,
     output: str,
+    escape: bool,
 ) -> dict[Cell, str]:
     """Apply a column-wise transform to the selected cells."""
     generated_markup: dict[Cell, str] = {}
@@ -175,113 +105,12 @@ def _apply_fn(
         if len(result) != len(values):
             raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
         for cell, value in zip(column_cells, result, strict=True):
-            if isinstance(value, _ScientificText):
-                value = value.render(output)
+            source = _source(value)
+            if isinstance(source, _FormattedText):
+                value = _DisplayText(source.render(output, escape=escape), source)
                 generated_markup[cell] = value
             _set_cell_value(cell, value, data_body, colnames_display, layout)
 
-    return generated_markup
-
-
-def _apply_replacements(
-    cells: list[Cell],
-    directive: FormatDirective,
-    data_body: list[list[str]],
-    typed_body: list[list[Any]],
-    colnames_display: list[str],
-    colnames: list[str],
-    layout: RowLayout,
-) -> None:
-    """Apply replacement rules to the selected cells."""
-    if directive.replace is None:
-        return
-    replacement_items = (
-        _replacement_items(directive.replace) if isinstance(directive.replace, dict) else None
-    )
-    for cell in cells:
-        formatted = _apply_replace(
-            _typed_value(cell, typed_body, colnames, layout),
-            _cell_value(cell, data_body, colnames_display, layout),
-            directive.replace,
-            replacement_items=replacement_items,
-        )
-        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
-
-
-def _apply_escapes(
-    cells: list[Cell],
-    directive: FormatDirective,
-    data_body: list[list[str]],
-    colnames_display: list[str],
-    output: str,
-    layout: RowLayout,
-) -> set[Cell]:
-    """Apply directive-level escaping and return the escaped cell coordinates."""
-    if not directive.escape:
-        return set()
-    for cell in cells:
-        formatted = _apply_escape(
-            _cell_value(cell, data_body, colnames_display, layout), directive.escape, output
-        )
-        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
-    return set(cells)
-
-
-def _apply_linebreaks(
-    cells: list[Cell],
-    directive: FormatDirective,
-    data_body: list[list[str]],
-    colnames_display: list[str],
-    output: str,
-    *,
-    global_escape: bool,
-    escaped_cells: set[Cell],
-    layout: RowLayout,
-) -> dict[Cell, str]:
-    """Replace a literal marker with safe backend-native line-break markup."""
-    marker = directive.linebreak
-    separators = {"typst": " \\ ", "html": "<br>"}
-    separator = separators.get(output)
-    if marker is None or separator is None:
-        return {}
-
-    generated_markup: dict[Cell, str] = {}
-    for cell in cells:
-        current = _cell_value(cell, data_body, colnames_display, layout)
-        if marker not in current:
-            continue
-        chunks = current.split(marker)
-        math_content = directive.math and output == "typst"
-        if (
-            not math_content
-            and cell not in escaped_cells
-            and (global_escape or bool(directive.escape))
-        ):
-            chunks = [_apply_escape(chunk, True, output) for chunk in chunks]
-        formatted = separator.join(chunks)
-        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
-        generated_markup[cell] = formatted
-    return generated_markup
-
-
-def _apply_math(
-    cells: list[Cell],
-    directive: FormatDirective,
-    data_body: list[list[str]],
-    colnames_display: list[str],
-    output: str,
-    layout: RowLayout,
-) -> dict[Cell, str]:
-    """Wrap selected values in Typst math, leaving other backends unchanged."""
-    if not directive.math or output != "typst":
-        return {}
-
-    generated_markup: dict[Cell, str] = {}
-    for cell in cells:
-        current = _cell_value(cell, data_body, colnames_display, layout)
-        formatted = current if current.startswith("$") and current.endswith("$") else f"${current}$"
-        _set_cell_value(cell, formatted, data_body, colnames_display, layout)
-        generated_markup[cell] = formatted
     return generated_markup
 
 
@@ -328,66 +157,13 @@ def apply_formats(
             table._source_colnames,
             layout,
             output,
+            table._escape,
         )
         escaped_cells.difference_update(
             cell
             for cell, before in values_before.items()
             if _cell_value(cell, data_body, colnames_display, layout) != before
         )
-        _apply_replacements(
-            target_cells,
-            d,
-            data_body,
-            typed_body,
-            colnames_display,
-            table._source_colnames,
-            layout,
-        )
-        escaped_cells.difference_update(
-            cell
-            for cell, before in values_before.items()
-            if _cell_value(cell, data_body, colnames_display, layout) != before
-        )
-        # Native formatter markup remains trusted only while later transforms
-        # preserve it. Line-break generation must not escape intact markup again.
-        generated_markup = {
-            cell: text
-            for cell, text in generated_markup.items()
-            if _cell_value(cell, data_body, colnames_display, layout) == text
-        }
         escaped_cells.update(generated_markup)
-        generated_markup.update(
-            _apply_linebreaks(
-                target_cells,
-                d,
-                data_body,
-                colnames_display,
-                output,
-                global_escape=table._escape,
-                escaped_cells=escaped_cells,
-                layout=layout,
-            )
-        )
-        generated_markup.update(
-            _apply_math(target_cells, d, data_body, colnames_display, output, layout)
-        )
-        intact_markup = {
-            cell
-            for cell, generated in generated_markup.items()
-            if _cell_value(cell, data_body, colnames_display, layout) == generated
-        }
-        escape_targets = [
-            cell for cell in target_cells if cell not in intact_markup and cell not in escaped_cells
-        ]
-        explicitly_escaped = _apply_escapes(
-            escape_targets, d, data_body, colnames_display, output, layout
-        )
-        changed_cells = {
-            cell
-            for cell, before in values_before.items()
-            if _cell_value(cell, data_body, colnames_display, layout) != before
-        }
-        escaped_cells.difference_update(changed_cells)
-        escaped_cells.update(intact_markup | explicitly_escaped)
 
     return escaped_cells

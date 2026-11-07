@@ -177,11 +177,27 @@ Combines any properties sharing the same selectors. `where` accepts a Polars exp
 
 #api("Format", api_signatures.at("fmt"))
 
-Transforms values in this order: `fn`, `replace`, `linebreak`, `math`, then `escape`. `where` restricts all transforms in the directive to individual true body cells. Numeric formatting is provided by semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, and is passed through `fn`. The formatter preserves typed input and handles missing and special values according to its own options. `number(notation="scientific")` uses textual `e` output in every backend. Use `scientific()` for multiplication and superscripts in Typst and HTML.
+Each `.fmt()` directive applies one column-wise callback. Directives run in registration order. `where` restricts the callback to individual true body cells. Use semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, through `fn`. Numeric formatters preserve typed input and handle missing and special values according to their own options. `number(notation="scientific")` uses textual `e` output in every backend; `scientific()` provides multiplication and superscripts in Typst and HTML.
 
-`replace`, `fn_values`, and whether `fn` is callable are validated immediately when `.fmt()` is called. Selectors are resolved and `fn` results are validated during rendering. By default, `fn` receives each selected column as original typed Python values; `fn_values="display"` instead passes the current display strings, including the result of an earlier formatter directive. The callback must return a non-string sequence of the same length. `replace` then may blank missing values, supply a replacement string, or map old values to new ones. `linebreak` is a literal marker replaced for Typst and HTML output. `math=True` wraps Typst values in math delimiters without changing HTML or ASCII.
+`fn_values` and whether `fn` is callable are validated immediately. Selectors and callback results are validated during rendering. By default, callbacks receive original typed Python values; `fn_values="display"` passes current display strings. The callback must return a non-string sequence of the same length. Built-ins retain semantic content across display-mode chains; custom string transformations that change content produce ordinary text subject to table-wide escaping.
 
 Import semantic formatter factories from `tytable.formatters`, call one with its configuration, and pass the returned formatter to `fn`, as in `.fmt(j="Share", fn=percent(digits=1))`. A custom function that already accepts a sequence of values is passed directly as `fn=my_formatter`; use `fn=my_formatter(...)` only when it too is a factory returning that callable. Formatter and callback directives can be chained when a later callback should consume display strings: `.fmt(fn=number(digits=2)).fmt(fn=custom, fn_values="display")`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
+
+#api("Replace values", api_signatures.at("formatter_replace"))
+
+`replace(mapping)` copies its mapping and matches only the supplied input using Python mapping equality. There is no string coercion or special meaning for string keys such as `"null"`. Unmatched values are preserved. Choose `fn_values="display"` to match current strings; use typed input to match original values. Use `missing()` for NaNs.
+
+#api("Format missing values", api_signatures.at("formatter_missing"))
+
+`missing(label="—")` replaces None and numeric NaNs with literal text and preserves other values. `missing("")` blanks missing values. Strings such as `"nan"` and `"null"` are ordinary text. For numeric columns, prefer the numeric formatter's `null` and `nan` options when formatting in one step.
+
+#api("Insert line breaks", api_signatures.at("formatter_linebreak"))
+
+`linebreak(marker="\n")` requires a nonempty literal marker, emits native Typst and HTML line breaks, and retains the marker in ASCII. Text surrounding breaks follows table-wide escaping. With `fn_values="display"`, built-in semantic formatting is preserved; markers affect content rather than generated backend markup.
+
+#api("Format equations", api_signatures.at("formatter_math"))
+
+`math(display=False, null="—")` interprets input as Typst math, accepting existing dollar delimiters without doubling them. `display=True` emits a block equation. None and numeric NaNs use `null` as literal text. HTML and ASCII retain the source expression; they do not typeset equations. Use this formatter only for intended mathematical expressions. Font, size, and color belong in `.style()`.
 
 #api("Format numbers", api_signatures.at("formatter_number"))
 
