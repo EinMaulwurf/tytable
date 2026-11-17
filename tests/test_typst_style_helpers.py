@@ -2,6 +2,7 @@
 
 import shutil
 import subprocess
+from dataclasses import replace
 
 import polars as pl
 import pytest
@@ -52,6 +53,39 @@ def test_helper_names_avoid_raw_content_and_remain_deterministic():
     assert "#let tytable-style-2(body)" in output
     assert output.count(f"#tytable-style-2[{raw}]") == 8
     assert output == table.render()
+
+
+@pytest.mark.parametrize(
+    "location",
+    ["header", "group", "note", "marker", "width", "column-gutter", "row-gutter", "stroke"],
+)
+def test_helper_names_avoid_identifiers_in_other_table_inputs(location):
+    identifier = "tytable-style-1"
+    table = _table(notes=[{"text": "note", "marker": "*"}]).style(
+        bold=True, italic=True, color="red"
+    )
+    table.group(j={"Group": ["A", "B"]})
+    built = build(table, "typst")
+    if location == "header":
+        built.colnames_display[0] = identifier
+    elif location == "group":
+        built.col_groups[0][0] = identifier
+    elif location == "note":
+        built.notes[0] = replace(built.notes[0], text=identifier)
+    elif location == "marker":
+        built.notes[0] = replace(built.notes[0], marker=identifier)
+    elif location == "width":
+        built.column_widths = (identifier, "auto")
+    elif location == "column-gutter":
+        built.typst_options.column_gutter = identifier
+    elif location == "row-gutter":
+        built.typst_options.row_gutter = identifier
+    else:
+        built.typst_options.grid_stroke = identifier
+
+    output = TypstRenderer(built.typst_options).render(built)
+    assert "#let tytable-style-1(" not in output
+    assert "#let tytable-style-2(body)" in output
 
 
 def test_helpers_are_reset_when_renderer_is_reused():

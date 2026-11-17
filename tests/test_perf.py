@@ -19,6 +19,7 @@ from tytable import tt
 from tytable._indices import RowLayout
 from tytable._render_ascii import AsciiRenderer
 from tytable._render_html import HtmlRenderer
+from tytable._render_typst import TypstRenderer
 from tytable._resolve import build
 
 N_ROWS = 120
@@ -75,6 +76,23 @@ def test_inherited_inset_transforms_are_coalesced():
     assert out.count("#show table.cell:") == 1
     assert "get-style" not in out
     assert "pad(left: 0.5em, text(size: 1.2em, it))" in out
+
+
+@pytest.mark.typst
+def test_shared_styles_render_table_once(monkeypatch):
+    calls = 0
+    original = TypstRenderer._emit_table
+
+    def counted(renderer, lines, built):
+        nonlocal calls
+        calls += 1
+        return original(renderer, lines, built)
+
+    monkeypatch.setattr(TypstRenderer, "_emit_table", counted)
+    output = tt(_build_heavy_table()).style(bold=True, italic=True, color="red").render()
+
+    assert "#let tytable-style-1(body)" in output
+    assert calls == 1
 
 
 @pytest.mark.html

@@ -267,8 +267,7 @@ class TypstRenderer(Renderer):
             if prefix:
                 counts[(prefix, suffix)] += 1
 
-        # Avoid shadowing identifiers authored in raw cells or layout expressions.
-        # Include the emitted table itself so all trusted content is checked.
+        # Only worthwhile candidates need a scan for authored identifiers.
         candidates = {
             (prefix, suffix): count
             for (prefix, suffix), count in counts.items()
@@ -278,9 +277,28 @@ class TypstRenderer(Renderer):
         }
         if not candidates:
             return
-        source: list[str] = []
-        self._emit_table(source, built)
-        occupied = "\n".join(source)
+        # Scan source inputs directly rather than rendering the whole table a
+        # second time. Include text, trusted layout expressions, and styles so
+        # helpers cannot shadow identifiers authored anywhere inside the table.
+        widths = built.column_widths if built.column_widths is not None else ()
+        occupied = "\n".join(
+            [*built.colnames_display]
+            + [cell for row in built.data_body for cell in row]
+            + [label for row in built.col_groups for label in row if label]
+            + [str(width) for width in widths]
+            + [
+                value
+                for props in [*built.style_grid.values(), built.style_notes]
+                for value in props.values()
+                if isinstance(value, str)
+            ]
+            + [text for note in built.notes for text in (note.text, note.marker or "")]
+            + [
+                self._opts.grid_stroke or "",
+                str(self._opts.column_gutter),
+                str(self._opts.row_gutter),
+            ]
+        )
         for (prefix, suffix), count in candidates.items():
             number = len(self._style_helpers) + 1
             name = f"tytable-style-{number}"
