@@ -1,7 +1,7 @@
 .PHONY: install lint format format-docs typecheck test test-images docs docs-watch clean
 
 install:
-	uv sync --all-extras
+	uv sync --all-extras --reinstall-package tytable
 
 lint:
 	uv run ruff check src tests

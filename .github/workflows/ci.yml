@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, v5]
   pull_request:
 
 concurrency:
@@ -25,7 +25,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: typstyle@0.15.0
-      - run: uv sync --all-extras
+      - run: uv sync --all-extras --reinstall-package tytable
       - run: uv run ruff check src tests
       - run: uv run ruff format --check src tests
       - run: typstyle --line-width 120 --check docs/*.typ
@@ -53,7 +53,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
-      - run: uv sync --all-extras --python ${{ matrix.python-version }}
+      - run: uv sync --all-extras --reinstall-package tytable --python ${{ matrix.python-version }}
       - run: uv run pytest --cov=tytable --cov-report=term-missing
 
   typst-compat:
@@ -74,6 +74,6 @@ jobs:
       - uses: typst-community/setup-typst@v5
         with:
           typst-version: ${{ matrix.typst-version }}
-      - run: uv sync --python 3.11
+      - run: uv sync --reinstall-package tytable --python 3.11
       - run: typst --version
       - run: uv run pytest tests/test_compile.py

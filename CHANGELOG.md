@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixes
+
+- Refresh Git-derived editable-install version information with `make install` and CI dependency setup. Add checks for agreement between the imported version and package metadata, plus release-tag checks for the editable install, wheel, and source distribution before publishing.
+
 ## [4.2.0] - 2026-10-19
 
 ### Features

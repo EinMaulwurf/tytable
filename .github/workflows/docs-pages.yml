@@ -47,7 +47,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
 
       - name: Sync dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --reinstall-package tytable
 
       - name: Build documentation
         run: make docs

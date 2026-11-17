@@ -75,7 +75,10 @@ jobs:
           tool: typstyle@0.15.0
 
       - name: Sync dependencies
-        run: uv sync --all-extras
+        run: uv sync --all-extras --reinstall-package tytable
+
+      - name: Verify installed version matches release tag
+        run: TYTABLE_EXPECTED_VERSION="${GITHUB_REF_NAME#v}" uv run pytest --noconftest tests/test_version.py -q
 
       - name: Lint
         run: make lint
@@ -100,6 +103,14 @@ jobs:
 
       - name: Validate metadata
         run: uvx twine check dist/*
+
+      - name: Verify distribution versions match release tag
+        run: |
+          export TYTABLE_EXPECTED_VERSION="${GITHUB_REF_NAME#v}"
+          for artifact in dist/*.whl dist/*.tar.gz; do
+            uv run --isolated --no-project --with "$artifact" --with pytest \
+              python -m pytest --noconftest tests/test_version.py -q
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

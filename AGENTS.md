@@ -9,7 +9,7 @@ A lightweight Python package for creating typst tables from (polars) dataframes.
 ## Commands
 
 ```bash
-make install      # uv sync --all-extras
+make install      # uv sync --all-extras --reinstall-package tytable
 make lint         # ruff check src tests
 make format       # ruff format src tests
 make typecheck    # mypy
@@ -22,6 +22,10 @@ Pre-commit order: `lint` → `typecheck` → `test`.
 ## Release workflow
 
 **Semantic-versioning rule:** Do not include breaking changes to the documented public API in minor or patch releases. Preserve compatibility throughout each major release series and record breaking changes under `Breaking` in `CHANGELOG.md` for the next major release.
+
+Development branches: keep compatible fixes and features on `main` (v4); develop breaking changes on `v5`. Merge applicable maintenance fixes from `main` into `v5`.
+
+Versions come automatically from Git tags through `hatch-vcs` at build/install time. Never edit or commit the generated `src/tytable/_version.py`. After switching branches, pulling commits/tags, or creating a release tag, run `make install` to regenerate the editable installation's version and metadata; plain `uv sync` may reuse a stale build. Between tags, development versions are inferred from Git history and may not reflect the intended next major release. CI checks that `tytable.__version__` matches installed metadata; release CI additionally checks both against the pushed tag in the editable install and isolated wheel/sdist installations before publishing.
 
 1. Keep notable user-facing changes under `Unreleased` in `CHANGELOG.md`. To release, rename that
    section to `[X.Y.Z] - YYYY-MM-DD`, add a new empty `Unreleased` section, update the comparison
