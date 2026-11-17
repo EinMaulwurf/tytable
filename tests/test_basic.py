@@ -10,29 +10,29 @@ from tytable._escape import escape_typst
 from tytable._resolve import build
 from tytable.formatters import number
 
-EXPECTED_BASIC_TYP = (
-    '#show figure.where(kind: "tytable"): set block(breakable: false)\n'
-    "#figure(\n"
-    '  kind: "tytable",\n'
-    '  supplement: "Table",\n'
-    "\n"
-    "block[\n"
-    "  #table(\n"
-    "    columns: (auto, auto),\n"
-    "    stroke: none,\n"
-    "    rows: auto,\n"
-    "    align: right,\n"
-    "    fill: none,\n"
-    "    table.header(\n"
-    "      repeat: true,\n"
-    "      [A],[B],\n"
-    "    ),\n"
-    "    [1],[2],\n"
-    "    [3],[4],\n"
-    "  )\n"
-    "]\n"
-    ")"
-)
+EXPECTED_BASIC_TYP = """#show figure.where(kind: "tytable"): set block(breakable: false)
+#figure(
+  kind: "tytable",
+  supplement: "Table",
+
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [A], [B],
+      ),
+
+      [1], [2],
+      [3], [4],
+    )
+  ],
+)"""
 
 
 def test_public_table_class_is_tytable():
@@ -553,3 +553,27 @@ class TestCompile:
 
         res = subprocess.run(["typst", "compile", str(f), str(tmp_path / "o.pdf")])
         assert res.returncode == 0
+
+
+@pytest.mark.parametrize("figure", [False, True])
+@pytest.mark.parametrize("wrapped", [False, True])
+def test_typst_formatting_preserves_multiline_raw_content(figure, wrapped):
+    raw = "```text\nfirst line\n  indented line\n```\n#text[trailing content]"
+    table = tt(pl.DataFrame({"Raw": [raw], "Value": [2]}), escape=False, figure=figure)
+    if wrapped:
+        table.rotate(15).resize(width=0.8, direction="down")
+        table._typst_opts.align_figure = "c"
+
+    rendered = table.render()
+
+    assert f"[{raw}]," in rendered
+    assert "\n      indented line\n" not in rendered
+
+
+def test_typst_formatting_wraps_long_styled_rows_between_cells():
+    values = ["a" * 60, "b" * 60]
+    table = tt(pl.DataFrame({"First": [values[0]], "Second": [values[1]]})).style(bold=True)
+    rendered = table.render()
+
+    assert f"[#strong[{values[0]}]],\n" in rendered
+    assert f"[#strong[{values[1]}]],\n" in rendered

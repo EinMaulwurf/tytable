@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Improvements
+
+- Format generated Typst with consistent structural indentation, spaced cells, section separators, and wrapped long rows while preserving embedded cell content and rendered behavior.
+
 ### Fixes
 
 - Refresh Git-derived editable-install version information with `make install` and CI dependency setup. Add checks for agreement between the imported version and package metadata, plus release-tag checks for the editable install, wheel, and source distribution before publishing.

@@ -3,19 +3,21 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto),
-    stroke: none,
-    rows: auto,
-    align: left,
-    fill: none,
-    table.header(
-      repeat: true,
-      [Trend],
-    ),
-    [#image("out_assets/plot_0000_0000_<content-hash>.png", height: 1em)],
-    [#image("out_assets/plot_0000_0001_<content-hash>.png", height: 1em)],
-  )
-]
+  block[
+    #table(
+      columns: (auto),
+      stroke: none,
+      rows: auto,
+      align: left,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [Trend],
+      ),
+
+      [#image("out_assets/plot_0000_0000_<content-hash>.png", height: 1em)],
+      [#image("out_assets/plot_0000_0001_<content-hash>.png", height: 1em)],
+    )
+  ],
 )

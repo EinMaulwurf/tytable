@@ -3,20 +3,22 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.header(
-      repeat: true,
-      [a],[b],[c],
-    ),
-    [1],[4],[7],
-    [2],[5],[8],
-    [3],[6],[9],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [a], [b], [c],
+      ),
+
+      [1], [4], [7],
+      [2], [5], [8],
+      [3], [6], [9],
+    )
+  ],
 )

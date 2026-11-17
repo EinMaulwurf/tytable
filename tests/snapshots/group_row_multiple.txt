@@ -3,27 +3,30 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.hline(y: 0, start: 0, end: 2, stroke: 0.08em + black),
-    table.hline(y: 1, start: 0, end: 2, stroke: 0.05em + black),
-    table.hline(y: 8, start: 0, end: 2, stroke: 0.08em + black),
-    table.header(
-      repeat: true,
-      [a],[b],
-    ),
-    table.cell(colspan: 2, align: left)[First],
-    [1],[6],
-    [2],[7],
-    table.cell(colspan: 2, align: left)[Second],
-    [3],[8],
-    [4],[9],
-    [5],[10],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.hline(y: 0, start: 0, end: 2, stroke: 0.08em + black),
+      table.hline(y: 1, start: 0, end: 2, stroke: 0.05em + black),
+      table.hline(y: 8, start: 0, end: 2, stroke: 0.08em + black),
+
+      table.header(
+        repeat: true,
+        [a], [b],
+      ),
+
+      table.cell(colspan: 2, align: left)[First],
+      [1], [6],
+      [2], [7],
+      table.cell(colspan: 2, align: left)[Second],
+      [3], [8],
+      [4], [9],
+      [5], [10],
+    )
+  ],
 )

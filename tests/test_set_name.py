@@ -48,8 +48,8 @@ class TestSetNamePerColumn:
 
     def test_render_shows_new_header(self):
         out = tt(self.DF).theme_plain().set_name(j="x", name="X").render("typst")
-        assert "[X],[y]," in out
-        assert "[x],[y]," not in out
+        assert "[X], [y]," in out
+        assert "[x], [y]," not in out
 
     def test_chaining_returns_self(self):
         t = tt(self.DF).theme_plain()
@@ -67,7 +67,7 @@ class TestSetNameFullList:
 
     def test_replace_all_renders_new_headers(self):
         out = tt(self.DF).theme_plain().set_name(name=["Alpha", "Beta"]).render("typst")
-        assert "[Alpha],[Beta]," in out
+        assert "[Alpha], [Beta]," in out
 
     def test_replace_all_wrong_length_raises(self):
         t = tt(self.DF).theme_plain()
@@ -100,11 +100,11 @@ class TestSetNameEdgeCases:
 
     def test_empty_string_name_renders_empty_cell(self):
         out = tt(self.DF).theme_plain().set_name(j="x", name="").render("typst")
-        assert "[],[y]," in out
+        assert "[], [y]," in out
 
     def test_empty_string_full_list(self):
         out = tt(self.DF).theme_plain().set_name(name=["", ""]).render("typst")
-        assert "[],[]," in out
+        assert "[], []," in out
 
     def test_original_dataframe_untouched(self):
         df = self.DF
@@ -269,7 +269,7 @@ class TestSetNameMapping:
         df = pl.DataFrame({"x": [1], "y": [2]})
         t = tt(df).theme_plain().set_name(name={"x": "X"})
         assert t._colnames_display == ["X", "y"]
-        assert "[X],[y]," in t.render("typst")
+        assert "[X], [y]," in t.render("typst")
 
     def test_mapping_returns_self(self):
         df = pl.DataFrame({"x": [1], "y": [2]})

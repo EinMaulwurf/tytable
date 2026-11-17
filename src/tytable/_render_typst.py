@@ -21,6 +21,22 @@ from ._style_markup import StyleMarkup
 from ._styling import align_to_typst, compute_covered_cells, resolve_line_edges
 
 
+def _indent(fragments: list[str], spaces: int = 2) -> list[str]:
+    """Indent structural fragments without touching embedded multiline content."""
+    return [(" " * spaces + fragment) if fragment else "" for fragment in fragments]
+
+
+def _emit_cells(fragments: list[str], cells: list[str], spaces: int) -> None:
+    """Keep short rows together and wrap long rows between intact cells."""
+    if not cells:
+        return
+    row = ", ".join(cells) + ","
+    if "\n" not in row and spaces + len(row) <= 100:
+        fragments.append(" " * spaces + row)
+    else:
+        fragments.extend(" " * spaces + cell + "," for cell in cells)
+
+
 def _style_typst_content(props: dict[str, Any], content: str) -> str:
     """Wrap escaped Typst markup ``content`` with inline text styling for caption/notes.
 
@@ -209,8 +225,12 @@ class TypstRenderer(Renderer):
         L: list[str] = []
         self._inherited_inset = not any("padding" in props for props in built.style_grid.values())
         self._emit_outer_open(L, built)
-        self._emit_cell_transforms(L, built)
-        self._emit_table(L, built)
+        inner: list[str] = []
+        self._emit_cell_transforms(inner, built)
+        if inner:
+            inner.append("")
+        self._emit_table(inner, built)
+        L.extend(_indent(inner) if self._opts.figure else inner)
         self._emit_outer_close(L, built)
         return self._wrap_result(L)
 
@@ -272,7 +292,7 @@ class TypstRenderer(Renderer):
             L.append('  supplement: "Table",')
             L.append("")
             block_args = self._block_args(built, include_breakable=False)
-            L.append(f"block({block_args})[" if block_args else "block[")
+            L.append(f"  block({block_args})[" if block_args else "  block[")
         else:
             L.append(f"#block({self._block_args(built, include_breakable=True)})[")
 
@@ -324,6 +344,8 @@ class TypstRenderer(Renderer):
             L.append("    inset: 5pt,")
         self._emit_lines(L, built)
         self._emit_header(L, built)
+        if built.data_body:
+            L.append("")
         self._emit_body(L, built)
         self._emit_footer(L, built, ncol)
         L.append("  )")
@@ -380,14 +402,15 @@ class TypstRenderer(Renderer):
     def _emit_header(self, L: list[str], built: BuiltTable) -> None:
         """Append column-group and column-name header rows."""
         if built.show_colnames or built.col_groups:
+            L.append("")
             L.append("    table.header(")
             repeat = "true" if self._opts.repeat_headers else "false"
             L.append(f"      repeat: {repeat},")
             for display_row, cg_row in enumerate(built.col_groups):
                 parts = self._build_col_group_row(cg_row, built, display_row)
-                L.append(f"      {', '.join(parts)},")
+                _emit_cells(L, parts, 6)
             if built.show_colnames:
-                L.append(f"      {self._build_column_name_row(built)},")
+                _emit_cells(L, self._build_column_name_row(built), 6)
             L.append("    ),")
 
     def _emit_body(self, L: list[str], built: BuiltTable) -> None:
@@ -406,12 +429,11 @@ class TypstRenderer(Renderer):
                         inherited_inset=self._inherited_inset,
                     )
                 )
-            if parts:
-                L.append("    " + ",".join(parts) + ",")
+            _emit_cells(L, parts, 4)
 
     def _emit_outer_close(self, L: list[str], built: BuiltTable) -> None:
         """Close the block and optional figure, including its label."""
-        L.append("]")
+        L.append("  ]," if self._opts.figure else "]")
         if self._opts.figure:
             closing = ")"
             if built.label is not None:
@@ -424,20 +446,19 @@ class TypstRenderer(Renderer):
         if opts.align_figure:
             L = [
                 f"#align({opts.align_to_typst()}, [",
-                *L,
+                *_indent(L),
                 "])",
             ]
         if opts.rotate_angle is not None:
             L = [
                 f"#rotate({opts.rotate_angle}deg, reflow: true, [",
-                *L,
+                *_indent(L),
                 "])",
             ]
 
-        result = "\n".join(L)
         if opts.resize_direction is not None:
-            result = self._apply_resize(result, opts)
-        return result
+            return self._apply_resize("\n".join(_indent(L, 4)), opts)
+        return "\n".join(L)
 
     @staticmethod
     def _apply_resize(body: str, opts: TypstRenderOptions) -> str:
@@ -499,6 +520,7 @@ class TypstRenderer(Renderer):
         note_style = built.style_notes
         align_val = align_to_typst(note_style.get("align"), note_style.get("alignv"))
 
+        L.append("")
         L.append("    table.footer(")
         L.append("      repeat: false,")
         for note in notes:
@@ -549,6 +571,8 @@ class TypstRenderer(Renderer):
             for start, end in _split_chunks(rows):
                 vline_entries.append((x, start, end, stroke))
 
+        if hline_entries or vline_entries:
+            L.append("")
         for y, start, end, stroke in sorted(hline_entries):
             L.append(f"    table.hline(y: {y}, start: {start}, end: {end}, stroke: {stroke}),")
 
@@ -575,11 +599,11 @@ class TypstRenderer(Renderer):
             )
         return parts
 
-    def _build_column_name_row(self, built: BuiltTable) -> str:
+    def _build_column_name_row(self, built: BuiltTable) -> list[str]:
         """Build the column-name row while honoring its accepted cell spans."""
         display_row = built.layout.header_row
         if display_row is None:
-            return ""
+            return []
         covered = compute_covered_cells(built.style_grid)
         parts: list[str] = []
         for col, value in enumerate(built.colnames_display):
@@ -592,4 +616,4 @@ class TypstRenderer(Renderer):
                     inherited_inset=self._inherited_inset,
                 )
             )
-        return ",".join(parts)
+        return parts

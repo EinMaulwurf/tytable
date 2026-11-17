@@ -228,7 +228,7 @@ class TestThemeMultipage:
         header = out.split("table.header(", 1)[1].split("    ),", 1)[0]
         assert "repeat: true" in header
         assert "All columns" in header
-        assert "[A],[B]" in header
+        assert "[A], [B]" in header
 
     def test_repeat_headers_must_be_bool(self):
         with pytest.raises(TypeError, match="repeat_headers must be a bool"):

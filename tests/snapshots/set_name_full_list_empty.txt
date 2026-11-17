@@ -3,18 +3,20 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: (left, right),
-    fill: none,
-    table.header(
-      repeat: true,
-      [],[Score],
-    ),
-    [alice],[42],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: (left, right),
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [], [Score],
+      ),
+
+      [alice], [42],
+    )
+  ],
 )

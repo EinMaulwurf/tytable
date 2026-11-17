@@ -3,19 +3,21 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.header(
-      repeat: true,
-      [Variable],[Value],
-    ),
-    [1],[2],
-    [3],[4],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [Variable], [Value],
+      ),
+
+      [1], [2],
+      [3], [4],
+    )
+  ],
 )

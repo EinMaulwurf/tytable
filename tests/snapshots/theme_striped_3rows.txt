@@ -3,20 +3,22 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.header(
-      repeat: true,
-      [A],[B],
-    ),
-    table.cell(fill: rgb("#ededed"))[1],table.cell(fill: rgb("#ededed"))[4],
-    [2],[5],
-    table.cell(fill: rgb("#ededed"))[3],table.cell(fill: rgb("#ededed"))[6],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [A], [B],
+      ),
+
+      table.cell(fill: rgb("#ededed"))[1], table.cell(fill: rgb("#ededed"))[4],
+      [2], [5],
+      table.cell(fill: rgb("#ededed"))[3], table.cell(fill: rgb("#ededed"))[6],
+    )
+  ],
 )

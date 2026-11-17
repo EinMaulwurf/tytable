@@ -3,19 +3,21 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.header(
-      repeat: true,
-      [A],[B],
-    ),
-    table.cell(fill: rgb("#ff0000"))[1],table.cell(fill: rgb("#ededed"))[2],
-    [3],[4],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        [A], [B],
+      ),
+
+      table.cell(fill: rgb("#ff0000"))[1], table.cell(fill: rgb("#ededed"))[2],
+      [3], [4],
+    )
+  ],
 )

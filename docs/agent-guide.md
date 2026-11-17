@@ -361,6 +361,8 @@ table.save("build/table.html") # suffix selects HTML
 table.save("build/table.txt")  # suffix selects ASCII
 ```
 
+Generated Typst uses structural indentation, spaced cells, and section separators; long rows wrap between cells. Embedded cell content is preserved. Exact source whitespace is not a compatibility guarantee.
+
 With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.
 
 In Jupyter, leaving the table as the last expression displays its HTML preview. `print(table)` uses the ASCII renderer, which displays a zero-column DataFrame as `(empty table)`. A saved `.typ` fragment can be included in a Typst report with `#include`.

@@ -3,19 +3,21 @@
   kind: "tytable",
   supplement: "Table",
 
-block[
-  #table(
-    columns: (auto, auto),
-    stroke: none,
-    rows: auto,
-    align: right,
-    fill: none,
-    table.header(
-      repeat: true,
-      table.cell(colspan: 2, align: center)[Q1],
-      [rev],[cost],
-    ),
-    [1],[2],
-  )
-]
+  block[
+    #table(
+      columns: (auto, auto),
+      stroke: none,
+      rows: auto,
+      align: right,
+      fill: none,
+
+      table.header(
+        repeat: true,
+        table.cell(colspan: 2, align: center)[Q1],
+        [rev], [cost],
+      ),
+
+      [1], [2],
+    )
+  ],
 )
