@@ -7,6 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-11-17
+
 ### Improvements
 
 - Avoid rendering Typst tables twice when selecting inline-style helpers; scan source inputs directly for helper-name collisions.
@@ -507,7 +509,8 @@ No release notes were provided for this release.
 
 No release notes were provided for this release.
 
-[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.2.0...HEAD
+[Unreleased]: https://github.com/EinMaulwurf/tytable/compare/v4.3.0...HEAD
+[4.3.0]: https://github.com/EinMaulwurf/tytable/compare/v4.2.0...v4.3.0
 [4.2.0]: https://github.com/EinMaulwurf/tytable/compare/v4.1.0...v4.2.0
 [4.1.0]: https://github.com/EinMaulwurf/tytable/compare/v4.0.0...v4.1.0
 [4.0.0]: https://github.com/EinMaulwurf/tytable/compare/v3.1.0...v4.0.0
