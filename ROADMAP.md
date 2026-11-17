@@ -57,7 +57,6 @@ These are plausible additions within the package's current scope, not commitment
 
 These are broader or less-settled directions that would require more evidence and design work, not planned features.
 
-- [ ] Evaluate coalescing repeated Typst cell styles into shared rules while preserving style precedence and inheritance from the including document.
 - [ ] Evaluate omitting redundant generated Typst options only where surrounding document settings cannot change the rendered result.
 
 - [ ] Evaluate reusable `ColumnSpec` and `TableSpec` objects for definitions shared across multiple tables while keeping method chains first-class.

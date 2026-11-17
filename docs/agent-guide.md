@@ -361,7 +361,7 @@ table.save("build/table.html") # suffix selects HTML
 table.save("build/table.txt")  # suffix selects ASCII
 ```
 
-Generated Typst uses structural indentation, spaced cells, and section separators; long rows wrap between cells. Embedded cell content is preserved. Exact source whitespace is not a compatibility guarantee.
+Generated Typst uses structural indentation, spaced cells, and section separators; long rows wrap between cells. Long inline text styles repeated across enough body cells use table-local helpers when this reduces source size; short and sparse styles stay inline. Embedded cell content is preserved. Exact source whitespace is not a compatibility guarantee.
 
 With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.
 

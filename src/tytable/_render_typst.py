@@ -7,6 +7,7 @@ The output is a ``#figure(…)/#table(…)`` block (or bare ``#table(…)`` when
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
@@ -52,14 +53,26 @@ def _style_typst_content(props: dict[str, Any], content: str) -> str:
     return StyleMarkup.from_props(props).typst_inline(content)
 
 
-def _cell_content(value: str, props: dict[str, Any], *, inherited_inset: bool = False) -> str:
-    """Emit a cell with native properties and inline body styling."""
+def _cell_style(props: dict[str, Any], *, inherited_inset: bool) -> tuple[str, str, str]:
+    """Resolve native cell arguments and inline wrappers in their existing order."""
     if inherited_inset and ("fontsize" in props or props.get("indent", 0) > 0):
         # These must wrap the resolved cell when its inset comes from the
         # including document. Moving them inside would change em resolution.
         props = {name: value for name, value in props.items() if name not in ("fontsize", "indent")}
-    args, prefix, suffix = _cell_style_cached(tuple(sorted(props.items())))
-    body = f"[{prefix}{value}{suffix}]"
+    return _cell_style_cached(tuple(sorted(props.items())))
+
+
+def _cell_content(
+    value: str,
+    props: dict[str, Any],
+    *,
+    inherited_inset: bool = False,
+    helpers: dict[tuple[str, str], str] | None = None,
+) -> str:
+    """Emit a cell with native properties and inline body styling."""
+    args, prefix, suffix = _cell_style(props, inherited_inset=inherited_inset)
+    helper = helpers.get((prefix, suffix)) if helpers else None
+    body = f"[#{helper}[{value}]]" if helper else f"[{prefix}{value}{suffix}]"
     return f"table.cell({args}){body}" if args else body
 
 
@@ -196,6 +209,7 @@ class TypstRenderer(Renderer):
     def __init__(self, opts: TypstRenderOptions) -> None:
         self._opts = opts
         self._inherited_inset = True
+        self._style_helpers: dict[tuple[str, str], str] = {}
 
     @staticmethod
     def _columns_spec(
@@ -229,10 +243,58 @@ class TypstRenderer(Renderer):
         self._emit_cell_transforms(inner, built)
         if inner:
             inner.append("")
+        self._prepare_style_helpers(inner, built)
         self._emit_table(inner, built)
         L.extend(_indent(inner) if self._opts.figure else inner)
         self._emit_outer_close(L, built)
         return self._wrap_result(L)
+
+    def _prepare_style_helpers(self, L: list[str], built: BuiltTable) -> None:
+        """Share long inline wrappers only when repeated body cells justify them.
+
+        Keep native cell arguments and whole-cell show rules in place. Counting
+        only visible body cells gives a conservative saving estimate; headers
+        with the same wrappers may then reuse the helpers too.
+        """
+        self._style_helpers = {}
+        counts: Counter[tuple[str, str]] = Counter()
+        covered = compute_covered_cells(built.style_grid)
+        for (row, col), props in sorted(built.style_grid.items()):
+            body_row = row - built.layout.header_rows
+            if not (0 <= body_row < len(built.data_body)) or (row, col) in covered:
+                continue
+            _, prefix, suffix = _cell_style(props, inherited_inset=self._inherited_inset)
+            if prefix:
+                counts[(prefix, suffix)] += 1
+
+        # Avoid shadowing identifiers authored in raw cells or layout expressions.
+        # Include the emitted table itself so all trusted content is checked.
+        candidates = {
+            (prefix, suffix): count
+            for (prefix, suffix), count in counts.items()
+            if count >= 4
+            and count * (len(prefix) + len(suffix) - len("#tytable-style-1[]"))
+            > len(f"  #let tytable-style-1(body) = [{prefix}#body{suffix}]") + 32
+        }
+        if not candidates:
+            return
+        source: list[str] = []
+        self._emit_table(source, built)
+        occupied = "\n".join(source)
+        for (prefix, suffix), count in candidates.items():
+            number = len(self._style_helpers) + 1
+            name = f"tytable-style-{number}"
+            while name in occupied or name in self._style_helpers.values():
+                number += 1
+                name = f"tytable-style-{number}"
+            definition = f"  #let {name}(body) = [{prefix}#body{suffix}]"
+            saving = count * (len(prefix) + len(suffix) - len(f"#{name}[]"))
+            if saving <= len(definition) + 32:
+                continue
+            self._style_helpers[(prefix, suffix)] = name
+            L.append(definition)
+        if self._style_helpers:
+            L.append("")
 
     def _emit_cell_transforms(self, L: list[str], built: BuiltTable) -> None:
         """Scope whole-cell transforms, coalescing cells with the same transform."""
@@ -427,6 +489,7 @@ class TypstRenderer(Renderer):
                         val,
                         built.style_grid.get((display_row, c), {}),
                         inherited_inset=self._inherited_inset,
+                        helpers=self._style_helpers,
                     )
                 )
             _emit_cells(L, parts, 4)
@@ -595,6 +658,7 @@ class TypstRenderer(Renderer):
                     escape_typst(label) if label else " ",
                     props,
                     inherited_inset=self._inherited_inset,
+                    helpers=self._style_helpers,
                 )
             )
         return parts
@@ -614,6 +678,7 @@ class TypstRenderer(Renderer):
                     value,
                     built.style_grid.get((display_row, col), {}),
                     inherited_inset=self._inherited_inset,
+                    helpers=self._style_helpers,
                 )
             )
         return parts

@@ -9,6 +9,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Improvements
 
+- Share long, repeated Typst inline text wrappers through table-local helpers when doing so reduces source size. Preserve native cell properties, wrapper order, inherited styles, and raw cell content; keep short and sparse styles inline.
+
 - Format generated Typst with consistent structural indentation, spaced cells, section separators, and wrapped long rows while preserving embedded cell content and rendered behavior.
 
 ### Fixes
