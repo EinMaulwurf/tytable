@@ -27,6 +27,7 @@ from typing import Any
 from tytable import TyTable, __version__, tt
 from tytable._colors import _NAMED_COLORS
 from tytable.formatters import (
+    affix,
     currency,
     date,
     duration,
@@ -48,6 +49,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "tt": ("tt", tt),
     "style": (".style", TyTable.style),
     "fmt": (".fmt", TyTable.fmt),
+    "formatter_affix": ("affix", affix),
     "formatter_math": ("math", math),
     "formatter_linebreak": ("linebreak", linebreak),
     "formatter_replace": ("replace", replace),

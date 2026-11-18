@@ -250,17 +250,18 @@ Formatting options are:
 | Option | Meaning |
 | --- | --- |
 | `fn` | column-wise callback returning a sequence of the same length |
-| `fn_values` | callback input: original `"typed"` values (default) or current `"display"` strings |
+| `fn_values` | callback input: original `"typed"` values (default) or current backend-neutral `"display"` strings |
 | `output` | one backend or a sequence, such as `"typst"` or `("typst", "html")` |
 
 Each directive applies one callback. Directives run in registration order. Import text factories from `tytable.formatters`:
 
+- `affix(prefix="", suffix="")` adds text around a value. Chain with `fn_values="display"` to preserve native formatting while applying table-wide escaping to the added text.
 - `replace(mapping)` copies a mapping and matches exact supplied values using Python mapping equality, without string coercion or special string sentinels. Unmatched inputs are preserved. Use `fn_values="display"` to match current strings.
 - `missing(label="—")` replaces None and numeric NaNs with literal text; `missing("")` blanks them. Literal strings such as `"nan"` remain text. Numeric formatters also expose `null` and `nan` options.
 - `linebreak(marker="\n")` replaces a nonempty literal marker with native Typst/HTML breaks. ASCII retains the marker. Surrounding text follows table-wide escaping.
 - `math(display=False, null="—")` interprets Typst math, accepts existing dollar delimiters, and optionally emits a block equation. None and numeric NaNs use the literal `null` label. HTML/ASCII retain source expressions. Use `.style()` for font, size, and color.
 
-For example, `.fmt(j="Formula", fn=math())` formats equations and `.fmt(j="Detail", fn=linebreak("|"))` inserts line breaks. Built-ins retain semantic content across display-mode chains: `.fmt(fn=linebreak("|")).fmt(fn=math(), fn_values="display")` composes breaks and equations without escaping their markup. Custom callbacks still receive current backend strings, and changed strings follow ordinary escaping rules.
+For example, `.fmt(j="Formula", fn=math())` formats equations and `.fmt(j="Detail", fn=linebreak("|"))` inserts line breaks. Built-ins retain semantic content across display-mode chains: `.fmt(fn=linebreak("|")).fmt(fn=math(), fn_values="display")` composes breaks and equations without escaping their markup. Display callbacks receive backend-neutral strings. Returning the original semantic value keeps its native output. New ordinary strings, including f-strings, follow table-wide escaping. Callback errors identify the directive number, source column, and backend.
 
 The `fn` callback is column-wise, not cell-wise. By default it receives the original Python values from the DataFrame for each selected column and must return a non-string sequence of the same length:
 
@@ -285,7 +286,7 @@ For common typed formats, import `number`, `scientific`, `currency`, `percent`, 
 
 Numeric formatters accept `min_digits`, `notation`, `rounding`, `normalize_negative_zero`, `nan`, `inf`, and `negative_inf`; use `notation="compact"` for compact output. The `number()` formatter also accepts custom `compact_labels`. The `currency()` formatter forwards numeric options and accepts `symbol_position`. `digits=None` selects known currency digits. The `unit()` formatter accepts `prefix_system="si"` or `prefix_system="iec"` for automatic prefixes. `duration(style="human")` produces output such as `1d 3h 30m`. The `date()` formatter accepts `timezone` for timezone-aware datetimes.
 
-Use `.fmt(j="Measurement", fn=scientific(digits=2))` for values such as 1.23 × 10⁶ with native superscripts in Typst and HTML. ASCII and direct callback calls return `1.23e+6`. `digits` counts mantissa decimal places; `min_digits`, `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, `null`, `nan`, `inf`, and `negative_inf` follow `number()` conventions. Labels and decimal marks are plain text, and default escaping can stay enabled. Pass the configured callback directly to `fn` to preserve native notation. Later `fn_values="display"` callbacks receive backend markup; changed strings follow ordinary escaping rules. `number(notation="scientific")` provides plain `e` notation in every backend. Custom sequence callbacks remain available for other conventions.
+Use `.fmt(j="Measurement", fn=scientific(digits=2))` for values such as 1.23 × 10⁶ with native superscripts in Typst and HTML. ASCII and direct callback calls return `1.23e+6`. `digits` counts mantissa decimal places; `min_digits`, `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, `null`, `nan`, `inf`, and `negative_inf` follow `number()` conventions. Labels and decimal marks are plain text, and default escaping can stay enabled. Pass the configured callback directly to `fn` to preserve native notation. Later display callbacks also receive `1.23e+6`. To show approximately 1.23 × 10⁶ with a native superscript, import `affix` and chain `.fmt(fn=affix(prefix="≈ "), fn_values="display")`. An f-string such as `f"≈ {value}"` produces plain ≈ 1.23e+6. `number(notation="scientific")` provides plain `e` notation in every backend. Custom sequence callbacks remain available for other conventions.
 
 For transformations that need several columns at once or aggregation, modify the Polars DataFrame before constructing the table instead.
 

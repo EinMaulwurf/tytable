@@ -4,8 +4,7 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 ## v5
 
-- [ ] Define how custom display callbacks compose with semantic formatters before stabilizing the v5 API. For `1_230_000`, chaining `.fmt(fn=scientific(digits=2))` with `.fmt(fn=lambda values: [f"≈ {value}" for value in values], fn_values="display")` shows literal `#super[6]` in Typst and `<sup>6</sup>` in HTML. The callback receives backend markup, and its modified result is escaped as text. Decide what display callbacks receive and how callers can add literal prefixes or suffixes while retaining native formatting and default escaping. Document the contract and cover the example in Typst, HTML, and ASCII tests.
-- [ ] Add `.explain(output="typst")` to show each directive’s resolved selectors and target count, including empty selections and directives skipped for the requested backend. Resolve selections without invoking formatter or plot callbacks, running finalizers, or writing assets. Include the directive number, source column when known, and backend in render-time formatter errors.
+- [ ] Add `.explain(output="typst")` to show each directive’s resolved selectors and target count, including empty selections and directives skipped for the requested backend. Resolve selections without invoking formatter or plot callbacks, running finalizers, or writing assets.
 
 ## Small improvements
 

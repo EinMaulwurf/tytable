@@ -13,11 +13,17 @@ These changes target the next major release, v5.
 
 - Simplify `.fmt()` to selectors, `fn`, `fn_values`, and `output`. Remove `replace`, `linebreak`, `math`, and `escape` keyword arguments. Apply transformations through formatter factories and chain directives in the desired order.
 - Replacement factories match only their supplied input using Python mapping equality. They no longer also match display strings or interpret string keys such as `"null"`, `"nan"`, or `"inf"` as special values.
+- Display callbacks receive backend-neutral strings. Scientific notation is exposed as `1.23e+6` in every backend. Returning an original semantic value preserves native output, while ordinary strings returned by callbacks follow table-wide escaping.
 
 ### Features
 
 - Add `math(display=False, null="—")`, `linebreak(marker="\n")`, `replace(mapping)`, and `missing(label="—")` to `tytable.formatters`.
-- Share semantic rendering across scientific notation, equations, and line breaks. Built-in display-mode chains preserve native markup while changed custom callback strings follow ordinary escaping rules. Math uses Typst syntax; HTML and ASCII retain source expressions.
+- Share semantic rendering across scientific notation, equations, and line breaks. Math uses Typst syntax, and HTML and ASCII retain source expressions.
+- Add `affix(prefix="", suffix="")` for decorating a display value while preserving native formatting. For example, chain `.fmt(fn=affix(prefix="≈ "), fn_values="display")` after `scientific()` to keep native superscripts.
+
+### Fixes
+
+- Include the directive number, source column, and output backend in render-time formatter callback errors.
 
 ### Migrating to v5
 

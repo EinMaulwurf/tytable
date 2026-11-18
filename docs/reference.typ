@@ -179,7 +179,7 @@ Combines any properties sharing the same selectors. `where` accepts a Polars exp
 
 Each `.fmt()` directive applies one column-wise callback. Directives run in registration order. `where` restricts the callback to individual true body cells. Use semantic formatter factories from `tytable.formatters`, such as `number(digits=2)`, through `fn`. Numeric formatters preserve typed input and handle missing and special values according to their own options. `number(notation="scientific")` uses textual `e` output in every backend; `scientific()` provides multiplication and superscripts in Typst and HTML.
 
-`fn_values` and whether `fn` is callable are validated immediately. Selectors and callback results are validated during rendering. By default, callbacks receive original typed Python values; `fn_values="display"` passes current display strings. The callback must return a non-string sequence of the same length. Built-ins retain semantic content across display-mode chains; custom string transformations that change content produce ordinary text subject to table-wide escaping.
+`fn_values` and whether `fn` is callable are validated immediately. Selectors and callback results are validated during rendering. By default, callbacks receive original typed Python values. With `fn_values="display"`, callbacks receive current backend-neutral strings, such as `1.23e+6` after `scientific()`. Return the original value to retain its native formatting. A new ordinary string, including one created by an f-string, follows table-wide escaping. The callback must return a non-string sequence of the same length. Callback errors identify the directive number, column, and output backend.
 
 Import semantic formatter factories from `tytable.formatters`, call one with its configuration, and pass the returned formatter to `fn`, as in `.fmt(j="Share", fn=percent(digits=1))`. A custom function that already accepts a sequence of values is passed directly as `fn=my_formatter`; use `fn=my_formatter(...)` only when it too is a factory returning that callable. Formatter and callback directives can be chained when a later callback should consume display strings: `.fmt(fn=number(digits=2)).fmt(fn=custom, fn_values="display")`. The German locale preset `locale="de_DE"` produces values such as `1.023,87 €`, while `locale="en_US"` uses English separators. These presets cover separator and currency-placement conventions rather than the complete CLDR locale database.
 
@@ -190,6 +190,10 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 #api("Format missing values", api_signatures.at("formatter_missing"))
 
 `missing(label="—")` replaces None and numeric NaNs with literal text and preserves other values. `missing("")` blanks missing values. Strings such as `"nan"` and `"null"` are ordinary text. For numeric columns, prefer the numeric formatter's `null` and `nan` options when formatting in one step.
+
+#api("Add a prefix or suffix", api_signatures.at("formatter_affix"))
+
+Chain `.fmt(fn=affix(prefix="≈ "), fn_values="display")` after `scientific()` to add the prefix and retain native superscripts in Typst and HTML. Both the prefix and suffix follow table-wide escaping in ordinary text. A subsequent `math()` formatter keeps them literal in Typst equations.
 
 #api("Insert line breaks", api_signatures.at("formatter_linebreak"))
 
@@ -211,7 +215,7 @@ Import semantic formatter factories from `tytable.formatters`, call one with its
 
 Use `.fmt(j="Measurement", fn=scientific(digits=2))` for multiplication and native superscripts in Typst and HTML, such as 1.23 × 10⁶. ASCII output and direct calls to the returned callback use `1.23e+6`. `digits` sets the mantissa's maximum decimal places, and `min_digits` defaults to `digits`. Rounding that reaches ten promotes the exponent. Zero is displayed with exponent zero.
 
-The formatter shares `number()` conventions for `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, and special-value labels (`null`, `nan`, `inf`, and `negative_inf`). Labels and custom decimal marks are plain text and escaped safely; generated superscripts work with default escaping. Pass the configured callback directly to `fn` so the table can render its native notation. Later display callbacks receive the current backend's rendered string; replacements and callbacks that change it follow ordinary escaping rules. `scientific()` does not accept `notation`, grouping, accounting, prefixes, or suffixes.
+The formatter shares `number()` conventions for `locale`, `decimal_mark`, `scale`, `rounding`, `normalize_negative_zero`, and special-value labels (`null`, `nan`, `inf`, and `negative_inf`). Labels and custom decimal marks are plain text and escaped safely. Generated superscripts work with default escaping. Later display callbacks receive the same textual `e` notation used in ASCII. Use `affix()` to add prefixes or suffixes.
 
 #api("Format currencies", api_signatures.at("formatter_currency"))
 

@@ -23,7 +23,7 @@ from decimal import (
 from typing import Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from tytable._formatted import _FormattedText, _LinebreakText, _MathText, _render
+from tytable._formatted import _AffixedText, _FormattedText, _LinebreakText, _MathText, _render
 
 __all__ = [
     "currency",
@@ -956,6 +956,21 @@ def replace(mapping: Mapping[Any, Any]) -> Callable[[Sequence[Any]], list[Any]]:
             except TypeError:  # Unhashable values cannot match dictionary keys.
                 result.append(value)
         return result
+
+    return formatter
+
+
+def affix(*, prefix: str = "", suffix: str = "") -> Callable[[Sequence[Any]], list[str]]:
+    """Add text around each value while preserving existing native formatting.
+
+    Chain with ``fn_values="display"`` after another formatter. Prefixes and
+    suffixes follow table-wide escaping in normal text.
+    """
+    if not isinstance(prefix, str) or not isinstance(suffix, str):
+        raise TypeError("affix prefix and suffix must be strings")
+
+    def formatter(values: Sequence[Any]) -> list[str]:
+        return [_AffixedText(value, prefix, suffix) for value in values]
 
     return formatter
 

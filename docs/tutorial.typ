@@ -364,7 +364,7 @@ For quick, in-table transforms that stay inside the `tt()` chain, without reachi
 - `fn=linebreak("|")` replaces a literal marker with native line breaks in Typst and HTML; its default marker is a newline
 - `fn=math()` interprets Typst expressions; `math(display=True)` creates display equations, and `null="—"` controls literal missing-value text
 
-Each call applies one formatter. Calls run in registration order. Callbacks receive original typed values unless `fn_values="display"` selects current display strings. Built-ins preserve semantic content across display-mode chains, so generated line breaks and equations compose without escaping their markup. Ordinary callback results follow table-wide escaping.
+Each call applies one formatter. Calls run in registration order. Callbacks receive original typed values unless `fn_values="display"` selects current backend-neutral display strings. Returning the original display value preserves its native formatting. New ordinary strings follow table-wide escaping.
 Formatting text and equations does not require disabling safe escaping. This example treats `Formula` as Typst math and uses `|` inside `Detail` to mark where a native line break should appear:
 
 ```python
@@ -449,6 +449,8 @@ Use `scientific()` when measurements should display multiplication and superscri
 #tag("RESULT")
 #v(0.12em)
 #include "build/02_scientific.typ"
+
+To display approximately 1.23 × 10⁶, import `affix` from `tytable.formatters` and chain `.fmt(fn=affix(prefix="≈ "), fn_values="display")` after `scientific()`. A custom f-string such as `f"≈ {value}"` produces plain text, which displays as ≈ 1.23e+6 across backends.
 
 A configured formatter can be reused across tables, and subsequent directives can still apply replacement, line breaks, math, escaping, or styles:
 

@@ -715,8 +715,11 @@ class TyTable:
 
         Pass a configured factory from :mod:`tytable.formatters` or a custom
         column-wise callback to ``fn``. Chain calls in application order, using
-        ``fn_values="display"`` to consume earlier formatting. Ordinary callback
-        text follows table-wide escaping; built-ins preserve native markup.
+        ``fn_values="display"`` to consume earlier formatting. Returning a
+        semantic display value unchanged preserves its native formatting.
+        New strings follow table-wide escaping. Use
+        ``formatters.affix(prefix=..., suffix=...)`` to add text around a value
+        while preserving its native formatting.
 
         Parameters
         ----------
@@ -737,7 +740,7 @@ class TyTable:
         fn_values
             Values passed to ``fn``: ``"typed"`` (default) passes the original
             Python values from the DataFrame; ``"display"`` passes the current
-            strings, including earlier formatting.
+            backend-neutral strings, including earlier formatting.
         output
             Restrict this directive to the given output backends. ``None``
             applies to all.
@@ -757,6 +760,8 @@ class TyTable:
             If a selector is invalid or ``fn`` returns the wrong number of
             values. Option errors are raised immediately; selector and callback
             result errors are raised when the table is rendered.
+        RuntimeError
+            If a callback raises an exception other than TypeError or ValueError.
 
         Examples
         --------

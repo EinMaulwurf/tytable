@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from tytable import tt
-from tytable.formatters import linebreak, math, missing, number, replace, scientific
+from tytable.formatters import affix, linebreak, math, missing, number, replace, scientific
 
 
 def test_replacement_is_exact_and_copies_mapping():
@@ -67,6 +67,62 @@ def test_changing_native_output_returns_to_plain_text(output):
     assert {"typst": r"\<tag\>\$\#", "html": "&lt;tag&gt;$#", "ascii": "<tag>$#"}[output] in result
 
 
+@pytest.mark.parametrize(
+    "output,plain,native",
+    [
+        ("typst", r"≈ 1.23e\+6", r"≈ 1.23 × 10#super[6] \<kg\>\#"),
+        ("html", "≈ 1.23e+6", "≈ 1.23 × 10<sup>6</sup> &lt;kg&gt;#"),
+        ("ascii", "≈ 1.23e+6", "≈ 1.23e+6 <kg>#"),
+    ],
+)
+def test_scientific_display_callbacks_and_affixes(output, plain, native):
+    def interpolate(values):
+        assert values == ["1.23e+6"]
+        return [f"≈ {value}" for value in values]
+
+    df = pl.DataFrame({"value": [1_230_000]})
+    table = tt(df).fmt(fn=scientific(digits=2)).fmt(fn=interpolate, fn_values="display")
+    assert plain in table.render(output)
+
+    decorate = affix(prefix="≈ ", suffix=" <kg>#")
+    table = tt(df).fmt(fn=scientific(digits=2)).fmt(fn=decorate, fn_values="display")
+    assert native in table.render(output)
+
+
+def test_equal_plain_callback_result_drops_semantic_content():
+    table = tt(pl.DataFrame({"value": [1_230_000]})).fmt(fn=scientific())
+    table.fmt(fn=lambda values: [str(value) for value in values], fn_values="display")
+    assert "1.23e+6" in table.render("html")
+
+
+def test_display_replacement_matches_semantic_plain_text():
+    table = tt(pl.DataFrame({"value": [1_230_000, 10]})).fmt(fn=scientific())
+    table.fmt(fn=replace({"1.23e+6": "large"}), fn_values="display")
+    html = table.render("html")
+    assert "large" in html and "1.00 × 10<sup>1</sup>" in html
+
+
+@pytest.mark.parametrize("equation", ["x^2", "$x^2$"])
+def test_affix_composes_with_linebreaks_and_math(equation):
+    table = tt(pl.DataFrame({"value": [equation]})).theme_plain()
+    table.fmt(fn=affix(prefix="≈|", suffix=" #tag"))
+    table.fmt(fn=linebreak("|"), fn_values="display").fmt(fn=math(), fn_values="display")
+    assert r"[$#box[≈ \ ]x^2#box[ \#tag]$]" in table.render("typst")
+    assert f"≈<br>{equation} #tag" in table.render("html")
+
+
+def test_formatter_failure_includes_directive_column_and_backend():
+    def fail(values):
+        raise LookupError("callback failed")
+
+    table = tt(pl.DataFrame({"value": [1]})).fmt(fn=number(), output="typst").fmt(fn=fail)
+    with pytest.raises(
+        RuntimeError, match=r"directive 2, column 'value', output 'html': callback failed"
+    ) as error:
+        table.render("html")
+    assert isinstance(error.value.__cause__, LookupError)
+
+
 @pytest.mark.parametrize("reverse", [False, True])
 def test_math_linebreak_composition_in_both_orders(reverse):
     callbacks = [linebreak("|"), math()]
@@ -116,6 +172,8 @@ def test_removed_keywords_are_rejected(keyword, value):
 @pytest.mark.parametrize(
     "factory,kwargs",
     [
+        (affix, {"prefix": None}),
+        (affix, {"suffix": 1}),
         (replace, {"mapping": []}),
         (missing, {"label": None}),
         (math, {"display": "yes"}),

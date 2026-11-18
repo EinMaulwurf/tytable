@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
-from tytable._formatted import _DisplayText, _FormattedText, _source
+from tytable._formatted import _FormattedText
 from tytable._indices import resolve_i, resolve_where
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ def _cell_value(
     colnames_display: list[str],
     layout: RowLayout,
 ) -> str:
-    """Read the current rendered value of a body or header cell."""
+    """Read the current display value of a body or header cell."""
     display_row, col_idx = cell
     if display_row == layout.header_row:
         return colnames_display[col_idx]
@@ -63,14 +63,13 @@ def _set_cell_value(
     colnames_display: list[str],
     layout: RowLayout,
 ) -> None:
-    """Set the rendered value of a body or header cell."""
+    """Set the display value of a body or header cell."""
     display_row, col_idx = cell
+    text = value if isinstance(value, str) else str(value)
     if display_row == layout.header_row:
-        colnames_display[col_idx] = value if isinstance(value, str) else str(value)
+        colnames_display[col_idx] = text
     else:
-        data_body[layout.body_index(display_row)][col_idx] = (
-            value if isinstance(value, str) else str(value)
-        )
+        data_body[layout.body_index(display_row)][col_idx] = text
 
 
 def _apply_fn(
@@ -82,12 +81,13 @@ def _apply_fn(
     colnames: list[str],
     layout: RowLayout,
     output: str,
-    escape: bool,
-) -> dict[Cell, str]:
+    directive_number: int,
+    semantic_cells: set[Cell],
+) -> None:
     """Apply a column-wise transform to the selected cells."""
-    generated_markup: dict[Cell, str] = {}
-    if directive.fn is None:
-        return generated_markup
+    fn = directive.fn
+    if fn is None:
+        return
     col_to_rows: dict[int, list[int]] = {}
     for row_idx, col_idx in cells:
         col_to_rows.setdefault(col_idx, []).append(row_idx)
@@ -99,19 +99,32 @@ def _apply_fn(
             values = [
                 _cell_value(cell, data_body, colnames_display, layout) for cell in column_cells
             ]
-        result = directive.fn(values)
-        if not isinstance(result, Sequence) or isinstance(result, (str, bytes)):
-            raise TypeError(f"fn() must return a non-string sequence, got {type(result).__name__}")
-        if len(result) != len(values):
-            raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
-        for cell, value in zip(column_cells, result, strict=True):
-            source = _source(value)
-            if isinstance(source, _FormattedText):
-                value = _DisplayText(source.render(output, escape=escape), source)
-                generated_markup[cell] = value
-            _set_cell_value(cell, value, data_body, colnames_display, layout)
-
-    return generated_markup
+        try:
+            result = fn(values)
+            if not isinstance(result, Sequence) or isinstance(result, (str, bytes)):
+                raise TypeError(
+                    f"fn() must return a non-string sequence, got {type(result).__name__}"
+                )
+            if len(result) != len(values):
+                raise ValueError(f"fn() returned {len(result)} items, expected {len(values)}")
+            for cell, value in zip(column_cells, result, strict=True):
+                _set_cell_value(cell, value, data_body, colnames_display, layout)
+                if isinstance(value, _FormattedText):
+                    semantic_cells.add(cell)
+                else:
+                    semantic_cells.discard(cell)
+        except Exception as exc:
+            error_type = (
+                TypeError
+                if isinstance(exc, TypeError)
+                else ValueError
+                if isinstance(exc, ValueError)
+                else RuntimeError
+            )
+            raise error_type(
+                f".fmt() directive {directive_number}, column {colnames[col_idx]!r}, "
+                f"output {output!r}: {exc}"
+            ) from exc
 
 
 def apply_formats(
@@ -124,9 +137,9 @@ def apply_formats(
     output: str,
 ) -> set[tuple[int, int]]:
     """Apply every format directive and return trusted display coordinates."""
-    escaped_cells: set[tuple[int, int]] = set()
+    semantic_cells: set[Cell] = set()
 
-    for d in table._format_directives:
+    for directive_number, d in enumerate(table._format_directives, start=1):
         if d.output is not None and output not in d.output:
             continue
 
@@ -145,10 +158,7 @@ def apply_formats(
                 layout=layout,
             )
             target_cells = [cell for cell in target_cells if cell in where_cells]
-        values_before = {
-            cell: _cell_value(cell, data_body, colnames_display, layout) for cell in target_cells
-        }
-        generated_markup = _apply_fn(
+        _apply_fn(
             target_cells,
             d,
             data_body,
@@ -157,13 +167,14 @@ def apply_formats(
             table._source_colnames,
             layout,
             output,
-            table._escape,
+            directive_number,
+            semantic_cells,
         )
-        escaped_cells.difference_update(
-            cell
-            for cell, before in values_before.items()
-            if _cell_value(cell, data_body, colnames_display, layout) != before
-        )
-        escaped_cells.update(generated_markup)
 
-    return escaped_cells
+    for cell in semantic_cells:
+        value = _cell_value(cell, data_body, colnames_display, layout)
+        assert isinstance(value, _FormattedText)
+        rendered = value.render(output, escape=table._escape)
+        _set_cell_value(cell, rendered, data_body, colnames_display, layout)
+
+    return semantic_cells
