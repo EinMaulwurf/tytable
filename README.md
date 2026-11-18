@@ -33,7 +33,11 @@ table = (
     .fmt(j="Revenue", fn=currency("USD", digits=0))
     .fmt(j="Growth", fn=percent(digits=1))
     .theme_striped()
-    .style(i=2, j="Growth", bold=True, background="#dceee5", color="#145a32")
+    .style(i="header", bold=True)
+    .style(
+        where=pl.col("Growth") == pl.col("Growth").max(),
+        bold=True, background="#dceee5", color="#145a32",
+    )
 )
 
 table.save("sales.typ")
