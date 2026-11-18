@@ -1,103 +1,52 @@
 # tytable
 
-A small Python library that turns **Polars DataFrames** into **Typst tables**, inspired by R's [`tinytable`](https://github.com/vincentarelbundock/tinytable) package. Most of tinytable's styling power, including image/sparkline support and a Jupyter HTML preview.
+[![PyPI](https://img.shields.io/pypi/v/tytable)](https://pypi.org/project/tytable/)
+
+Turn **Polars DataFrames** into **Typst tables** with readable Python method chains. Format values, highlight cells, group rows and columns, and add images or sparklines. Preview tables in Jupyter or include them in a Typst report. Inspired by R's [tinytable](https://github.com/vincentarelbundock/tinytable).
 
 ## Install
 
-Install the latest release from [PyPI](https://pypi.org/project/tytable/):
-
-```
+```sh
 uv add tytable
+# or: pip install tytable
 ```
 
-Or with pip:
+Generated tables require **Typst 0.11.1 or newer** to compile. For generated plots and sparklines, install `tytable[images]`; embedding existing images needs no extra dependencies.
 
-```
-pip install tytable
-```
+## Example
 
-Tytable-generated `.typ` fragments require **Typst 0.11.1 or newer** to compile. The published documentation PDF is built with Typst 0.15.0.
-
-For generated plots and sparklines, install the optional extra. Embedding existing image files with `.images()` needs no additional Python dependencies:
-
-```
-uv add "tytable[images]"
-```
-
-From a cloned checkout, run:
-
-```
-uv sync --all-extras
-make test
-```
-
-## Quickstart
+Show quarterly revenue and growth, with currency and percentage formatting and a highlighted standout result:
 
 ```python
 import polars as pl
 from tytable import tt
-from tytable.formatters import number
+from tytable.formatters import currency, percent
 
-df = pl.DataFrame({
-    "Product": ["A", "B", "C"],
-    "Score": [85.43, 72.10, 91.87],
+data = pl.DataFrame({
+    "Region": ["North", "South", "West"],
+    "Revenue": [128450.75, 97200.5, 163800.25],
+    "Growth": [0.124, -0.038, 0.217],
 })
 
-tab = (
-    tt(df, caption="Product scores", label="product-scores")
-    .fmt(j="Score", fn=number(digits=2))
-    .style(j="Score", align="c")
-    .style(i=0, bold=True, background="#2c3e50", color="white")
+table = (
+    tt(data, caption="Quarterly sales")
+    .fmt(j="Revenue", fn=currency("USD", digits=0))
+    .fmt(j="Growth", fn=percent(digits=1))
+    .theme_striped()
+    .style(i=2, j="Growth", bold=True, background="#dceee5", color="#145a32")
 )
 
-# Save in a script, or let `tab` be the last line of a Jupyter cell for a preview.
-tab.save("report_assets/products.typ")
-tab
+table.save("sales.typ")
 ```
 
-Common number, scientific, currency, percentage, date, duration, and unit conventions are available from `tytable.formatters`, including German output such as `1.023,87 €`. Pass them to `.fmt(fn=...)`; see the full guide for options and rendered examples.
+![Quarterly sales table with formatted revenue and growth](docs/assets/readme-example.png)
 
-For scientific measurements, use `.fmt(j="Measurement", fn=scientific(digits=2))` after `from tytable.formatters import scientific`. Typst and HTML display values such as 1.23 × 10⁶ with native superscripts; ASCII uses `1.23e+6`.
-
-![Rendered Product scores table](https://raw.githubusercontent.com/EinMaulwurf/tytable/main/docs/assets/readme-example.png)
-
-Create a standalone PDF, PNG, or SVG directly when the Typst CLI is installed:
-
-```python
-tab.compile("products.pdf")
-tab.compile("products.png", ppi=200)
-```
-
-Use `tab.save("products.typ")` instead when the table will be `#include`d in a larger Typst report. See [Saving and using a table in Typst](https://einmaulwurf.github.io/tytable/tytable-docs.pdf#nameddest=saving-typst) for project roots, fonts, page selection, and image handling.
-
-## Conventions
-
-- **Semantic row selection**: non-negative `i` values are stable 0-based source DataFrame positions, even after row groups are inserted. Omitting `i` (or using `i="data"`) selects all source rows. Use `i="header"`, `i="groupi"`, `i="groupj"`, or `i="all"` for explicit structural selections; `groupi(label="A")` selects row-group separators by their exact registered label, `rowgroup(label="A")` selects their member data rows, and `groupj(level=0)` selects the first-created, innermost column-group header level. Styling supports every grid row. Formatting and targeted notes support data, row-group, and column-name rows; plots and images support data and row-group rows. Unsupported structural targets raise a clear error when rendered.
-- **Column selection**: use original DataFrame names (`j="Score"`), 0-based positions (`j=0`), Polars selectors, `regex(pattern)` for fail-loud Python regular-expression matching, or `colgroup(label="Results", level=0)` for the source columns belonging to registered column groups; display names are presentation-only.
-- **Method chaining**: `.style()`, `.fmt()`, `.group()`, and the `.theme_*()` methods all return `self`. `.render()`, `.save()`, and `.compile()` are terminal.
-- **Reusable variants**: `.clone()` creates an independently configurable table while cheaply sharing Polars' immutable data buffers.
-- **Readable defaults**: text columns are left-aligned and numeric columns are right-aligned, including their headers. Explicit `.style(align=...)` calls override these dtype-based defaults.
-- **Lazy evaluation**: styling, formatting, grouping, and plotting are recorded as _intent_ and replayed in a fixed order at render time.
-- **Figure wrapping**: Typst tables are figures by default, enabling captions, numbering, and labels such as `label="product-scores"`. Use `figure=False` for an unnumbered table; captions and labels cannot be combined with it.
+Use `#include "sales.typ"` in a Typst report, or call `table.compile("sales.pdf")` to create a standalone PDF with the Typst CLI. In Jupyter, leave `table` as the last expression in a cell for an HTML preview.
 
 ## Documentation
 
-A practical guide with **rendered examples** (source followed by result) from easy to complex, a **task-oriented API reference**, and an R-tinytable comparison table live in the PDF built from [`docs/main.typ`](docs/main.typ):
+- [Full guide](https://einmaulwurf.github.io/tytable/): tutorials, rendered examples, and an API reference, built from `main`.
+- [Latest release PDF](https://github.com/EinMaulwurf/tytable/releases/latest/download/tytable-docs.pdf).
+- [Coding guide for agents](docs/agent-guide.md): a self-contained reference for writing tytable code.
 
-- **Always-current build (HEAD):** <https://einmaulwurf.github.io/tytable/>
-- **Versioned (latest release):** <https://github.com/EinMaulwurf/tytable/releases/latest/download/tytable-docs.pdf>
-
-Build locally (requires the [Typst](https://typst.app/open-source) and [Typstyle](https://typstyle-rs.github.io/typstyle/installation.html) CLIs):
-
-```
-make docs
-# → docs/tytable-docs.pdf
-```
-
-`make docs` formats the hand-written `.typ` sources with Typstyle before compiling them. It uses Tinymist's defaults: a 120-column print width and no prose wrapping. Run `make format-docs` to format without building the PDF.
-
-Documented public APIs remain backward compatible throughout each major release series. Breaking changes are reserved for major releases.
-
-## Coming from R tinytable
-
-`tt(df)` ↔ `tt(data)`, `.style()` ↔ `style_tt()`, `.fmt()` ↔ `format_tt()`, `.group()` ↔ `group_tt()`, and `.theme_striped()` / `.theme_grid()` correspond to `theme_tt()`. Indexing is **0-based** (vs R's 1-based) and columns are selected by **name** (preferred). The full comparison table is in the PDF above.
+To build the PDF locally, run `make docs` with the [Typst](https://typst.app/open-source) and [Typstyle](https://typstyle-rs.github.io/typstyle/installation.html) CLIs installed.
