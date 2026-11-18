@@ -2,6 +2,11 @@
 
 This is the single backlog for unresolved bugs, improvements, and ideas. Completed work belongs in `CHANGELOG.md`, not here.
 
+## v5
+
+- [ ] Define how custom display callbacks compose with semantic formatters before stabilizing the v5 API. For `1_230_000`, chaining `.fmt(fn=scientific(digits=2))` with `.fmt(fn=lambda values: [f"≈ {value}" for value in values], fn_values="display")` shows literal `#super[6]` in Typst and `<sup>6</sup>` in HTML. The callback receives backend markup, and its modified result is escaped as text. Decide what display callbacks receive and how callers can add literal prefixes or suffixes while retaining native formatting and default escaping. Document the contract and cover the example in Typst, HTML, and ASCII tests.
+- [ ] Add `.explain(output="typst")` to show each directive’s resolved selectors and target count, including empty selections and directives skipped for the requested backend. Resolve selections without invoking formatter or plot callbacks, running finalizers, or writing assets. Include the directive number, source column when known, and backend in render-time formatter errors.
+
 ## Small improvements
 
 - [ ] Add HTML table semantics: scoped column and row headers, accessible column groups, and caption/note relationships.
@@ -12,7 +17,7 @@ This is the single backlog for unresolved bugs, improvements, and ideas. Complet
 
 These are plausible additions within the package's current scope, not commitments; any or none of them may be implemented.
 
-- [ ] Add `.validate()` and `.explain()` for resolved selections, overridden intent, backend limitations, media cardinality, asset policy, and estimated output size; later add `.lint()` for suspicious but valid tables.
+- [ ] Extend `.explain()` to report overridden directives. Add `.validate()` for backend limitations, media cardinality, asset policy, and estimated output size. Consider `.lint()` for suspicious but valid tables.
 - [ ] Add CSS classes and custom properties for site integration, responsive layouts, and dark mode.
 - [ ] Add native Typst vector sparklines and data bars without requiring Matplotlib.
 - [ ] Accept the DataFrame interchange protocol through `pl.from_dataframe()` while keeping Polars as the internal representation and selector language.
@@ -75,3 +80,10 @@ These are broader or less-settled directions that would require more evidence an
 - [ ] Evaluate a LaTeX renderer deliberately rather than by accretion; it would dilute the Typst identity and double maintenance for math, spans, and borders.
 - [ ] Decide whether row-wise formatter contexts belong in `fn` or a distinct formatter contract.
 - [ ] Extend the planned `tytable.testing` to export resolved `BuiltTable` snapshots (JSON golden files), not just rendered strings.
+
+### Dependencies and performance
+
+- [ ] Evaluate a Windows-only [`tzdata`](https://docs.python.org/3/library/zoneinfo.html#data-sources) dependency so `date(timezone=...)` can resolve IANA timezone names on systems without a timezone database. Verify this on a base install with system timezone data unavailable.
+- [ ] Evaluate [Babel](https://babel.pocoo.org/en/latest/api/numbers.html) for broader locale and currency support if demand extends beyond the English and German presets. Check how its patterns interact with explicit precision, rounding, separator, and label options.
+- [ ] Evaluate an optional [`typst-py`](https://typst-py.readthedocs.io/en/latest/) backend for `.compile()` so users can install standalone PDF and image export through Python packaging. Benchmark repeated exports against the CLI.
+- [ ] Profile fixed-decimal `number()` formatting on representative tables and reduce repeated per-cell work. Measure Python render time and verify that formatted values stay consistent.
