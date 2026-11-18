@@ -2,10 +2,6 @@
 
 This is the single backlog for unresolved bugs, improvements, and ideas. Completed work belongs in `CHANGELOG.md`, not here.
 
-## v5
-
-- [ ] Add `.explain(output="typst")` to show each directive’s resolved selectors and target count, including empty selections and directives skipped for the requested backend. Resolve selections without invoking formatter or plot callbacks, running finalizers, or writing assets.
-
 ## Small improvements
 
 - [ ] Add HTML table semantics: scoped column and row headers, accessible column groups, and caption/note relationships.

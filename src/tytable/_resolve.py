@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 from ._directives import Note
 from ._escape import escape_html, escape_typst
 from ._format import apply_formats
-from ._groups import _resolve_col_group_spans, merge_row_groups
+from ._groups import _resolve_col_group_spans, merge_row_groups, row_group_positions
 from ._indices import RowLayout, resolve_i, resolve_where
 from ._renderer import OutputFormat
 from ._styling import build_meta_styles, build_style_grid, compute_covered_cells
@@ -106,7 +106,6 @@ class _BuildState:
     colnames_display: list[str]
     show_colnames: bool
     col_groups: list[list[str | None]] = field(default_factory=list)
-    col_group_levels: list[int] = field(default_factory=list)
     layout: RowLayout | None = None
     escaped_cells: set[tuple[int, int]] = field(default_factory=set)
     image_cells: set[tuple[int, int]] = field(default_factory=set)
@@ -217,28 +216,27 @@ def _column_alignments(table: TyTable) -> list[str]:
 
 def _merge_groups(state: _BuildState) -> None:
     """Insert row-group rows into both display and typed cell matrices."""
-    state.data_body, row_group_positions = merge_row_groups(
-        state.data_body,
-        state.table._row_groups,
-        state.ncols,
+    positions = row_group_positions(state.table._row_groups)
+    state.data_body = merge_row_groups(state.data_body, positions, state.ncols)
+    state.typed_body = merge_row_groups(state.typed_body, positions, state.ncols)
+    state.layout, state.col_groups = resolve_layout(state.table, positions)
+
+
+def resolve_layout(
+    table: TyTable, positions: dict[int, str]
+) -> tuple[RowLayout, list[list[str | None]]]:
+    """Resolve structural rows without extracting or formatting data cells."""
+    col_groups, levels = _project_col_groups(table._col_group_rows, table._display_columns)
+    layout = RowLayout.create(
+        source_rows=table._data.height,
+        column_group_rows=len(col_groups),
+        groupj_levels=levels,
+        column_group_levels=len(table._col_group_rows),
+        has_header=table._show_colnames,
+        group_body_rows=set(positions),
+        groupi_labels=list(positions.values()),
     )
-    state.typed_body, _ = merge_row_groups(
-        state.typed_body,
-        state.table._row_groups,
-        state.ncols,
-    )
-    state.col_groups, state.col_group_levels = _project_col_groups(
-        state.table._col_group_rows, state.table._display_columns
-    )
-    state.layout = RowLayout.create(
-        source_rows=state.table._data.height,
-        column_group_rows=len(state.col_groups),
-        groupj_levels=state.col_group_levels,
-        column_group_levels=len(state.table._col_group_rows),
-        has_header=state.show_colnames,
-        group_body_rows=set(row_group_positions),
-        groupi_labels=[row_group_positions[row] for row in sorted(row_group_positions)],
-    )
+    return layout, col_groups
 
 
 def _apply_formatting(state: _BuildState) -> None:
@@ -447,6 +445,11 @@ def _project_column_widths(
     return [column_widths[col] for col in selected]
 
 
+def validate_output(output: OutputFormat) -> None:
+    if output not in ("typst", "html", "ascii"):
+        raise NotImplementedError(f"output={output!r} not implemented")
+
+
 def build(
     table: TyTable, output: OutputFormat, *, media_context: MediaContext | None = None
 ) -> BuiltTable:
@@ -457,8 +460,7 @@ def build(
     apply formats → execute plots → insert footnote markers → build the style
     grid.
     """
-    if output not in ("typst", "html", "ascii"):
-        raise NotImplementedError(f"output={output!r} not implemented")
+    validate_output(output)
 
     state = _extract_body(_copy_for_build(table), output, media_context)
     _merge_groups(state)

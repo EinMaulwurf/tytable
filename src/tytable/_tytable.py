@@ -1355,6 +1355,29 @@ class TyTable:
         self._finalize_hooks.append(fn)
         return self
 
+    def explain(self, output: OutputFormat = "typst") -> str:
+        """Return a plain-text report of directive selections for a backend.
+
+        Reports formatting, media, notes, and styles in render-phase order.
+        Rows are zero-based display positions after grouping. Columns are
+        source names, including columns hidden by :meth:`show_columns`.
+        For a ``where`` expression, the report lists matching rows by column
+        after intersecting with the row and column selectors.
+
+        Directives excluded by their output filter are reported as skipped.
+        Empty selections have zero targets. Selector predicates and Polars
+        expressions are evaluated, while formatter, plot, and finalizer
+        callbacks and asset handling are left to rendering.
+
+        Parameters
+        ----------
+        output
+            ``"typst"`` (default), ``"html"``, or ``"ascii"``.
+        """
+        from tytable._explain import explain
+
+        return explain(self, output)
+
     def render(
         self,
         output: OutputFormat = "typst",

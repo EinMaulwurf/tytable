@@ -358,6 +358,30 @@ table.save("build/table.html") # suffix selects HTML
 table.save("build/table.txt")  # suffix selects ASCII
 ```
 
+Use `.explain()` to inspect selectors and target counts for formatting, plots, images, notes, and styles. It defaults to Typst. The report uses zero-based display rows after grouping and source column names, including hidden columns. For `where`, it lists matching rows by column. It flags empty selections and skips directives excluded by the backend filter. Explain evaluates selector predicates and Polars expressions and leaves formatter and plot callbacks, finalizers, and asset handling to rendering.
+
+```python
+import polars as pl
+
+from tytable import tt
+from tytable.formatters import number
+
+table = (
+    tt(pl.DataFrame({"Score": [42, 91]}))
+    .fmt(j="Score", fn=number(digits=1))
+    .style(j="Score", where=pl.col("Score") >= 90, bold=True)
+    .style(i="header", italic=True, output="html")
+)
+print(table.explain())
+```
+
+```text
+TyTable directives for 'typst'
+.fmt() #1  rows=[1, 2] columns=['Score']  targets=2
+.style() #1  rows=[1, 2] columns=['Score'] where={'Score': [2]}  targets=1
+.style() #2  skipped (output=('html',))
+```
+
 Generated Typst uses structural indentation, spaced cells, and section separators; long rows wrap between cells. Long inline text styles repeated across enough body cells use table-local helpers when this reduces source size; short and sparse styles stay inline. Embedded cell content is preserved. Exact source whitespace is not a compatibility guarantee.
 
 With the Typst CLI installed, `.compile("build/table.pdf")` writes PDF, PNG, or SVG without changing the text-only `.render()` contract. Static images are embedded by default; `root=`, `font_paths=`, `pages=`, and PNG-only `ppi=` expose the relevant compiler controls.

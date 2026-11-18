@@ -75,6 +75,7 @@ DOCUMENTED_API: dict[str, tuple[str, Callable[..., Any]]] = {
     "plot": (".plot", TyTable.plot),
     "images": (".images", TyTable.images),
     "finalize": (".finalize", TyTable.finalize),
+    "explain": (".explain", TyTable.explain),
     "render": (".render", TyTable.render),
     "save": (".save", TyTable.save),
     "compile": (".compile", TyTable.compile),

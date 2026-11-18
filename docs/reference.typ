@@ -41,6 +41,9 @@ Start here when you know the task but not the method. Methods marked *chainable*
   [Post-process output],
   [`.finalize(...)`],
   [chainable],
+  [Inspect directive selections],
+  [`.explain(...)`],
+  [`str`],
   [Get a string],
   [`.render(...)`],
   [`str` (terminal)],
@@ -306,6 +309,36 @@ Copy and embed reject URLs, missing files, and unreadable inputs with the direct
 #api("Post-process", api_signatures.at("finalize"))
 
 Registers `fn(rendered: str, output: str) -> str`. Callability is validated when registered. Callbacks run in registration order after any renderer; each receives the preceding callback's string and must return a string, which may be empty. A non-string result raises `TypeError` identifying the callback's position and output backend before any later callback runs. Exceptions raised by callbacks propagate unchanged. Finalizers are useful for narrowly scoped integration markup.
+
+#api("Explain directive selections", api_signatures.at("explain"))
+
+Use `print(table.explain())` to inspect formats, plots, images, notes, and styles for Typst. The report includes zero-based display rows after grouping and source column names, including columns hidden by `.show_columns()`. For `where` selections, it also lists the matching rows by column. Each active directive has a target count, including zero for empty selections. A spanning column-group header counts as one style target. For an excluded backend, the directive is marked skipped and its selectors are left unevaluated.
+
+The report evaluates row predicates and Polars selector expressions. It leaves formatter and plot callbacks, finalizers, and asset handling to rendering.
+
+```python
+import polars as pl
+
+from tytable import tt
+from tytable.formatters import number
+
+table = (
+    tt(pl.DataFrame({"Score": [42, 91]}))
+    .fmt(j="Score", fn=number(digits=1))
+    .style(j="Score", where=pl.col("Score") >= 90, bold=True)
+    .style(i="header", italic=True, output="html")
+)
+print(table.explain())
+```
+
+```
+TyTable directives for 'typst'
+.fmt() #1  rows=[1, 2] columns=['Score']  targets=2
+.style() #1  rows=[1, 2] columns=['Score'] where={'Score': [2]}  targets=1
+.style() #2  skipped (output=('html',))
+```
+
+The formatter targets both scores and displays them as `42.0` and `91.0` when rendered. The column header occupies display row 0, so the score of 91 appears on display row 2. The header style is skipped because it applies only to HTML.
 
 #api("Render string", api_signatures.at("render"))
 

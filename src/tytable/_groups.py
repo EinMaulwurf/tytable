@@ -220,22 +220,26 @@ def register_delimiter_groups(table: TyTable, delimiter: str, colnames: list[str
     return table
 
 
-def merge_row_groups(
-    data_body: list[list[str]], row_groups: list[RowGroup], ncols: int
-) -> tuple[list[list[str]], dict[int, str]]:
-    """Interleave row-group rows; return zero-based body positions and labels."""
-    if not row_groups:
-        return data_body, {}
-    pos_to_label = {
+def row_group_positions(row_groups: list[RowGroup]) -> dict[int, str]:
+    """Map grouped body positions to their registered labels."""
+    return {
         group.position + offset: group.label
         for offset, group in enumerate(sorted(row_groups, key=lambda group: group.position))
     }
+
+
+def merge_row_groups(
+    data_body: list[list[str]], positions: dict[int, str], ncols: int
+) -> list[list[str]]:
+    """Interleave row-group rows with source data."""
+    if not positions:
+        return data_body
     merged = []
     data_row_idx = 0
-    for r in range(len(data_body) + len(row_groups)):
-        if r in pos_to_label:
-            merged.append([pos_to_label[r]] + [""] * (ncols - 1))
+    for r in range(len(data_body) + len(positions)):
+        if r in positions:
+            merged.append([positions[r]] + [""] * (ncols - 1))
         else:
             merged.append(data_body[data_row_idx])
             data_row_idx += 1
-    return merged, pos_to_label
+    return merged

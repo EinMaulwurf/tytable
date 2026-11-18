@@ -17,6 +17,7 @@ These changes target the next major release, v5.
 
 ### Features
 
+- Add `.explain(output="typst")` to report resolved directive selectors, target counts, empty selections, and backend skips without running formatter, plot, or finalizer callbacks or handling assets.
 - Add `math(display=False, null="—")`, `linebreak(marker="\n")`, `replace(mapping)`, and `missing(label="—")` to `tytable.formatters`.
 - Share semantic rendering across scientific notation, equations, and line breaks. Math uses Typst syntax, and HTML and ASCII retain source expressions.
 - Add `affix(prefix="", suffix="")` for decorating a display value while preserving native formatting. For example, chain `.fmt(fn=affix(prefix="≈ "), fn_values="display")` after `scientific()` to keep native superscripts.
